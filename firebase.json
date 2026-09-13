@@ -88,6 +88,14 @@
         "destination": "/texas-blackout-articles/index.html"
       },
       {
+        "source": "/forensic-branches",
+        "destination": "/forensic-branches/index.html"
+      },
+      {
+        "source": "/ap1-kinematics-practice",
+        "destination": "/ap1-kinematics-practice.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

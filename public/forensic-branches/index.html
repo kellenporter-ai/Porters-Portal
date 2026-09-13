@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branches of Forensic Science / Ramas de la Ciencia Forense</title>
+<meta name="description" content="Branches of Forensic Science - bilingual EN/ES reference for the expert-group jigsaw activity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0e13;--panel:#12161f;--panel2:#171c27;--ink:#e8e9ee;--mut:#98a1b0;
+--line:rgba(255,255,255,.09);--accent:#6366f1;--accent-soft:rgba(99,102,241,.14)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+font-family:'Barlow',-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+font-size:17px;line-height:1.6;
+background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+background-size:44px 44px}
+h1,h2,h3{font-family:'Barlow Condensed','Arial Narrow',-apple-system,sans-serif;
+text-transform:uppercase;letter-spacing:.04em;line-height:1.1;margin:0}
+a{color:inherit}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,14,19,.85);
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px}
+.brand{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.14em;
+text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:10px;min-width:0}
+.brand .dot{width:9px;height:9px;background:var(--accent);flex:none;transform:rotate(45deg)}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lang-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex:none}
+.lang-toggle button{appearance:none;border:0;background:transparent;color:var(--mut);cursor:pointer;
+font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.1em;
+padding:8px 16px;touch-action:manipulation}
+.lang-toggle button.active{background:var(--accent);color:#fff}
+.lang-toggle button + button{border-left:1px solid var(--line)}
+html[lang="en"] .lang-es{display:none!important}
+html[lang="es"] .lang-en{display:none!important}
+.hero{position:relative;border-bottom:1px solid var(--line);overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;
+background:radial-gradient(ellipse 80% 90% at 15% 0%,var(--accent-soft),transparent 60%)}
+.hero .wrap{position:relative;padding-top:64px;padding-bottom:52px}
+.stamp{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.22em;
+text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:10px;margin-bottom:18px}
+.stamp::before{content:"";width:26px;height:1px;background:var(--accent)}
+.hero h1{font-size:clamp(38px,7vw,76px);font-weight:700}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero-sub{max-width:62ch;color:var(--mut);font-size:clamp(16px,2vw,19px);margin:16px 0 0}
+.icon-badge{width:64px;height:64px;border:1.5px solid var(--accent);border-radius:12px;
+display:flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:20px;
+background:var(--accent-soft)}
+.icon-badge svg{width:38px;height:38px}
+.section{padding:44px 0;border-bottom:1px solid var(--line)}
+.kicker{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.2em;
+text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.section h2{font-size:clamp(26px,4vw,38px);margin-bottom:20px}
+.section p{max-width:72ch;margin:0 0 14px}
+.section ul{margin:0 0 14px;padding-left:22px;max-width:70ch}
+.section li{margin-bottom:10px}
+.section li::marker{color:var(--accent)}
+.feat strong{color:var(--accent)}
+.casefile{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+border-radius:0 10px 10px 0;padding:26px 28px;position:relative}
+.casefile .tag{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.2em;
+text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.casefile .tag::after{content:"";flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+.casefile p{margin:0;max-width:74ch;font-size:17.5px}
+.callout{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;
+padding:24px 26px}
+.callout ul{margin-bottom:0}
+.callout li::marker{content:"\2192  ";color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+.vocab th{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.16em;
+text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+.vocab td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.vocab td.term{font-weight:600;color:var(--accent);white-space:nowrap}
+.vocab td.def{color:var(--mut)}
+.anchor-nav{position:sticky;top:56px;z-index:40;background:rgba(11,14,19,.9);
+backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.anchor-nav .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px;
+scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.anchor-nav .wrap::-webkit-scrollbar{display:none}
+.anchor-nav a{flex:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:var(--mut);
+border:1px solid var(--line);border-radius:999px;padding:7px 14px;white-space:nowrap}
+.anchor-nav a:hover{color:var(--accent);border-color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+@media(max-width:860px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.cards{grid-template-columns:1fr}}
+.card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);
+border-top:3px solid var(--c,#6366f1);border-radius:10px;padding:20px 20px 18px;
+transition:transform .15s ease,background .15s ease}
+.card:hover{transform:translateY(-3px);background:var(--panel2)}
+.card .ic{display:inline-block;width:42px;height:42px;color:var(--c,#6366f1);margin-bottom:12px}
+.card .ic svg{width:100%;height:100%}
+.card h3{font-size:22px}
+.card .es-name{color:var(--mut);font-size:14.5px;margin-top:2px}
+.card .tagline{color:var(--mut);font-size:14.5px;margin:10px 0 0;line-height:1.45}
+.card .go{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.14em;
+text-transform:uppercase;color:var(--c,#6366f1);margin-top:14px;display:inline-block}
+.cmp td{padding:14px;border-bottom:1px solid var(--line)}
+.cmp th{padding:12px 14px}
+.cmp th:first-child{padding-left:0}
+.cmp td:first-child{padding-left:0}
+.cmp td.branch{font-weight:600}
+.cmp td.branch small{display:block;color:var(--mut);font-weight:400;font-size:13px}
+.cmp td.clue{color:var(--ink);max-width:52ch}
+.kw-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+border:1px solid var(--line);border-left:3px solid var(--c,#6366f1);border-radius:6px;
+padding:6px 10px;color:var(--mut);background:var(--panel)}
+.pager{display:flex;justify-content:space-between;gap:12px;padding:34px 0 20px;flex-wrap:wrap}
+.pager a{text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:12px 18px;
+max-width:46%;transition:border-color .15s ease}
+.pager a:hover{border-color:var(--accent)}
+.pager a small{display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:3px}
+.pager a b{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:19px;font-weight:600}
+.back-hub{display:block;text-align:center;padding:6px 0 44px;color:var(--mut);
+text-decoration:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
+letter-spacing:.16em;text-transform:uppercase}
+.back-hub:hover{color:var(--accent)}
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mut);font-size:13.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h2[id],div[id]{scroll-margin-top:118px}
+@media(max-width:640px){
+ body{font-size:16px}
+ .vocab th:nth-child(3),.vocab td.def{display:none}
+}
+@media print{
+ body{background:#fff;color:#000;font-size:11.5pt}
+ .topbar,.anchor-nav,.lang-toggle,.pager,.back-hub,footer{display:none!important}
+ .hero{border-bottom:2px solid #000}
+ .hero .wrap{padding:0 0 12pt}
+ .hero h1{font-size:26pt;color:#000}
+ .hero-sub{color:#222}
+ .stamp,.kicker{color:#000}
+ .icon-badge{display:none}
+ .section{padding:10pt 0;border-bottom:none;break-inside:avoid}
+ .casefile,.callout{background:#fff;border:1pt solid #000;border-left:4pt solid #000}
+ .casefile p,.section p,.section li{color:#000}
+ .vocab td.def{display:table-cell!important}
+ .vocab th:nth-child(3){display:table-cell!important}
+ a{text-decoration:none}
+ .card{border:1pt solid #000;break-inside:avoid}
+ .chip{color:#000;border:1pt solid #000}
+}
+</style>
+<style>:root{--accent:#6366f1;--accent-soft:#6366f124}</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./index.html"><span class="dot"></span><span>Forensic Branches <span style="color:var(--mut)">/ Ramas de la Ciencia Forense</span></span></a>
+    <div class="lang-toggle" role="group" aria-label="Language"><button type="button" data-lang="en" class="active" aria-pressed="true">EN</button><button type="button" data-lang="es" aria-pressed="false">ES</button></div>
+  </div>
+</header>
+<div class="hero">
+  <div class="wrap">
+    <p class="stamp lang-en">Case file 00 &middot; Jigsaw mission briefing</p>
+    <p class="stamp lang-es">Expediente 00 &middot; Instrucciones de la misión jigsaw</p>
+    <h1><span class="lang-en">Branches of <em>Forensic Science</em></span><span class="lang-es">Ramas de la <em>Ciencia Forense</em></span></h1>
+    <p class="hero-sub lang-en">Your class is splitting into six expert groups. Each group becomes the class authority on one branch of forensic science. Study your branch's field guide until you know it cold. On game day, your team will be the detectives everyone calls for help. These guides are your primary source.</p>
+    <p class="hero-sub lang-es">Tu clase se divide en seis grupos expertos. Cada grupo se convierte en la autoridad de la clase sobre una rama de la ciencia forense. Estudia la guía de tu rama hasta conocerla perfectamente. El día del juego, tu equipo será el grupo de detectives al que todos llaman para pedir ayuda. Estas guías son tu fuente principal.</p>
+  </div>
+</div>
+<div class="section">
+  <div class="wrap">
+    <p class="kicker lang-en">Expert groups</p><p class="kicker lang-es">Grupos expertos</p>
+    <h2 class="lang-en">Pick your branch</h2><h2 class="lang-es">Elige tu rama</h2>
+    <div class="cards">
+<a class="card" href="./toxicologist.html" style="--c:#8B5A2B">
+  <span class="ic"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 6h10M21 6v11L10.5 37a3 3 0 0 0 2.7 4.3h21.6a3 3 0 0 0 2.7-4.3L27 17V6"/><path d="M15 28h18"/><circle cx="21" cy="33" r="1.4"/><circle cx="26" cy="36" r="1"/><circle cx="24" cy="30" r=".9"/></svg></span>
+  <h3 class="lang-en">Forensic Toxicologist</h3><h3 class="lang-es">Toxicólogo Forense</h3>
+  <p class="es-name lang-en">Toxicólogo Forense</p>
+  <p class="tagline lang-en">They find poisons, drugs, and chemicals hiding inside the body.</p>
+  <p class="tagline lang-es">Encuentran venenos, drogas y químicos escondidos dentro del cuerpo.</p>
+  <span class="go lang-en">Open field guide &rarr;</span><span class="go lang-es">Abrir guía &rarr;</span>
+</a>
+<a class="card" href="./anthropologist.html" style="--c:#C0392B">
+  <span class="ic"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 9.5a4.5 4.5 0 1 1 6.2 4.2c1.7.6 3.2 1.7 4.3 3.1 1.1-1.4 2.6-2.5 4.3-3.1a4.5 4.5 0 1 1 6.2-4.2 4.5 4.5 0 1 1-4.2 6.2c-.6 1.7-1.7 3.2-3.1 4.3 1.4 1.1 2.5 2.6 3.1 4.3a4.5 4.5 0 1 1 4.2 6.2 4.5 4.5 0 1 1-6.2-4.2 9.7 9.7 0 0 1-4.3-3.1c-1.1 1.4-2.6 2.5-4.3 3.1a4.5 4.5 0 1 1-6.2 4.2 4.5 4.5 0 1 1 4.2-6.2c.6-1.7 1.7-3.2 3.1-4.3-1.4-1.1-2.5-2.6-3.1-4.3a4.5 4.5 0 1 1-4.2-6.2z"/></svg></span>
+  <h3 class="lang-en">Forensic Anthropologist</h3><h3 class="lang-es">Antropólogo Forense</h3>
+  <p class="es-name lang-en">Antropólogo Forense</p>
+  <p class="tagline lang-en">They read bones like a history book of the person.</p>
+  <p class="tagline lang-es">Leen los huesos como un libro de historia de la persona.</p>
+  <span class="go lang-en">Open field guide &rarr;</span><span class="go lang-es">Abrir guía &rarr;</span>
+</a>
+<a class="card" href="./serologist.html" style="--c:#E74C3C">
+  <span class="ic"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M24 5S11 21.5 11 29a13 13 0 0 0 26 0C37 21.5 24 5 24 5z"/><path d="M17.5 29a6.5 6.5 0 0 0 6.5 6.5"/></svg></span>
+  <h3 class="lang-en">Forensic Serologist</h3><h3 class="lang-es">Serólogo Forense</h3>
+  <p class="es-name lang-en">Serólogo Forense</p>
+  <p class="tagline lang-en">They identify blood, saliva, and other bodily fluids at scenes.</p>
+  <p class="tagline lang-es">Identifican sangre, saliva y otros fluidos corporales en escenas.</p>
+  <span class="go lang-en">Open field guide &rarr;</span><span class="go lang-es">Abrir guía &rarr;</span>
+</a>
+<a class="card" href="./entomologist.html" style="--c:#27AE60">
+  <span class="ic"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="27" rx="6" ry="11"/><circle cx="24" cy="12" r="4"/><path d="M21 22c-5-3-11-2-13 2M21 27c-5-1-10 1-12 5M21 32c-4 0-8 3-9 7M27 22c5-3 11-2 13 2M27 27c5-1 10 1 12 5M27 32c4 0 8 3 9 7"/><path d="M18 19c-2-4-1-8 2-9M30 19c2-4 1-8-2-9" opacity=".55"/></svg></span>
+  <h3 class="lang-en">Forensic Entomologist</h3><h3 class="lang-es">Entomólogo Forense</h3>
+  <p class="es-name lang-en">Entomólogo Forense</p>
+  <p class="tagline lang-en">They use insects as a stopwatch to tell time since death.</p>
+  <p class="tagline lang-es">Usan insectos como un cronómetro para saber el tiempo desde la muerte.</p>
+  <span class="go lang-en">Open field guide &rarr;</span><span class="go lang-es">Abrir guía &rarr;</span>
+</a>
+<a class="card" href="./psychiatrist-psychologist.html" style="--c:#8E44AD">
+  <span class="ic"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 40V29c-4.4-1.8-7-5.8-7-10.5C8 10.4 13.8 6 21 6c8.8 0 15 5.4 15 12.7 0 5.5-4 10-10 11.6V40"/><path d="M21 6v11M15 14h12M15 22h6M27 18h6M15 30h6M21 29v6M27 26v8"/></svg></span>
+  <h3 class="lang-en">Forensic Psychiatrist and Psychologist</h3><h3 class="lang-es">Psiquiatra y Psicólogo Forense</h3>
+  <p class="es-name lang-en">Psiquiatra y Psicólogo Forense</p>
+  <p class="tagline lang-en">They analyze the mind to understand behavior and competency.</p>
+  <p class="tagline lang-es">Analizan la mente para entender el comportamiento y la capacidad.</p>
+  <span class="go lang-en">Open field guide &rarr;</span><span class="go lang-es">Abrir guía &rarr;</span>
+</a>
+<a class="card" href="./computer-scientist.html" style="--c:#2980B9">
+  <span class="ic"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="13" y="13" width="22" height="22" rx="2"/><rect x="20" y="20" width="8" height="8"/><path d="M19 13V7M24 13V7M29 13V7M19 41v-6M24 41v-6M29 41v-6M13 19H7M13 24H7M13 29H7M41 19h-6M41 24h-6M41 29h-6"/></svg></span>
+  <h3 class="lang-en">Forensic Computer Scientist</h3><h3 class="lang-es">Científico Forense de Computación</h3>
+  <p class="es-name lang-en">Científico Forense de Computación</p>
+  <p class="tagline lang-en">They recover and analyze digital evidence from devices.</p>
+  <p class="tagline lang-es">Recuperan y analizan evidencia digital de dispositivos.</p>
+  <span class="go lang-en">Open field guide &rarr;</span><span class="go lang-es">Abrir guía &rarr;</span>
+</a>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="wrap">
+    <p class="kicker lang-en">Game-day study aid</p><p class="kicker lang-es">Ayuda de estudio para el juego</p>
+    <h2 class="lang-en">Who do you call?</h2><h2 class="lang-es">¿A quién llamas?</h2>
+    <p class="lang-en" style="color:var(--mut);max-width:70ch">Every branch gets called when a specific kind of question shows up. Learn the call clue for all six branches, not just yours.</p>
+    <p class="lang-es" style="color:var(--mut);max-width:70ch">Cada rama es llamada cuando aparece un tipo específico de pregunta. Aprende la pista de llamada de las seis ramas, no solo la tuya.</p>
+    <table class="cmp" style="margin-top:18px">
+      <thead><tr><th class="lang-en">Branch</th><th class="lang-en">Call clue</th><th class="lang-es">Rama</th><th class="lang-es">Pista de llamada</th></tr></thead>
+      <tbody>
+<tr>
+  <td class="branch"><a href="./toxicologist.html" style="color:#8B5A2B"><span class="lang-en">Forensic Toxicologist</span><span class="lang-es">Toxicólogo Forense</span></a><small class="lang-en">Toxicólogo Forense</small></td>
+  <td class="clue"><span class="lang-en">A death with no injuries, or someone impaired by an unknown substance.</span><span class="lang-es">Una muerte sin heridas, o alguien incapacitado por una sustancia desconocida.</span></td>
+</tr>
+<tr>
+  <td class="branch"><a href="./anthropologist.html" style="color:#C0392B"><span class="lang-en">Forensic Anthropologist</span><span class="lang-es">Antropólogo Forense</span></a><small class="lang-en">Antropólogo Forense</small></td>
+  <td class="clue"><span class="lang-en">Skeletal remains, burned or damaged bones, or bones of unknown origin.</span><span class="lang-es">Restos esqueléticos, huesos quemados o dañados, o huesos de origen desconocido.</span></td>
+</tr>
+<tr>
+  <td class="branch"><a href="./serologist.html" style="color:#E74C3C"><span class="lang-en">Forensic Serologist</span><span class="lang-es">Serólogo Forense</span></a><small class="lang-en">Serólogo Forense</small></td>
+  <td class="clue"><span class="lang-en">An unknown stain, or a suspect claiming blood has an innocent explanation.</span><span class="lang-es">Una mancha desconocida, o un sospechoso que dice que la sangre tiene una explicación inocente.</span></td>
+</tr>
+<tr>
+  <td class="branch"><a href="./entomologist.html" style="color:#27AE60"><span class="lang-en">Forensic Entomologist</span><span class="lang-es">Entomólogo Forense</span></a><small class="lang-en">Entomólogo Forense</small></td>
+  <td class="clue"><span class="lang-en">A decomposed body with insects, or a suspect whose alibi depends on time of death.</span><span class="lang-es">Un cuerpo descompuesto con insectos, o un sospechoso cuya coartada depende de la hora de la muerte.</span></td>
+</tr>
+<tr>
+  <td class="branch"><a href="./psychiatrist-psychologist.html" style="color:#8E44AD"><span class="lang-en">Forensic Psychiatrist and Psychologist</span><span class="lang-es">Psiquiatra y Psicólogo Forense</span></a><small class="lang-en">Psiquiatra y Psicólogo Forense</small></td>
+  <td class="clue"><span class="lang-en">Questions about sanity, competency, witness reliability, or offender profiling.</span><span class="lang-es">Preguntas sobre locura, capacidad, confiabilidad de testigos o perfil del delincuente.</span></td>
+</tr>
+<tr>
+  <td class="branch"><a href="./computer-scientist.html" style="color:#2980B9"><span class="lang-en">Forensic Computer Scientist</span><span class="lang-es">Científico Forense de Computación</span></a><small class="lang-en">Científico Forense de Computación</small></td>
+  <td class="clue"><span class="lang-en">A phone, computer, or online account that might hold evidence.</span><span class="lang-es">Un teléfono, computadora o cuenta en línea que podría contener evidencia.</span></td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="section">
+  <div class="wrap">
+    <p class="kicker lang-en">The lineup</p><p class="kicker lang-es">La alineación</p>
+    <h2 class="lang-en">The six branches</h2><h2 class="lang-es">Las seis ramas</h2>
+    <div class="kw-strip">
+<span class="chip" style="--c:#8B5A2B"><span class="lang-en">Forensic Toxicologist</span><span class="lang-es">Toxicólogo Forense</span></span>
+<span class="chip" style="--c:#C0392B"><span class="lang-en">Forensic Anthropologist</span><span class="lang-es">Antropólogo Forense</span></span>
+<span class="chip" style="--c:#E74C3C"><span class="lang-en">Forensic Serologist</span><span class="lang-es">Serólogo Forense</span></span>
+<span class="chip" style="--c:#27AE60"><span class="lang-en">Forensic Entomologist</span><span class="lang-es">Entomólogo Forense</span></span>
+<span class="chip" style="--c:#8E44AD"><span class="lang-en">Forensic Psychiatrist and Psychologist</span><span class="lang-es">Psiquiatra y Psicólogo Forense</span></span>
+<span class="chip" style="--c:#2980B9"><span class="lang-en">Forensic Computer Scientist</span><span class="lang-es">Científico Forense de Computación</span></span>
+    </div>
+  </div>
+</div>
+<footer>
+  <div class="wrap">
+    <span class="lang-en">Forensic Science - Expert Group Field Guides</span>
+    <span class="lang-es">Ciencias Forenses - Guías de campo de grupos expertos</span>
+  </div>
+</footer>
+</body>
+</html>
+<script>
+(function(){
+  var KEY='fbLang', root=document.documentElement;
+  function setLang(lang){
+    if(lang!=='es') lang='en';
+    root.setAttribute('lang',lang);
+    try{localStorage.setItem(KEY,lang);}catch(e){}
+    document.querySelectorAll('.lang-toggle button').forEach(function(b){
+      b.classList.toggle('active',b.getAttribute('data-lang')===lang);
+      b.setAttribute('aria-pressed',b.getAttribute('data-lang')===lang?'true':'false');
+    });
+    document.querySelectorAll('.lang-toggle').forEach(function(t){
+      t.setAttribute('aria-label',lang==='es'?'Idioma':'Language');
+    });
+  }
+  var stored='en';
+  try{stored=localStorage.getItem(KEY)||'en';}catch(e){}
+  setLang(stored);
+  document.querySelectorAll('.lang-toggle button').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-lang'));});
+  });
+})();
+</script>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forensic Serologist / Serólogo Forense</title>
+<meta name="description" content="Branches of Forensic Science - bilingual EN/ES reference for the expert-group jigsaw activity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0e13;--panel:#12161f;--panel2:#171c27;--ink:#e8e9ee;--mut:#98a1b0;
+--line:rgba(255,255,255,.09);--accent:#6366f1;--accent-soft:rgba(99,102,241,.14)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+font-family:'Barlow',-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+font-size:17px;line-height:1.6;
+background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+background-size:44px 44px}
+h1,h2,h3{font-family:'Barlow Condensed','Arial Narrow',-apple-system,sans-serif;
+text-transform:uppercase;letter-spacing:.04em;line-height:1.1;margin:0}
+a{color:inherit}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,14,19,.85);
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px}
+.brand{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.14em;
+text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:10px;min-width:0}
+.brand .dot{width:9px;height:9px;background:var(--accent);flex:none;transform:rotate(45deg)}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lang-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex:none}
+.lang-toggle button{appearance:none;border:0;background:transparent;color:var(--mut);cursor:pointer;
+font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.1em;
+padding:8px 16px;touch-action:manipulation}
+.lang-toggle button.active{background:var(--accent);color:#fff}
+.lang-toggle button + button{border-left:1px solid var(--line)}
+html[lang="en"] .lang-es{display:none!important}
+html[lang="es"] .lang-en{display:none!important}
+.hero{position:relative;border-bottom:1px solid var(--line);overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;
+background:radial-gradient(ellipse 80% 90% at 15% 0%,var(--accent-soft),transparent 60%)}
+.hero .wrap{position:relative;padding-top:64px;padding-bottom:52px}
+.stamp{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.22em;
+text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:10px;margin-bottom:18px}
+.stamp::before{content:"";width:26px;height:1px;background:var(--accent)}
+.hero h1{font-size:clamp(38px,7vw,76px);font-weight:700}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero-sub{max-width:62ch;color:var(--mut);font-size:clamp(16px,2vw,19px);margin:16px 0 0}
+.icon-badge{width:64px;height:64px;border:1.5px solid var(--accent);border-radius:12px;
+display:flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:20px;
+background:var(--accent-soft)}
+.icon-badge svg{width:38px;height:38px}
+.section{padding:44px 0;border-bottom:1px solid var(--line)}
+.kicker{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.2em;
+text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.section h2{font-size:clamp(26px,4vw,38px);margin-bottom:20px}
+.section p{max-width:72ch;margin:0 0 14px}
+.section ul{margin:0 0 14px;padding-left:22px;max-width:70ch}
+.section li{margin-bottom:10px}
+.section li::marker{color:var(--accent)}
+.feat strong{color:var(--accent)}
+.casefile{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+border-radius:0 10px 10px 0;padding:26px 28px;position:relative}
+.casefile .tag{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.2em;
+text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.casefile .tag::after{content:"";flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+.casefile p{margin:0;max-width:74ch;font-size:17.5px}
+.callout{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;
+padding:24px 26px}
+.callout ul{margin-bottom:0}
+.callout li::marker{content:"\2192  ";color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+.vocab th{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.16em;
+text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+.vocab td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.vocab td.term{font-weight:600;color:var(--accent);white-space:nowrap}
+.vocab td.def{color:var(--mut)}
+.anchor-nav{position:sticky;top:56px;z-index:40;background:rgba(11,14,19,.9);
+backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.anchor-nav .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px;
+scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.anchor-nav .wrap::-webkit-scrollbar{display:none}
+.anchor-nav a{flex:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:var(--mut);
+border:1px solid var(--line);border-radius:999px;padding:7px 14px;white-space:nowrap}
+.anchor-nav a:hover{color:var(--accent);border-color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+@media(max-width:860px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.cards{grid-template-columns:1fr}}
+.card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);
+border-top:3px solid var(--c,#6366f1);border-radius:10px;padding:20px 20px 18px;
+transition:transform .15s ease,background .15s ease}
+.card:hover{transform:translateY(-3px);background:var(--panel2)}
+.card .ic{display:inline-block;width:42px;height:42px;color:var(--c,#6366f1);margin-bottom:12px}
+.card .ic svg{width:100%;height:100%}
+.card h3{font-size:22px}
+.card .es-name{color:var(--mut);font-size:14.5px;margin-top:2px}
+.card .tagline{color:var(--mut);font-size:14.5px;margin:10px 0 0;line-height:1.45}
+.card .go{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.14em;
+text-transform:uppercase;color:var(--c,#6366f1);margin-top:14px;display:inline-block}
+.cmp td{padding:14px;border-bottom:1px solid var(--line)}
+.cmp th{padding:12px 14px}
+.cmp th:first-child{padding-left:0}
+.cmp td:first-child{padding-left:0}
+.cmp td.branch{font-weight:600}
+.cmp td.branch small{display:block;color:var(--mut);font-weight:400;font-size:13px}
+.cmp td.clue{color:var(--ink);max-width:52ch}
+.kw-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+border:1px solid var(--line);border-left:3px solid var(--c,#6366f1);border-radius:6px;
+padding:6px 10px;color:var(--mut);background:var(--panel)}
+.pager{display:flex;justify-content:space-between;gap:12px;padding:34px 0 20px;flex-wrap:wrap}
+.pager a{text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:12px 18px;
+max-width:46%;transition:border-color .15s ease}
+.pager a:hover{border-color:var(--accent)}
+.pager a small{display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:3px}
+.pager a b{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:19px;font-weight:600}
+.back-hub{display:block;text-align:center;padding:6px 0 44px;color:var(--mut);
+text-decoration:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
+letter-spacing:.16em;text-transform:uppercase}
+.back-hub:hover{color:var(--accent)}
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mut);font-size:13.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h2[id],div[id]{scroll-margin-top:118px}
+@media(max-width:640px){
+ body{font-size:16px}
+ .vocab th:nth-child(3),.vocab td.def{display:none}
+}
+@media print{
+ body{background:#fff;color:#000;font-size:11.5pt}
+ .topbar,.anchor-nav,.lang-toggle,.pager,.back-hub,footer{display:none!important}
+ .hero{border-bottom:2px solid #000}
+ .hero .wrap{padding:0 0 12pt}
+ .hero h1{font-size:26pt;color:#000}
+ .hero-sub{color:#222}
+ .stamp,.kicker{color:#000}
+ .icon-badge{display:none}
+ .section{padding:10pt 0;border-bottom:none;break-inside:avoid}
+ .casefile,.callout{background:#fff;border:1pt solid #000;border-left:4pt solid #000}
+ .casefile p,.section p,.section li{color:#000}
+ .vocab td.def{display:table-cell!important}
+ .vocab th:nth-child(3){display:table-cell!important}
+ a{text-decoration:none}
+ .card{border:1pt solid #000;break-inside:avoid}
+ .chip{color:#000;border:1pt solid #000}
+}
+</style>
+<style>:root{--accent:#E74C3C;--accent-soft:#E74C3C24}</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./index.html"><span class="dot"></span><span>Forensic Branches <span style="color:var(--mut)">/ Ramas de la Ciencia Forense</span></span></a>
+    <div class="lang-toggle" role="group" aria-label="Language"><button type="button" data-lang="en" class="active" aria-pressed="true">EN</button><button type="button" data-lang="es" aria-pressed="false">ES</button></div>
+  </div>
+</header>
+<div class="hero">
+  <div class="wrap">
+    <div class="icon-badge"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M24 5S11 21.5 11 29a13 13 0 0 0 26 0C37 21.5 24 5 24 5z"/><path d="M17.5 29a6.5 6.5 0 0 0 6.5 6.5"/></svg></div>
+    <p class="stamp"><span class="lang-en">Case file 03 &middot; Expert field guide</span><span class="lang-es">Expediente 03 &middot; Guía de experto</span></p>
+    <h1><span class="lang-en">Forensic Serologist</span><span class="lang-es">Serólogo Forense</span></h1>
+    <p class="hero-sub lang-en">They identify blood, saliva, and other bodily fluids at scenes.</p>
+    <p class="hero-sub lang-es">Identifican sangre, saliva y otros fluidos corporales en escenas.</p>
+  </div>
+</div>
+<nav class="anchor-nav"><div class="wrap"><a href="#idea"><span class="lang-en">Big Idea</span><span class="lang-es">Idea Central</span></a><a href="#what"><span class="lang-en">What They Do</span><span class="lang-es">Lo Que Hacen</span></a><a href="#tools"><span class="lang-en">Tools</span><span class="lang-es">Herramientas</span></a><a href="#case"><span class="lang-en">Case File</span><span class="lang-es">Caso Real</span></a><a href="#call"><span class="lang-en">Call Clue</span><span class="lang-es">¿Cuándo Llamar?</span></a><a href="#words"><span class="lang-en">Key Words</span><span class="lang-es">Palabras Clave</span></a></div></nav>
+<div class="section" id="idea">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 01</p><p class="kicker lang-es">Sección 01</p>
+    <h2><span class="lang-en">The Big Idea</span><span class="lang-es">La Idea Central</span></h2>
+<div class="lang-en">
+<p>A forensic serologist is a scientist who identifies and analyzes bodily fluids found at crime scenes. Blood, saliva, semen, and other fluids can link a suspect to a victim or a location. The serologist's job is to answer two questions: what fluid is this, and whose might it be?</p>
+<p>Even a tiny stain, smaller than a pencil eraser, can carry enough biological material to test for DNA. Serologists work with evidence that is often nearly invisible, which makes their work a blend of chemistry, biology, and careful patience.</p>
+</div>
+<div class="lang-es">
+<p>Un serólogo forense es un científico que identifica y analiza fluidos corporales encontrados en escenas del crimen. La sangre, la saliva, el semen y otros fluidos pueden vincular a un sospechoso con una víctima o un lugar. El trabajo del serólogo es responder dos preguntas: ¿qué fluido es este, y de quién podría ser?</p>
+<p>Incluso una mancha pequeña, más pequeña que el borrador de un lápiz, puede llevar suficiente material biológico para hacer pruebas de ADN. Los serólogos trabajan con evidencia que a menudo es casi invisible, lo que hace que su trabajo sea una mezcla de química, biología y paciencia cuidadosa.</p>
+</div>
+  </div>
+</div>
+<div class="section" id="what">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 02</p><p class="kicker lang-es">Sección 02</p>
+    <h2><span class="lang-en">What They Do</span><span class="lang-es">Lo Que Hacen</span></h2>
+<div class="lang-en">
+<p class="feat"><strong>Identify bodily fluids.</strong> They use chemical tests and specialized lighting to determine if a stain is blood, saliva, semen, urine, or something else. This first step is crucial because not every red stain is blood and not every clear droplet is water.</p>
+<p class="feat"><strong>Determine species of origin.</strong> They test whether blood came from a human or an animal. A suspect might claim a bloodstain is from a deer he hit with his car; a serologist can prove or disprove that story.</p>
+<p class="feat"><strong>Screen for biological material on evidence.</strong> They examine clothing, weapons, drink containers, stamps, and other objects for traces of saliva, sweat, or skin cells that could yield a DNA profile.</p>
+<p class="feat"><strong>Preserve evidence for DNA testing.</strong> Serologists carefully collect and protect fluid samples so they can be sent to DNA analysts without contamination.</p>
+<p class="feat"><strong>Testify in court.</strong> They explain what tests were done, what the results mean, and why the evidence supports or weakens a claim.</p>
+</div>
+<div class="lang-es">
+<p class="feat"><strong>Identifican fluidos corporales.</strong> Usan pruebas químicas y luz especializada para determinar si una mancha es sangre, saliva, semen, orina o algo más. Este primer paso es crucial porque no toda mancha roja es sangre y no toda gota clara es agua.</p>
+<p class="feat"><strong>Determinan la especie de origen.</strong> Prueban si la sangre vino de un humano o de un animal. Un sospechoso podría decir que una mancha de sangre es de un venado que atropelló con su carro; un serólogo puede probar o desmentir esa historia.</p>
+<p class="feat"><strong>Examinan evidencia en busca de material biológico.</strong> Revisan ropa, armas, vasos, estampillas y otros objetos buscando rastros de saliva, sudor o células de la piel que podrían dar un perfil de ADN.</p>
+<p class="feat"><strong>Preservan la evidencia para pruebas de ADN.</strong> Los serólogos recogen y protegen cuidadosamente las muestras de fluidos para que puedan enviarse a los analistas de ADN sin contaminación.</p>
+<p class="feat"><strong>Testifican en la corte.</strong> Explican qué pruebas se hicieron, qué significan los resultados y por qué la evidencia apoya o debilita una afirmación.</p>
+</div>
+  </div>
+</div>
+<div class="section" id="tools">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 03</p><p class="kicker lang-es">Sección 03</p>
+    <h2><span class="lang-en">Tools of the Trade</span><span class="lang-es">Sus Herramientas</span></h2>
+<div class="lang-en">
+<ul><li><strong>Luminol:</strong> a chemical that glows blue when it touches blood, even blood that has been wiped clean or is invisible to the eye.</li><li><strong>Alternate light sources (ALS):</strong> lamps that emit specific wavelengths of light. Under the right color, biological fluids fluoresce and become visible.</li><li><strong>Presumptive tests:</strong> rapid chemical screens (like the Kastle-Meyer test for blood or the starch-iodine test for saliva) that indicate a fluid might be present. Positive results go to the lab for confirmation.</li><li><strong>Microscopy:</strong> examining samples under a microscope to look for the unique shapes of sperm cells or the crystal patterns of dried blood.</li><li><strong>Species tests:</strong> antibodies that react only to human blood proteins, confirming whether a sample is human or animal.</li></ul>
+</div>
+<div class="lang-es">
+<ul><li><strong>Luminol:</strong> un químico que brilla en azul cuando toca sangre, incluso sangre que ha sido limpiada o es invisible a simple vista.</li><li><strong>Fuentes de luz alternativa (ALS):</strong> lámparas que emiten longitudes de onda específicas de luz. Bajo el color correcto, los fluidos biológicos brillan y se vuelven visibles.</li><li><strong>Pruebas presuntivas:</strong> exámenes químicos rápidos (como la prueba de Kastle-Meyer para sangre o la prueba de almidón-yodo para saliva) que indican que un fluido podría estar presente. Los resultados positivos van al laboratorio para confirmación.</li><li><strong>Microscopía:</strong> examinar muestras bajo un microscopio para buscar las formas únicas de los espermatozoides o los patrones de cristales de la sangre seca.</li><li><strong>Pruebas de especie:</strong> anticuerpos que reaccionan solo con proteínas de sangre humana, confirmando si una muestra es humana o animal.</li></ul>
+</div>
+  </div>
+</div>
+<div class="section" id="case">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 04</p><p class="kicker lang-es">Sección 04</p>
+    <h2><span class="lang-en">A Real Case</span><span class="lang-es">Un Caso Real</span></h2>
+<div class="casefile">
+  <p class="tag"><span class="lang-en">Case File</span><span class="lang-es">Caso Real</span></p>
+  <div class="lang-en"><p>In 1995, the murder trial of O.J. Simpson became one of the most watched trials in American history. Serologists and DNA analysts tested blood drops found at the crime scene, on Simpson's car, and on his socks. The blood matched the victim's DNA profile. The defense argued the evidence was contaminated or planted, and Simpson was found not guilty. The case showed the world how powerful, and how controversial, blood evidence can be when handled by police and scientists.</p></div>
+  <div class="lang-es"><p>En 1995, el juicio por asesinato de O.J. Simpson se convirtió en uno de los juicios más vistos en la historia de Estados Unidos. Los serólogos y analistas de ADN probaron gotas de sangre encontradas en la escena del crimen, en el carro de Simpson y en sus calcetines. La sangre coincidía con el perfil de ADN de la víctima. La defensa argumentó que la evidencia estaba contaminada o plantada, y Simpson fue declarado no culpable. El caso le mostró al mundo cuán poderosa, y cuán controversial, puede ser la evidencia de sangre cuando la manipulan la policía y los científicos.</p></div>
+</div>
+  </div>
+</div>
+<div class="section" id="call">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 05</p><p class="kicker lang-es">Sección 05</p>
+    <h2><span class="lang-en">When Do You Call Them?</span><span class="lang-es">¿Cuándo Los Llamas?</span></h2>
+<div class="callout">
+  <div class="lang-en"><p>Call a forensic serologist when bodily fluids are part of the evidence:</p>
+<ul><li>A stain is found at a scene and no one knows what it is</li><li>A suspect claims a bloodstain has an innocent explanation (paint, oil, animal blood)</li><li>Clothing or bedding needs testing for saliva, semen, or other fluids</li><li>A weapon has been wiped clean but might still hold traces of blood</li><li>A drinking glass, cigarette butt, or stamp might have saliva with DNA</li><li>Investigators need to confirm a fluid is human before sending it for DNA profiling</li><li>A letter or envelope was licked and could carry the sender's DNA</li></ul></div>
+  <div class="lang-es"><p>Llama a un serólogo forense cuando los fluidos corporales son parte de la evidencia:</p>
+<ul><li>Se encuentra una mancha en una escena y nadie sabe qué es</li><li>Un sospechoso dice que una mancha de sangre tiene una explicación inocente (pintura, aceite, sangre de animal)</li><li>La ropa o la ropa de cama necesitan pruebas de saliva, semen u otros fluidos</li><li>Un arma ha sido limpiada pero podría tener rastros de sangre</li><li>Un vaso, una colilla de cigarro o una estampilla podrían tener saliva con ADN</li><li>Los investigadores necesitan confirmar que un fluido es humano antes de enviarlo para análisis de ADN</li><li>Una carta o sobre fue sellado con saliva y podría llevar el ADN del remitente</li></ul></div>
+</div>
+  </div>
+</div>
+<div class="section" id="words">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 06</p><p class="kicker lang-es">Sección 06</p>
+    <h2><span class="lang-en">Key Words / Palabras Clave</span><span class="lang-es">Key Words / Palabras Clave</span></h2>
+<table class="vocab">
+  <thead><tr><th class="lang-en">English</th><th class="lang-es">Espa&ntilde;ol</th><th class="lang-en">Meaning</th><th class="lang-es">Significado</th></tr></thead>
+  <tbody>
+<tr>
+  <td class="term lang-en">Serology</td><td class="term lang-es">Serología</td>
+  <td class="def"><span class="lang-en">the study of blood and other bodily fluids</span><span class="lang-es">the study of blood and other bodily fluids</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Presumptive test</td><td class="term lang-es">Prueba presuntiva</td>
+  <td class="def"><span class="lang-en">a quick chemical screen that suggests a fluid is present but needs confirmation</span><span class="lang-es">a quick chemical screen that suggests a fluid is present but needs confirmation</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Luminol</td><td class="term lang-es">Luminol (luminol)</td>
+  <td class="def"><span class="lang-en">a chemical that makes blood glow blue in the dark</span><span class="lang-es">a chemical that makes blood glow blue in the dark</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Alternate light source</td><td class="term lang-es">Fuente de luz alternativa</td>
+  <td class="def"><span class="lang-en">a lamp that makes biological stains visible under special colors of light</span><span class="lang-es">a lamp that makes biological stains visible under special colors of light</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Species of origin</td><td class="term lang-es">Especie de origen</td>
+  <td class="def"><span class="lang-en">whether a biological sample came from a human or an animal</span><span class="lang-es">whether a biological sample came from a human or an animal</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Semen</td><td class="term lang-es">Semen (semen)</td>
+  <td class="def"><span class="lang-en">a bodily fluid that can link a suspect to a sexual assault</span><span class="lang-es">a bodily fluid that can link a suspect to a sexual assault</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Saliva</td><td class="term lang-es">Saliva (saliva)</td>
+  <td class="def"><span class="lang-en">a fluid found on stamps, envelopes, drink rims, and bite marks</span><span class="lang-es">a fluid found on stamps, envelopes, drink rims, and bite marks</span></td>
+</tr>
+  </tbody>
+</table>
+  </div>
+</div>
+<div class="wrap">
+  <div class="pager">
+    <a href="./anthropologist.html"><small><span class="lang-en">&larr; Previous branch</span><span class="lang-es">&larr; Rama anterior</span></small><b class="lang-en">Forensic Anthropologist</b><b class="lang-es">Antropólogo Forense</b></a>
+    <a href="./entomologist.html" style="text-align:right;margin-left:auto"><small><span class="lang-en">Next branch &rarr;</span><span class="lang-es">Siguiente rama &rarr;</span></small><b class="lang-en">Forensic Entomologist</b><b class="lang-es">Entomólogo Forense</b></a>
+  </div>
+  <a class="back-hub" href="./index.html"><span class="lang-en">&uarr; Back to all branches</span><span class="lang-es">&uarr; Volver a todas las ramas</span></a>
+</div>
+<footer>
+  <div class="wrap">
+    <span class="lang-en">Forensic Science - Expert Group Field Guides</span>
+    <span class="lang-es">Ciencias Forenses - Guías de campo de grupos expertos</span>
+  </div>
+</footer>
+</body>
+</html>
+<script>
+(function(){
+  var KEY='fbLang', root=document.documentElement;
+  function setLang(lang){
+    if(lang!=='es') lang='en';
+    root.setAttribute('lang',lang);
+    try{localStorage.setItem(KEY,lang);}catch(e){}
+    document.querySelectorAll('.lang-toggle button').forEach(function(b){
+      b.classList.toggle('active',b.getAttribute('data-lang')===lang);
+      b.setAttribute('aria-pressed',b.getAttribute('data-lang')===lang?'true':'false');
+    });
+    document.querySelectorAll('.lang-toggle').forEach(function(t){
+      t.setAttribute('aria-label',lang==='es'?'Idioma':'Language');
+    });
+  }
+  var stored='en';
+  try{stored=localStorage.getItem(KEY)||'en';}catch(e){}
+  setLang(stored);
+  document.querySelectorAll('.lang-toggle button').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-lang'));});
+  });
+})();
+</script>

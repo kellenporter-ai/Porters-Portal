@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forensic Entomologist / Entomólogo Forense</title>
+<meta name="description" content="Branches of Forensic Science - bilingual EN/ES reference for the expert-group jigsaw activity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0e13;--panel:#12161f;--panel2:#171c27;--ink:#e8e9ee;--mut:#98a1b0;
+--line:rgba(255,255,255,.09);--accent:#6366f1;--accent-soft:rgba(99,102,241,.14)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+font-family:'Barlow',-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+font-size:17px;line-height:1.6;
+background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+background-size:44px 44px}
+h1,h2,h3{font-family:'Barlow Condensed','Arial Narrow',-apple-system,sans-serif;
+text-transform:uppercase;letter-spacing:.04em;line-height:1.1;margin:0}
+a{color:inherit}
+.wrap{max-width:1020px;margin:0 auto;padding:0 22px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,14,19,.85);
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px}
+.brand{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.14em;
+text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:10px;min-width:0}
+.brand .dot{width:9px;height:9px;background:var(--accent);flex:none;transform:rotate(45deg)}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lang-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex:none}
+.lang-toggle button{appearance:none;border:0;background:transparent;color:var(--mut);cursor:pointer;
+font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.1em;
+padding:8px 16px;touch-action:manipulation}
+.lang-toggle button.active{background:var(--accent);color:#fff}
+.lang-toggle button + button{border-left:1px solid var(--line)}
+html[lang="en"] .lang-es{display:none!important}
+html[lang="es"] .lang-en{display:none!important}
+.hero{position:relative;border-bottom:1px solid var(--line);overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;
+background:radial-gradient(ellipse 80% 90% at 15% 0%,var(--accent-soft),transparent 60%)}
+.hero .wrap{position:relative;padding-top:64px;padding-bottom:52px}
+.stamp{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.22em;
+text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:10px;margin-bottom:18px}
+.stamp::before{content:"";width:26px;height:1px;background:var(--accent)}
+.hero h1{font-size:clamp(38px,7vw,76px);font-weight:700}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero-sub{max-width:62ch;color:var(--mut);font-size:clamp(16px,2vw,19px);margin:16px 0 0}
+.icon-badge{width:64px;height:64px;border:1.5px solid var(--accent);border-radius:12px;
+display:flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:20px;
+background:var(--accent-soft)}
+.icon-badge svg{width:38px;height:38px}
+.section{padding:44px 0;border-bottom:1px solid var(--line)}
+.kicker{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.2em;
+text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.section h2{font-size:clamp(26px,4vw,38px);margin-bottom:20px}
+.section p{max-width:72ch;margin:0 0 14px}
+.section ul{margin:0 0 14px;padding-left:22px;max-width:70ch}
+.section li{margin-bottom:10px}
+.section li::marker{color:var(--accent)}
+.feat strong{color:var(--accent)}
+.casefile{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+border-radius:0 10px 10px 0;padding:26px 28px;position:relative}
+.casefile .tag{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.2em;
+text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.casefile .tag::after{content:"";flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+.casefile p{margin:0;max-width:74ch;font-size:17.5px}
+.callout{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;
+padding:24px 26px}
+.callout ul{margin-bottom:0}
+.callout li::marker{content:"\2192  ";color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+.vocab th{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.16em;
+text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+.vocab td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.vocab td.term{font-weight:600;color:var(--accent);white-space:nowrap}
+.vocab td.def{color:var(--mut)}
+.anchor-nav{position:sticky;top:56px;z-index:40;background:rgba(11,14,19,.9);
+backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.anchor-nav .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px;
+scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.anchor-nav .wrap::-webkit-scrollbar{display:none}
+.anchor-nav a{flex:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:var(--mut);
+border:1px solid var(--line);border-radius:999px;padding:7px 14px;white-space:nowrap}
+.anchor-nav a:hover{color:var(--accent);border-color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+@media(max-width:860px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.cards{grid-template-columns:1fr}}
+.card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);
+border-top:3px solid var(--c,#6366f1);border-radius:10px;padding:20px 20px 18px;
+transition:transform .15s ease,background .15s ease}
+.card:hover{transform:translateY(-3px);background:var(--panel2)}
+.card .ic{display:inline-block;width:42px;height:42px;color:var(--c,#6366f1);margin-bottom:12px}
+.card .ic svg{width:100%;height:100%}
+.card h3{font-size:22px}
+.card .es-name{color:var(--mut);font-size:14.5px;margin-top:2px}
+.card .tagline{color:var(--mut);font-size:14.5px;margin:10px 0 0;line-height:1.45}
+.card .go{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.14em;
+text-transform:uppercase;color:var(--c,#6366f1);margin-top:14px;display:inline-block}
+.cmp td{padding:14px;border-bottom:1px solid var(--line)}
+.cmp th{padding:12px 14px}
+.cmp th:first-child{padding-left:0}
+.cmp td:first-child{padding-left:0}
+.cmp td.branch{font-weight:600}
+.cmp td.branch small{display:block;color:var(--mut);font-weight:400;font-size:13px}
+.cmp td.clue{color:var(--ink);max-width:52ch}
+.kw-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;
+border:1px solid var(--line);border-left:3px solid var(--c,#6366f1);border-radius:6px;
+padding:6px 10px;color:var(--mut);background:var(--panel)}
+.pager{display:flex;justify-content:space-between;gap:12px;padding:34px 0 20px;flex-wrap:wrap}
+.pager a{text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:12px 18px;
+max-width:46%;transition:border-color .15s ease}
+.pager a:hover{border-color:var(--accent)}
+.pager a small{display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:3px}
+.pager a b{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:19px;font-weight:600}
+.back-hub{display:block;text-align:center;padding:6px 0 44px;color:var(--mut);
+text-decoration:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;
+letter-spacing:.16em;text-transform:uppercase}
+.back-hub:hover{color:var(--accent)}
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mut);font-size:13.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h2[id],div[id]{scroll-margin-top:118px}
+@media(max-width:640px){
+ body{font-size:16px}
+ .vocab th:nth-child(3),.vocab td.def{display:none}
+}
+@media print{
+ body{background:#fff;color:#000;font-size:11.5pt}
+ .topbar,.anchor-nav,.lang-toggle,.pager,.back-hub,footer{display:none!important}
+ .hero{border-bottom:2px solid #000}
+ .hero .wrap{padding:0 0 12pt}
+ .hero h1{font-size:26pt;color:#000}
+ .hero-sub{color:#222}
+ .stamp,.kicker{color:#000}
+ .icon-badge{display:none}
+ .section{padding:10pt 0;border-bottom:none;break-inside:avoid}
+ .casefile,.callout{background:#fff;border:1pt solid #000;border-left:4pt solid #000}
+ .casefile p,.section p,.section li{color:#000}
+ .vocab td.def{display:table-cell!important}
+ .vocab th:nth-child(3){display:table-cell!important}
+ a{text-decoration:none}
+ .card{border:1pt solid #000;break-inside:avoid}
+ .chip{color:#000;border:1pt solid #000}
+}
+</style>
+<style>:root{--accent:#27AE60;--accent-soft:#27AE6024}</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./index.html"><span class="dot"></span><span>Forensic Branches <span style="color:var(--mut)">/ Ramas de la Ciencia Forense</span></span></a>
+    <div class="lang-toggle" role="group" aria-label="Language"><button type="button" data-lang="en" class="active" aria-pressed="true">EN</button><button type="button" data-lang="es" aria-pressed="false">ES</button></div>
+  </div>
+</header>
+<div class="hero">
+  <div class="wrap">
+    <div class="icon-badge"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="27" rx="6" ry="11"/><circle cx="24" cy="12" r="4"/><path d="M21 22c-5-3-11-2-13 2M21 27c-5-1-10 1-12 5M21 32c-4 0-8 3-9 7M27 22c5-3 11-2 13 2M27 27c5-1 10 1 12 5M27 32c4 0 8 3 9 7"/><path d="M18 19c-2-4-1-8 2-9M30 19c2-4 1-8-2-9" opacity=".55"/></svg></div>
+    <p class="stamp"><span class="lang-en">Case file 04 &middot; Expert field guide</span><span class="lang-es">Expediente 04 &middot; Guía de experto</span></p>
+    <h1><span class="lang-en">Forensic Entomologist</span><span class="lang-es">Entomólogo Forense</span></h1>
+    <p class="hero-sub lang-en">They use insects as a stopwatch to tell time since death.</p>
+    <p class="hero-sub lang-es">Usan insectos como un cronómetro para saber el tiempo desde la muerte.</p>
+  </div>
+</div>
+<nav class="anchor-nav"><div class="wrap"><a href="#idea"><span class="lang-en">Big Idea</span><span class="lang-es">Idea Central</span></a><a href="#what"><span class="lang-en">What They Do</span><span class="lang-es">Lo Que Hacen</span></a><a href="#tools"><span class="lang-en">Tools</span><span class="lang-es">Herramientas</span></a><a href="#case"><span class="lang-en">Case File</span><span class="lang-es">Caso Real</span></a><a href="#call"><span class="lang-en">Call Clue</span><span class="lang-es">¿Cuándo Llamar?</span></a><a href="#words"><span class="lang-en">Key Words</span><span class="lang-es">Palabras Clave</span></a></div></nav>
+<div class="section" id="idea">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 01</p><p class="kicker lang-es">Sección 01</p>
+    <h2><span class="lang-en">The Big Idea</span><span class="lang-es">La Idea Central</span></h2>
+<div class="lang-en">
+<p>A forensic entomologist is a scientist who uses insects to help solve crimes. Bugs arrive at a body within minutes of death, and they follow a predictable schedule. By studying which insects are present and what stage of life they are in, an entomologist can estimate how long a person has been dead, sometimes more accurately than any other method.</p>
+<p>Insects are nature's clock. They do not lie, they do not guess, and they do not care about alibis. The entomologist reads their arrival and growth like a stopwatch that started ticking the moment death occurred.</p>
+</div>
+<div class="lang-es">
+<p>Un entomólogo forense es un científico que usa insectos para ayudar a resolver crímenes. Los insectos llegan a un cuerpo minutos después de la muerte y siguen un horario predecible. Al estudiar qué insectos están presentes y en qué etapa de vida están, un entomólogo puede estimar cuánto tiempo ha estado muerta una persona, a veces con más precisión que cualquier otro método.</p>
+<p>Los insectos son el reloj de la naturaleza. No mienten, no adivinan y no les importan las coartadas. El entomólogo lee su llegada y su crecimiento como un cronómetro que empezó a correr en el momento en que ocurrió la muerte.</p>
+</div>
+  </div>
+</div>
+<div class="section" id="what">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 02</p><p class="kicker lang-es">Sección 02</p>
+    <h2><span class="lang-en">What They Do</span><span class="lang-es">Lo Que Hacen</span></h2>
+<div class="lang-en">
+<p class="feat"><strong>Estimate time since death.</strong> They collect insect specimens from a body and identify their species and life stage. Because different species arrive at predictable times and grow at known rates, the entomologist can calculate the postmortem interval, or PMI.</p>
+<p class="feat"><strong>Determine if a body was moved.</strong> Some insects live only in certain environments. If a body found in a desert has insects that only live in marshes, the body was moved. The bugs become witnesses to a relocation.</p>
+<p class="feat"><strong>Detect toxins and trauma.</strong> Insects absorb chemicals from the body they feed on. Analyzing maggots can reveal drugs or poisons when the body is too decomposed for direct testing. The location of insect activity can also point to wounds that are otherwise hidden.</p>
+<p class="feat"><strong>Identify the season of death.</strong> Some insects are only active in certain seasons. Finding their empty casings or shells can tell investigators whether a person died in summer or winter, even years later.</p>
+<p class="feat"><strong>Testify in court.</strong> They explain the insect evidence to judges and juries, translating the science of bug development into a timeline that makes sense to everyone.</p>
+</div>
+<div class="lang-es">
+<p class="feat"><strong>Estiman el tiempo desde la muerte.</strong> Recogen muestras de insectos de un cuerpo e identifican su especie y etapa de vida. Como diferentes especies llegan en momentos predecibles y crecen a tasas conocidas, el entomólogo puede calcular el intervalo postmortem, o IPM.</p>
+<p class="feat"><strong>Determinan si un cuerpo fue movido.</strong> Algunos insectos viven solo en ciertos ambientes. Si un cuerpo encontrado en el desierto tiene insectos que solo viven en pantanos, el cuerpo fue movido. Los insectos se convierten en testigos de una reubicación.</p>
+<p class="feat"><strong>Detectan toxinas y trauma.</strong> Los insectos absorben los químicos del cuerpo del que se alimentan. Analizar las larvas puede revelar drogas o venenos cuando el cuerpo está demasiado descompuesto para pruebas directas. La ubicación de la actividad de los insectos también puede señalar heridas que están ocultas.</p>
+<p class="feat"><strong>Identifican la estación de la muerte.</strong> Algunos insectos solo están activos en ciertas estaciones. Encontrar sus cáscaras vacías o conchas puede decir a los investigadores si una persona murió en verano o en invierno, incluso años después.</p>
+<p class="feat"><strong>Testifican en la corte.</strong> Explican la evidencia de insectos a jueces y jurados, traduciendo la ciencia del desarrollo de los insectos en una línea de tiempo que todos puedan entender.</p>
+</div>
+  </div>
+</div>
+<div class="section" id="tools">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 03</p><p class="kicker lang-es">Sección 03</p>
+    <h2><span class="lang-en">Tools of the Trade</span><span class="lang-es">Sus Herramientas</span></h2>
+<div class="lang-en">
+<ul><li><strong>Insect collection kits:</strong> nets, vials, and traps for gathering specimens at the scene without damaging them.</li><li><strong>Species identification guides:</strong> detailed references that help entomologists match larvae and adult insects to their exact species.</li><li><strong>Rearing chambers:</strong> lab containers where maggots are raised at controlled temperatures to measure their growth rate and confirm their age.</li><li><strong>Temperature data (weather records):</strong> because insect growth speeds up in heat and slows in cold, entomologists use local weather data to correct their PMI calculations.</li><li><strong>Microscopy:</strong> examining insect mouthparts, wings, and body segments under magnification to confirm species.</li></ul>
+</div>
+<div class="lang-es">
+<ul><li><strong>Kits de recolección de insectos:</strong> redes, viales y trampas para recoger especímenes en la escena sin dañarlos.</li><li><strong>Guías de identificación de especies:</strong> referencias detalladas que ayudan a los entomólogos a identificar larvas e insectos adultos con su especie exacta.</li><li><strong>Cámaras de cría:</strong> contenedores de laboratorio donde las larvas se crían a temperaturas controladas para medir su tasa de crecimiento y confirmar su edad.</li><li><strong>Datos de temperatura (registros del clima):</strong> como el crecimiento de los insectos se acelera con el calor y se enlentece con el frío, los entomólogos usan datos del clima local para corregir sus cálculos del IPM.</li><li><strong>Microscopía:</strong> examinar las piezas bucales, las alas y los segmentos del cuerpo de los insectos bajo aumento para confirmar la especie.</li></ul>
+</div>
+  </div>
+</div>
+<div class="section" id="case">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 04</p><p class="kicker lang-es">Sección 04</p>
+    <h2><span class="lang-en">A Real Case</span><span class="lang-es">Un Caso Real</span></h2>
+<div class="casefile">
+  <p class="tag"><span class="lang-en">Case File</span><span class="lang-es">Caso Real</span></p>
+  <div class="lang-en"><p>In 1986, a young woman was found dead in a wooded area near Baltimore. The medical examiner could not determine the time of death because the body was badly decomposed. Forensic entomologist Dr. Lee Goff examined the maggots on the body and identified their species and stage of development. Based on the insects' known growth rate and the local weather, he calculated that the woman had been dead for about five days. This timeline helped police focus their investigation on a suspect whose activities matched those days, and he was eventually convicted.</p></div>
+  <div class="lang-es"><p>En 1986, una mujer joven fue encontrada muerta en un área boscosa cerca de Baltimore. El médico forense no pudo determinar la hora de la muerte porque el cuerpo estaba muy descompuesto. El entomólogo forense Dr. Lee Goff examinó las larvas en el cuerpo e identificó su especie y etapa de desarrollo. Basado en la tasa de crecimiento conocida de los insectos y el clima local, calculó que la mujer había estado muerta por unos cinco días. Esta línea de tiempo ayudó a la policía a enfocar su investigación en un sospechoso cuyas actividades coincidían con esos días, y finalmente fue condenado.</p></div>
+</div>
+  </div>
+</div>
+<div class="section" id="call">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 05</p><p class="kicker lang-es">Sección 05</p>
+    <h2><span class="lang-en">When Do You Call Them?</span><span class="lang-es">¿Cuándo Los Llamas?</span></h2>
+<div class="callout">
+  <div class="lang-en"><p>Call a forensic entomologist when insects can tell the story:</p>
+<ul><li>A body is decomposed and the time of death is unknown</li><li>A suspect has an alibi that depends on when the victim died</li><li>Insects on a body do not match the local environment, suggesting the body was moved</li><li>The body is too decomposed for normal toxicology, but maggots might carry traces of drugs or poison</li><li>A skeleton is found and empty insect casings could reveal the season of death</li><li>Insect activity is concentrated in an unusual spot, hinting at a hidden wound</li><li>A submerged body needs a timeline for how long it was in the water</li></ul></div>
+  <div class="lang-es"><p>Llama a un entomólogo forense cuando los insectos pueden contar la historia:</p>
+<ul><li>Un cuerpo está descompuesto y la hora de la muerte es desconocida</li><li>Un sospechoso tiene una coartada que depende de cuándo murió la víctima</li><li>Los insectos en un cuerpo no coinciden con el ambiente local, sugiriendo que el cuerpo fue movido</li><li>El cuerpo está demasiado descompuesto para toxicología normal, pero las larvas podrían llevar rastros de drogas o veneno</li><li>Se encuentra un esqueleto y las cáscaras vacías de insectos podrían revelar la estación de la muerte</li><li>La actividad de los insectos está concentrada en un lugar inusual, insinuando una herida oculta</li><li>Un cuerpo sumergido necesita una línea de tiempo de cuánto tiempo estuvo en el agua</li></ul></div>
+</div>
+  </div>
+</div>
+<div class="section" id="words">
+  <div class="wrap">
+    <p class="kicker lang-en">Section 06</p><p class="kicker lang-es">Sección 06</p>
+    <h2><span class="lang-en">Key Words / Palabras Clave</span><span class="lang-es">Key Words / Palabras Clave</span></h2>
+<table class="vocab">
+  <thead><tr><th class="lang-en">English</th><th class="lang-es">Espa&ntilde;ol</th><th class="lang-en">Meaning</th><th class="lang-es">Significado</th></tr></thead>
+  <tbody>
+<tr>
+  <td class="term lang-en">Postmortem interval (PMI)</td><td class="term lang-es">Intervalo postmortem (IPM)</td>
+  <td class="def"><span class="lang-en">the time since death</span><span class="lang-es">the time since death</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Maggot</td><td class="term lang-es">Larva</td>
+  <td class="def"><span class="lang-en">the worm-like early stage of a fly, used to estimate time since death</span><span class="lang-es">the worm-like early stage of a fly, used to estimate time since death</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Carrion insects</td><td class="term lang-es">Insectos de carroña</td>
+  <td class="def"><span class="lang-en">species that feed on dead bodies, like blowflies and beetles</span><span class="lang-es">species that feed on dead bodies, like blowflies and beetles</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Succession</td><td class="term lang-es">Sucesión</td>
+  <td class="def"><span class="lang-en">the predictable order in which different insect species arrive on a body</span><span class="lang-es">the predictable order in which different insect species arrive on a body</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Rearing chamber</td><td class="term lang-es">Cámara de cría</td>
+  <td class="def"><span class="lang-en">a lab container where maggots are raised to measure their growth rate</span><span class="lang-es">a lab container where maggots are raised to measure their growth rate</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Coffin fly</td><td class="term lang-es">Mosca del ataúd</td>
+  <td class="def"><span class="lang-en">an insect that can reach bodies even after burial</span><span class="lang-es">an insect that can reach bodies even after burial</span></td>
+</tr>
+<tr>
+  <td class="term lang-en">Pupa</td><td class="term lang-es">Pupa (pupa)</td>
+  <td class="def"><span class="lang-en">the resting stage between larva and adult insect</span><span class="lang-es">the resting stage between larva and adult insect</span></td>
+</tr>
+  </tbody>
+</table>
+  </div>
+</div>
+<div class="wrap">
+  <div class="pager">
+    <a href="./serologist.html"><small><span class="lang-en">&larr; Previous branch</span><span class="lang-es">&larr; Rama anterior</span></small><b class="lang-en">Forensic Serologist</b><b class="lang-es">Serólogo Forense</b></a>
+    <a href="./psychiatrist-psychologist.html" style="text-align:right;margin-left:auto"><small><span class="lang-en">Next branch &rarr;</span><span class="lang-es">Siguiente rama &rarr;</span></small><b class="lang-en">Forensic Psychiatrist and Psychologist</b><b class="lang-es">Psiquiatra y Psicólogo Forense</b></a>
+  </div>
+  <a class="back-hub" href="./index.html"><span class="lang-en">&uarr; Back to all branches</span><span class="lang-es">&uarr; Volver a todas las ramas</span></a>
+</div>
+<footer>
+  <div class="wrap">
+    <span class="lang-en">Forensic Science - Expert Group Field Guides</span>
+    <span class="lang-es">Ciencias Forenses - Guías de campo de grupos expertos</span>
+  </div>
+</footer>
+</body>
+</html>
+<script>
+(function(){
+  var KEY='fbLang', root=document.documentElement;
+  function setLang(lang){
+    if(lang!=='es') lang='en';
+    root.setAttribute('lang',lang);
+    try{localStorage.setItem(KEY,lang);}catch(e){}
+    document.querySelectorAll('.lang-toggle button').forEach(function(b){
+      b.classList.toggle('active',b.getAttribute('data-lang')===lang);
+      b.setAttribute('aria-pressed',b.getAttribute('data-lang')===lang?'true':'false');
+    });
+    document.querySelectorAll('.lang-toggle').forEach(function(t){
+      t.setAttribute('aria-label',lang==='es'?'Idioma':'Language');
+    });
+  }
+  var stored='en';
+  try{stored=localStorage.getItem(KEY)||'en';}catch(e){}
+  setLang(stored);
+  document.querySelectorAll('.lang-toggle button').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-lang'));});
+  });
+})();
+</script>

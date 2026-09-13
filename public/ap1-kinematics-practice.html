@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Physics 1 Practice Exam: Kinematics (1D)</title>
+<style>
+:root{
+  --navy:#002147; --navy2:#003359; --gold:#d4a941; --bg:#eef2f6;
+  --card:#ffffff; --line:#c9d4e0; --ink:#1a2430; --muted:#5a6b7d;
+  --sel:#e8f0fb; --green:#1e7d3c; --greenbg:#e6f4ea; --red:#b3261e; --redbg:#fdecea;
+  --mark:#e8730c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+button{font-family:inherit;cursor:pointer}
+
+.hd{background:var(--navy);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:20}
+.hd .brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9fb6d4}
+.hd .title{font-size:17px;font-weight:600}
+.hd .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.hd .tag{font-size:11px;border:1px solid #4d6a8f;color:#bcd0ea;padding:3px 10px;border-radius:999px;letter-spacing:.06em;text-transform:uppercase}
+.timer{font-variant-numeric:tabular-nums;font-size:15px;background:rgba(255,255,255,.12);padding:5px 12px;border-radius:6px}
+.subhd{background:#e2e9f2;border-bottom:1px solid var(--line);padding:8px 20px;font-size:13px;color:var(--muted)}
+.subhd b{color:var(--navy)}
+
+.wrap{display:flex;gap:20px;padding:20px;max-width:1280px;margin:0 auto;align-items:flex-start}
+.main{flex:1;min-width:0}
+.side{width:320px;flex-shrink:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px rgba(16,35,60,.08)}
+.qcard{padding:28px 32px}
+.qhead{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.qhead .qn{font-size:15px;font-weight:700;color:var(--navy)}
+.topic{font-size:12px;background:#eaf1fa;color:#28518c;padding:3px 10px;border-radius:999px}
+.stem{font-size:17px;line-height:1.6;margin-bottom:18px}
+.fig{max-width:540px;margin:0 auto 18px;border:1px solid #e1e8f0;border-radius:8px;padding:10px;background:#fff}
+.fig svg{display:block;width:100%;height:auto}
+
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;font-size:16px;line-height:1.45;transition:border-color .1s,background .1s}
+.opt:hover{border-color:#8aa5c4}
+.opt .radio{flex-shrink:0;width:20px;height:20px;border-radius:50%;border:2px solid #8aa5c4;margin-top:2px;position:relative}
+.opt .ltr{flex-shrink:0;font-weight:700;color:var(--navy);width:20px}
+.opt .txt{flex:1}
+.opt.sel{border-color:var(--navy);background:var(--sel)}
+.opt.sel .radio{border-color:var(--navy)}
+.opt.sel .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--navy)}
+.opt.disabled{cursor:default}
+.opt.good{border-color:var(--green);background:var(--greenbg)}
+.opt.good .radio{border-color:var(--green)}
+.opt.good .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--green)}
+.opt.bad{border-color:var(--red);background:var(--redbg)}
+.opt.bad .radio{border-color:var(--red)}
+.opt .tagline{font-size:13px;font-weight:700;margin-left:6px}
+.opt.good .tagline{color:var(--green)} .opt.bad .tagline{color:var(--red)}
+
+.qfoot{display:flex;align-items:center;justify-content:space-between;margin-top:22px;gap:10px;flex-wrap:wrap}
+.btn{border-radius:6px;font-size:15px;padding:9px 18px;border:1.5px solid transparent;font-weight:600}
+.btn.primary{background:var(--navy);color:#fff}
+.btn.primary:hover{background:var(--navy2)}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--navy)}
+.btn.ghost:hover{background:#f2f6fb}
+.btn.warn{background:var(--red);color:#fff}
+.btn.mark{background:#fff;border:1.5px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:8px}
+.btn.mark .flag{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:11px solid #b9c6d4}
+.btn.mark.on{border-color:var(--mark);color:var(--mark);background:#fff7ef}
+.btn.mark.on .flag{border-bottom-color:var(--mark)}
+.btnrow{display:flex;gap:10px}
+
+.side .card{padding:16px;position:sticky;top:76px}
+.side h3{font-size:14px;color:var(--navy);margin-bottom:4px}
+.side .count{font-size:12px;color:var(--muted);margin-bottom:12px}
+.ngrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.nbtn{aspect-ratio:1;min-width:0;border:1.5px solid var(--line);background:#fff;border-radius:6px;font-size:13px;font-weight:600;color:var(--ink);position:relative;overflow:hidden}
+.nbtn:hover{border-color:#8aa5c4}
+.nbtn.done{background:var(--navy);border-color:var(--navy);color:#fff}
+.nbtn.cur{outline:3px solid var(--gold);outline-offset:1px}
+.nbtn.mk::after{content:"";position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--mark)}
+.nbtn.frq{grid-column:span 8;font-size:11px;aspect-ratio:auto;padding:6px 0}
+.legend{margin-top:14px;font-size:12px;color:var(--muted);display:grid;gap:6px}
+.legend .row{display:flex;align-items:center;gap:8px}
+.sw{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line);background:#fff}
+.sw.done{background:var(--navy);border-color:var(--navy)}
+.sw.cur{outline:2.5px solid var(--gold);outline-offset:1px}
+.sw.mk{position:relative}
+.sw.mk::after{content:"";position:absolute;top:0;right:0;width:5px;height:5px;border-radius:50%;background:var(--mark)}
+.side .submit{width:100%;margin-top:16px}
+.navtoggle{display:none}
+
+.welcome{max-width:760px;margin:40px auto;padding:40px 44px}
+.welcome .brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d1f;font-weight:700}
+.welcome h1{font-size:28px;color:var(--navy);margin:10px 0 6px;line-height:1.3}
+.welcome .meta{color:var(--muted);font-size:14px;margin-bottom:22px}
+.welcome .box{background:#f5f8fc;border:1px solid var(--line);border-radius:8px;padding:18px 22px;margin-bottom:24px}
+.welcome .box h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.welcome ol{padding-left:22px;font-size:14.5px;line-height:1.8}
+.welcome .actions{display:flex;gap:12px;flex-wrap:wrap}
+
+.part{margin:22px 0}
+.part .ph{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.part .pl{font-weight:700;color:var(--navy)}
+.part .pts{font-size:12px;color:var(--muted)}
+.part .pp{font-size:16px;line-height:1.55;margin-bottom:10px}
+.symbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.symbar button{border:1px solid var(--line);background:#f5f8fc;border-radius:5px;padding:3px 9px;font-size:14px}
+.symbar button:hover{background:#e8f0fb}
+textarea{width:100%;min-height:130px;border:1.5px solid var(--line);border-radius:8px;padding:12px;font-family:inherit;font-size:15px;line-height:1.5;resize:vertical}
+textarea:focus{outline:2px solid var(--navy);border-color:var(--navy)}
+.frqnote{font-size:13px;color:var(--muted);background:#fff7e8;border:1px solid #ecd9a8;border-radius:8px;padding:10px 14px;margin-top:16px}
+
+.scorecard{padding:30px 34px;margin-bottom:20px}
+.scorecard .big{font-size:34px;font-weight:800;color:var(--navy)}
+.scorecard .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.trow{display:flex;align-items:center;gap:12px;margin:10px 0}
+.trow .tl{width:270px;font-size:14px;flex-shrink:0}
+.trow .bar{flex:1;height:10px;background:#e4ebf3;border-radius:5px;overflow:hidden}
+.trow .bar i{display:block;height:100%;background:var(--navy);border-radius:5px}
+.trow .tv{width:70px;text-align:right;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.callout{margin-top:16px;background:#fff7e8;border:1px solid #ecd9a8;border-radius:8px;padding:12px 16px;font-size:14.5px}
+.callout b{color:#8a5a00}
+details{border:1px solid var(--line);border-radius:8px;margin:12px 0;background:#fff}
+summary{padding:12px 16px;font-weight:600;color:var(--navy);cursor:pointer;font-size:15px}
+details .body{padding:4px 16px 16px;font-size:14.5px;line-height:1.6}
+.model{background:#f5f8fc;border-left:3px solid var(--navy);padding:10px 14px;margin:8px 0;border-radius:0 6px 6px 0}
+
+.rev{padding:22px 26px;margin-bottom:16px}
+.rev .rh{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.rev .rq{font-weight:700;color:var(--navy)}
+.badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.badge.ok{background:var(--greenbg);color:var(--green)}
+.badge.no{background:var(--redbg);color:var(--red)}
+.badge.skip{background:#eef0f3;color:var(--muted)}
+.expl{margin-top:14px;border-top:1px solid #e4ebf3;padding-top:12px;font-size:14.5px;line-height:1.6}
+.expl .c{color:var(--green);font-weight:700}
+.expl .w{color:var(--red);font-weight:700}
+.expl ul{margin:8px 0 0 18px}
+.expl li{margin:6px 0}
+.expl li b{color:var(--ink)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(10,25,45,.55);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:#fff;border-radius:12px;max-width:460px;width:92%;padding:28px}
+.modal h3{color:var(--navy);font-size:20px;margin-bottom:10px}
+.modal p{font-size:15px;line-height:1.6;color:var(--muted);margin-bottom:20px}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end}
+
+@media (max-width:1000px){
+  .wrap{flex-direction:column}
+  .side{width:100%;position:static}
+  .side .card{position:static}
+  .ngrid{display:none}
+  .side.open .ngrid{display:grid}
+  .navtoggle{display:block;width:100%;margin-bottom:12px}
+  .qcard{padding:20px 18px}
+  .trow .tl{width:150px;font-size:13px}
+}
+</style>
+</head>
+<body>
+<header class="hd">
+  <div>
+    <div class="brand">AP&reg; Physics 1: Algebra-Based</div>
+    <div class="title">Practice Exam: Kinematics, Motion in One Dimension</div>
+  </div>
+  <div class="right">
+    <span class="tag">Digital Practice</span>
+    <span class="timer" id="timer">0:00:00</span>
+  </div>
+</header>
+<div class="subhd" id="subhd"></div>
+<main id="app"></main>
+<div id="modal-root"></div>
+
+<script>
+const DATA = {"exam":[{"id":47,"topic":"Free Fall","stem":"A ball is thrown straight upward with an initial speed of 20 m/s. Use g = 10 m/s². What is the maximum height the ball reaches above the launch point?","options":["80 m","40 m","20 m","10 m"],"correct":2,"expCorrect":"At the top, v² = v₀² − 2gh: 0 = 400 − 20h, so h = 20 m. (Or average velocity 10 m/s over 2 s gives 20 m.)","expWrong":["80 m is v₀ × t with t = 2 s as if the ball moved upward at full speed the whole time. Its speed decreases continuously, so the height is half of that product.","40 m is v₀²/g, missing the factor of 2 in the equation v² = v₀² − 2gh.","10 m would be the height if the ball's speed dropped by only 10 m/s, or from using h = v₀t/4 with the wrong time."]},{"id":19,"topic":"Velocity-Time Graphs","stem":"Two objects start from rest at t = 0 and both reach v = 10 m/s at t = 5 s. Object A's velocity-time graph is a straight line. Object B's velocity-time graph is a concave-up curve that stays below A's line for the whole interval. Which object has the larger displacement over the 5 s?","fig":"<svg viewBox='0 0 420 260' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Two velocity-time curves from rest to 10 m/s at 5 s: a straight line A and a concave-up curve B below it'><rect width='420' height='260' fill='white'/><line x1='50' y1='210' x2='390' y2='210' stroke='#333' stroke-width='1.5'/><line x1='50' y1='210' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><line x1='50' y1='210' x2='360' y2='50' stroke='#16263e' stroke-width='2.5'/><path d='M 50 210 Q 200 200 360 50' fill='none' stroke='#c0392b' stroke-width='2.5'/><text x='255' y='115' font-size='14' fill='#16263e' font-weight='bold'>A</text><text x='225' y='175' font-size='14' fill='#c0392b' font-weight='bold'>B</text><text x='395' y='228' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>v</text><text x='40' y='232' font-size='13' fill='#666'>0</text></svg>","options":["Both have the same displacement","Cannot be determined without the equations","Object B","Object A"],"correct":3,"expCorrect":"Displacement is the area under each velocity curve. Both curves connect the same endpoints, but A's straight line lies above B's curve the whole way, so A encloses more area and has the larger displacement.","expWrong":["Same final velocity at the same time does not guarantee the same area. The areas differ because the curves differ in between.","The graph is enough: displacement is the enclosed area, and the graph shows clearly which area is larger.","B's curve lies below A's for the entire interval, so B's area is smaller, not larger. Reaching the same final velocity does not mean covering the same distance."]},{"id":37,"topic":"Average Speed, Velocity, and Distance","stem":"A train travels 100 km in the first hour and then 60 km in the next two hours, always in the same direction. What is the train's average speed over the full three hours?","options":["53.3 km/h","80 km/h","40 km/h","50 km/h"],"correct":0,"expCorrect":"Average speed = total distance / total time = (100 + 60) km / (1 + 2) h = 160/3 ≈ 53.3 km/h.","expWrong":["80 km/h is the average of 100 and 60, which double-counts the first hour. The second speed is 30 km/h, not 60 km/h.","40 km/h is the average of the two speeds, (100 + 30)/2. That shortcut works only when the time intervals are equal; here the second leg takes twice as long.","50 km/h is the midpoint of 40 and 60, but it does not come from the total distance over total time. The correct value is 160/3 ≈ 53.3 km/h."]},{"id":9,"topic":"Position-Time Graphs","stem":"A runner's position-time graph starts at the origin with a curve whose positive slope steadily decreases until it becomes horizontal at t = 4 s. After t = 4 s the graph stays horizontal. Which description matches the runner's motion?","options":["Runs at constant speed, then stops.","Starts fast, slows down to a stop, and then stays stopped.","Starts from rest, speeds up, then continues at constant speed.","Runs toward the origin the entire time."],"correct":1,"expCorrect":"A decreasing positive slope means a positive velocity that is shrinking: the runner starts fast and slows. When the slope reaches zero (horizontal line), the runner stops and stays stopped.","expWrong":["Constant speed would appear as a straight line with unchanging slope before the stop. The curve shows the slope changing, so the speed is not constant.","Starting from rest would mean the curve begins flat and gets steeper (concave up). This curve starts steep and flattens (concave down).","Running toward the origin would require a negative slope (position decreasing). The slope is positive throughout the moving part."]},{"id":8,"topic":"Position-Time Graphs","stem":"An object moves along a straight line so that its position-time graph is a curve that gets steeper in the positive direction as time increases (the curve is concave up). During this motion, the object's velocity and acceleration are","options":["velocity is positive and increasing; acceleration is positive","velocity is positive and increasing; acceleration is negative","velocity is negative; acceleration is negative","velocity is zero"],"correct":0,"expCorrect":"A curve that gets steeper in the positive direction has a positive slope that is increasing. Positive slope means positive velocity; an increasing slope means the velocity is increasing, which is a positive acceleration.","expWrong":["If the velocity is increasing, the acceleration (the rate of change of velocity) must be positive, not negative. Negative acceleration would make the slope decrease.","The slope is positive throughout, so the velocity is positive, not negative.","Zero velocity would appear as a horizontal line with zero slope, not a curve with growing positive slope."]},{"id":60,"topic":"Constant Acceleration","stem":"An object moves with constant acceleration. Its velocity is 3 m/s at t = 1 s and 9 m/s at t = 3 s. If the object's position is x = 0 at t = 0, what is its position at t = 3 s?","options":["12 m","13.5 m","15 m","27 m"],"correct":1,"expCorrect":"a = (9 − 3)/(3 − 1) = 3 m/s². Then v₀ = 3 − a(1) = 0. With x₀ = 0: x(3) = ½(3)(3²) = 13.5 m.","expWrong":["12 m is the average of the two given velocities (6 m/s) times 2 s, the displacement between t = 1 and t = 3, not the position from t = 0.","15 m is 5 m/s × 3 s with an assumed average velocity; the correct average velocity over 0 to 3 s is 4.5 m/s, giving 13.5 m.","27 m is the velocity at t = 3 s (9 m/s) times 3 s, as if the object moved at its final speed the whole time."]},{"id":72,"topic":"Multi-Concept Problems","stem":"A cart moves along a straight line with constant acceleration. A graph of v² versus position x for the cart is a straight line with a positive slope. Which statement about the cart's motion is correct?","options":["The velocity is constant.","The acceleration is constant and negative.","The acceleration increases as the cart moves.","The acceleration is constant and positive."],"correct":3,"expCorrect":"The kinematic equation v² = v₀² + 2a(x − x₀) is linear in x with slope 2a. A straight v²-versus-x graph with positive slope means 2a > 0, so the acceleration is constant and positive.","expWrong":["Constant velocity would give v² as a horizontal line (zero slope), not a line with positive slope.","A positive slope means 2a is positive, so the acceleration is positive, not negative. A negative acceleration would give a line with negative slope.","The straightness of the line is exactly what constant acceleration produces. If the acceleration were changing, the v²-versus-x graph would curve."]},{"id":61,"topic":"Multi-Concept Problems","stem":"The graph shows the position of a ball rolling along a straight line as a function of time. A straight line is drawn connecting the points at t = 1 s and t = 5 s, and a tangent line is drawn to the curve at t = 5 s. From the graph, the tangent at t = 5 s is steeper than the connecting line. Which statement is correct?","fig":"<svg viewBox='0 0 460 280' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Position-time graph, concave-up curve with a chord between t=1 and t=5 and a steeper tangent at t=5'><rect width='460' height='280' fill='white'/><line x1='50' y1='230' x2='420' y2='230' stroke='#333' stroke-width='1.5'/><line x1='50' y1='230' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><path d='M 50 230 Q 200 215 400 60' fill='none' stroke='#16263e' stroke-width='3'/><line x1='100' y1='222' x2='330' y2='128' stroke='#c0392b' stroke-width='2' stroke-dasharray='6 4'/><line x1='330' y1='128' x2='400' y2='88' stroke='#2e7d32' stroke-width='2.5'/><circle cx='100' cy='222' r='4' fill='#c0392b'/><circle cx='330' cy='128' r='4' fill='#2e7d32'/><text x='355' y='248' font-size='13' fill='#666'>t = 5 s</text><text x='425' y='248' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>x</text></svg>","options":["The ball's acceleration is zero at t = 5 s.","The ball is moving in the negative direction at t = 5 s.","The ball is accelerating in the positive direction.","The ball is accelerating in the negative direction."],"correct":2,"expCorrect":"Both the chord and the tangent have positive slopes, so the velocity is positive. The tangent (the instantaneous velocity at t = 5 s) is steeper than the chord (the average velocity over the interval), which means the velocity at the end of the interval is greater than the average. A velocity that keeps increasing is a positive acceleration.","expWrong":["A zero acceleration would mean constant velocity, which would appear as a straight line. The curve and its steepening slope show the velocity is changing.","Both the chord and the tangent slope upward, so the position is increasing and the velocity is positive.","A negative acceleration would make the velocity decrease, so the tangent at the end of the interval would be flatter than the chord, not steeper."]},{"id":44,"topic":"Constant Acceleration","stem":"An object accelerates uniformly from 4 m/s to 12 m/s over 4 s. What is its acceleration?","options":["2 m/s²","4 m/s²","1 m/s²","8 m/s²"],"correct":0,"expCorrect":"a = Δv/Δt = (12 − 4) m/s / 4 s = 8/4 = 2 m/s².","expWrong":["4 m/s² is the initial speed, not the rate of change of speed.","1 m/s² divides the change in velocity by 8 s instead of 4 s.","8 m/s² uses the total change in velocity (8 m/s) as if it happened in 1 s, rather than spreading it over the full 4 s."]},{"id":40,"topic":"Average Speed, Velocity, and Distance","stem":"A cyclist's position changes from x = +40 m to x = -20 m over a 6 s interval. What is the cyclist's average velocity?","options":["+10 m/s","-10 m/s","+60 m/s","-60 m/s"],"correct":1,"expCorrect":"Average velocity = Δx / Δt = (−20 − 40) m / 6 s = −60 m / 6 s = −10 m/s.","expWrong":["+10 m/s has the right magnitude but the wrong sign. The position decreases (from +40 to -20), so the displacement is negative.","+60 m/s uses the displacement without dividing by the time interval.","-60 m/s is the displacement itself, not divided by the 6 s interval."]},{"id":16,"topic":"Velocity-Time Graphs","stem":"A car's velocity-time graph is a straight line from +10 m/s at t = 0 down to 0 m/s at t = 5 s, then continues as a straight line down to -5 m/s at t = 7 s. What is the car's total displacement from t = 0 to t = 7 s?","options":["+30 m","+25 m","+20 m","+15 m"],"correct":2,"expCorrect":"Count signed areas. First triangle (0 to 5 s): (1/2)(5)(10) = +25 m. Second triangle (5 to 7 s), below the axis: (1/2)(2)(-5) = -5 m. Net displacement: 25 − 5 = 20 m.","expWrong":["+30 m adds the two areas as magnitudes (25 + 5), which gives total distance, not displacement. The second interval moves the car in the negative direction.","+25 m counts only the first triangle and ignores the motion from 5 s to 7 s.","+15 m mis-sizes one of the triangles; the correct combination is +25 m and -5 m for a net of +20 m."]},{"id":66,"topic":"Multi-Concept Problems","stem":"A graph shows the acceleration of an object as a function of time: a horizontal line at +2 m/s² from t = 0 to t = 3 s. The object's initial velocity at t = 0 is 4 m/s. What is the object's velocity at t = 3 s?","fig":"<svg viewBox='0 0 440 240' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Acceleration-time graph, horizontal line at +2 m/s squared from 0 to 3 s'><rect width='440' height='240' fill='white'/><line x1='50' y1='160' x2='410' y2='160' stroke='#333' stroke-width='1.5'/><line x1='50' y1='160' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><line x1='50' y1='80' x2='250' y2='80' stroke='#16263e' stroke-width='3'/><text x='60' y='70' font-size='12' fill='#333'>a = +2 m/s²</text><text x='246' y='180' font-size='12' fill='#666'>3 s</text><text x='415' y='178' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>a</text><text x='40' y='182' font-size='13' fill='#666'>0</text></svg>","options":["6 m/s","14 m/s","4 m/s","10 m/s"],"correct":3,"expCorrect":"The area under an acceleration-time graph is the change in velocity: Δv = (2 m/s²)(3 s) = +6 m/s. So v = 4 + 6 = 10 m/s.","expWrong":["6 m/s is the change in velocity (the area), not the final velocity. Add it to the initial 4 m/s.","14 m/s adds the area three times (18 + 4/... ) or multiplies by 3 twice; the correct change is 6 m/s, giving 10 m/s.","4 m/s is only the initial velocity; it ignores the change in velocity accumulated over the 3 s."]},{"id":58,"topic":"Constant Acceleration","stem":"Cart A moves at a constant 5 m/s along a straight track. Cart B starts from rest at the same point at t = 0 and accelerates at a constant 2.5 m/s². How long does it take cart B to catch up to cart A?","options":["2 s","4 s","5 s","10 s"],"correct":1,"expCorrect":"Set the positions equal: x_A = 5t, x_B = ½(2.5)t² = 1.25t². So 1.25t² = 5t, which gives t = 4 s (and t = 0, the start). At t = 4 s both carts are at 20 m.","expWrong":["At t = 2 s, cart A is at 10 m but cart B is only at ½(2.5)(4) = 5 m. Cart B has not caught up yet.","At t = 5 s, cart A is at 25 m and cart B is at ½(2.5)(25) = 31.25 m. Cart B has already passed cart A, so the catch-up happened earlier.","At t = 10 s, cart B is far ahead (125 m vs 50 m). The catch-up occurs at t = 4 s, when the positions are equal."]},{"id":31,"topic":"Average Speed, Velocity, and Distance","stem":"A car travels 30 m east in 5 s, then 30 m west in the next 5 s. What are the car's average speed and average velocity over the full 10 s?","options":["average speed = 6 m/s and average velocity = 6 m/s","average speed = 0 and average velocity = 6 m/s","average speed = 6 m/s and average velocity = 0","average speed = 3 m/s and average velocity = 3 m/s"],"correct":2,"expCorrect":"Average speed = total distance / total time = (30 + 30) m / 10 s = 6 m/s. Average velocity = displacement / time = 0 m / 10 s = 0, since the car returns to its start point.","expWrong":["The average velocity is 0, not 6 m/s. Displacement, not distance, goes into the average velocity.","This swaps the two results. The car covered 60 m of path, so the average speed is not zero, and its net displacement is zero, so the average velocity is not 6 m/s.","The average speed is 6 m/s, not 3 m/s: total distance is 60 m, not 30 m. The average velocity is 0, not 3 m/s, because the car ends where it started."]},{"id":56,"topic":"Free Fall","stem":"A ball is dropped from rest. Use g = 10 m/s². How far does the ball fall during the third second of its fall (from t = 2 s to t = 3 s)?","options":["25 m","5 m","20 m","45 m"],"correct":0,"expCorrect":"Distance fallen by t = 3 s: ½(10)(9) = 45 m. Distance fallen by t = 2 s: ½(10)(4) = 20 m. During the third second: 45 − 20 = 25 m.","expWrong":["5 m is the distance fallen in the first second, not the third. Each second covers more distance as the ball speeds up.","20 m is the total distance fallen by the end of the second second, not the distance covered during the third second alone.","45 m is the total distance fallen by the end of the third second, not just the portion during that second."]},{"id":30,"topic":"Motion Diagrams and Qualitative Motion","stem":"An object's velocity changes from -6 m/s to -2 m/s over a 4 s interval with constant acceleration. During this interval, the object","options":["slows down and its acceleration is negative.","speeds up and its acceleration is negative.","speeds up and its acceleration is positive.","slows down and its acceleration is positive."],"correct":3,"expCorrect":"The velocity goes from -6 m/s to -2 m/s: its magnitude shrinks from 6 to 2, so the object is slowing down. The acceleration is Δv/Δt = (-2 − (−6))/4 = +4/4 = +1 m/s², which is positive.","expWrong":["Slowing down here means the speed decreases, which is what happens. The sign of the acceleration is positive because the velocity is increasing from -6 to -2.","The acceleration is +1 m/s², not negative. A negative acceleration would make the velocity more negative, i.e., -2 m/s to -6 m/s, which is the reverse of what is given.","The speed (magnitude of velocity) decreases from 6 m/s to 2 m/s, so the object is slowing, not speeding up."]},{"id":50,"topic":"Constant Acceleration","stem":"A rocket sled starts from rest and accelerates at a constant 8 m/s² for 10 s. How far does it travel in that time?","options":["40 m","80 m","400 m","800 m"],"correct":2,"expCorrect":"From rest, Δx = ½at² = ½(8)(10²) = 400 m.","expWrong":["40 m is a×t/2 with t = 10, missing the square on the time.","80 m is a×t, which is the final speed (80 m/s), not the distance traveled.","800 m is at² without the factor of 1/2."]},{"id":53,"topic":"Constant Acceleration","stem":"An object moves with an initial velocity of 10 m/s and accelerates at a constant 2 m/s² for 3 s. What is its displacement during the interval?","options":["39 m","45 m","30 m","66 m"],"correct":0,"expCorrect":"Δx = v₀t + ½at² = (10)(3) + ½(2)(3²) = 30 + 9 = 39 m.","expWrong":["45 m is the final velocity (16 m/s) times 3 s, as if the object moved at its final speed the whole time.","30 m counts only the initial velocity contribution and ignores the extra distance from the acceleration term.","66 m is 30 + 36, which uses at² = 18 instead of ½at² = 9 in the acceleration term (or ½a t³ by mistake)."]},{"id":64,"topic":"Motion Diagrams and Qualitative Motion","stem":"A motion diagram shows the positions of a ball thrown straight upward at equal time intervals, from release until it is caught at the same height. The dots start far apart at the bottom, get closer together near the top, and become far apart again on the way down. This spacing pattern shows that the ball","fig":"<svg viewBox='0 0 140 400' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Vertical motion diagram of a ball thrown upward and caught, dots close together near the top'><rect width='140' height='400' fill='white'/><line x1='70' y1='20' x2='70' y2='380' stroke='#eee' stroke-width='1'/><g fill='#16263e'><circle cx='70' cy='370' r='9'/><circle cx='70' cy='305' r='9'/><circle cx='70' cy='250' r='9'/><circle cx='70' cy='205' r='9'/><circle cx='70' cy='170' r='9'/><circle cx='70' cy='143' r='9'/><circle cx='70' cy='122' r='9'/><circle cx='70' cy='107' r='9'/><circle cx='70' cy='97' r='9'/><circle cx='70' cy='92' r='9'/><circle cx='70' cy='90' r='9'/><circle cx='70' cy='92' r='9'/><circle cx='70' cy='97' r='9'/><circle cx='70' cy='107' r='9'/><circle cx='70' cy='122' r='9'/><circle cx='70' cy='143' r='9'/><circle cx='70' cy='170' r='9'/><circle cx='70' cy='205' r='9'/><circle cx='70' cy='250' r='9'/><circle cx='70' cy='305' r='9'/><circle cx='70' cy='370' r='9'/></g><text x='105' y='95' font-size='12' fill='#666'>top</text><text x='105' y='374' font-size='12' fill='#666'>release/catch</text></svg>","options":["moves with constant velocity the whole flight.","slows while rising and speeds up while falling, with the same acceleration throughout.","slows while rising and slows again while falling.","is at rest only at the top, where its acceleration is also zero."],"correct":1,"expCorrect":"The gaps shrink on the way up (slowing) and grow on the way down (speeding up). The pattern is symmetric, and the equal change in speed per interval on both legs reflects one constant acceleration, g, throughout the flight.","expWrong":["Constant velocity would show equal gaps everywhere. The gaps clearly change, shrinking near the top and growing at the bottom.","The gaps grow on the way down, which means the ball is speeding up, not slowing. Slowing in both directions would show the gaps shrinking on both legs.","The ball's velocity is zero only at the top, true, but its acceleration is g (not zero) there. Gravity acts the entire flight."]},{"id":20,"topic":"Velocity-Time Graphs","stem":"An object's velocity-time graph is a horizontal line at v = -3 m/s from t = 0 to t = 4 s. Which statement is true?","options":["The object's displacement is +12 m.","The object is at rest.","The object's acceleration is -3 m/s².","The object's displacement is -12 m."],"correct":3,"expCorrect":"The signed area under the line is (-3 m/s)(4 s) = -12 m, so the displacement is -12 m. Negative velocity means motion in the negative direction.","expWrong":["+12 m drops the sign of the velocity. The area below the time axis is negative.","An object at rest would have a horizontal line at v = 0, not at v = -3 m/s.","A horizontal line has zero slope, so the acceleration is zero, not -3 m/s². The -3 is the velocity value, not the slope."]},{"id":21,"topic":"Velocity-Time Graphs","stem":"An object's velocity-time graph is a straight line passing through (0 s, -4 m/s) and (4 s, +4 m/s). The velocity is zero at t = 2 s. At that instant, the object's acceleration is","options":["zero, because the velocity is zero","-1 m/s²","+2 m/s²","+4 m/s²"],"correct":2,"expCorrect":"Acceleration is the slope of the velocity graph. The line's slope is (+4 − (−4))/(4 − 0) = 8/4 = +2 m/s², the same at every instant, including the one where v = 0.","expWrong":["Zero velocity does not mean zero acceleration. The object is passing through rest while its velocity keeps changing at +2 m/s².","-1 m/s² does not match the line's slope. The rise is 8 m/s over a run of 4 s.","+4 m/s² confuses the final velocity value with the slope of the line."]},{"id":41,"topic":"Constant Acceleration","stem":"A car starts from rest and accelerates at a constant 2 m/s². What is its speed after 5 s?","options":["2 m/s","10 m/s","5 m/s","25 m/s"],"correct":1,"expCorrect":"Starting from rest, v = v₀ + at = 0 + (2 m/s²)(5 s) = 10 m/s.","expWrong":["2 m/s is just the acceleration value. The speed grows by 2 m/s each second, so after 5 s it is 10 m/s.","5 m/s confuses the time elapsed with the speed. The speed increases by a×t, which is 10 m/s.","25 m/s multiplies acceleration, time, and then time again (a·t²). The correct relation is v = at, without the extra factor of t."]},{"id":52,"topic":"Constant Acceleration","stem":"A car moving at 20 m/s brakes with a constant deceleration of 8 m/s². How far does it travel while coming to a stop?","options":["200 m","40 m","50 m","25 m"],"correct":3,"expCorrect":"v² = v₀² + 2aΔx: 0 = 400 − 16·Δx, so Δx = 400/16 = 25 m. (Or average speed (20+0)/2 = 10 m/s over 2.5 s gives 25 m.)","expWrong":["200 m is v₀²/0.4 or v₀ × t misapplied; the correct relation gives 25 m.","40 m is v₀²/a, missing the factor of 2 in the braking equation.","50 m is the initial speed times the stopping time (20 × 2.5), which assumes full speed throughout the braking."]},{"id":3,"topic":"Position-Time Graphs","stem":"On a position-versus-time graph, the slope of the curve at a particular instant gives the object's","options":["instantaneous velocity at that instant","acceleration at that instant","displacement at that instant","total distance traveled up to that instant"],"correct":0,"expCorrect":"The slope of a position-time graph is the rate of change of position, which is velocity. At a single instant, the slope of the tangent line is the instantaneous velocity.","expWrong":["Acceleration is the rate of change of velocity. On a position-time graph it shows up as how the slope itself changes (the curvature), not the slope directly.","Displacement is the change in position between two instants, read as the vertical difference between two points on the graph, not the slope at one point.","Distance traveled is the total length of the path. It cannot decrease when an object reverses, but the slope of a position-time graph can be negative."]},{"id":57,"topic":"Free Fall","stem":"A ball is thrown straight upward with an initial speed of 25 m/s. Use g = 10 m/s² and take upward as positive. What is the ball's velocity at t = 3 s?","options":["-5 m/s","0 m/s","+5 m/s","-55 m/s"],"correct":0,"expCorrect":"v = v₀ − gt = 25 − 10(3) = −5 m/s. The ball has passed its top (which it reached at t = 2.5 s) and is now falling, so the velocity is negative.","expWrong":["The velocity is zero only at the top, t = 2.5 s. By t = 3 s the ball is already on the way down.","+5 m/s would mean the ball is still rising. But 3 s is past the top (2.5 s), so the velocity must be negative.","-55 m/s subtracts the initial speed from the gravity term (−gt − v₀) instead of subtracting gt from v₀."]},{"id":65,"topic":"Velocity-Time Graphs","stem":"The graph shows the velocity of a car as a function of time over a 6 s interval: a straight line rising from 0 to 4 m/s over the first 2 s, then a straight line falling from 4 m/s to 0 over the next 4 s. Which statement about the car's acceleration is correct?","fig":"<svg viewBox='0 0 440 260' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Velocity-time graph, triangle shape: rises from 0 to 4 m/s in 2 s, then falls back to 0 over 4 s'><rect width='440' height='260' fill='white'/><line x1='50' y1='210' x2='410' y2='210' stroke='#333' stroke-width='1.5'/><line x1='50' y1='210' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><polyline points='50,210 150,80 400,210' fill='none' stroke='#16263e' stroke-width='3'/><text x='158' y='70' font-size='12' fill='#333'>4 m/s</text><text x='146' y='230' font-size='12' fill='#666'>2 s</text><text x='394' y='230' font-size='12' fill='#666'>6 s</text><text x='415' y='228' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>v</text></svg>","options":["The acceleration is +2 m/s² for the whole 6 s.","The acceleration is zero at all times because the car returns to rest.","The acceleration is -1 m/s² for the first 2 s and +2 m/s² for the next 4 s.","The acceleration is +2 m/s² for the first 2 s and -1 m/s² for the next 4 s."],"correct":3,"expCorrect":"Acceleration is the slope of each segment. First segment: (4 − 0)/2 = +2 m/s². Second segment: (0 − 4)/4 = −1 m/s². The car speeds up, then slows at a gentler rate.","expWrong":["The slope clearly changes at t = 2 s: the line turns from rising to falling, so the acceleration changes from +2 to −1 m/s², not +2 throughout.","Returning to zero velocity says nothing about the acceleration during the trip. The sloped segments show nonzero acceleration the whole time (the car ends at rest only because it slowed to a stop).","This swaps the two segments: the rising part has positive slope and the falling part has negative slope."]},{"id":67,"topic":"Average Speed, Velocity, and Distance","stem":"A ball is thrown straight up from a roof and returns to the thrower's hand at the same height from which it was released. The ball's total trip covers a distance of 20 m. What are the ball's displacement and total distance traveled for the whole trip?","options":["displacement = 0 and total distance = 0","displacement = 20 m and total distance = 0","displacement = 0 and total distance = 20 m","displacement = 10 m and total distance = 10 m"],"correct":2,"expCorrect":"The ball ends where it started, so its displacement is zero. But it went up 10 m and down 10 m (or in general, covered the full path), so the total distance is 20 m. Distance counts the whole path; displacement counts only the net change.","expWrong":["The distance is 20 m, not zero: the ball clearly moved, even though it returned to its starting point.","This swaps the two quantities. The net change in position is zero (the ball returns to the hand), while the path length is 20 m.","The displacement is zero, not 10 m, because the ball ends at its starting height. The distance is 20 m, not 10 m, because it includes both the way up and the way down."]},{"id":51,"topic":"Constant Acceleration","stem":"A car moving at 20 m/s brakes with a constant deceleration of 8 m/s². How long does it take to stop?","options":["0.4 s","2.5 s","5 s","160 s"],"correct":1,"expCorrect":"v = v₀ + at: 0 = 20 − 8t, so t = 20/8 = 2.5 s.","expWrong":["0.4 s inverts the ratio: 8/20 instead of 20/8.","5 s would be the time if the deceleration were 4 m/s². With 8 m/s² the car loses speed twice as fast.","160 s multiplies speed and deceleration instead of dividing them."]},{"id":24,"topic":"Motion Diagrams and Qualitative Motion","stem":"A motion diagram of a puck sliding on a horizontal, frictionless surface shows dots at equal time intervals. Each successive dot is farther to the left than the previous one, and the gaps between successive dots increase. The puck","fig":"<svg viewBox='0 0 520 120' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Motion diagram with six dots moving left, gaps increasing'><rect width='520' height='120' fill='white'/><line x1='30' y1='80' x2='490' y2='80' stroke='#bbb' stroke-width='1'/><g fill='#16263e'><circle cx='460' cy='80' r='8'/><circle cx='430' cy='80' r='8'/><circle cx='385' cy='80' r='8'/><circle cx='320' cy='80' r='8'/><circle cx='230' cy='80' r='8'/><circle cx='105' cy='80' r='8'/></g><text x='260' y='108' font-size='13' fill='#666' text-anchor='middle'>equal time intervals (earliest dot at right)</text></svg>","options":["moves right and slows down.","moves left and slows down.","moves left at constant speed.","moves left and speeds up."],"correct":3,"expCorrect":"Each dot is farther left, so the motion is leftward. The gaps grow with time, so more distance is covered in each equal interval: the speed is increasing. Leftward and speeding up.","expWrong":["The dots progress leftward (earliest at the right), so the motion is leftward, not rightward.","Slowing down would show the gaps getting smaller over time, the opposite of what is shown.","Constant speed would show equal gaps between the dots. Here the gaps increase."]},{"id":59,"topic":"Constant Acceleration","stem":"A car speeds up from 10 m/s to 20 m/s while covering a distance of 100 m with constant acceleration. What is its acceleration?","options":["1.5 m/s²","0.5 m/s²","3 m/s²","2 m/s²"],"correct":0,"expCorrect":"v² = v₀² + 2aΔx: 400 = 100 + 2a(100), so 300 = 200a and a = 1.5 m/s².","expWrong":["0.5 m/s² comes from (20 − 10)/20, dividing the change in speed by a time that was never given.","3 m/s² is the change in speed (10 m/s) divided by an assumed 3 s; it does not follow from the given distance and speeds.","2 m/s² is (20 − 10)/5 with an assumed 5 s, or a rounding of the correct 1.5 m/s². The time-independent equation gives exactly 1.5 m/s²."]},{"id":26,"topic":"Free Fall","stem":"A ball is thrown straight upward and rises with negligible air resistance. At the very top of its motion, the ball's velocity and acceleration are","options":["velocity = 0 and acceleration = 0","velocity = 0 and acceleration is downward, with magnitude g","velocity is at its maximum and acceleration = 0","velocity = 0 and acceleration is upward, with magnitude g"],"correct":1,"expCorrect":"At the top, the ball's velocity is momentarily zero (it stops before falling back). But gravity never turns off: the acceleration is always g downward, at the top and everywhere else in the flight.","expWrong":["If the acceleration were zero at the top, the velocity would stop changing there and the ball would float. In reality the velocity keeps changing, which is why the ball starts falling.","The speed is actually at its minimum (zero) at the top, not its maximum. The speed is greatest at the release and catch heights.","Gravity pulls downward the entire time. There is no upward acceleration anywhere in a ball's flight (neglecting air resistance)."]},{"id":17,"topic":"Velocity-Time Graphs","stem":"An object's velocity-time graph is a single straight line that goes from +6 m/s at t = 0 to 0 m/s at t = 3 s and on to -6 m/s at t = 6 s. What is the object's acceleration during the entire 6 s interval?","options":["It changes sign at t = 3 s, when the velocity is zero","Zero at t = 3 s, nonzero at other times","Constant, equal to -2 m/s²","Cannot be determined from the graph"],"correct":2,"expCorrect":"A single straight line has one slope for the whole interval: (-6 − 6)/(6 − 0) = -2 m/s². The acceleration is constant even at the instant the velocity passes through zero.","expWrong":["This is the classic trap: v = 0 at t = 3 s, but acceleration is the slope, and the slope of a straight line does not change. The object keeps accelerating at -2 m/s² through that instant.","The slope (acceleration) is -2 m/s² at every instant, including t = 3 s. What is zero at t = 3 s is the velocity, not the acceleration.","The graph fully determines the acceleration: one straight line means one constant slope."]},{"id":34,"topic":"Average Speed, Velocity, and Distance","stem":"The average velocity of an object over a time interval is defined as","options":["the total distance traveled divided by the time interval","the average speed multiplied by the time interval","the displacement divided by the time interval","the change in speed divided by the time interval"],"correct":2,"expCorrect":"By definition, average velocity = Δx / Δt: the change in position (a vector in one dimension) divided by the elapsed time.","expWrong":["Total distance over time is the definition of average speed, a different (scalar) quantity.","Average speed times time gives total distance, not average velocity. This would also be circular as a definition.","Change in speed over time relates to how quickly the speed changes; it is not the definition of average velocity. Change in velocity over time is acceleration."]},{"id":23,"topic":"Motion Diagrams and Qualitative Motion","stem":"A motion diagram (a stroboscopic dot diagram) of an object moving along a straight line shows dots that are equally spaced, with each dot representing the object's position at equal time intervals. The object","fig":"<svg viewBox='0 0 520 120' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Motion diagram with six equally spaced dots moving to the right'><rect width='520' height='120' fill='white'/><line x1='30' y1='80' x2='490' y2='80' stroke='#bbb' stroke-width='1'/><g fill='#16263e'><circle cx='60' cy='80' r='8'/><circle cx='140' cy='80' r='8'/><circle cx='220' cy='80' r='8'/><circle cx='300' cy='80' r='8'/><circle cx='380' cy='80' r='8'/><circle cx='460' cy='80' r='8'/></g><text x='260' y='108' font-size='13' fill='#666' text-anchor='middle'>equal time intervals</text></svg>","options":["is speeding up.","is at rest.","is slowing down.","is moving with constant velocity."],"correct":3,"expCorrect":"Equal spacing of dots taken at equal time intervals means equal distances covered in equal times: constant speed in a consistent direction, which is constant velocity.","expWrong":["Speeding up would show dots with increasing gaps between them.","An object at rest would appear as a single pile of dots at one location, not a spread of separated dots.","Slowing down would show dots with decreasing gaps between them."]},{"id":49,"topic":"Free Fall","stem":"A rock is dropped from rest from a cliff 45 m high. Use g = 10 m/s². What is its speed just before it hits the ground?","options":["30 m/s","90 m/s","45 m/s","15 m/s"],"correct":0,"expCorrect":"v = gt = 10 m/s² × 3 s = 30 m/s. (Or v² = 2gh = 2·10·45 = 900, so v = 30 m/s.)","expWrong":["90 m/s is v² (900 without the square root) or g × h, a dimensional error.","45 m/s confuses the cliff height with a speed. The speed depends on the fall time and g, giving 30 m/s.","15 m/s is half the correct speed; it would be the average speed during the fall, not the final speed."]},{"id":25,"topic":"Motion Diagrams and Qualitative Motion","stem":"A motion diagram shows a ball moving to the right at equal time intervals. The gaps between successive dots decrease as time passes. The ball's acceleration is directed","fig":"<svg viewBox='0 0 520 120' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Motion diagram with six dots moving right, gaps decreasing'><rect width='520' height='120' fill='white'/><line x1='30' y1='80' x2='490' y2='80' stroke='#bbb' stroke-width='1'/><g fill='#16263e'><circle cx='60' cy='80' r='8'/><circle cx='185' cy='80' r='8'/><circle cx='285' cy='80' r='8'/><circle cx='360' cy='80' r='8'/><circle cx='415' cy='80' r='8'/><circle cx='455' cy='80' r='8'/></g><text x='260' y='108' font-size='13' fill='#666' text-anchor='middle'>equal time intervals (earliest dot at left)</text></svg>","options":["to the right (the same direction as the motion).","to the left (opposite the motion).","upward.","It cannot be determined from the diagram."],"correct":1,"expCorrect":"Decreasing gaps mean the ball covers less distance in each equal time interval: it is slowing down. When an object slows, its acceleration points opposite its motion. Moving right and slowing means the acceleration is to the left.","expWrong":["Acceleration in the direction of the motion would speed the ball up, which would show increasing gaps.","In one-dimensional motion along a horizontal line there is no vertical component of acceleration to detect here; the changing gaps point along the line of motion.","The diagram gives enough information: decreasing gaps with rightward motion uniquely determine a leftward acceleration."]},{"id":6,"topic":"Position-Time Graphs","stem":"A car's position-time graph is a downward-opening parabola over a certain interval: the position first rises to a maximum, then falls. Over the full interval, the car's velocity","options":["decreases, passes through zero, then becomes negative.","is always zero because the car returns to its starting position.","increases steadily the whole time.","is constant and positive."],"correct":0,"expCorrect":"The slope of the position-time graph is the velocity. A downward-opening parabola starts with a positive slope, reaches zero slope at the peak, and then has a negative slope. So the velocity decreases through zero into negative values.","expWrong":["The car is moving the whole time except at the single instant at the peak. Zero velocity at one instant does not mean the velocity is always zero.","An increasing velocity would mean the slope gets steeper and steeper (concave up), the opposite of a downward-opening parabola.","A constant velocity would appear as a straight line, not a parabola."]},{"id":7,"topic":"Position-Time Graphs","stem":"Two objects start from the same position at t = 0. Object A has a position-time graph that is a straight line with slope +2 m/s. Object B has a position-time graph that is a straight line with slope -2 m/s. At t = 3 s, which statement is true?","options":["Object A is farther from the origin than object B.","Object B is farther from the origin than object A.","Both objects are at the same position.","Both objects are the same distance from the origin, but on opposite sides."],"correct":3,"expCorrect":"Object A is at x = +6 m and object B is at x = -6 m after 3 s. The distance from the origin is the magnitude of position, which is 6 m for both. They are equally far away, on opposite sides.","expWrong":["Distance from the origin is |x|. Both objects have |x| = 6 m, so neither is farther.","Same reasoning: both have |x| = 6 m, so neither is farther.","They are at x = +6 m and x = -6 m, which are different positions 12 m apart."]},{"id":43,"topic":"Constant Acceleration","stem":"A car moving at 30 m/s applies its brakes and decelerates at a constant 5 m/s² until it stops. How far does it travel while braking?","options":["30 m","60 m","90 m","150 m"],"correct":2,"expCorrect":"Use v² = v₀² + 2aΔx. With v = 0, v₀ = 30 m/s, a = −5 m/s²: 0 = 900 − 10·Δx, so Δx = 90 m.","expWrong":["30 m is the initial speed value, not a distance computed from the braking equations.","60 m is v₀²/a, missing the factor of 2 in the equation. The full relation gives 900/10 = 90 m.","150 m is v₀ × t with t = 5 s (the stopping time) as if the car moved at full speed the whole time. The car slows continuously, so the distance is less than that, exactly 90 m."]},{"id":63,"topic":"Multi-Concept Problems","stem":"The graph shows the positions of two objects, A and B, as functions of time. Object A's position follows the curved line and object B's follows the straight line. The two lines cross at t = 3 s. At t = 3 s, which statement is true?","fig":"<svg viewBox='0 0 440 270' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Two position-time graphs, a concave-up curve A and a straight line B, crossing at t=3 s'><rect width='440' height='270' fill='white'/><line x1='50' y1='220' x2='410' y2='220' stroke='#333' stroke-width='1.5'/><line x1='50' y1='220' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><path d='M 50 220 Q 200 190 380 40' fill='none' stroke='#16263e' stroke-width='3'/><line x1='50' y1='220' x2='380' y2='110' stroke='#c0392b' stroke-width='2.5'/><circle cx='245' cy='150' r='5' fill='#000'/><text x='250' y='175' font-size='12' fill='#333'>crossing at t = 3 s</text><text x='330' y='60' font-size='14' fill='#16263e' font-weight='bold'>A</text><text x='330' y='100' font-size='14' fill='#c0392b' font-weight='bold'>B</text><text x='415' y='238' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>x</text></svg>","options":["The objects have the same velocity.","The objects are at the same position.","The objects have the same acceleration.","The objects have the same average velocity over 0 to 3 s."],"correct":1,"expCorrect":"Where two position-time graphs cross, the objects share the same position at that instant. That is all a crossing guarantees.","expWrong":["Equal velocities would require equal slopes at t = 3 s. The curve and the line have different slopes at the crossing, so the velocities differ.","The accelerations are different kinds of things here: the curve (changing slope) implies a nonzero acceleration, while the straight line implies zero acceleration.","Both objects start at the same point (x = 0 at t = 0) and end at the same point (the crossing at t = 3 s), so they do in fact have the same average velocity over 0 to 3 s. However, the question asks what is true at t = 3 s, and the defining feature of the crossing at that instant is the shared position."]},{"id":10,"topic":"Position-Time Graphs","stem":"An object's position-time graph is a straight line with a negative slope. What is the object's acceleration?","options":["Zero","Positive","Cannot be determined from the graph","Negative"],"correct":0,"expCorrect":"A straight line means constant slope, which means constant velocity. A velocity that does not change has zero acceleration. The negative sign only tells you the direction of motion.","expWrong":["Positive acceleration would mean the velocity is increasing. A straight line's slope never changes, so the velocity is constant.","The graph gives complete information about the motion: constant slope means constant velocity, which fully determines that the acceleration is zero.","This is the most common trap: a negative slope means negative velocity, not negative acceleration. Acceleration is about how the velocity changes, and here it does not change."]},{"id":48,"topic":"Free Fall","stem":"A rock is dropped from rest from a cliff 45 m high. Use g = 10 m/s². How long does it take to hit the ground?","options":["2 s","3 s","4 s","9 s"],"correct":1,"expCorrect":"From rest, h = ½gt²: 45 = ½(10)t² = 5t², so t² = 9 and t = 3 s.","expWrong":["2 s would cover only ½(10)(4) = 20 m, less than the cliff height.","4 s would cover ½(10)(16) = 80 m, past the bottom of the cliff.","9 s confuses the squared result with the time: t² = 9, so t = 3 s."]},{"id":22,"topic":"Velocity-Time Graphs","stem":"The area between a velocity-time curve and the time axis from t = 0 to t = 2 s is 8 m² and lies above the axis. The area from t = 2 s to t = 4 s is 3 m² and lies below the axis. What is the object's total displacement from t = 0 to t = 4 s?","options":["-3 m","+11 m","+5 m","+8 m"],"correct":2,"expCorrect":"Signed areas: +8 m above the axis and -3 m below it. Net displacement = 8 − 3 = +5 m.","expWrong":["-3 m keeps only the second interval and drops the first.","+11 m adds the areas as magnitudes, which gives total distance traveled, not displacement.","+8 m counts only the first interval and ignores the second."]},{"id":28,"topic":"Motion Diagrams and Qualitative Motion","stem":"An object moves in the positive direction while slowing down at a constant rate. The signs of its velocity and acceleration are","options":["v < 0 and a > 0","v > 0 and a > 0","v < 0 and a < 0","v > 0 and a < 0"],"correct":3,"expCorrect":"Moving in the positive direction means positive velocity. Slowing down means the acceleration opposes the motion, so it points in the negative direction: a < 0.","expWrong":["Same problem: the velocity must be positive for motion in the positive direction.","If both velocity and acceleration were positive, the object would speed up in the positive direction, not slow down.","A negative velocity would mean motion in the negative direction, which contradicts the stated motion in the positive direction."]},{"id":54,"topic":"Constant Acceleration","stem":"A cart starts from rest and accelerates at 3 m/s² for 4 s. It then coasts at constant velocity for another 4 s. What is its total displacement over the full 8 s?","options":["24 m","72 m","96 m","48 m"],"correct":1,"expCorrect":"Phase 1: Δx₁ = ½(3)(4²) = 24 m, and the velocity at the end is v = 3 × 4 = 12 m/s. Phase 2: Δx₂ = 12 m/s × 4 s = 48 m. Total: 24 + 48 = 72 m.","expWrong":["24 m is only the first phase; it ignores the 4 s of coasting.","96 m is 12 m/s × 8 s, which assumes the cart moved at its maximum speed for the entire interval.","48 m is only the second phase; it ignores the first 4 s of acceleration."]},{"id":11,"topic":"Velocity-Time Graphs","stem":"On a velocity-versus-time graph, the slope of the curve gives the object's","options":["displacement","position","acceleration","distance traveled"],"correct":2,"expCorrect":"Acceleration is the rate of change of velocity. On a velocity-time graph, the slope (change in velocity divided by change in time) is exactly that rate.","expWrong":["Displacement on a velocity-time graph is found from the area under the curve, not the slope.","Position is not directly readable from a velocity-time graph without knowing the starting position; the slope gives the rate of change of velocity.","Distance traveled is the total path length. On a velocity-time graph it corresponds to the total area counted with magnitude, not the slope."]},{"id":1,"topic":"Position-Time Graphs","stem":"The graph shows the position of an object moving along a straight line as a function of time. During the entire interval shown, the object","fig":"<svg viewBox='0 0 420 260' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Position-time graph, straight line with positive slope'><rect width='420' height='260' fill='white'/><line x1='50' y1='210' x2='390' y2='210' stroke='#333' stroke-width='1.5'/><line x1='50' y1='210' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><polygon points='390,210 382,206 382,214' fill='#333'/><polygon points='50,20 46,28 54,28' fill='#333'/><line x1='50' y1='210' x2='370' y2='45' stroke='#16263e' stroke-width='3'/><text x='395' y='228' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>x</text><text x='40' y='232' font-size='13' fill='#666'>0</text></svg>","options":["moves with constant velocity.","moves with constant nonzero acceleration.","is at rest.","slows down at a constant rate."],"correct":0,"expCorrect":"The slope of a position-time graph is velocity. A straight line has one unchanging slope, so the velocity is constant. Constant velocity means zero acceleration.","expWrong":["Constant acceleration would make the position-time graph a curve (a parabola), not a straight line.","An object at rest would have a horizontal line (zero slope), since its position never changes.","Slowing down would show a line whose slope decreases in magnitude, curving toward horizontal rather than staying straight."]},{"id":70,"topic":"Multi-Concept Problems","stem":"An elevator starts from rest on the ground floor. It accelerates upward at 2 m/s² for 3 s, then continues at constant velocity for 5 s. How high above the ground floor is the elevator at the end of the 8 s?","options":["9 m","48 m","30 m","39 m"],"correct":3,"expCorrect":"Acceleration phase: Δx₁ = ½(2)(3²) = 9 m, and the velocity reached is v = 2 × 3 = 6 m/s. Constant-velocity phase: Δx₂ = 6 m/s × 5 s = 30 m. Total height: 9 + 30 = 39 m.","expWrong":["9 m is only the distance during the acceleration phase; it ignores the 5 s of constant-velocity travel.","48 m is 6 m/s × 8 s, which assumes the elevator moved at its final speed for the entire trip.","30 m is only the constant-velocity phase; it ignores the first 3 s."]},{"id":38,"topic":"Average Speed, Velocity, and Distance","stem":"An object moves in a straight line with constant velocity (which may be positive or negative). Which graph correctly shows the object's total distance traveled as a function of time?","options":["A straight line with a negative slope.","A horizontal line.","A straight line through the origin with a constant positive slope.","A parabola opening upward."],"correct":2,"expCorrect":"With constant velocity, the object covers a fixed distance in each equal time interval, so total distance grows linearly with time. Distance traveled never decreases and starts at zero, giving a straight line through the origin with positive slope.","expWrong":["A negative slope would mean the distance traveled decreases with time, which is impossible: distance traveled only accumulates.","A horizontal line would mean no distance is covered at all, which contradicts a nonzero constant velocity.","A parabola would mean the speed is changing (constant acceleration). Here the velocity is constant, so the distance-time graph is a straight line."]},{"id":71,"topic":"Multi-Concept Problems","stem":"An object moves in one dimension with constant acceleration. Its instantaneous velocity at t = 2 s is 4 m/s, and its average velocity over the interval from t = 0 to t = 4 s is also 4 m/s. What can be determined from this information alone?","options":["The acceleration is +2 m/s².","The acceleration is zero.","The acceleration is +4 m/s².","The value of the acceleration cannot be determined from the given information."],"correct":3,"expCorrect":"For any object with constant acceleration, the instantaneous velocity at the midpoint of a time interval always equals the average velocity over that interval, regardless of the acceleration's value. The given numbers are automatically satisfied for every constant acceleration, so a is not determined.","expWrong":["The equality holds for +2 m/s², but it also holds for +5 m/s², 0, or −3 m/s². The information does not single out one value.","Zero acceleration is one case that works, but so does any other constant acceleration. The given information is not specific enough to conclude a = 0.","Again, the equality is a general property of constant acceleration, not a fingerprint of a particular value like +4 m/s²."]},{"id":62,"topic":"Velocity-Time Graphs","stem":"The graph shows the velocity of an object as a function of time. The shaded region under the curve from t = 0 to t = 5 s consists of a triangle from 0 to 2 s, a trapezoid from 2 s to 4 s, and a triangle from 4 s to 5 s. What is the object's displacement over the 5 s?","fig":"<svg viewBox='0 0 440 270' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Velocity-time graph with shaded area under the curve from 0 to 5 s: rises to 4 m/s, falls to 2, then to 0'><rect width='440' height='270' fill='white'/><line x1='50' y1='210' x2='410' y2='210' stroke='#333' stroke-width='1.5'/><line x1='50' y1='210' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><polygon points='50,210 150,80 150,210' fill='#cfe0f3'/><polygon points='150,80 310,130 310,210 150,210' fill='#cfe0f3'/><polygon points='310,130 400,210 310,210' fill='#cfe0f3'/><polyline points='50,210 150,80 310,130 400,210' fill='none' stroke='#16263e' stroke-width='3'/><text x='120' y='60' font-size='12' fill='#333'>4 m/s</text><text x='318' y='128' font-size='12' fill='#333'>2 m/s</text><text x='146' y='230' font-size='12' fill='#666'>2 s</text><text x='306' y='230' font-size='12' fill='#666'>4 s</text><text x='394' y='230' font-size='12' fill='#666'>5 s</text><text x='415' y='228' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>v</text></svg>","options":["+6 m","+11 m","+8 m","+14 m"],"correct":1,"expCorrect":"Add the three areas: triangle (0 to 2 s) = ½(2)(4) = 4 m. Trapezoid (2 to 4 s) = ½(4 + 2)(2) = 6 m. Triangle (4 to 5 s) = ½(1)(2) = 1 m. Total: 4 + 6 + 1 = 11 m.","expWrong":["+6 m is only the middle trapezoid, ignoring the two triangular pieces.","+8 m is the first triangle plus the last triangle (4 + 1 doubled) or a mis-summed area; the correct total includes all three pieces: 11 m.","+14 m overcounts, for example by treating the trapezoid as a rectangle of height 4 m over 2 s (8 m) instead of its true area of 6 m."]},{"id":27,"topic":"Free Fall","stem":"A ball is thrown straight upward and is caught at the same height from which it was released. Air resistance is negligible. Compared to the time the ball spends going up, the time it spends coming down is","options":["exactly the same.","shorter, because gravity speeds the fall.","longer, because the ball has more distance to cover falling.","It depends on how hard the ball was thrown."],"correct":0,"expCorrect":"With no air resistance, the motion is symmetric: the ball leaves with speed v, and when it returns to the same height it has speed v again. The upward and downward legs each take t = v/g, so the times are equal.","expWrong":["Gravity speeds the fall, true, but it also slowed the ball on the way up with the same magnitude of acceleration. The effects exactly balance over the same height.","The distance up and the distance down are the same height, not more. Same distance with the same magnitude of acceleration gives the same time.","For any launch speed v, each leg takes v/g. The ratio is always 1, independent of how hard it was thrown."]},{"id":35,"topic":"Average Speed, Velocity, and Distance","stem":"A hiker walks 4 km north in 1 h, then walks 3 km south in the next 1 h. What is the hiker's average velocity over the 2 h?","options":["0","0.5 km/h north","1.5 km/h north","3.5 km/h north"],"correct":1,"expCorrect":"Displacement = +4 km − 3 km = +1 km north. Average velocity = 1 km / 2 h = 0.5 km/h north.","expWrong":["The hiker does not return to the start; she ends 1 km north of it, so the displacement is not zero.","1.5 km/h is the average speed: total distance 7 km over 2 h. Average velocity uses the net displacement of 1 km.","3.5 km/h is also the average speed, computed as 7 km / 2 h. It is not the average velocity."]},{"id":45,"topic":"Constant Acceleration","stem":"An object accelerates uniformly from 4 m/s to 12 m/s over 4 s. What is its displacement during the interval?","options":["32 m","48 m","12 m","16 m"],"correct":0,"expCorrect":"With constant acceleration, average velocity = (v₀ + v)/2 = (4 + 12)/2 = 8 m/s. Displacement = 8 m/s × 4 s = 32 m.","expWrong":["48 m is the final velocity times the time (12 × 4), which assumes the object moved at 12 m/s the entire interval.","12 m is the final speed value, not a displacement computed over the 4 s interval.","16 m is the initial velocity times the time (4 × 4), which ignores the speed gained during the interval."]},{"id":42,"topic":"Constant Acceleration","stem":"A car starts from rest and accelerates at a constant 2 m/s² for 5 s. How far does it travel in that time?","options":["10 m","20 m","25 m","50 m"],"correct":2,"expCorrect":"From rest with constant acceleration, Δx = v₀t + ½at² = 0 + ½(2)(5²) = 25 m. Equivalently, the average velocity is (0 + 10)/2 = 5 m/s, and 5 m/s × 5 s = 25 m.","expWrong":["10 m is the final speed, not the distance. The car spends the whole interval below its final speed, so the distance is not 10 m either.","20 m is twice the average of the initial and final speeds times time, or a×t, misapplied. The correct computation gives 25 m.","50 m is a×t², missing the factor of 1/2. Displacement from rest is ½at², not at²."]},{"id":46,"topic":"Free Fall","stem":"A ball is thrown straight upward with an initial speed of 20 m/s. Use g = 10 m/s². How long does it take to reach the top of its motion?","options":["4 s","1 s","20 s","2 s"],"correct":3,"expCorrect":"At the top, v = 0. With v = v₀ − gt: 0 = 20 − 10t, so t = 2 s.","expWrong":["4 s is the total flight time back to the launch height (up and down combined), not just the time to the top.","1 s would leave the ball still rising at 10 m/s; it is not at the top yet.","20 s confuses the initial speed with a time. Gravity removes 10 m/s of speed each second, so 20 m/s takes 2 s to disappear."]},{"id":13,"topic":"Velocity-Time Graphs","stem":"A cart's velocity-time graph is a horizontal line at v = +4 m/s. What is the cart's displacement during a 5 s interval on this line?","options":["+20 m","+0.8 m","0 m","+4 m"],"correct":0,"expCorrect":"Constant velocity means displacement = velocity × time = 4 m/s × 5 s = 20 m. Graphically, this is the area of a 5 s by 4 m/s rectangle.","expWrong":["+0.8 m confuses division with multiplication: 4 × 5, not 4 ÷ 5.","Zero displacement would happen only if the velocity were zero or if the positive and negative areas exactly canceled. Here the velocity is +4 m/s the whole time.","+4 m would be the displacement in 1 s, not 5 s."]},{"id":73,"topic":"Multi-Concept Problems","stem":"Stone A is dropped from rest from a ledge. At the same instant, stone B is thrown straight downward from the same ledge with an initial speed of 5 m/s. Air resistance is negligible. Which statement correctly compares the stones' speeds during the fall?","options":["Stone B is faster only until both reach the ground at the same time.","Stone A is faster during the first second, then stone B is faster.","Stone B is always faster than stone A.","The stones have the same speed at every instant of the fall."],"correct":2,"expCorrect":"At every instant, both stones gain the same amount of speed (g per second). Stone B starts 5 m/s faster, and that lead never changes, so B is faster than A at every instant of the fall.","expWrong":["The stones do not generally reach the ground at the same time: B, being faster throughout, reaches the bottom first.","Stone A is never faster: B's head start in speed is preserved because both accelerate identically.","The stones have the same acceleration, not the same speed. B's initial 5 m/s lead remains throughout."]},{"id":2,"topic":"Position-Time Graphs","stem":"A ball is dropped from rest from a balcony and falls with negligible air resistance. The ball's position is measured relative to the release point, with the downward direction taken as positive. Which graph best represents the ball's position as a function of time?","fig":"<svg viewBox='0 0 560 300' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Four position-time graphs labeled A through D'><rect width='560' height='300' fill='white'/><g transform='translate(10,10)'><line x1='20' y1='120' x2='250' y2='120' stroke='#333' stroke-width='1.2'/><line x1='20' y1='120' x2='20' y2='10' stroke='#333' stroke-width='1.2'/><line x1='20' y1='120' x2='240' y2='20' stroke='#16263e' stroke-width='2.5'/><text x='115' y='145' font-size='14' font-weight='bold' fill='#333' text-anchor='middle'>A</text></g><g transform='translate(290,10)'><line x1='20' y1='120' x2='250' y2='120' stroke='#333' stroke-width='1.2'/><line x1='20' y1='120' x2='20' y2='10' stroke='#333' stroke-width='1.2'/><path d='M 20 120 Q 130 115 240 20' fill='none' stroke='#16263e' stroke-width='2.5'/><text x='115' y='145' font-size='14' font-weight='bold' fill='#333' text-anchor='middle'>B</text></g><g transform='translate(10,160)'><line x1='20' y1='120' x2='250' y2='120' stroke='#333' stroke-width='1.2'/><line x1='20' y1='120' x2='20' y2='10' stroke='#333' stroke-width='1.2'/><path d='M 20 120 Q 90 30 240 15' fill='none' stroke='#16263e' stroke-width='2.5'/><text x='115' y='145' font-size='14' font-weight='bold' fill='#333' text-anchor='middle'>C</text></g><g transform='translate(290,160)'><line x1='20' y1='120' x2='250' y2='120' stroke='#333' stroke-width='1.2'/><line x1='20' y1='120' x2='20' y2='10' stroke='#333' stroke-width='1.2'/><line x1='20' y1='20' x2='240' y2='115' stroke='#16263e' stroke-width='2.5'/><text x='115' y='145' font-size='14' font-weight='bold' fill='#333' text-anchor='middle'>D</text></g></svg>","options":["A","B","C","D"],"correct":1,"expCorrect":"A dropped object falls with constant acceleration, so its position follows x = (1/2)gt², a curve that starts flat and gets steeper in the positive direction. Graph B shows a concave-up curve with increasing positive slope.","expWrong":["Graph A is a straight line, which represents constant velocity. A dropped ball speeds up, so its slope must increase.","Graph C starts steep and flattens out, which would mean the ball begins fast and slows down. The opposite is true: it starts from rest and speeds up.","Graph D has a negative slope, which would place the ball in the negative direction. Downward (the direction of motion) is defined as positive here."]},{"id":39,"topic":"Average Speed, Velocity, and Distance","stem":"A car covers 240 km in 3 hours. What is its average speed?","options":["72 km/h","60 km/h","720 km/h","80 km/h"],"correct":3,"expCorrect":"Average speed = total distance / total time = 240 km / 3 h = 80 km/h.","expWrong":["72 km/h is 240/3.33 or 216/3; it does not come from 240 km over 3 h.","60 km/h would be the average for 180 km over 3 h, not 240 km.","720 km/h multiplies instead of dividing: 240 × 3, not 240 / 3."]},{"id":33,"topic":"Average Speed, Velocity, and Distance","stem":"A runner runs 100 m north in 12 s, then jogs 40 m south in 8 s. What is the runner's average velocity over the entire trip?","options":["+5 m/s (north)","+7 m/s (north)","+3 m/s (north)","0 m/s"],"correct":2,"expCorrect":"Take north as positive. Displacement = +100 m − 40 m = +60 m. Total time = 12 + 8 = 20 s. Average velocity = 60 m / 20 s = +3 m/s.","expWrong":["+5 m/s comes from dividing the 100 m by 20 s and ignoring the 40 m jog south. Displacement, not just the first leg, counts.","+7 m/s is the average speed: total distance 140 m divided by 20 s. Average velocity uses displacement, not distance.","The runner does not return to the start; she is still 60 m north of it, so the displacement (and average velocity) is not zero."]},{"id":75,"topic":"Multi-Concept Problems","stem":"An object starts from the origin with an initial velocity of +4 m/s and accelerates at a constant +3 m/s². What is the object's position at t = 3 s?","options":["+12 m","+25.5 m","+13.5 m","+39 m"],"correct":1,"expCorrect":"x = v₀t + ½at² = (4)(3) + ½(3)(3²) = 12 + 13.5 = 25.5 m.","expWrong":["+12 m is only the initial-velocity contribution (v₀t); it ignores the displacement from the acceleration term.","+13.5 m is only the acceleration contribution (½at²); it ignores the initial-velocity contribution.","+39 m is 13 × 3, the final velocity (4 + 3·3 = 13 m/s) times 3 s, which would be the displacement only if the object moved at its final speed the whole time."]},{"id":69,"topic":"Multi-Concept Problems","stem":"Which set of three graphs (position, velocity, and acceleration, all versus time) is consistent with a single object's motion?","options":["Position is a concave-up curve; velocity is a horizontal line; acceleration is a horizontal line above zero.","Position is a concave-down curve; velocity is a straight line with positive slope; acceleration is a horizontal line above zero.","Position is a straight line with positive slope; velocity is a straight line with positive slope; acceleration is a horizontal line above zero.","Position is a concave-up curve; velocity is a straight line with positive slope; acceleration is a horizontal line above zero."],"correct":3,"expCorrect":"A concave-up position graph has a slope that steadily increases: velocity is a straight line with positive slope, and a straight velocity line means constant acceleration, a horizontal line above zero. All three descriptions agree.","expWrong":["A horizontal velocity line means zero acceleration, contradicting the horizontal acceleration line above zero. A concave-up position graph also requires increasing velocity, not constant velocity.","A concave-down position graph means the slope (velocity) is decreasing, so the velocity line would slope downward and the acceleration would be below zero, contradicting the other two graphs.","A straight position line means constant velocity, which contradicts the sloped velocity line and the nonzero acceleration line."]},{"id":68,"topic":"Multi-Concept Problems","stem":"The graph shows the velocity-time graphs of two objects over a 4 s interval. Object A moves at a constant 3 m/s. Object B accelerates uniformly from 0 to 6 m/s. Which statement is correct?","fig":"<svg viewBox='0 0 440 270' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Two velocity-time graphs over 4 s: a horizontal line at 3 m/s for object A and a line from 0 to 6 m/s for object B'><rect width='440' height='270' fill='white'/><line x1='50' y1='220' x2='410' y2='220' stroke='#333' stroke-width='1.5'/><line x1='50' y1='220' x2='50' y2='20' stroke='#333' stroke-width='1.5'/><line x1='50' y1='140' x2='370' y2='140' stroke='#16263e' stroke-width='3'/><line x1='50' y1='220' x2='370' y2='60' stroke='#c0392b' stroke-width='2.5'/><text x='280' y='132' font-size='14' fill='#16263e' font-weight='bold'>A</text><text x='300' y='120' font-size='14' fill='#c0392b' font-weight='bold'>B</text><text x='60' y='132' font-size='12' fill='#333'>3 m/s</text><text x='60' y='55' font-size='12' fill='#333'>6 m/s</text><text x='364' y='240' font-size='12' fill='#666'>4 s</text><text x='415' y='238' font-size='14' fill='#333'>t</text><text x='28' y='30' font-size='14' fill='#333'>v</text></svg>","options":["They have the same displacement but different accelerations.","A has a larger displacement than B.","They have the same displacement and the same acceleration.","B has a larger displacement than A."],"correct":0,"expCorrect":"Both areas are 12 m: A's rectangle is 3 m/s × 4 s, B's triangle is ½(4)(6). Same displacement. But A's acceleration is 0 (flat line) while B's is 6/4 = +1.5 m/s² (sloped line), so the accelerations differ.","expWrong":["The two areas are equal (12 m each), so the displacements are equal, not larger for A.","The accelerations are not the same: A's velocity never changes (a = 0), while B's velocity increases steadily (a = +1.5 m/s²).","Again, the areas are equal: 12 m for both objects."]},{"id":74,"topic":"Multi-Concept Problems","stem":"An object's position-time graph has a constant positive slope from t = 0 to t = 3 s. At t = 3 s the slope changes abruptly to zero and remains zero afterward. Which description matches the object's motion?","options":["Moves at constant velocity, then stops.","Slows down, then reverses direction.","Moves at constant velocity, then accelerates.","Accelerates, then stops."],"correct":0,"expCorrect":"A constant positive slope is constant positive velocity. A slope of zero is zero velocity. So the object moves steadily, then stops and stays stopped. There is no gradual slowing or reversal in the graph.","expWrong":["Reversing direction would require the slope to become negative after t = 3 s. The slope goes to zero, not negative.","After t = 3 s the slope is zero (stopped), not changing. Acceleration after t = 3 s would show as a changing slope.","Accelerating would appear as a changing slope (a curve) before the stop. The first segment is a straight line, so the velocity is constant there."]},{"id":5,"topic":"Position-Time Graphs","stem":"An object's position-time graph is a horizontal line from t = 1 s to t = 4 s. During this interval, the object's velocity and acceleration are","options":["velocity < 0 and acceleration < 0","velocity = 0 and acceleration = 0","velocity = 0 and acceleration > 0","velocity > 0 (constant) and acceleration = 0"],"correct":1,"expCorrect":"A horizontal line has zero slope, so the velocity is zero. If the velocity is zero at every instant of the interval, it is not changing, so the acceleration is also zero.","expWrong":["A negative velocity would appear as a line sloping downward. A horizontal line has zero slope in either direction.","Acceleration is the rate of change of velocity. A zero velocity that stays zero does not change, so the acceleration cannot be positive.","A positive constant velocity would appear as a straight line with positive slope. A horizontal line means the position never changes."]},{"id":55,"topic":"Constant Acceleration","stem":"Which kinematic equation relates an object's final velocity, initial velocity, acceleration, and displacement without involving time?","options":["v = v₀ + at","Δx = ½(v₀ + v)t","v² = v₀² + 2aΔx","Δx = v₀t + ½at²"],"correct":2,"expCorrect":"v² = v₀² + 2aΔx contains exactly those four quantities (v, v₀, a, Δx) and no time. It is derived by eliminating t from the other equations.","expWrong":["v = v₀ + at involves time and does not contain displacement.","Δx = ½(v₀ + v)t involves time, which this question asks to avoid.","Δx = v₀t + ½at² involves time, so it does not fit."]},{"id":12,"topic":"Velocity-Time Graphs","stem":"On a velocity-versus-time graph, the area between the curve and the time axis from t = t₁ to t = t₂ gives the object's","options":["total distance traveled over the interval","average speed over the interval","change in acceleration over the interval","displacement over the interval"],"correct":3,"expCorrect":"The area under a velocity-time curve equals velocity times time (for a rectangle) and sums to the net change in position in general. Areas above the axis count positive, areas below count negative, giving the signed displacement.","expWrong":["Total distance adds the areas with their absolute values (no sign). The signed area gives displacement, which is different whenever the object reverses direction.","Average speed is total distance divided by time. It is not the area under the velocity curve.","Change in acceleration would come from the slope of the velocity graph (how the slope changes), not from the area."]},{"id":14,"topic":"Velocity-Time Graphs","stem":"An object's velocity-time graph rises in a straight line from 0 m/s at t = 0 to +6 m/s at t = 3 s, then stays horizontal at +6 m/s until t = 5 s. What is the object's total displacement from t = 0 to t = 5 s?","options":["+21 m","+18 m","+30 m","+9 m"],"correct":0,"expCorrect":"The area is a triangle (0 to 3 s) plus a rectangle (3 to 5 s). Triangle: (1/2)(3 s)(6 m/s) = 9 m. Rectangle: (2 s)(6 m/s) = 12 m. Total: 9 + 12 = 21 m.","expWrong":["+18 m is 3 s × 6 m/s, which treats the whole interval as if the object moved at 6 m/s the entire time, ignoring the ramp-up phase.","+30 m is 5 s × 6 m/s, the same error: using the final velocity for the whole interval instead of finding the true area under the curve.","+9 m is only the triangular part of the area; it ignores the 2 s of motion at +6 m/s."]},{"id":18,"topic":"Velocity-Time Graphs","stem":"An object's velocity is positive but decreasing over a 4 s interval. During this interval, the object","options":["moves in the negative direction and slows down.","moves in the negative direction and speeds up.","is at rest.","moves in the positive direction and slows down."],"correct":3,"expCorrect":"The sign of velocity sets the direction of motion: positive velocity means motion in the positive direction. A decreasing magnitude of velocity means the object is slowing down.","expWrong":["Again, motion in the negative direction requires negative velocity. Positive and decreasing means forward and slowing.","Negative velocity would be required for motion in the negative direction. The velocity here is positive throughout.","An object at rest has zero velocity. A positive, nonzero velocity means the object is moving."]},{"id":29,"topic":"Free Fall","stem":"Stone A is dropped from rest from the top of a tower. At the same instant, stone B is thrown straight downward from the same point with an initial speed of 5 m/s. Neglect air resistance. Which stone has the greater acceleration during the fall?","options":["Stone B, because it was thrown","Both stones have the same acceleration, g","Stone B has a greater acceleration only until it reaches 5 m/s","Stone A, because it was dropped"],"correct":1,"expCorrect":"Once released, both stones are in free fall. Gravity gives both the same constant acceleration g downward, regardless of their initial velocities. Stone B simply starts with a head start in speed.","expWrong":["The throw gives stone B a larger initial velocity, not a larger acceleration. Both accelerate at g the entire time.","There is no such speed threshold: both stones accelerate at g at every instant of the fall.","How an object is launched does not change the gravitational acceleration it experiences after release."]},{"id":32,"topic":"Average Speed, Velocity, and Distance","stem":"An object's displacement over a 10 s interval is zero. Which statement must be true?","options":["The object was at rest the entire interval.","The object's average speed over the interval is zero.","The object's average velocity over the interval is zero.","The object's total distance traveled over the interval is also zero."],"correct":2,"expCorrect":"Average velocity = displacement / time interval. If the displacement is zero, the average velocity is zero, no matter what path the object took in between.","expWrong":["The object could have moved for part of the interval and reversed. All that is required is that it ends at its starting position.","Average speed = total distance / time. The object could have traveled far and returned, giving a positive average speed with zero displacement.","The object could have gone out and come back, covering a large total distance while ending where it started. Zero displacement does not force zero distance."]},{"id":36,"topic":"Average Speed, Velocity, and Distance","stem":"A car's velocity changes uniformly from +60 km/h to -60 km/h over a 2 s interval. What is the car's average velocity over the interval?","options":["+60 km/h","-60 km/h","0","+30 km/h"],"correct":2,"expCorrect":"When acceleration is constant, the average velocity over an interval equals (v₀ + v)/2 = (60 + (−60))/2 = 0. The car moves forward, stops, and moves back, covering equal ground in each direction.","expWrong":["+60 km/h would be the average only if the car stayed at +60 km/h the whole time. Its velocity changes uniformly to -60 km/h.","-60 km/h would be the average only if the car stayed at -60 km/h the whole time.","+30 km/h is (60 − 30), a misapplication of the average formula. The correct formula (v₀ + v)/2 gives 0 for these values."]},{"id":4,"topic":"Position-Time Graphs","stem":"A car's position-time graph is a straight line with a steep positive slope from t = 0 to t = 2 s, then a straight line with a shallower positive slope from t = 2 s to t = 6 s. What is true about the car's motion at t = 2 s?","options":["The car reversed direction.","The car's velocity decreased, but it kept moving in the same direction.","The car's acceleration became negative.","The car came to a complete stop."],"correct":1,"expCorrect":"Velocity is the slope of the position-time graph. Both segments have positive slopes, so the car never reverses. The slope simply becomes smaller in magnitude at t = 2 s, meaning the velocity decreased while staying positive.","expWrong":["Reversing direction would require the slope to change sign (positive to negative). Both slopes here are positive.","A sudden change in velocity does imply a momentary acceleration spike, but the velocity itself stayed positive. The defining feature of the graph is the reduced positive slope, not a negative acceleration as the best description of the motion.","Stopping would appear as a horizontal line (zero slope). The second segment still has a positive slope, so the car is still moving forward."]},{"id":15,"topic":"Velocity-Time Graphs","stem":"An object's velocity-time graph is a straight line from (0 s, 0 m/s) to (4 s, +8 m/s). What is the object's acceleration?","options":["+2 m/s²","+32 m/s²","+8 m/s²","+0.5 m/s²"],"correct":0,"expCorrect":"Acceleration is the slope of the velocity-time graph: Δv/Δt = (8 m/s − 0)/(4 s − 0) = 2 m/s².","expWrong":["+32 m/s² multiplies the two coordinates (8 × 4) instead of dividing them.","+8 m/s² treats the final velocity as if it were the slope. The slope is the change in velocity per unit time, not the velocity itself.","+0.5 m/s² is the reciprocal slope (Δt/Δv), the inverse of what is asked."]}],"frq":{"id":"FRQ","topic":"Multi-Concept Problems","stem":"A cart on a horizontal track has the velocity-versus-time graph shown. The cart starts from rest at t = 0. (a) Calculate the cart's acceleration during the interval from t = 0 s to t = 2 s. Show your work. (b) Calculate the cart's total displacement from t = 0 s to t = 7 s. Show your work. (c) On the axes provided, sketch the cart's acceleration-versus-time graph for the full interval from t = 0 s to t = 7 s. Label your axes.","fig":"<svg viewBox='0 0 480 300' xmlns='http://www.w3.org/2000/svg' role='img' aria-label='Velocity-time graph of a cart: rises from 0 to 4 m/s over 2 s, stays at 4 m/s until 5 s, then falls back to 0 at 7 s'><rect width='480' height='300' fill='white'/><line x1='60' y1='240' x2='440' y2='240' stroke='#333' stroke-width='1.5'/><line x1='60' y1='240' x2='60' y2='30' stroke='#333' stroke-width='1.5'/><polygon points='440,240 432,236 432,244' fill='#333'/><polygon points='60,30 56,38 64,38' fill='#333'/><line x1='60' y1='120' x2='440' y2='120' stroke='#ddd' stroke-width='1'/><text x='40' y='125' font-size='12' fill='#666'>4</text><text x='64' y='125' font-size='12' fill='#666'>m/s</text><line x1='145' y1='240' x2='145' y2='246' stroke='#333'/><text x='141' y='262' font-size='12' fill='#666'>2</text><line x1='290' y1='240' x2='290' y2='246' stroke='#333'/><text x='286' y='262' font-size='12' fill='#666'>5</text><line x1='405' y1='240' x2='405' y2='246' stroke='#333'/><text x='401' y='262' font-size='12' fill='#666'>7</text><text x='448' y='258' font-size='14' fill='#333'>t (s)</text><text x='30' y='40' font-size='14' fill='#333'>v (m/s)</text><polyline points='60,240 145,120 290,120 405,240' fill='none' stroke='#16263e' stroke-width='3'/><text x='60' y='262' font-size='12' fill='#666'>0</text></svg>","parts":[{"label":"Part (a)","prompt":"Calculate the cart's acceleration during the interval from t = 0 s to t = 2 s.","points":2,"model":"a = Δv/Δt = (4 m/s − 0 m/s)/(2 s − 0 s) = +2 m/s²","rubric":"1 point: correct setup (change in velocity divided by the time interval, or a correct slope description of the graph). 1 point: correct value with units: +2 m/s² (accept 2 m/s² in the positive direction)."},{"label":"Part (b)","prompt":"Calculate the cart's total displacement from t = 0 s to t = 7 s.","points":3,"model":"The displacement is the area under the velocity graph. Triangle (0 to 2 s): ½(2 s)(4 m/s) = 4 m. Rectangle (2 to 5 s): (3 s)(4 m/s) = 12 m. Triangle (5 to 7 s): ½(2 s)(4 m/s) = 4 m. Total: 4 + 12 + 4 = 20 m.","rubric":"1 point: identifies the displacement as the area under the velocity-time graph. 1 point: at least one correctly computed piece (4 m or 12 m) with work shown. 1 point: correct total, 20 m, with units."},{"label":"Part (c)","prompt":"Sketch the cart's acceleration-versus-time graph for the full interval from t = 0 s to t = 7 s. Label your axes.","points":3,"model":"A graph with a horizontal line at a = +2 m/s² from t = 0 to t = 2 s, a horizontal line at a = 0 from t = 2 to t = 5 s, and a horizontal line at a = −2 m/s² from t = 5 to t = 7 s. (Vertical transitions at the boundaries are acceptable.)","rubric":"1 point: a-t graph shows +2 m/s² (or equivalent) for 0 to 2 s. 1 point: a-t graph shows a = 0 for 2 to 5 s and −2 m/s² (or equivalent) for 5 to 7 s. 1 point: axes are labeled with correct quantities (a and t) and units."}]}};
+const MC = DATA.exam, FRQ = DATA.frq;
+const NMC = MC.length;
+const STORE = "ap1KinPractice.v1";
+const LETTERS = ["A","B","C","D"];
+const PARTKEYS = ["a","b","c"];
+
+let S = null;
+let view = "welcome";
+let cur = 0;
+let clockH = null;
+
+function fresh(){ return {v:1, startedAt:null, cur:0, answers:{}, frq:{a:"",b:"",c:""}, marked:[], submitted:null}; }
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE));
+    if(s && s.v===1 && s.answers && s.frq) return Object.assign(fresh(), s);
+  }catch(e){}
+  return null;
+}
+function save(){ localStorage.setItem(STORE, JSON.stringify(S)); }
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function fmtTime(ms){
+  const t = Math.max(0, Math.floor(ms/1000));
+  const h = Math.floor(t/3600), m = Math.floor((t%3600)/60), sec = t%60;
+  return h + ":" + String(m).padStart(2,"0") + ":" + String(sec).padStart(2,"0");
+}
+function tick(){
+  const el = document.getElementById("timer");
+  if(el && S && S.startedAt) el.textContent = fmtTime(Date.now() - S.startedAt);
+}
+function startClock(){
+  if(clockH) clearInterval(clockH);
+  clockH = setInterval(tick, 1000);
+}
+
+function answeredCount(){ return Object.keys(S.answers).length; }
+function frqFilled(){ return PARTKEYS.filter(k => S.frq[k] && S.frq[k].trim()).length; }
+
+function render(){
+  tick();
+  const app = document.getElementById("app");
+  const sub = document.getElementById("subhd");
+  if(view === "welcome"){
+    sub.innerHTML = "";
+    app.innerHTML = vWelcome();
+    wireWelcome();
+  } else if(view === "exam"){
+    sub.innerHTML = "Section I: Multiple Choice &nbsp;&middot;&nbsp; <b>75 questions</b> &nbsp;&middot;&nbsp; select one answer per question";
+    app.innerHTML = '<div class="wrap">' + vExam() + vSide() + "</div>";
+    wireExam(); wireSide();
+  } else if(view === "frq"){
+    sub.innerHTML = "Section II: Free Response &nbsp;&middot;&nbsp; <b>1 question (8 points)</b> &nbsp;&middot;&nbsp; show all work";
+    app.innerHTML = '<div class="wrap">' + vFrq() + vSide() + "</div>";
+    wireFrq(); wireSide();
+  } else if(view === "results"){
+    sub.innerHTML = "Exam submitted &nbsp;&middot;&nbsp; your score and full review are below";
+    app.innerHTML = vResults();
+    wireResults();
+  }
+  window.scrollTo({top:0});
+}
+
+/* ---------------- welcome ---------------- */
+function vWelcome(){
+  const hasProg = S && S.startedAt && !S.submitted;
+  return `<div class="card welcome">
+    <div class="brand">AP&reg; Physics 1: Algebra-Based &nbsp;&middot;&nbsp; Unit 1 Practice</div>
+    <h1>Practice Exam: Kinematics, Motion in One Dimension</h1>
+    <div class="meta">75 multiple-choice questions + 1 free-response question &nbsp;&middot;&nbsp; styled like the College Board digital exam</div>
+    <div class="box">
+      <h4>Instructions</h4>
+      <ol>
+        <li>This is practice: work at your own pace. The clock shows elapsed time, and nothing auto-submits.</li>
+        <li>Select one answer per multiple-choice question. You can change answers any time before you submit.</li>
+        <li>Use the question navigator to jump between questions, and <b>Mark for Review</b> to flag a question to revisit.</li>
+        <li>For the free response, type your work in the response boxes. The symbol bar inserts common physics symbols.</li>
+        <li>Use g = 10 m/s&sup2; for free-fall calculations unless a question states otherwise.</li>
+        <li>Your progress saves automatically on this device. When finished, click <b>Submit Exam</b>.</li>
+      </ol>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="b-begin" style="font-size:16px;padding:12px 26px">${hasProg ? "Resume Exam" : "Begin Exam"}</button>
+      ${hasProg ? '<button class="btn ghost" id="b-reset" style="font-size:16px;padding:12px 20px">Start Over</button>' : ""}
+    </div>
+  </div>`;
+}
+function wireWelcome(){
+  const b = document.getElementById("b-begin");
+  b.onclick = () => {
+    if(!S.startedAt){ S.startedAt = Date.now(); }
+    save(); view = "exam"; cur = Math.min(S.cur || 0, NMC-1); render(); startClock();
+  };
+  const r = document.getElementById("b-reset");
+  if(r) r.onclick = () => {
+    if(confirm("Start over? Your saved answers will be erased.")){ S = fresh(); save(); render(); }
+  };
+}
+
+/* ---------------- exam (MC) ---------------- */
+function vExam(){
+  const q = MC[cur];
+  const ans = S.answers[cur];
+  const marked = S.marked.includes(cur);
+  let opts = "";
+  q.options.forEach((o,i) => {
+    opts += `<button class="opt ${ans===i ? "sel" : ""}" data-i="${i}">
+      <span class="radio"></span><span class="ltr">${LETTERS[i]}</span><span class="txt">${esc(o)}</span>
+    </button>`;
+  });
+  return `<div class="main"><div class="card qcard">
+    <div class="qhead"><span class="qn">Question ${cur+1} of ${NMC}</span><span class="topic">${esc(q.topic)}</span></div>
+    <div class="stem">${esc(q.stem)}</div>
+    ${q.fig ? `<div class="fig">${q.fig}</div>` : ""}
+    <div>${opts}</div>
+    <div class="qfoot">
+      <button class="btn mark ${marked ? "on" : ""}" id="b-mark"><span class="flag"></span>${marked ? "Marked for Review" : "Mark for Review"}</button>
+      <div class="btnrow">
+        <button class="btn ghost" id="b-back">Back</button>
+        <button class="btn primary" id="b-next">${cur === NMC-1 ? "Free Response &rarr;" : "Next"}</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+function wireExam(){
+  const card = document.querySelector(".qcard");
+  card.querySelectorAll(".opt").forEach(el => {
+    el.onclick = () => {
+      S.answers[cur] = parseInt(el.dataset.i, 10);
+      S.cur = cur; save(); render();
+    };
+  });
+  document.getElementById("b-mark").onclick = () => {
+    const i = S.marked.indexOf(cur);
+    if(i >= 0) S.marked.splice(i,1); else S.marked.push(cur);
+    save(); render();
+  };
+  document.getElementById("b-back").onclick = () => { if(cur > 0){ cur--; render(); } };
+  document.getElementById("b-next").onclick = () => {
+    if(cur < NMC-1){ cur++; S.cur = cur; save(); render(); }
+    else { view = "frq"; render(); }
+  };
+}
+function examKeys(e){
+  if(view !== "exam") return;
+  if(e.target && (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT")) return;
+  const k = e.key.toLowerCase();
+  const map = {a:0, b:1, c:2, d:3, "1":0, "2":1, "3":2, "4":3};
+  if(k in map && !e.ctrlKey && !e.metaKey){
+    S.answers[cur] = map[k]; S.cur = cur; save(); render();
+  }
+}
+
+/* ---------------- navigator sidebar ---------------- */
+function vSide(){
+  const isFrq = view === "frq";
+  let cells = "";
+  for(let i = 0; i < NMC; i++){
+    const done = i in S.answers;
+    const curCls = (!isFrq && i === cur) ? "cur" : (isFrq ? "" : "");
+    const mk = S.marked.includes(i) ? "mk" : "";
+    cells += `<button class="nbtn ${done ? "done" : ""} ${curCls} ${mk}" data-goto="${i}">${i+1}</button>`;
+  }
+  const frqFilledCls = isFrq ? "cur" : "";
+  const frqDoneCls = (frqFilled() === PARTKEYS.length) ? "done" : "";
+  cells += `<button class="nbtn frq ${frqDoneCls} ${frqFilledCls}" data-goto="frq">FRQ</button>`;
+  const total = answeredCount() + (frqFilled() === PARTKEYS.length ? 1 : 0);
+  return `<div class="side"><div class="card" id="navcard">
+    <button class="btn ghost navtoggle" id="nav-toggle">Question Navigator (${answeredCount()}/${NMC})</button>
+    <h3>Question Navigator</h3>
+    <div class="count">Answered: ${total} of ${NMC+1}</div>
+    <div class="ngrid">${cells}</div>
+    <div class="legend">
+      <div class="row"><span class="sw done"></span> Answered</div>
+      <div class="row"><span class="sw"></span> Not answered</div>
+      <div class="row"><span class="sw cur"></span> Current question</div>
+      <div class="row"><span class="sw mk"></span> Marked for review</div>
+    </div>
+    <button class="btn primary submit" id="b-submit">Submit Exam</button>
+  </div></div>`;
+}
+function wireSide(){
+  document.getElementById("navcard").querySelectorAll(".nbtn").forEach(el => {
+    el.onclick = () => {
+      const g = el.dataset.goto;
+      if(g === "frq"){ view = "frq"; render(); }
+      else { cur = parseInt(g,10); view = "exam"; S.cur = cur; save(); render(); }
+    };
+  });
+  const t = document.getElementById("nav-toggle");
+  if(t) t.onclick = () => document.getElementById("navcard").classList.toggle("open");
+  document.getElementById("b-submit").onclick = () => askSubmit();
+}
+
+/* ---------------- FRQ ---------------- */
+function vFrq(){
+  const syms = ["\u0394","\u00BD","\u03B8","\u03C0","\u2248","\u00B1","\u2192","\u00D7","\u00B2","\u2080","m/s","m/s\u00B2"];
+  let symlines = "";
+  syms.forEach(s => { symlines += `<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`; });
+  let parts = "";
+  FRQ.parts.forEach((p,i) => {
+    const k = PARTKEYS[i];
+    parts += `<div class="part">
+      <div class="ph"><span class="pl">${esc(p.label)}</span><span class="pts">${p.points} point${p.points>1?"s":""}</span></div>
+      <div class="pp">${esc(p.prompt)}</div>
+      <div class="symbar" data-for="${k}">${symlines}</div>
+      <textarea id="frq-${k}" placeholder="Show your work here...">${esc(S.frq[k])}</textarea>
+    </div>`;
+  });
+  return `<div class="main"><div class="card qcard">
+    <div class="qhead"><span class="qn">Free Response Question</span><span class="topic">8 points total</span></div>
+    <div class="stem">${esc(FRQ.stem)}</div>
+    ${FRQ.fig ? `<div class="fig">${FRQ.fig}</div>` : ""}
+    ${parts}
+    <div class="frqnote">The free response is self-scored: after you submit, a scoring rubric and model answer are provided so you can grade your own work the way AP readers do.</div>
+    <div class="qfoot">
+      <span></span>
+      <div class="btnrow">
+        <button class="btn ghost" id="b-frq-back">&larr; Multiple Choice</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+function wireFrq(){
+  document.getElementById("b-frq-back").onclick = () => { view = "exam"; render(); };
+  PARTKEYS.forEach(k => {
+    const ta = document.getElementById("frq-" + k);
+    ta.addEventListener("input", () => { S.frq[k] = ta.value; save(); });
+  });
+  document.querySelectorAll(".symbar").forEach(bar => {
+    bar.querySelectorAll("button").forEach(btn => {
+      btn.onclick = () => {
+        const k = bar.dataset.for;
+        const ta = document.getElementById("frq-" + k);
+        const s = ta.selectionStart, e2 = ta.selectionEnd;
+        const ch = btn.dataset.sym;
+        ta.value = ta.value.slice(0,s) + ch + ta.value.slice(e2);
+        S.frq[k] = ta.value; save();
+        ta.focus(); ta.selectionStart = ta.selectionEnd = s + ch.length;
+      };
+    });
+  });
+}
+
+/* ---------------- results ---------------- */
+function score(){
+  let correct = 0;
+  MC.forEach((q,i) => { if(S.answers[i] === q.correct) correct++; });
+  const byTopic = {};
+  MC.forEach((q,i) => {
+    if(!byTopic[q.topic]) byTopic[q.topic] = {n:0, c:0};
+    byTopic[q.topic].n++;
+    if(S.answers[i] === q.correct) byTopic[q.topic].c++;
+  });
+  let weakest = null, wr = 2;
+  Object.keys(byTopic).forEach(t => {
+    const r = byTopic[t].c / byTopic[t].n;
+    if(r < wr){ wr = r; weakest = t; }
+  });
+  return {correct, byTopic, weakest, weakestRate: wr};
+}
+
+function vResults(){
+  const sc = score();
+  const pct = Math.round(100 * sc.correct / NMC);
+  let rows = "";
+  Object.keys(sc.byTopic).forEach(t => {
+    const b = sc.byTopic[t];
+    const w = Math.round(100 * b.c / b.n);
+    rows += `<div class="trow"><div class="tl">${esc(t)}</div><div class="bar"><i style="width:${w}%"></i></div><div class="tv">${b.c}/${b.n}</div></div>`;
+  });
+  const frqParts = FRQ.parts.map(p =>
+    `<tr><td style="padding:6px 10px 6px 0;white-space:nowrap"><b>${esc(p.label)}</b> (${p.points} pts)</td><td style="padding:6px 0">${esc(p.rubric)}</td></tr>`
+  ).join("");
+  const frqModels = FRQ.parts.map(p =>
+    `<div><b>${esc(p.label)}:</b> <div class="model">${esc(p.model)}</div></div>`
+  ).join("");
+  return `<div class="wrap"><div class="main">
+    <div class="card scorecard">
+      <div class="sub">Multiple Choice Score</div>
+      <div class="big">${sc.correct} / ${NMC} <span style="font-size:18px;font-weight:600;color:var(--muted)">(${pct}%)</span></div>
+      <div class="sub">Free Response: self-scored against the rubric below (8 points max).</div>
+      <div style="margin-top:20px">
+        <div class="sub" style="margin-bottom:8px;font-weight:700;color:var(--navy)">Score by Topic</div>
+        ${rows}
+      </div>
+      ${sc.weakest && sc.weakestRate < 1 ? `<div class="callout"><b>Most room to grow:</b> ${esc(sc.weakest)}. Revisit the related content and try the review explanations below for those questions.</div>` : ""}
+      <div class="btnrow" style="margin-top:22px">
+        <button class="btn primary" id="b-review">Review Answers</button>
+        <button class="btn ghost" id="b-retake">Retake Exam</button>
+      </div>
+    </div>
+
+    <div class="card rev" id="frq-review">
+      <div class="rh"><span class="rq">Free Response Question</span><span class="badge ok">Self-scored</span></div>
+      <div class="stem" style="font-size:15px">${esc(FRQ.stem)}</div>
+      ${FRQ.fig ? `<div class="fig">${FRQ.fig}</div>` : ""}
+      <details open><summary>Your responses</summary><div class="body">
+        ${FRQ.parts.map((p,i) => {
+          const val = S.frq[PARTKEYS[i]];
+          const body = (val && val.trim()) ? esc(val) : "<span style='color:var(--muted)'>no response</span>";
+          return "<div style='margin:8px 0'><b>" + esc(p.label) + ":</b><br>" + body + "</div>";
+        }).join("")}
+      </div></details>
+      <details open><summary>Scoring rubric</summary><div class="body">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">${frqParts}</table>
+      </div></details>
+      <details><summary>Show model answer</summary><div class="body">${frqModels}</div></details>
+    </div>
+
+    <div id="review-mc"></div>
+  </div></div>`;
+}
+
+function vReviewMc(){
+  let out = "";
+  MC.forEach((q,i) => {
+    const a = S.answers[i];
+    const ok = a === q.correct;
+    const badge = (a === undefined || a === null) ? '<span class="badge skip">Skipped</span>' : (ok ? '<span class="badge ok">Correct</span>' : '<span class="badge no">Incorrect</span>');
+    let opts = "";
+    let wi = 0;
+    const wrongExps = [];
+    q.options.forEach((o,j) => {
+      let cls = "";
+      if(j === q.correct) cls = "good";
+      else if(j === a) cls = "bad";
+      let tag = "";
+      if(j === q.correct) tag = '<span class="tagline">Correct answer</span>';
+      else if(j === a) tag = '<span class="tagline">Your answer</span>';
+      opts += `<div class="opt disabled ${cls}"><span class="radio"></span><span class="ltr">${LETTERS[j]}</span><span class="txt">${esc(o)}${tag}</span></div>`;
+      if(j !== q.correct) wrongExps.push({j, t: q.expWrong[wi++]});
+    });
+    const wlist = wrongExps.map(w => `<li><b>${LETTERS[w.j]}:</b> ${esc(w.t)}</li>`).join("");
+    out += `<div class="card rev">
+      <div class="rh"><span class="rq">Question ${i+1}</span><span class="topic">${esc(q.topic)}</span>${badge}</div>
+      <div class="stem" style="font-size:15.5px">${esc(q.stem)}</div>
+      ${q.fig ? `<div class="fig">${q.fig}</div>` : ""}
+      ${opts}
+      <div class="expl">
+        <div><span class="c">Correct: ${LETTERS[q.correct]})</span> ${esc(q.expCorrect)}</div>
+        <div style="margin-top:10px"><span class="w">Why the other options are wrong:</span><ul>${wlist}</ul></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById("review-mc").innerHTML = out;
+}
+
+function wireResults(){
+  vReviewMc();
+  document.getElementById("b-review").onclick = () => {
+    document.getElementById("frq-review").scrollIntoView({behavior:"smooth"});
+  };
+  document.getElementById("b-retake").onclick = () => {
+    if(confirm("Retake the exam? Your submitted answers and responses will be erased.")){
+      S = fresh(); save(); view = "welcome"; render();
+    }
+  };
+}
+
+/* ---------------- submit modal ---------------- */
+function askSubmit(){
+  const a = answeredCount(), f = frqFilled();
+  const un = NMC - a;
+  const msg = a === NMC && f === PARTKEYS.length
+    ? "You have answered all 75 multiple-choice questions and all 3 free-response parts."
+    : `You have answered ${a} of 75 multiple-choice questions and ${f} of 3 free-response parts.${un > 0 ? " " + un + " question" + (un>1?"s":"") + " unanswered will be marked as skipped." : ""}`;
+  const root = document.getElementById("modal-root");
+  root.innerHTML = `<div class="modal-bg"><div class="modal">
+    <h3>Submit Exam?</h3>
+    <p>${esc(msg)}<br><br>After you submit, you cannot change your answers. You will see your score and a full review with explanations.</p>
+    <div class="actions">
+      <button class="btn ghost" id="m-cancel">Keep Working</button>
+      <button class="btn warn" id="m-ok">Submit Exam</button>
+    </div>
+  </div></div>`;
+  document.getElementById("m-cancel").onclick = () => { root.innerHTML = ""; };
+  document.getElementById("m-ok").onclick = () => {
+    S.submitted = {at: Date.now()}; save();
+    root.innerHTML = "";
+    view = "results"; render();
+    if(clockH){ clearInterval(clockH); clockH = null; }
+  };
+}
+
+/* ---------------- init ---------------- */
+S = loadState() || fresh();
+if(S.submitted){ view = "results"; }
+else if(S.startedAt){ view = "welcome"; }
+document.addEventListener("keydown", examKeys);
+render();
+if(S.startedAt && !S.submitted) startClock();
+</script>
+</body>
+</html>
