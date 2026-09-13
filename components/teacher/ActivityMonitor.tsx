@@ -413,7 +413,7 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                       </button>
                       <button
                         onClick={() => onMessage?.(student)}
-                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-blue-400 hover:bg-blue-400/10 transition"
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-400 hover:bg-purple-400/10 transition"
                         aria-label={`Message ${student.name}`}
                         title="Send message"
                       >

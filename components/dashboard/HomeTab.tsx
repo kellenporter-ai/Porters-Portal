@@ -14,6 +14,7 @@ import AnimatedIcon from '../AnimatedIcon';
 import CortisolCheckIn from './CortisolCheckIn';
 import { dataService } from '../../services/dataService';
 import { useT, useInterpolate } from '../../lib/i18n';
+import { Card } from '../ui/card';
 
 /*
  * HomeTab — Variation D ("Anchored") rebuild.
@@ -295,8 +296,12 @@ const HomeTab: React.FC<HomeTabProps> = ({
         <div
           role="region"
           aria-label="Welcome tip: reduce interface animations"
-          className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl"
+          className="w-full bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl px-4 py-3"
         >
+          <div className="text-kicker uppercase font-bold text-[var(--text-muted)] mb-2">
+            {t('home.banner.kicker')}
+          </div>
+          <div className="flex items-center gap-3">
           <Sparkles className="w-5 h-5 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-[var(--text-primary)]">{t('home.banner.title')}</div>
@@ -330,16 +335,13 @@ const HomeTab: React.FC<HomeTabProps> = ({
           >
             <X className="w-4 h-4" />
           </button>
+          </div>
         </div>
       )}
 
       {/* ═══════════ ZONE 01 — HERO / "Now" ═══════════ */}
       <section
-        className="relative rounded-[28px] px-6 sm:px-10 py-8 overflow-hidden border border-[var(--border)]"
-        style={{
-          background:
-            'linear-gradient(135deg, var(--accent-muted), var(--surface-glass))',
-        }}
+        className="relative rounded-[28px] px-6 sm:px-10 py-8 overflow-hidden border border-[var(--border)] bg-[var(--surface-glass)]"
         aria-labelledby="home-zone-01-label"
       >
         <div className="relative">
@@ -467,9 +469,9 @@ const HomeTab: React.FC<HomeTabProps> = ({
       {/* ═══════════ ZONE 02 — Metric trio (This week + This unit) ═══════════ */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* This week — 3/5 */}
-        <div className="lg:col-span-3 relative rounded-[24px] p-6 sm:p-7 bg-[var(--surface-glass)] border border-[var(--border)]">
+        <Card className="lg:col-span-3 relative p-6 sm:p-7">
           <div className="relative flex items-center gap-3 mb-5">
-            <span className="text-[10px] font-black tracking-[0.32em] uppercase text-[var(--text-tertiary)]">{t('home.week.label')}</span>
+            <span className="text-kicker uppercase font-bold text-[var(--text-muted)]">{t('home.week.label')}</span>
             <span className="flex-1 h-px bg-[var(--border)]" />
             <button
               type="button"
@@ -539,12 +541,12 @@ const HomeTab: React.FC<HomeTabProps> = ({
               })}
             </ul>
           )}
-        </div>
+        </Card>
 
         {/* This unit — 2/5 — hero metric + supporting */}
-        <div className="lg:col-span-2 relative rounded-[24px] p-6 sm:p-7 bg-[var(--surface-glass)] border border-[var(--border)]">
+        <Card className="lg:col-span-2 relative p-6 sm:p-7">
           <div className="relative flex items-center gap-3 mb-5">
-            <span className="text-[10px] font-black tracking-[0.32em] uppercase whitespace-nowrap text-[var(--text-tertiary)]">
+            <span className="text-kicker uppercase font-bold text-[var(--text-muted)] whitespace-nowrap">
               {t('home.unit.label')}
             </span>
             <span className="flex-1 h-px bg-[var(--border)]" />
@@ -607,13 +609,13 @@ const HomeTab: React.FC<HomeTabProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* ═══════════ ZONE 03 — Quick nav / "Go to" ═══════════ */}
       <section className="px-1">
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-[10px] font-black tracking-[0.32em] uppercase whitespace-nowrap text-[var(--text-tertiary)]">
+          <span className="text-kicker uppercase font-bold text-[var(--text-muted)] whitespace-nowrap">
             {t('home.goTo.label')}
           </span>
           <span className="flex-1 h-px bg-[var(--border)]" />
@@ -678,7 +680,7 @@ const HomeTab: React.FC<HomeTabProps> = ({
           without being duplicated here. */}
       <section className="px-1 pb-4">
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-[10px] font-black tracking-[0.32em] uppercase whitespace-nowrap text-[var(--text-tertiary)]">
+          <span className="text-kicker uppercase font-bold text-[var(--text-muted)] whitespace-nowrap">
             {t('home.latest.label')}
           </span>
           <span className="flex-1 h-px bg-[var(--border)]" />

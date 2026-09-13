@@ -216,26 +216,26 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
 
       {/* STAT STRIP */}
       <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-2xl p-3 lg:px-6 lg:py-0 lg:flex lg:items-center lg:gap-6 lg:h-12" role="group" aria-label="Class overview statistics">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:flex lg:items-center lg:gap-6">
-          <button onClick={() => navigate('/users')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:flex lg:items-center lg:gap-0">
+          <button onClick={() => navigate('/users')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <Users className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{totalStudents}</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Students</span>
           </button>
           <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
-          <button onClick={() => navigate('/xp/Operatives')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+          <button onClick={() => navigate('/xp/Operatives')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <Zap className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{totalXP.toLocaleString()}</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">XP Awarded</span>
           </button>
           <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
-          <button onClick={() => navigate('/reports')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+          <button onClick={() => navigate('/reports')} className="flex items-center justify-center lg:justify-start gap-2 shrink-0 hover:text-purple-400 transition cursor-pointer px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <FileText className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{totalResourcesAccessed}</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Resources Viewed</span>
           </button>
           <div className="hidden lg:block w-px h-5 bg-[var(--border)] shrink-0" />
-          <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:p-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
+          <div className="flex items-center justify-center lg:justify-start gap-2 shrink-0 px-2 py-1.5 lg:px-4 lg:py-0 bg-[var(--panel-bg)] lg:bg-transparent rounded-xl lg:rounded-none border border-[var(--border)] lg:border-transparent">
             <Clock className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
             <span className="text-lg font-bold text-[var(--text)]">{avgTime}m</span>
             <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Avg Active Time</span>
@@ -260,10 +260,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             role="tab"
             aria-selected={overviewTab === key}
             onClick={() => setOverviewTab(key)}
-            className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition rounded-t-lg -mb-px border-b-2 ${
+            className={`relative flex items-center gap-1.5 px-2.5 py-1.5 text-[11.5px] font-medium transition rounded-t-md -mb-px border-b-2 ${
               overviewTab === key
-                ? 'text-[var(--text)] border-purple-500'
-                : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text)] hover:border-[var(--border)]'
+                ? 'text-[var(--text-secondary)] border-[var(--accent-muted)]'
+                : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-secondary)]'
             }`}
           >
             {label}

@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Assignment, Submission, RPGItem, ClassConfig, UserSettings, SpecializationId } from '../types';
-import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Flame, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
+import { ChevronDown, Zap, Hexagon, Megaphone, X as XIcon, Sparkles, AlertTriangle, AlertCircle } from 'lucide-react';
 
 import { FeatureErrorBoundary } from './ErrorBoundary';
 import { dataService } from '../services/dataService';
@@ -22,10 +22,10 @@ import { useReducedMotion } from '../lib/useReducedMotion';
 import GamificationSkeleton from './GamificationSkeleton';
 import LootDropAnimation from './xp/LootDropAnimation';
 const ProfileShowcase = lazyWithRetry(() => import('./ProfileShowcase'));
-import { getStreakMultiplier } from '../lib/achievements';
 import { STUDENT_TAB_MAP } from '../lib/routes';
 const IntelDossier = lazyWithRetry(() => import('./IntelDossier'));
 import { useTheme } from '../lib/ThemeContext';
+import { Card } from './ui/card';
 
 // Reverse map: StudentTab key → nav name (for ARIA tabpanel IDs matching Layout's aria-controls)
 const TAB_KEY_TO_NAV: Record<string, string> = Object.fromEntries(
@@ -491,16 +491,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase tracking-[0.15em] border ${rankDetails.tierColor}`}>
           {rankDetails.rankName} · Lvl {level}
         </span>
-        <span className="flex items-center gap-1 text-[12px] font-bold text-cyan-600 dark:text-cyan-400" aria-label={`${displayCurrency} Cyber-Flux`}>
+        <span className="flex items-center gap-1 text-[12px] font-bold text-[var(--accent-text)]" aria-label={`${displayCurrency} Cyber-Flux`}>
           <Hexagon className="w-3.5 h-3.5" aria-hidden="true" />
           {displayCurrency}
         </span>
-        {(user.gamification?.engagementStreak || 0) > 0 && (
-          <span className={`flex items-center gap-1 text-[12px] font-bold ${isLight ? 'text-orange-600' : 'text-orange-600 dark:text-orange-400'}`} aria-label={`${user.gamification?.engagementStreak} week engagement streak`}>
-            <Flame className="w-3.5 h-3.5" aria-hidden="true" />
-            {user.gamification?.engagementStreak}w
-          </span>
-        )}
         {enrolledClasses.length > 1 && (
           <div className="relative ml-auto">
             <select
@@ -529,7 +523,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       {/* --- OPERATIVE STATUS: full horizontal strip (always visible on lg+, collapsible on mobile) --- */}
       <aside id="operative-status-strip" aria-label="Player status" className={`${statsExpanded ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-3 lg:gap-3`}>
         {/* Identity card — avatar, name, rank, XP */}
-        <div className={`bg-[var(--surface-glass)] border rounded-xl lg:rounded-xl p-3 lg:py-2 lg:px-3 backdrop-blur-md relative overflow-hidden group lg:flex-1 ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
+        <Card className={`rounded-xl lg:rounded-xl p-3 lg:py-2 lg:px-3 backdrop-blur-md relative overflow-hidden group lg:flex-1 ${rankDetails.tierColor.split(' ')[0]} border-opacity-30`}>
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent"></div>
             <div className="relative z-10 flex flex-col items-center lg:flex-row lg:items-center lg:gap-2">
                 <div className={`lg:w-8 lg:h-8 rounded-full p-0.5 bg-gradient-to-tr from-white/10 to-white/5 mb-0 shrink-0 ${rankDetails.tierGlow} shadow-xl`}>
@@ -569,11 +563,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 </div>
             </div>
         </div>
-        </div>
+        </Card>
 
         {/* Stat badges — compact inline */}
         <div className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2">
-            <div className="w-8 h-8 lg:w-6 lg:h-6 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 lg:w-6 lg:h-6 rounded-full bg-[var(--accent-muted)] text-[var(--accent-text)] flex items-center justify-center shrink-0">
                 <Hexagon className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
             </div>
             <div className="flex items-baseline gap-1.5 lg:gap-1">
@@ -581,40 +575,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                 <div className="text-lg lg:text-base font-black text-[var(--text-primary)] leading-none">{displayCurrency}</div>
             </div>
         </div>
-
-        {/* Engagement Streak + Multiplier */}
-        {(user.gamification?.engagementStreak || 0) > 0 && (() => {
-            const streak = user.gamification?.engagementStreak || 0;
-            const multiplier = getStreakMultiplier(streak);
-            return (
-                <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'}`}>
-                    <div className={`w-8 h-8 lg:w-6 lg:h-6 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-orange-100 text-orange-600' : 'bg-orange-500/20 text-orange-600 dark:text-orange-400'}`}>
-                        <Flame className="w-5 h-5 lg:w-4 lg:h-4" aria-hidden="true" />
-                    </div>
-                    <div className="flex items-baseline gap-1.5 lg:gap-1 flex-1 min-w-0">
-                        <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold tracking-widest">Streak</div>
-                        <div className={`text-lg lg:text-base font-black leading-none ${isLight ? 'text-orange-600' : 'text-orange-600 dark:text-orange-400'}`}>{streak}w</div>
-                    </div>
-                    {multiplier > 1 && (
-                        <div className="text-right shrink-0">
-                            <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase">XP Bonus</div>
-                            <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-amber-700' : 'text-yellow-600 dark:text-yellow-400'}`}>+{Math.round((multiplier - 1) * 100)}%</div>
-                        </div>
-                    )}
-                </div>
-            );
-        })()}
-
-        {/* Login Streak */}
-        {(user.gamification?.loginStreak || 0) > 1 && (
-            <div className={`border rounded-2xl p-3 lg:py-2 lg:px-3 flex items-center gap-2 ${isLight ? 'bg-purple-50 border-purple-200' : 'bg-purple-500/10 border-purple-500/20'}`}>
-                <Sparkles className={`w-5 h-5 lg:w-4 lg:h-4 shrink-0 ${isLight ? 'text-purple-600' : 'text-purple-600 dark:text-purple-400'}`} aria-hidden="true" />
-                <div className="flex items-baseline gap-1.5 lg:gap-1">
-                    <div className="text-xs lg:text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold">Daily Login</div>
-                    <div className={`text-sm lg:text-xs font-black ${isLight ? 'text-purple-700' : 'text-purple-600 dark:text-purple-400'}`}>{user.gamification?.loginStreak || 0} day streak</div>
-                </div>
-            </div>
-        )}
 
         {/* Profile + Access Nodes — hidden in compact horizontal strip */}
       </aside>

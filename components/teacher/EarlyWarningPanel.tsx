@@ -627,12 +627,12 @@ const EarlyWarningPanel: React.FC<EarlyWarningPanelProps> = ({
       {/* ── Body ── */}
       <div id="early-warning-body" className="px-6 pb-6 pt-4">
         {totalCount === 0 ? (
-          <div className="text-center py-8 text-[var(--text-muted)] italic">
+          <div className="text-center py-8 px-4 my-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-[var(--text-muted)] italic">
             <UserIcon className="w-10 h-10 mx-auto mb-2 opacity-20" aria-hidden="true" />
             No students flagged. Engagement looks healthy.
           </div>
         ) : visibleStudents.length === 0 ? (
-          <div className="text-center py-6 text-[var(--text-muted)] italic text-sm">
+          <div className="text-center py-6 px-4 my-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-[var(--text-muted)] italic text-sm">
             No students match the current filter.
           </div>
         ) : (

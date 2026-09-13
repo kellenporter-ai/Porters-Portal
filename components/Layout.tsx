@@ -270,7 +270,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
             }}
             aria-current={isActive && !item.children ? 'page' : undefined}
             aria-expanded={item.children ? expandedParent === item.name : undefined}
-            className={`w-full flex items-center gap-4 px-6 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
+            className={`w-full flex items-center gap-3 px-4 rounded-xl transition-all group ${settings.compactView ? 'py-2.5' : 'py-3'} ${
               isActive
                 ? item.children ? 'bg-[var(--accent-muted)]/70 text-[var(--sidebar-text-active)] border-l-4 border-l-[var(--accent)]' : 'bg-[var(--accent-muted)]/70 text-[var(--sidebar-text-active)] border-l-4 border-l-[var(--accent)]'
                 : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-border)] hover:text-[var(--sidebar-text-active)] hover:pl-7'
@@ -290,7 +290,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                   />
                 )}
               </span>
-              {item.flavor && (
+              {item.flavor && (FLAVOR_KEYS[item.flavor] ? t(FLAVOR_KEYS[item.flavor]) : item.flavor) !== navDisplayName(item.name, t) && (
                 <span className="block text-xs font-mono text-[var(--text-tertiary,var(--sidebar-text-muted))] leading-tight mt-0.5 truncate">
                   {FLAVOR_KEYS[item.flavor] ? t(FLAVOR_KEYS[item.flavor]) : item.flavor}
                 </span>
@@ -477,15 +477,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
       {/* 2b. Dark mode: Circuit board background image */}
       {!isLight && (
-        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
+        <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-[0.12]" style={{ backgroundImage: "url('/assets/dark-bg.jpg')" }}></div>
       )}
 
       {/* 3. Glass Overlay */}
       {isLight && (
-        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-purple-50/10`}></div>
+        <div className={`fixed inset-0 pointer-events-none z-[-1] bg-purple-50/20`}></div>
       )}
       {!isLight && (
-        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/40`}></div>
+        <div className={`fixed inset-0 pointer-events-none z-[-1] transition-opacity duration-700 bg-[var(--surface-base)]/60`}></div>
       )}
 
       {/* ChromeOS performance mode suggestion banner */}

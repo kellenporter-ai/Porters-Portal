@@ -132,6 +132,7 @@ export const en: Dictionary = {
   'save.sessionExpiredChip': 'Session expired — refresh to restore work',
 
   // ── Home tab ──
+  'home.banner.kicker': 'Interface tip',
   'home.banner.title': 'Welcome!',
   'home.banner.body': 'Want a calmer interface? Toggle to reduce animations across the app.',
   'home.banner.toggleAria': 'Reduce animations: currently {state}',

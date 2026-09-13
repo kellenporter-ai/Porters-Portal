@@ -27,45 +27,45 @@ const MOODS: MoodLevel[] = [
     label: 'Very Low',
     shortLabel: 'Exhausted',
     description: 'Feeling fatigued or drained today',
-    colorClass: 'text-blue-600 dark:text-blue-400',
-    ringClass: 'ring-blue-500/50 dark:ring-blue-400/50',
-    bgClass: 'bg-blue-500/10 dark:bg-blue-500/15',
+    colorClass: 'text-[var(--accent-text)]',
+    ringClass: 'ring-[var(--accent)]/60',
+    bgClass: 'bg-[var(--accent-muted)]',
   },
   {
     key: 'low',
     label: 'Low',
     shortLabel: 'Calm',
     description: 'Relaxed but a bit low on energy',
-    colorClass: 'text-emerald-600 dark:text-emerald-400',
-    ringClass: 'ring-emerald-500/50 dark:ring-emerald-400/50',
-    bgClass: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+    colorClass: 'text-[var(--accent-text)]',
+    ringClass: 'ring-[var(--accent)]/60',
+    bgClass: 'bg-[var(--accent-muted)]',
   },
   {
     key: 'normal',
     label: 'Normal',
     shortLabel: 'Balanced',
     description: 'Feeling steady and ready to learn',
-    colorClass: 'text-purple-600 dark:text-purple-400',
-    ringClass: 'ring-purple-500/50 dark:ring-purple-400/50',
-    bgClass: 'bg-purple-500/10 dark:bg-purple-500/15',
+    colorClass: 'text-[var(--accent-text)]',
+    ringClass: 'ring-[var(--accent)]/60',
+    bgClass: 'bg-[var(--accent-muted)]',
   },
   {
     key: 'elevated',
     label: 'Elevated',
     shortLabel: 'Anxious',
     description: 'A bit on edge or worried today',
-    colorClass: 'text-amber-600 dark:text-amber-400',
-    ringClass: 'ring-amber-500/50 dark:ring-amber-400/50',
-    bgClass: 'bg-amber-500/10 dark:bg-amber-500/15',
+    colorClass: 'text-[var(--accent-text)]',
+    ringClass: 'ring-[var(--accent)]/60',
+    bgClass: 'bg-[var(--accent-muted)]',
   },
   {
     key: 'high',
     label: 'High',
     shortLabel: 'Stressed',
     description: 'Feeling overwhelmed or panicked',
-    colorClass: 'text-red-600 dark:text-red-400',
-    ringClass: 'ring-red-500/50 dark:ring-red-400/50',
-    bgClass: 'bg-red-500/10 dark:bg-red-500/15',
+    colorClass: 'text-[var(--accent-text)]',
+    ringClass: 'ring-[var(--accent)]/60',
+    bgClass: 'bg-[var(--accent-muted)]',
   },
 ];
 
@@ -141,11 +141,11 @@ const CortisolCheckIn: React.FC<CortisolCheckInProps> = ({
     >
       <div className="flex items-center gap-3 mb-4">
         <Heart className="w-4 h-4 text-[var(--accent-text)] shrink-0" aria-hidden="true" />
-        <span className="text-[10px] font-black tracking-[0.32em] uppercase text-[var(--text-tertiary)]">
+        <span className="text-kicker uppercase font-bold text-[var(--text-muted)]">
           Status Check
         </span>
         <span className="flex-1 h-px bg-[var(--border)]" />
-        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+        <span className="text-kicker uppercase font-bold text-[var(--text-muted)]">
           Private
         </span>
       </div>
