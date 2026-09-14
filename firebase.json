@@ -92,6 +92,10 @@
         "destination": "/forensic-branches/index.html"
       },
       {
+        "source": "/texas-grid-blackout",
+        "destination": "/texas-grid-blackout.html"
+      },
+      {
         "source": "/ap1-kinematics-practice",
         "destination": "/ap1-kinematics-practice.html"
       },
