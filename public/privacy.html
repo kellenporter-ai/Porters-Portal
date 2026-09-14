@@ -251,5 +251,58 @@
       <p>© 2026 Porter's Portal · Perth Amboy High School</p>
     </footer>
   </div>
+
+<script>
+/* ---------------- portal bridge ----------------
+   iframe integration with the Porters Portal (see Proctor.tsx).
+   Static document: getCurrentState returns {}, importState is a no-op,
+   and readOnly has nothing interactive to disable.
+   Works standalone too: when window.parent === window, all of this is a no-op. */
+let portalMode = false;
+let portalBlockId = null;
+
+function getCurrentState(){
+  return {};
+}
+
+function importState(data){
+  /* static document — nothing to restore */
+}
+
+function setReadOnly(readonly){
+  /* static document — nothing interactive to disable */
+}
+
+function sendToParent(msg){
+  if(window.parent !== window){
+    window.parent.postMessage(Object.assign({}, msg, {blockId: portalBlockId}), "*");
+  }
+}
+
+window.addEventListener("message", e => {
+  const data = e.data;
+  if(!data || typeof data !== "object") return;
+  switch(data.type){
+    case "portal-init":
+      portalMode = true;
+      portalBlockId = data.blockId || null;
+      if(data.state) importState(data.state);
+      if(data.readOnly) setReadOnly(true);
+      break;
+    case "portal-get-state":
+      sendToParent({type: "html-activity-state", state: getCurrentState()});
+      break;
+    case "portal-set-state":
+      if(data.state) importState(data.state);
+      break;
+    case "portal-set-readonly":
+      setReadOnly(!!data.readOnly);
+      break;
+  }
+});
+
+// Notify parent that we're ready (in case parent loads after us)
+sendToParent({type: "html-activity-ready", blockId: portalBlockId});
+</script>
 </body>
 </html>

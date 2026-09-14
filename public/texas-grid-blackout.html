@@ -894,13 +894,75 @@ document.querySelectorAll(".pchip").forEach(btn => {
   });
 });
 
-/* ================= proctor bridge ================= */
+/* ================= portal bridge =================
+   iframe integration with the Porters Portal (see Proctor.tsx).
+   Works standalone too: when window.parent === window, all of this is a no-op. */
+let portalMode = false;
+let portalBlockId = null;
+let portalReadOnly = false;
+
+function getCurrentState(){
+  return { scene: state.scene, h: state.h };
+}
+
+function importState(data){
+  if(!data || typeof data !== "object") return;
+  if(data.scene === "timeline" || data.scene === "hook"){
+    showScene(data.scene);
+  }
+  if(typeof data.h === "number" && state.scene === "timeline"){
+    state.h = Math.max(0, Math.min(116, data.h));
+    setTlHour(state.h);
+    renderAll();
+  }
+}
+
+function setReadOnly(readonly){
+  portalReadOnly = readonly;
+  [tabHook, tabTimeline, hookPlayBtn, document.getElementById("playBtn")].forEach(el => {
+    if(el) el.disabled = readonly;
+  });
+  scrub.disabled = readonly;
+  document.querySelectorAll(".pchip").forEach(el => {
+    el.disabled = readonly;
+    el.style.pointerEvents = readonly ? "none" : "";
+    el.style.opacity = readonly ? "0.5" : "";
+  });
+}
+
+function sendToParent(msg){
+  if(window.parent !== window){
+    window.parent.postMessage(Object.assign({}, msg, {blockId: portalBlockId}), "*");
+  }
+}
+
 window.addEventListener("message", e => {
-  if (e.data && e.data.type === "PORTAL_CONTEXT") {
-    /* projected whole-class artifact: context received, no scoring attached */
+  const data = e.data;
+  if(!data || typeof data !== "object") return;
+  switch(data.type){
+    case "portal-init":
+      portalMode = true;
+      portalBlockId = data.blockId || null;
+      if(data.state) importState(data.state);
+      if(data.readOnly) setReadOnly(true);
+      break;
+    case "portal-get-state":
+      sendToParent({type: "html-activity-state", state: getCurrentState()});
+      break;
+    case "portal-set-state":
+      if(data.state) importState(data.state);
+      break;
+    case "portal-set-readonly":
+      setReadOnly(!!data.readOnly);
+      break;
+    case "PORTAL_CONTEXT":
+      /* projected whole-class artifact: context received, no scoring attached */
+      break;
   }
 });
-/* no answer(), no complete() — exploratory visualization only */
+
+// Notify parent that we're ready (in case parent loads after us)
+sendToParent({type: "html-activity-ready", blockId: portalBlockId});
 
 /* ================= boot ================= */
 resizeAll();

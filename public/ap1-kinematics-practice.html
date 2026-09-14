@@ -568,3 +568,75 @@ if(S.startedAt && !S.submitted) startClock();
 </script>
 </body>
 </html>
+
+<script>
+/* ---------------- portal bridge ----------------
+   iframe integration with the Porters Portal (see Proctor.tsx).
+   Works standalone too: when window.parent === window, all of this is a no-op. */
+let portalMode = false;
+let portalBlockId = null;
+let portalReadOnly = false;
+
+function getCurrentState(){
+  return JSON.parse(JSON.stringify(S));
+}
+
+function importState(data, saveAfter){
+  if(!data || typeof data !== "object") return;
+  S = Object.assign(fresh(), data);
+  if(S.submitted){ view = "results"; }
+  else if(S.startedAt){ view = "welcome"; }
+  cur = S.cur || 0;
+  if(saveAfter !== false) save();
+  render();
+  if(S.startedAt && !S.submitted) startClock();
+}
+
+function setReadOnly(readonly){
+  portalReadOnly = readonly;
+  document.querySelectorAll("#app button, #app .opt, #app textarea, #app .nbtn, #app .symbar button").forEach(el => {
+    el.disabled = readonly;
+  });
+  document.querySelectorAll("#modal-root button").forEach(el => {
+    el.disabled = readonly;
+  });
+}
+
+function sendToParent(msg){
+  if(window.parent !== window){
+    window.parent.postMessage(Object.assign({}, msg, {blockId: portalBlockId}), "*");
+  }
+}
+
+window.addEventListener("message", e => {
+  const data = e.data;
+  if(!data || typeof data !== "object") return;
+  switch(data.type){
+    case "portal-init":
+      portalMode = true;
+      portalBlockId = data.blockId || null;
+      if(data.state){
+        importState(data.state, false);
+      } else {
+        // fall back to localStorage state
+        const saved = loadState();
+        if(saved){ S = saved; render(); }
+      }
+      if(data.readOnly) setReadOnly(true);
+      break;
+    case "portal-get-state":
+      sendToParent({type: "html-activity-state", state: getCurrentState()});
+      break;
+    case "portal-set-state":
+      if(data.state) importState(data.state, false);
+      break;
+    case "portal-set-readonly":
+      setReadOnly(!!data.readOnly);
+      break;
+  }
+});
+
+// Notify parent that we're ready (in case parent loads after us)
+sendToParent({type: "html-activity-ready", blockId: portalBlockId});
+</script>
+</body>

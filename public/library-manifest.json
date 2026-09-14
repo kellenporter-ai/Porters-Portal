@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-13T21:24:03.434Z",
+  "generatedAt": "2026-09-14T15:52:28.349Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
       "fingerprint": "/ap1-kinematics-practice.html",
-      "sizeBytes": 109198
+      "sizeBytes": 111294
     },
     {
       "path": "/circuit-diagram-builder.html",
@@ -14,7 +14,7 @@
     {
       "path": "/codeword-lookup.html",
       "fingerprint": "/codeword-lookup.html",
-      "sizeBytes": 8883
+      "sizeBytes": 10485
     },
     {
       "path": "/electroscope-charge-assessment.html",
@@ -59,7 +59,7 @@
     {
       "path": "/privacy.html",
       "fingerprint": "/privacy.html",
-      "sizeBytes": 9618
+      "sizeBytes": 11142
     },
     {
       "path": "/texas-blackout-articles/",
@@ -95,6 +95,11 @@
       "path": "/texas-blackout-articles/article-6.html",
       "fingerprint": "/texas-blackout-articles/article-6.html",
       "sizeBytes": 14107
+    },
+    {
+      "path": "/texas-grid-blackout.html",
+      "fingerprint": "/texas-grid-blackout.html",
+      "sizeBytes": 87897
     },
     {
       "path": "/textbook/ch2-kinematics-1d/",
