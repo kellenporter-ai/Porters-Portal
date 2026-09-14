@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/generate-library-manifest.mjs",
+    "prebuild": "node scripts/generate-library-manifest.mjs && node scripts/generate-hosting-manifest.mjs",
+    "pretest": "node scripts/generate-hosting-manifest.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",

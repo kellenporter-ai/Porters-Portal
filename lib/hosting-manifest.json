@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-09-14T16:14:57.545Z",
+  "rewrites": {
+    "/privacy": "/privacy.html",
+    "/codeword": "/codeword-lookup.html",
+    "/circuit-diagram-builder": "/circuit-diagram-builder.html",
+    "/electroscope-charge-assessment": "/electroscope-charge-assessment.html",
+    "/tools/bar-chart": "/tools/bar-chart.html",
+    "/tools/force-diagram": "/tools/force-diagram.html",
+    "/textbook/ch2-kinematics-1d": "/textbook/ch2-kinematics-1d/index.html",
+    "/texas-blackout-articles": "/texas-blackout-articles/index.html",
+    "/forensic-branches": "/forensic-branches/index.html",
+    "/texas-grid-blackout": "/texas-grid-blackout.html",
+    "/ap1-kinematics-practice": "/ap1-kinematics-practice.html"
+  },
+  "dirs": [
+    "/forensic-branches",
+    "/texas-blackout-articles",
+    "/textbook/ch2-kinematics-1d"
+  ]
+}
