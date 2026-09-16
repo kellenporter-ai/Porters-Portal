@@ -314,6 +314,7 @@ export const en: Dictionary = {
   'rv.escapeHatch.body': 'Your work has been saved. Check with your teacher if your submission went through.',
   'rv.escapeHatch.button': 'Return to Dashboard',
   'rv.submit.minTime': 'Please spend at least {seconds} seconds reviewing the assessment before submitting.',
+  'rv.submit.interaction': 'Please work in the assessment — type an answer, select a choice, or paste your work — before submitting.',
   'rv.submit.confirmTitle': 'Submit Assessment?',
   'rv.submit.confirmBody': 'Once submitted, you cannot change your answers. Make sure you have reviewed all questions before continuing.',
   'rv.submit.confirmLabel': 'Submit',

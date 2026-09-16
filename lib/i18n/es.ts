@@ -314,6 +314,7 @@ export const es: Dictionary = {
   'rv.escapeHatch.body': 'Tu trabajo ha sido guardado. Pregunta a tu docente si tu entrega se registró.',
   'rv.escapeHatch.button': 'Volver al Panel',
   'rv.submit.minTime': 'Por favor dedica al menos {seconds} segundos a revisar la evaluación antes de entregarla.',
+  'rv.submit.interaction': 'Por favor trabaja en la evaluación — escribe una respuesta, selecciona una opción o pega tu trabajo — antes de entregarla.',
   'rv.submit.confirmTitle': '¿Entregar la Evaluación?',
   'rv.submit.confirmBody': 'Una vez entregada, no podrás cambiar tus respuestas. Asegúrate de haber revisado todas las preguntas antes de continuar.',
   'rv.submit.confirmLabel': 'Entregar',

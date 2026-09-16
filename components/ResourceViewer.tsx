@@ -5,6 +5,7 @@ import { useAssignments } from '../lib/AppDataContext';
 import { dataService } from '../services/dataService';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, limit, onSnapshot, orderBy } from 'firebase/firestore';
 import { assessmentSessionKey, assessmentSessionSigKey } from '../lib/assessmentSessionKeys';
+import { hasAssessmentInteraction } from '../lib/assessmentInteractionGate';
 import { db, callStartAssessmentSession } from '../lib/firebase';
 import { useToast } from './ToastProvider';
 import { useT, useInterpolate } from '../lib/i18n';
@@ -278,6 +279,16 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     // Client-side guard: require minimum engagement time
     if (metrics.engagementTime < MIN_ASSESSMENT_ENGAGEMENT_SEC) {
       toast.error(interpolate(t('rv.submit.minTime'), { seconds: MIN_ASSESSMENT_ENGAGEMENT_SEC }));
+      return;
+    }
+
+    // Client-side guard: require evidence of genuine interaction (keystrokes,
+    // pastes, auto-inserts/dictation, or clicks). Assessments are inherently
+    // interactive; an idle student can otherwise pass the time floor just by
+    // leaving the visible tab untouched. Reading-only resources are NOT gated —
+    // this check applies to the assessment submit path only.
+    if (!hasAssessmentInteraction(metrics)) {
+      toast.error(t('rv.submit.interaction'));
       return;
     }
 

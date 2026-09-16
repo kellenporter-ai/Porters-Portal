@@ -902,9 +902,14 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
       const interval = setInterval(() => {
           if (document.hidden) return;
           const now = Date.now();
+          // Count time whenever the tab is visible. Input within the last 60s
+          // counts as full engagement; beyond that, the student may be reading
+          // inside an iframe/nested scroller that doesn't emit parent-window
+          // input events, so we still credit visible time (capped server-side
+          // against elapsed session time).
+          metricsRef.current.engagementTime += 1;
+          setDisplayTime(metricsRef.current.engagementTime);
           if (now - lastInteractionRef.current < 60000) {
-              metricsRef.current.engagementTime += 1;
-              setDisplayTime(metricsRef.current.engagementTime);
               if (!isActiveRef.current) {
                 isActiveRef.current = true;
                 setIsActive(true);
