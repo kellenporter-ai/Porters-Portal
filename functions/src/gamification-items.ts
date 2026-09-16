@@ -255,13 +255,12 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     throw new HttpsError("invalid-argument", "xpAmount must be a non-zero number.");
   }
   // Admins may target another user and bypass per-submission/rate caps; non-admins always target themselves.
-  const isAdmin = request.auth?.token?.admin === true;
+  // Admin status is verified server-side (custom claims) rather than from the caller's
+  // ID token, so a stale token claim can never block a legitimate admin adjustment.
   let userId = callerId;
   let isAdminAdjustment = false;
   if (typeof targetUserId === "string" && targetUserId !== callerId) {
-    if (!isAdmin) {
-      throw new HttpsError("permission-denied", "Only admins may award XP to other users.");
-    }
+    await verifyAdmin(request.auth);
     userId = targetUserId;
     isAdminAdjustment = true;
   }

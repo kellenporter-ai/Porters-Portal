@@ -101,7 +101,7 @@ export const dataService = {
     await deleteDoc(doc(db, 'xp_events', id));
   },
 
-  adjustUserXP: async (userId: string, amount: number, classType: string) => {
+  adjustUserXP: async (userId: string, amount: number, classType?: string) => {
     await dataService.awardXP(userId, amount, classType);
   },
 

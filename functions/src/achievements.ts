@@ -177,18 +177,23 @@ export async function writeAchievementNotifications(
 
   const correlationId = generateCorrelationId();
 
-  // Deduplicate against existing notifications to prevent races/retries from creating duplicates
-  const existingSnap = await db
-    .collection("notifications")
-    .where("userId", "==", userId)
-    .where("type", "==", "ACHIEVEMENT_UNLOCKED")
-    .where("achievementId", "in", newUnlocks)
-    .get();
-
+  // Deduplicate against existing notifications to prevent races/retries from creating duplicates.
+  // Firestore 'in' queries accept at most 10 values — chunk so a mass unlock (large XP
+  // grant crossing many thresholds at once) cannot fail the whole award.
   const alreadyNotified = new Set<string>();
-  for (const doc of existingSnap.docs) {
-    const achievementId = doc.data().achievementId as string;
-    if (achievementId) alreadyNotified.add(achievementId);
+  for (let i = 0; i < newUnlocks.length; i += 10) {
+    const chunk = newUnlocks.slice(i, i + 10);
+    const existingSnap = await db
+      .collection("notifications")
+      .where("userId", "==", userId)
+      .where("type", "==", "ACHIEVEMENT_UNLOCKED")
+      .where("achievementId", "in", chunk)
+      .get();
+
+    for (const doc of existingSnap.docs) {
+      const achievementId = doc.data().achievementId as string;
+      if (achievementId) alreadyNotified.add(achievementId);
+    }
   }
 
   const timestamp = new Date().toISOString();
