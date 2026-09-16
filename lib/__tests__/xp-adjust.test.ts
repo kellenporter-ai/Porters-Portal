@@ -24,4 +24,14 @@ describe('resolveXpAdjustClass', () => {
     const user = { ...baseUser, classType: 'Uncategorized' } as User;
     expect(resolveXpAdjustClass(user)).toBeUndefined();
   });
+
+  it('ignores a stale legacy classType like Physics and falls back to a valid enrolled class', () => {
+    const user = { ...baseUser, classType: 'Physics', enrolledClasses: ['AP Physics'] } as User;
+    expect(resolveXpAdjustClass(user)).toBe('AP Physics');
+  });
+
+  it('returns undefined when both classType and enrolled class are stale legacy values', () => {
+    const user = { ...baseUser, classType: 'Physics', enrolledClasses: ['Physics'] } as User;
+    expect(resolveXpAdjustClass(user)).toBeUndefined();
+  });
 });

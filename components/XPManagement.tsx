@@ -92,7 +92,12 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
     try {
         await dataService.adjustUserXP(user.id, amount, resolveXpAdjustClass(user));
         toast.success(`${amount > 0 ? '+' : ''}${amount} XP applied to ${user.name}.`);
-    } catch (e) { toast.error('Failed to adjust XP.'); }
+    } catch (e) {
+        // The callable's HttpsError message is server-generated (safe to show);
+        // surfacing it turns a generic toast into an actionable diagnosis.
+        const message = e instanceof Error && e.message ? e.message.replace(/^FirebaseError:\s*/, '') : '';
+        toast.error(message || 'Failed to adjust XP.');
+    }
     setAdjustingUser(null);
   };
 
