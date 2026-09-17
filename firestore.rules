@@ -695,7 +695,7 @@ service cloud.firestore {
         request.resource.data.boardId is string &&
         studentInBoardSection(
           get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data) &&
-        get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data.status == 'open';
+        get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data.status == 'open');
 
       allow update: if isAdmin();
       allow delete: if isAdmin();
