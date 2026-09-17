@@ -247,6 +247,34 @@ function getDisenchantValue(item: LootItem): number {
 
 // ── Cloud Functions ─────────────────────────────────────────────────
 
+// Pure seam expressing the awardXP cap policy (Audit Phase 2.1) — extracted so the
+// per-submission cap, 5s rate limit, and 5000/day cap are unit-testable without an
+// emulator. MUST stay identical to the inline checks in awardXP below; if the
+// handler's cap logic changes, update this function and its tests together.
+export function awardXpCaps(opts: {
+  xpAmount: number;
+  isAdminAdjustment: boolean;
+  rateLimit?: { lastAwardAt: number; dayKey: string; dailyTotal: number; now: number } | null;
+}): { allowed: boolean; reason?: string } {
+  const { xpAmount, isAdminAdjustment, rateLimit } = opts;
+  // Per-submission cap (admin-targeted adjustments bypass).
+  if (!isAdminAdjustment && Math.abs(xpAmount) > MAX_XP_PER_SUBMISSION) {
+    return { allowed: false, reason: `Maximum XP per award is ${MAX_XP_PER_SUBMISSION}.` };
+  }
+  // Rate limiting: 5-second gap + 5000 XP/day cap (skipped for admin adjustments).
+  if (rateLimit && !isAdminAdjustment) {
+    if (rateLimit.now - rateLimit.lastAwardAt < 5000) {
+      return { allowed: false, reason: "XP award rate limited. Please wait at least 5 seconds between awards." };
+    }
+    const today = new Date(rateLimit.now).toISOString().slice(0, 10);
+    const currentDaily = rateLimit.dayKey === today ? rateLimit.dailyTotal : 0;
+    if (currentDaily + xpAmount > 5000) {
+      return { allowed: false, reason: "Daily XP cap of 5000 reached." };
+    }
+  }
+  return { allowed: true };
+}
+
 export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const callerId = verifyAuth(request.auth);
@@ -263,6 +291,11 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     await verifyAdmin(request.auth);
     userId = targetUserId;
     isAdminAdjustment = true;
+    // Sanity ceiling on admin adjustments — the normal caps are intentionally
+    // skipped, so guard against fat-fingered / compromised admin sessions.
+    if (Math.abs(xpAmount) > 50000) {
+      throw new HttpsError("invalid-argument", "Admin XP adjustments are limited to ±50000 per call.");
+    }
   }
   if (!isAdminAdjustment && Math.abs(xpAmount) > MAX_XP_PER_SUBMISSION) {
     throw new HttpsError("invalid-argument", `Maximum XP per award is ${MAX_XP_PER_SUBMISSION}.`);
@@ -309,6 +342,20 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
       dailyTotal: currentDailyTotal + xpAmount,
       dayKey: today,
     });
+
+    // Audit trail for admin-targeted adjustments (firestore.rules: admin_actions
+    // is CF-write / admin-read-only — coordinated rules block pending DQB window).
+    if (isAdminAdjustment) {
+      const auditRef = db.collection("admin_actions").doc();
+      t.set(auditRef, {
+        adminUid: callerId,
+        targetUid: userId,
+        action: "xp_adjust",
+        amount: xpAmount,
+        reason: typeof request.data.reason === "string" ? request.data.reason : null,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
 
     if (achievementResult.newUnlocks.length > 0) {
       await writeAchievementNotifications(db, userId, achievementResult.newUnlocks);

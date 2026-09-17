@@ -8,7 +8,9 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "vitest run --config vitest.config.mts",
+    "pretest": "node node_modules/typescript/lib/tsc.js"
   },
   "engines": {
     "node": "22"

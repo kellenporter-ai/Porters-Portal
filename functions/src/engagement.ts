@@ -8,6 +8,7 @@ import {
   getProfileData,
   getActiveXPMultiplier,
   DEFAULT_XP_PER_MINUTE,
+  VALID_CLASS_TYPES,
   MAX_XP_PER_SUBMISSION,
   ENGAGEMENT_COOLDOWN_MS,
   TelemetryThresholds,
@@ -29,6 +30,23 @@ function assertEnrolled(userData: Record<string, unknown>, classType: string): v
   if (!enrolledClasses.includes(classType) && userData.classType !== classType) {
     throw new HttpsError("permission-denied", "Not enrolled in this class.");
   }
+}
+
+// Mirror of the module-private validateClassType in ./core (core.ts:122).
+// VALID_CLASS_TYPES is exported from core; the validator itself is not.
+// Exported (thin seam) for pure-logic unit tests — Audit Phase 2.1.
+export function validateEngagementClassType(classType: string): void {
+  if (!VALID_CLASS_TYPES.includes(classType)) {
+    throw new HttpsError("invalid-argument", `Invalid classType: "${classType}". Must be one of: ${VALID_CLASS_TYPES.join(", ")}`);
+  }
+}
+
+// Pure seam for the server-elapsed engagement clamp (Audit Phase 2.1, 1cfb593 class).
+// Mirrors the ternary in submitEngagement; keep in sync with that handler.
+export function clampEngagementTime(engagementTime: number, serverElapsedSec: number): number {
+  return serverElapsedSec > 0
+    ? Math.min(engagementTime, serverElapsedSec + 5)
+    : Math.min(engagementTime, 14400);
 }
 
 // ==========================================
@@ -90,6 +108,12 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   const correlationId = generateCorrelationId();
   const db = admin.firestore();
 
+  // Audit Phase 0.3: reject arbitrary client classType before it reaches
+  // class_configs lookup and getActiveXPMultiplier (mirrors core.ts:123).
+  if (classType) {
+    validateEngagementClassType(classType);
+  }
+
   // Validate metrics are reasonable
   const engagementTime = Number(metrics.engagementTime) || 0;
   const keystrokes = Number(metrics.keystrokes) || 0;
@@ -116,9 +140,7 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
 
   // Clamp engagementTime to server-elapsed + 5s when session available;
   // fallback to hard bounds when client hasn't adopted session tokens yet.
-  const validatedEngagement = serverElapsedSec > 0
-    ? Math.min(engagementTime, serverElapsedSec + 5)
-    : Math.min(engagementTime, 14400);
+  const validatedEngagement = clampEngagementTime(engagementTime, serverElapsedSec);
 
   // Reject impossible values
   if (validatedEngagement < 10) {
@@ -272,6 +294,9 @@ export const awardQuestionXP = onCall({ memory: "256MiB", timeoutSeconds: 60, mi
   } = request.data;
   if (!assignmentId || !questionId || !xpAmount) {
     throw new HttpsError("invalid-argument", "Missing required fields.");
+  }
+  if (classType) {
+    validateEngagementClassType(classType);
   }
   if (xpAmount > 50 || xpAmount < 0) {
     throw new HttpsError("invalid-argument", "Invalid XP amount.");
@@ -1503,6 +1528,7 @@ export const awardBehaviorXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, 
   if (!studentId || !classType || xpAmount === undefined || fluxAmount === undefined || !reason) {
     throw new HttpsError("invalid-argument", "Missing required fields: studentId, classType, xpAmount, fluxAmount, reason.");
   }
+  validateEngagementClassType(classType);
 
   const batch = db.batch();
 

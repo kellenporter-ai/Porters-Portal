@@ -7,10 +7,19 @@ import {
   computePlausibilityScore,
   TelemetryThresholds,
   getActiveXPMultiplier,
+  VALID_CLASS_TYPES,
   generateCorrelationId,
   logWithCorrelation,
   validateMetricsIntegrity,
 } from "./core";
+
+// Mirror of the module-private validateClassType in ./core (core.ts:122).
+// VALID_CLASS_TYPES is exported from core; the validator itself is not.
+function validateClassType(classType: string): void {
+  if (!VALID_CLASS_TYPES.includes(classType)) {
+    throw new HttpsError("invalid-argument", `Invalid classType: "${classType}". Must be one of: ${VALID_CLASS_TYPES.join(", ")}`);
+  }
+}
 
 // ==========================================
 // ASSESSMENT GRADING HELPER — Reusable block grading logic
@@ -304,6 +313,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
   // Pre-read telemetry thresholds
   let assessmentThresholds: Partial<TelemetryThresholds> = {};
   if (classType) {
+    validateClassType(classType);
     const configSnap = await db.collection("class_configs")
       .where("className", "==", classType).orderBy("__name__").limit(1).get();
     if (!configSnap.empty) {
@@ -1013,6 +1023,7 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   const baseXP = Math.round(percentage * 0.5);
   let xpEarned = 0;
   if (baseXP > 0) {
+    if (classType) validateClassType(classType);
     const effectiveClass = classType || "Uncategorized";
     const multiplier = await getActiveXPMultiplier(effectiveClass);
     xpEarned = Math.round(baseXP * multiplier);
