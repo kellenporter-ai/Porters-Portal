@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'happy-dom',
     include: ['lib/__tests__/**/*.test.{ts,tsx}'],
   },
 });

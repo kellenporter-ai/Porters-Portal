@@ -14,7 +14,9 @@
     "test:rules": "firebase emulators:exec --only firestore 'vitest run rules/__tests__/firestore.rules.test.ts --config vitest.rules.config.ts'",
     "compress-models": "node scripts/compress-models.mjs",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "@babylonjs/core": "^8.54.1",
