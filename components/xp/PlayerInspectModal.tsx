@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { User, RPGItem, EquipmentSlot } from '../../types';
 import { dataService } from '../../services/dataService';
 import { getRankDetails, calculateGearScore, calculatePlayerStats, getAssetColors } from '../../lib/gamification';
@@ -7,7 +7,8 @@ import { getEvolutionTier, getActiveSetBonuses } from '../../lib/achievements';
 import { getClassProfile } from '../../lib/classProfile';
 import { useFocusTrap } from '../../lib/useFocusTrap';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
-import Avatar3D from '../dashboard/Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('../dashboard/Avatar3D'));
 import ProfileFrame from '../dashboard/ProfileFrame';
 import ItemIcon from '../ItemIcon';
 import { X, Shield, Zap, Trophy, Star, Target } from 'lucide-react';
@@ -96,14 +97,16 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
             <div className="flex flex-col items-center gap-2 shrink-0">
               <div className="w-24 h-32">
                 {gam.selectedCharacterModel ? (
-                  <Avatar3D
-                    characterModelId={gam.selectedCharacterModel}
-                    appearance={appearance}
-                    activeCosmetics={gam.activeCosmetics}
-                    evolutionLevel={gam.level}
-                    equipped={equipped}
-                    compact
-                  />
+                  <Suspense fallback={null}>
+                    <Avatar3D
+                      characterModelId={gam.selectedCharacterModel}
+                      appearance={appearance}
+                      activeCosmetics={gam.activeCosmetics}
+                      evolutionLevel={gam.level}
+                      equipped={equipped}
+                      compact
+                    />
+                  </Suspense>
                 ) : (
                   <OperativeAvatar equipped={equipped} appearance={appearance} activeCosmetics={gam.activeCosmetics} />
                 )}

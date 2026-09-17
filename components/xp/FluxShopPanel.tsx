@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { Suspense, useState, useMemo, useCallback } from 'react';
 import { Hexagon, Clock, Sparkles, Palette, RotateCcw, ShoppingCart, Check, User, Snowflake, Box, Wind, Eye, EyeOff, CuboidIcon, Search, X } from 'lucide-react';
 import { FLUX_SHOP_ITEMS, AGENT_COSMETICS } from '../../lib/gamification';
 import { dataService } from '../../services/dataService';
@@ -7,7 +7,8 @@ import { useToast } from '../ToastProvider';
 import { sfx } from '../../lib/sfx';
 import { ActiveBoost, FluxShopItem, CosmeticVisualType, ActiveCosmetics } from '../../types';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
-import Avatar3D from '../dashboard/Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('../dashboard/Avatar3D'));
 import ProfileFrame from '../dashboard/ProfileFrame';
 import { CHARACTER_MODELS, getStarterModels, ENABLE_3D_AVATAR } from '../../lib/characterModels';
 import { useT, useInterpolate } from '../../lib/i18n';
@@ -855,13 +856,15 @@ const FluxShopPanel: React.FC<FluxShopPanelProps> = ({
                     className="w-full aspect-[3/4] max-h-[60vh] bg-[var(--panel-bg)] rounded-xl border border-[var(--border)] overflow-hidden relative"
                     style={{ background: `radial-gradient(ellipse at 50% 70%, hsla(${(playerAppearance?.hue || 0) + 200}, 60%, 20%, 0.4) 0%, rgba(0,0,0,0.5) 70%)` }}
                   >
-                    <Avatar3D
-                      characterModelId={selectedCharacterModel}
-                      appearance={playerAppearance}
-                      activeCosmetics={displayedCosmetics}
-                      evolutionLevel={playerEvolutionLevel}
-                      equipped={playerEquipped}
-                    />
+                    <Suspense fallback={null}>
+                      <Avatar3D
+                        characterModelId={selectedCharacterModel}
+                        appearance={playerAppearance}
+                        activeCosmetics={displayedCosmetics}
+                        evolutionLevel={playerEvolutionLevel}
+                        equipped={playerEquipped}
+                      />
+                    </Suspense>
                   </div>
 
                   {/* Profile frame + codename row */}

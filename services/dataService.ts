@@ -2089,7 +2089,7 @@ export const dataService = {
 
   subscribeToSongRequests: (callback: (requests: SongRequest[]) => void) => {
     const q = query(collection(db, 'song_requests'), orderBy('timestamp', 'desc'), limit(100));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as SongRequest))));
+    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as SongRequest))), (error) => { reportError(error, { subscription: 'songRequests' }); });
   },
 
   updateSongRequest: async (requestId: string, data: Partial<SongRequest>) => {

@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { RPGItem, EquipmentSlot, ActiveCosmetics } from '../../types';
 import Modal from '../Modal';
 import OperativeAvatar, { SKIN_TONES, HAIR_COLORS, HAIR_STYLE_NAMES } from './OperativeAvatar';
-import Avatar3D from './Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('./Avatar3D'));
 import { CHARACTER_MODELS, getStarterModels, DEFAULT_CHARACTER_MODEL, ENABLE_3D_AVATAR } from '../../lib/characterModels';
 
 interface Appearance {
@@ -381,18 +382,20 @@ const CustomizeModal: React.FC<CustomizeModalProps> = ({
                 style={{ background: `radial-gradient(ellipse at 50% 70%, hsla(${suitHueValue + 200}, 60%, 20%, 0.4) 0%, rgba(0,0,0,0.5) 70%)` }}
               >
                 {activeTab === '3d' ? (
-                  <Avatar3D
-                    characterModelId={current3DModel}
-                    appearance={{
-                      ...appearance,
-                      hue: previewHue ?? appearance?.hue ?? 0,
-                      suitHue: previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0,
-                      bodyType: previewBodyType ?? appearance?.bodyType ?? 'A',
-                      skinTone: previewSkinTone ?? appearance?.skinTone ?? 0,
-                    }}
-                    activeCosmetics={activeCosmetics}
-                    equipped={equipped}
-                  />
+                  <Suspense fallback={null}>
+                    <Avatar3D
+                      characterModelId={current3DModel}
+                      appearance={{
+                        ...appearance,
+                        hue: previewHue ?? appearance?.hue ?? 0,
+                        suitHue: previewSuitHue ?? appearance?.suitHue ?? appearance?.hue ?? 0,
+                        bodyType: previewBodyType ?? appearance?.bodyType ?? 'A',
+                        skinTone: previewSkinTone ?? appearance?.skinTone ?? 0,
+                      }}
+                      activeCosmetics={activeCosmetics}
+                      equipped={equipped}
+                    />
+                  </Suspense>
                 ) : (
                   <OperativeAvatar equipped={equipped} appearance={{
                     ...appearance,

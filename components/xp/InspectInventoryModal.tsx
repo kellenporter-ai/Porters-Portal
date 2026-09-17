@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { Suspense, useState, useMemo, useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, RPGItem, EquipmentSlot, ItemRarity, ItemSlot, ItemAffix, ItemEffect, CustomItem } from '../../types';
 import { Plus, X, Trash2, Edit3, Package, Sparkles, Copy, Wand2, Save } from 'lucide-react';
 import { getAssetColors, calculatePlayerStats, calculateGearScore, getRankDetails, getLevelProgress } from '../../lib/gamification';
 import { getClassProfile } from '../../lib/classProfile';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
-import Avatar3D from '../dashboard/Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('../dashboard/Avatar3D'));
 import Modal from '../Modal';
 import ItemIcon from '../ItemIcon';
 
@@ -132,13 +133,15 @@ const InspectInventoryModal: React.FC<InspectInventoryModalProps> = ({
                         <div className="bg-gradient-to-b from-purple-900/20 to-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-3 flex flex-col items-center">
                             <div className="w-28 h-36">
                                 {user.gamification?.selectedCharacterModel ? (
-                                    <Avatar3D
-                                        characterModelId={user.gamification.selectedCharacterModel}
-                                        appearance={profile.appearance}
-                                        activeCosmetics={user.gamification?.activeCosmetics}
-                                        evolutionLevel={level}
-                                        equipped={profile.equipped}
-                                    />
+                                    <Suspense fallback={null}>
+                                        <Avatar3D
+                                            characterModelId={user.gamification.selectedCharacterModel}
+                                            appearance={profile.appearance}
+                                            activeCosmetics={user.gamification?.activeCosmetics}
+                                            evolutionLevel={level}
+                                            equipped={profile.equipped}
+                                        />
+                                    </Suspense>
                                 ) : (
                                     <OperativeAvatar
                                         equipped={profile.equipped as Record<string, { rarity?: string; visualId?: string }>}

@@ -21,7 +21,6 @@ import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import GamificationSkeleton from './GamificationSkeleton';
 import LootDropAnimation from './xp/LootDropAnimation';
-const ProfileShowcase = lazyWithRetry(() => import('./ProfileShowcase'));
 import { STUDENT_TAB_MAP } from '../lib/routes';
 const IntelDossier = lazyWithRetry(() => import('./IntelDossier'));
 import { useTheme } from '../lib/ThemeContext';
@@ -158,7 +157,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   const activeTab = displayTab;
 
-  const [showProfile, setShowProfile] = useState(false);
   const [lootDropItem, setLootDropItem] = useState<RPGItem | null>(null);
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
   // Mobile-only: collapse the Operative Status strip behind a "Stats" toggle (closed by default)
@@ -786,12 +784,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       </main>
 
 
-      {/* Profile Showcase */}
-      {showProfile && (
-          <Suspense fallback={<GamificationSkeleton />}>
-            <ProfileShowcase user={user} classType={activeClass} onClose={() => setShowProfile(false)} />
-          </Suspense>
-      )}
 
       {/* Loot Drop Animation */}
       {lootDropItem && (

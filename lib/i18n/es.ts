@@ -411,6 +411,7 @@ export const es: Dictionary = {
   'workspace.couldntSave': 'No se pudo guardar — revisa la conexión',
   'workspace.noteSaveFailed': 'No se pudo guardar la nota de estudio —{detail}',
   'workspace.noteSaveFailedDefault': 'No se pudo guardar la nota de estudio — revisa tu conexión.',
+  'workspace.noteLoadFailed': 'No se pudieron cargar tus notas guardadas — revisa tu conexión. Las notas que escribas ahora sí se guardarán.',
   'workspace.question': 'Pregunta {number}',
 
   // ── Flux Shop (Phase 4c) ──
@@ -905,4 +906,13 @@ export const es: Dictionary = {
   'auth.errorGeneric': 'Error de inicio de sesión',
   'auth.actionRequired': 'Acción requerida:',
   'auth.apiKeyHelp': 'Falta la clave de API de Firebase. Abre lib/firebase.ts y reemplaza "INSERT_YOUR_API_KEY_HERE" con tu clave real de la consola de Firebase.',
+
+  // ── Abreviaturas de días de la semana (índice 0 = domingo) ──
+  'dates.weekdaySun': 'dom',
+  'dates.weekdayMon': 'lun',
+  'dates.weekdayTue': 'mar',
+  'dates.weekdayWed': 'mié',
+  'dates.weekdayThu': 'jue',
+  'dates.weekdayFri': 'vie',
+  'dates.weekdaySat': 'sáb',
 };

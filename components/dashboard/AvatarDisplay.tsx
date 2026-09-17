@@ -5,10 +5,11 @@
  *
  * Drop-in replacement for OperativeAvatar across the portal.
  */
-import React from 'react';
+import React, { Suspense } from 'react';
 import { ActiveCosmetics } from '../../types';
 import OperativeAvatar from './OperativeAvatar';
-import Avatar3D from './Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('./Avatar3D'));
 import { ENABLE_3D_AVATAR } from '../../lib/characterModels';
 
 interface AvatarDisplayProps {
@@ -49,7 +50,8 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
 }) => {
     if (ENABLE_3D_AVATAR && characterModelId) {
         return (
-            <Avatar3D
+            <Suspense fallback={null}>
+                <Avatar3D
                 characterModelId={characterModelId}
                 appearance={appearance}
                 activeCosmetics={activeCosmetics}
@@ -57,7 +59,8 @@ const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
                 equipped={equipped}
                 compact={compact}
                 className={className}
-            />
+                />
+            </Suspense>
         );
     }
 

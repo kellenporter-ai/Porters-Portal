@@ -42,7 +42,15 @@ export function readDraft<T = unknown>(key: string): DraftEnvelope<T> | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    return JSON.parse(raw) as DraftEnvelope<T>;
+    const parsed = JSON.parse(raw) as DraftEnvelope<T>;
+    // Guard against corrupt-but-parseable payloads (e.g. "null", a bare
+    // string/number) — treat them like a missing draft rather than letting
+    // downstream code dereference a broken envelope.
+    if (!parsed || typeof parsed !== 'object' || !('data' in parsed) || typeof parsed.timestamp !== 'string') {
+      reportError(new Error('Corrupt draft envelope discarded'), { key });
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }

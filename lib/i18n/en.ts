@@ -411,6 +411,7 @@ export const en: Dictionary = {
   'workspace.couldntSave': "Couldn't save — check connection",
   'workspace.noteSaveFailed': "Couldn't save study note —{detail}",
   'workspace.noteSaveFailedDefault': "Couldn't save study note — check your connection.",
+  'workspace.noteLoadFailed': "Couldn't load your saved notes — check your connection. Notes you type now will still save.",
   'workspace.question': 'Question {number}',
 
   // ── Flux Shop (Phase 4c) ──
@@ -905,4 +906,13 @@ export const en: Dictionary = {
   'auth.errorGeneric': 'Login failed',
   'auth.actionRequired': 'Action Required:',
   'auth.apiKeyHelp': 'The app is missing your Firebase API Key. Please open lib/firebase.ts and replace "INSERT_YOUR_API_KEY_HERE" with your actual key from the Firebase Console.',
+
+  // ── Weekday abbreviations (index 0 = Sunday) ──
+  'dates.weekdaySun': 'Sun',
+  'dates.weekdayMon': 'Mon',
+  'dates.weekdayTue': 'Tue',
+  'dates.weekdayWed': 'Wed',
+  'dates.weekdayThu': 'Thu',
+  'dates.weekdayFri': 'Fri',
+  'dates.weekdaySat': 'Sat',
 };

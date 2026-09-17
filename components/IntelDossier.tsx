@@ -6,6 +6,8 @@ import { classifyStudentBucket, BUCKET_META, getBucketRecommendation, Aggregated
 import { getClassProfile } from '../lib/classProfile';
 import { getStreakMultiplier } from '../lib/achievements';
 import { useT, useInterpolate } from '../lib/i18n';
+
+const WEEKDAY_KEYS = ['dates.weekdaySun', 'dates.weekdayMon', 'dates.weekdayTue', 'dates.weekdayWed', 'dates.weekdayThu', 'dates.weekdayFri', 'dates.weekdaySat'];
 import { Shield, Swords, Heart, Crosshair, Zap, Target, Activity, BarChart3, Flame, Star, ArrowUpRight, Sparkles, Brain } from 'lucide-react';
 
 interface IntelDossierProps {
@@ -158,7 +160,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const label = d.toLocaleDateString('en', { weekday: 'short' });
+      const label = t(WEEKDAY_KEYS[d.getDay()]);
       const daySubs = classSubmissions.filter(s => s.submittedAt?.startsWith(dateStr));
       days.push({
         label,
@@ -167,7 +169,7 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
       });
     }
     return days;
-  }, [classSubmissions]);
+  }, [classSubmissions, t]);
 
   const maxDayMinutes = useMemo(() => Math.max(1, ...activityTimeline.map(d => d.minutes)), [activityTimeline]);
 

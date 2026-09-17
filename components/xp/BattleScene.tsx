@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import OperativeAvatar from '../dashboard/OperativeAvatar';
-import Avatar3D from '../dashboard/Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('../dashboard/Avatar3D'));
 import BossAvatar from './BossAvatar';
 import { BossAppearance, BreakBarConfig, BossIntent } from '../../types';
 
@@ -236,13 +237,15 @@ const BattleScene: React.FC<BattleSceneProps> = ({
                 style={{ transform: attackState === 'player-attack' ? 'translateX(2.5rem) scale(1.1)' : undefined }}
             >
                 {selectedCharacterModel ? (
-                    <Avatar3D
-                        characterModelId={selectedCharacterModel}
-                        appearance={playerAppearance}
-                        evolutionLevel={playerEvolutionLevel}
-                        equipped={playerEquipped}
-                        compact
-                    />
+                    <Suspense fallback={null}>
+                        <Avatar3D
+                            characterModelId={selectedCharacterModel}
+                            appearance={playerAppearance}
+                            evolutionLevel={playerEvolutionLevel}
+                            equipped={playerEquipped}
+                            compact
+                        />
+                    </Suspense>
                 ) : (
                     <OperativeAvatar
                         equipped={playerEquipped}

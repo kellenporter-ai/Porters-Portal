@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useT } from '../../lib/i18n';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import {
   DISTRICT_EVENTS_2025_2026,
@@ -11,7 +12,6 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -31,6 +31,12 @@ const ALL_CATEGORIES: CalendarEventCategory[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const DistrictCalendarTab: React.FC = () => {
+  const t = useT();
+  const WEEKDAYS = useMemo(() => [
+    t('dates.weekdaySun'), t('dates.weekdayMon'), t('dates.weekdayTue'),
+    t('dates.weekdayWed'), t('dates.weekdayThu'), t('dates.weekdayFri'),
+    t('dates.weekdaySat'),
+  ], [t]);
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);

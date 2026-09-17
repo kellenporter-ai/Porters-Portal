@@ -854,7 +854,11 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           setNotes(fetched);
           notesInitialized.current = true;
         }
-      }).catch(() => {});
+      }).catch((error) => {
+        // Surface load failure — student should know prior notes may exist.
+        reportError(error, { method: 'AssessmentWorkspace.loadNotes', submissionId });
+        toast.error(t('workspace.noteLoadFailed'));
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId]);

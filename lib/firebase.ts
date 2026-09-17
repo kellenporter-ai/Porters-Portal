@@ -170,7 +170,6 @@ export const callPurchaseFluxItem = httpsCallable(functions, 'purchaseFluxItem')
 export const callEquipFluxCosmetic = httpsCallable(functions, 'equipFluxCosmetic');
 
 // Stability: atomic archive + behavior award
-export const callArchiveAndClearResponses = httpsCallable(functions, 'archiveAndClearResponses');
 export const callAwardBehaviorXP = httpsCallable(functions, 'awardBehaviorXP');
 
 // Enrollment

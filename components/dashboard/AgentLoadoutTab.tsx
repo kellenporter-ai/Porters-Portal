@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { Suspense, useState, useMemo } from 'react';
 import { User, RPGItem, EquipmentSlot, ItemSlot, PLAYER_ROLE_DEFS, SpecializationId } from '../../types';
 import { User as UserIcon, GripVertical, Diamond, ChevronDown, ChevronUp, Sword, Zap, Shield, Crown, Plus } from 'lucide-react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
@@ -12,7 +12,8 @@ import { useT, useInterpolate } from '../../lib/i18n';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
 import OperativeAvatar from './OperativeAvatar';
-import Avatar3D from './Avatar3D';
+import { lazyWithRetry } from '../../lib/lazyWithRetry';
+const Avatar3D = lazyWithRetry(() => import('./Avatar3D'));
 import CustomizeModal from './CustomizeModal';
 import InspectItemModal from './InspectItemModal';
 import ItemIcon from '../ItemIcon';
@@ -436,13 +437,15 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
                   {/* AGENT VIEW — avatar fills the space */}
                   <div className="flex-1 w-full max-w-[280px] relative z-10">
                     {user.gamification?.selectedCharacterModel ? (
-                      <Avatar3D
-                        characterModelId={user.gamification.selectedCharacterModel}
-                        appearance={classProfile.appearance}
-                        activeCosmetics={user.gamification?.activeCosmetics}
-                        evolutionLevel={level}
-                        equipped={equipped}
-                      />
+                      <Suspense fallback={null}>
+                        <Avatar3D
+                          characterModelId={user.gamification.selectedCharacterModel}
+                          appearance={classProfile.appearance}
+                          activeCosmetics={user.gamification?.activeCosmetics}
+                          evolutionLevel={level}
+                          equipped={equipped}
+                        />
+                      </Suspense>
                     ) : (
                       <OperativeAvatar
                         equipped={equipped}
