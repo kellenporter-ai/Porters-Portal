@@ -38,7 +38,7 @@ const emptyForm: BankFormState = {
 const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, onClose, editingBank }) => {
   const toast = useToast();
   const { classConfigs } = useClassConfig();
-  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science'];
   const [bankForm, setBankForm] = useState<BankFormState>(emptyForm);
   const [bankImportError, setBankImportError] = useState<string | null>(null);
   const bankFileRef = useRef<HTMLInputElement>(null);

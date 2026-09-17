@@ -21,7 +21,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
   onSaveCodenameLocked,
 }) => {
   const { classConfigs } = useClassConfig();
-  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science'];
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All Classes');
   const [filterSection, setFilterSection] = useState('All Sections');

@@ -1,5 +1,5 @@
 
-import { Atom, BookOpen, Microscope, Zap } from 'lucide-react';
+import { Atom, BookOpen, FlaskConical, Microscope, Zap } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { UNCATEGORIZED } from './types';
 
@@ -16,6 +16,11 @@ export const CLASS_CONFIGS: Record<string, { icon: ReactElement; color: string; 
     icon: <Atom className="w-6 h-6" />,
     color: 'bg-purple-600',
     borderColor: 'border-purple-200'
+  },
+  'Physics': {
+    icon: <FlaskConical className="w-6 h-6" />,
+    color: 'bg-amber-600',
+    borderColor: 'border-amber-200'
   },
   'Forensic Science': {
     icon: <Microscope className="w-6 h-6" />,

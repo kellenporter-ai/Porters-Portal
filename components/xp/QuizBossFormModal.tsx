@@ -124,7 +124,7 @@ const QuizBossFormModal: React.FC<QuizBossFormModalProps> = ({
 }) => {
   const toast = useToast();
   const { classConfigs } = useClassConfig();
-  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science'];
   const [quizBossForm, setQuizBossForm] = useState<QuizBossFormState>(emptyForm());
   const [formModifiers, setFormModifiers] = useState<BossModifier[]>([]);
   const [promptCopied, setPromptCopied] = useState(false);

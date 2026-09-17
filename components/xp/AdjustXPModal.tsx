@@ -20,7 +20,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
     const { classConfigs } = useClassConfig();
     const mountedRef = useRef(true);
     useEffect(() => () => { mountedRef.current = false; }, []);
-    const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
+    const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science'];
     const [adjustAmount, setAdjustAmount] = useState(50);
     const [bulkMode, setBulkMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

@@ -37,7 +37,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
   const { classConfigs } = useClassConfig();
-  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Forensic Science'];
+  const classOptions = classConfigs.length > 0 ? classConfigs.map(c => c.className) : ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science'];
   const activeTab: XPTab = (initialTab && TAB_NAME_MAP[initialTab]) || 'OPERATIVES';
 
   const [events, setEvents] = useState<XPEvent[]>([]);

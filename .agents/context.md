@@ -1,7 +1,7 @@
 # Porter's Portal — Project Context
 
 ## Overview
-Gamified high school LMS (AP Physics 1, Honors Physics, Forensic Science) with deep RPG progression. Students are "operatives" in a spy/covert-ops theme.
+Gamified high school LMS (AP Physics 1, Honors Physics, Physics, Forensic Science) with deep RPG progression. Students are "operatives" in a spy/covert-ops theme.
 
 ## Audience
 High school students on Chromebooks (low-end hardware). Teachers use it for lesson delivery, assessment, and progress tracking.

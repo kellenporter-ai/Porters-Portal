@@ -20,6 +20,7 @@ export const XP_BRACKETS: [number, number][] = [
 export const VALID_CLASS_TYPES = [
   'AP Physics',
   'Honors Physics',
+  'Physics',
   'Forensic Science',
   'Uncategorized',
   'GLOBAL',

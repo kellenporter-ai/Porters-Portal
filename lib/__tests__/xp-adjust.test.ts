@@ -25,13 +25,23 @@ describe('resolveXpAdjustClass', () => {
     expect(resolveXpAdjustClass(user)).toBeUndefined();
   });
 
-  it('ignores a stale legacy classType like Physics and falls back to a valid enrolled class', () => {
+  it('uses the legacy classType when it is Physics', () => {
     const user = { ...baseUser, classType: 'Physics', enrolledClasses: ['AP Physics'] } as User;
+    expect(resolveXpAdjustClass(user)).toBe('Physics');
+  });
+
+  it('prefers the legacy classType over the first enrolled class when both are valid', () => {
+    const user = { ...baseUser, classType: 'Physics', enrolledClasses: ['Physics'] } as User;
+    expect(resolveXpAdjustClass(user)).toBe('Physics');
+  });
+
+  it('ignores an unrecognized legacy classType and falls back to a valid enrolled class', () => {
+    const user = { ...baseUser, classType: 'Chemistry', enrolledClasses: ['AP Physics'] } as User;
     expect(resolveXpAdjustClass(user)).toBe('AP Physics');
   });
 
-  it('returns undefined when both classType and enrolled class are stale legacy values', () => {
-    const user = { ...baseUser, classType: 'Physics', enrolledClasses: ['Physics'] } as User;
+  it('returns undefined when both classType and enrolled class are unrecognized values', () => {
+    const user = { ...baseUser, classType: 'Chemistry', enrolledClasses: ['Chemistry'] } as User;
     expect(resolveXpAdjustClass(user)).toBeUndefined();
   });
 });
