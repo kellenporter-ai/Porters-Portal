@@ -25,7 +25,7 @@ const db = admin.firestore();
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
-const SEED_CLASSES = ['AP Physics', 'Honors Physics', 'Forensic Science'];
+const SEED_CLASSES = ['AP Physics', 'Honors Physics', 'Forensic Science', 'Physics'];
 
 const CANONICAL = {
   features: { leaderboard: true, bossFights: true },
