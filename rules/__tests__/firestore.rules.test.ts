@@ -520,6 +520,52 @@ describe('library_items access control', () => {
   });
 });
 
+// Phase 0.3 (Fix Task A): teacherSnippets owner-or-admin access; integrity_reports admin-only.
+describe('teacherSnippets', () => {
+  const snippetDoc = { title: 'Loop pattern', content: 'for (let i...)', updatedAt: new Date() };
+
+  it('owner CAN read and write their own teacherSnippets doc', async () => {
+    const owner = testEnv.authenticatedContext('teacher-1').firestore();
+    await assertSucceeds(setDoc(doc(owner, 'teacherSnippets', 'teacher-1'), snippetDoc));
+    await assertSucceeds(getDoc(doc(owner, 'teacherSnippets', 'teacher-1')));
+    await assertSucceeds(updateDoc(doc(owner, 'teacherSnippets', 'teacher-1'), { title: 'Updated' }));
+  });
+
+  it('another authenticated user CANNOT read or write teacherSnippets doc', async () => {
+    const other = testEnv.authenticatedContext(STUDENT_B).firestore();
+    await assertFails(getDoc(doc(other, 'teacherSnippets', 'teacher-1')));
+    await assertFails(setDoc(doc(other, 'teacherSnippets', 'teacher-1'), snippetDoc));
+  });
+
+  it('unauthenticated user CANNOT read or write teacherSnippets doc', async () => {
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'teacherSnippets', 'teacher-1')));
+    await assertFails(setDoc(doc(anon, 'teacherSnippets', 'teacher-1'), snippetDoc));
+  });
+});
+
+describe('integrity_reports', () => {
+  const reportDoc = { uid: STUDENT_A, kind: 'integrity', createdAt: new Date() };
+
+  it('admin CAN read and write integrity_reports', async () => {
+    const admin = testEnv.authenticatedContext('admin-uid', { admin: true }).firestore();
+    await assertSucceeds(setDoc(doc(admin, 'integrity_reports', 'report-1'), reportDoc));
+    await assertSucceeds(getDoc(doc(admin, 'integrity_reports', 'report-1')));
+  });
+
+  it('student CANNOT read or write integrity_reports', async () => {
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(getDoc(doc(student, 'integrity_reports', 'report-1')));
+    await assertFails(setDoc(doc(student, 'integrity_reports', 'report-1'), reportDoc));
+  });
+
+  it('unauthenticated user CANNOT read or write integrity_reports', async () => {
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'integrity_reports', 'report-1')));
+    await assertFails(setDoc(doc(anon, 'integrity_reports', 'report-1'), reportDoc));
+  });
+});
+
 // Sanity check that the test env is wired to the emulator, not production.
 describe('emulator wiring', () => {
   it('uses the emulator project id', () => {

@@ -189,6 +189,38 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "assignmentId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "board_questions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "boardId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "board_categories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "boardId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "board_endorsements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "questionId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "question_boards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "classType", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

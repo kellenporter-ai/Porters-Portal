@@ -1638,6 +1638,56 @@ export interface WellnessCheckin {
 }
 
 // ========================================
+// DRIVING QUESTION BOARD (DQB)
+// ========================================
+
+export type QuestionBoardStatus = 'open' | 'frozen' | 'archived';
+
+export interface QuestionBoard {
+  id: string;
+  title: string;            // "P.1: Reliable Energy"
+  prompt: string;           // shown to students
+  classType: ClassType;
+  sections: string[];       // section names that can see/post, e.g. ["Period 1"]
+  schoolYear: string;       // e.g. "2026-27"
+  status: QuestionBoardStatus;
+  seedQuestion?: string;    // optional teacher seed (models format)
+  createdBy: string;        // uid
+  createdAt: Timestamp;
+}
+
+export type BoardQuestionStatus = 'pending' | 'live' | 'answered';
+
+export interface BoardQuestion {
+  id: string;
+  boardId: string;
+  text: string;             // 10..280 chars
+  initials: string;         // 2-3 chars, derived client-side from display name
+  authorId: string;         // uid
+  categoryId: string | null; // set by ANY student (tap-to-categorize)
+  status: BoardQuestionStatus;
+  answeredNote?: string;    // teacher-only, optional short note when marking answered
+  createdAt: Timestamp;
+}
+
+export interface BoardCategory {
+  id: string;
+  boardId: string;
+  name: string;             // 1..40 chars
+  createdBy: string;        // uid
+  createdAt: Timestamp;
+}
+
+/** Doc id = `${questionId}_${userId}` — one endorsement per student per question. */
+export interface BoardEndorsement {
+  id: string;
+  questionId: string;
+  boardId: string;
+  userId: string;
+  createdAt: Timestamp;
+}
+
+// ========================================
 // TYPE GUARDS — validate Firestore data at deserialization boundaries
 // ========================================
 

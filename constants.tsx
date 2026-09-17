@@ -59,6 +59,7 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Dashboard', iconSrc: '/assets/icons/icon-dashboard.png', role: 'ADMIN', group: 'admin_ops' },
   { name: 'Grading', iconSrc: '/assets/icons/icon-grading.png', role: 'ADMIN', group: 'admin_ops' },
   { name: 'Student Reports', iconSrc: '/assets/icons/icon-student-reports.png', role: 'ADMIN', group: 'admin_ops' },
+  { name: 'Boards', iconSrc: '/assets/icons/icon-dashboard.png', role: 'ADMIN', group: 'admin_ops' },
   // Classroom group
   { name: 'Resource Editor', iconSrc: '/assets/icons/icon-resource-editor.png', role: 'ADMIN', group: 'classroom' },
   { name: 'User Management', iconSrc: '/assets/icons/icon-user-management.png', role: 'ADMIN', group: 'classroom' },
@@ -74,6 +75,7 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Home', iconSrc: '/assets/icons/icon-home.png', role: 'STUDENT' },
   // Learning group
   { name: 'Resources', iconSrc: '/assets/icons/icon-resources.png', role: 'STUDENT', group: 'learning' },
+  { name: 'Question Board', iconSrc: '/assets/icons/icon-student-reports.png', role: 'STUDENT', group: 'learning' },
   { name: 'Feedback', iconSrc: '/assets/icons/icon-grading.png', role: 'STUDENT', group: 'learning' },
   { name: 'Calendar', iconSrc: '/assets/icons/icon-calendar.png', role: 'STUDENT', group: 'learning' },
   // Operations group

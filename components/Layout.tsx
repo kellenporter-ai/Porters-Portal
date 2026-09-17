@@ -31,6 +31,10 @@ import SettingsModal from './SettingsModal';
 import NotificationBell from './NotificationBell';
 import CommandPalette, { CommandPaletteItem } from './CommandPalette';
 import { dataService } from '../services/dataService';
+import { getUserSectionForClass } from '../types';
+import { collection, query, where } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { resilientSnapshot } from '../services/resilientSnapshot';
 import { useClassConfig, useAssignments } from '../lib/AppDataContext';
 import { useTheme } from '../lib/ThemeContext';
 import { useLocale, useT } from '../lib/i18n';
@@ -134,6 +138,26 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
   const [expandedParent, setExpandedParent] = useState<string | null>(null);
 
+  // Driving Question Board: only surface the nav entry while an open board
+  // exists for this student's classType + section (same query as /board route).
+  const [hasOpenBoard, setHasOpenBoard] = useState(false);
+  useEffect(() => {
+    if (user.role !== UserRole.STUDENT) return;
+    const classType = user.classType;
+    const section = classType ? getUserSectionForClass(user, classType) : undefined;
+    if (!classType || !section) { setHasOpenBoard(false); return; }
+    const q = query(
+      collection(db, 'question_boards'),
+      where('classType', '==', classType),
+      where('status', '==', 'open'),
+      where('sections', 'array-contains', section),
+    );
+    const unsub = resilientSnapshot('question_boards', q, (snapshot) => {
+      setHasOpenBoard(!snapshot.empty);
+    });
+    return unsub;
+  }, [user]);
+
   // Track fullscreen state to hide sidebar/nav when in focus mode
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -196,6 +220,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return false;
       if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return false;
       if (user.role === UserRole.STUDENT && featureNavMap[item.name] && !enabledFeatures[featureNavMap[item.name]]) return false;
+      if (item.name === 'Question Board' && !hasOpenBoard) return false;
       return true;
     });
 
@@ -428,6 +453,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       if (item.role === 'ADMIN' && user.role !== UserRole.ADMIN) return;
       if (item.role === 'STUDENT' && user.role !== UserRole.STUDENT) return;
       if (user.role === UserRole.STUDENT && featureNavMap[item.name] && !enabledFeatures[featureNavMap[item.name]]) return;
+      if (item.name === 'Question Board' && !hasOpenBoard) return;
 
       if (item.children && item.children.length > 0) {
         // Add the parent as a group entry (jumps to first child)
@@ -454,7 +480,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       }
     });
     return items;
-  }, [user.role, enabledFeatures, t, locale]);
+  }, [user.role, enabledFeatures, t, locale, hasOpenBoard]);
 
   // Arrow key navigation within sidebar nav items
   const handleNavKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {

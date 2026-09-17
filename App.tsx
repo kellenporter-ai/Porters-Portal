@@ -30,6 +30,10 @@ import RouteSkeleton from './components/RouteSkeleton';
 import { AppDataProvider, useAppData, useAssignments, useClassConfig } from './lib/AppDataContext';
 import { AdminDataProvider, useAdminData } from './lib/AdminDataContext';
 import { TAB_TO_PATH, XP_SUB_ROUTES } from './lib/routes';
+import { getUserSectionForClass } from './types';
+import { collection, query, where } from 'firebase/firestore';
+import { resilientSnapshot } from './services/resilientSnapshot';
+import type { QuestionBoard } from './types';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 
 // ─── Lazy-loaded route components — auto-reload on stale chunk errors ───
@@ -44,6 +48,9 @@ const ResourceViewer = lazyWithRetry(() => import('./components/ResourceViewer')
 const StudentReports = lazyWithRetry(() => import('./components/StudentReports'));
 const GradingPage = lazyWithRetry(() => import('./components/grading/GradingPage'));
 const FeedbackPage = lazyWithRetry(() => import('./components/dashboard/FeedbackPage'));
+const TeacherBoardsPage = lazyWithRetry(() => import('./components/boards/TeacherBoardsPage'));
+const BoardProjectorPage = lazyWithRetry(() => import('./components/boards/BoardProjectorPage'));
+const BoardPage = lazyWithRetry(() => import('./components/boards/BoardPage'));
 
 const LazyFallback = () => <RouteSkeleton />;
 
@@ -211,11 +218,64 @@ const StudentReportsRoute: React.FC = () => {
   return <StudentReports users={users} assignments={assignments} submissions={submissions} />;
 };
 
+const TeacherBoardsRoute: React.FC<{ user: User }> = ({ user }) => {
+  const { rawUsers } = useAdminData();
+  return <TeacherBoardsPage teacher={user} students={rawUsers} />;
+};
+
 const XPRoute: React.FC = () => {
   const { tab } = useParams<{ tab: string }>();
   const { rawUsers } = useAdminData();
   const tabName = XP_SLUG_TO_TAB[tab || 'operatives'] || 'Operatives';
   return <XPManagement users={rawUsers} initialTab={tabName} />;
+};
+
+// ─── Driving Question Board: open board for a student's classType + section ───
+// Shared by the /board student route and Layout's nav gating so they never disagree.
+function useOpenStudentBoard(user: User): { board: QuestionBoard | null; loading: boolean } {
+  const [board, setBoard] = useState<QuestionBoard | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user.role === UserRole.ADMIN) { setBoard(null); setLoading(false); return; }
+    const classType = user.classType;
+    const section = classType ? getUserSectionForClass(user, classType) : undefined;
+    if (!classType || !section) { setBoard(null); setLoading(false); return; }
+    setLoading(true);
+    const q = query(
+      collection(db, 'question_boards'),
+      where('classType', '==', classType),
+      where('status', '==', 'open'),
+      where('sections', 'array-contains', section),
+    );
+    const unsub = resilientSnapshot('question_boards', q, (snapshot) => {
+      const snap = snapshot.docs[0];
+      setBoard(snap ? { id: snap.id, ...(snap.data() as Omit<QuestionBoard, 'id'>) } : null);
+      setLoading(false);
+    });
+    return unsub;
+  }, [user]);
+
+  return { board, loading };
+}
+
+const StudentBoardRoute: React.FC<{ user: User }> = ({ user }) => {
+  const { board, loading } = useOpenStudentBoard(user);
+
+  if (loading) return <RouteSkeleton />;
+  if (!board) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[var(--surface-base)] p-6">
+        <div className="max-w-md w-full bg-[var(--surface-glass)] backdrop-blur-xl border border-[var(--border)] p-8 rounded-3xl text-center shadow-2xl">
+          <h1 className="text-xl font-bold text-[var(--text-primary)] mb-2">No Open Question Board</h1>
+          <p className="text-[var(--text-secondary)] text-sm">
+            There's no driving question board open for your class right now. Check back soon.
+          </p>
+        </div>
+      </main>
+    );
+  }
+  return <BoardPage user={user} board={board} />;
 };
 
 // ─── Main App ───
@@ -431,6 +491,8 @@ const App: React.FC = () => {
               <Route path="/enrollment" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Enrollment"><EnrollmentRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/reports" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Reports"><StudentReportsRoute /></FeatureErrorBoundary></Suspense>} />
               <Route path="/xp/:tab" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="XP Management"><XPRoute /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/boards" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Boards"><TeacherBoardsRoute user={user} /></FeatureErrorBoundary></Suspense>} />
+              <Route path="/boards/:boardId/projector" element={<Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Board Projector"><BoardProjectorPage /></FeatureErrorBoundary></Suspense>} />
             </Route>
           </Route>
 
@@ -489,6 +551,11 @@ const App: React.FC = () => {
             <Route path="/boss" element={
               <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Boss Encounters">
                 <StudentRouteWrapper user={user} submissions={studentSubmissions} tab="BOSS" />
+              </FeatureErrorBoundary></Suspense>
+            } />
+            <Route path="/board" element={
+              <Suspense fallback={<LazyFallback />}><FeatureErrorBoundary feature="Question Board">
+                <StudentBoardRoute user={user} />
               </FeatureErrorBoundary></Suspense>
             } />
           </Route>

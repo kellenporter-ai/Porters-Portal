@@ -584,6 +584,146 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /teacherSnippets/{uid} {
+      allow read, write: if isAuthenticated() && (isAdmin() || request.auth.uid == uid);
+    }
+
+    match /integrity_reports/{document=**} {
+      allow read: if isAdmin();
+      allow write: if isAdmin(); // CF writes bypass rules; client saveIntegrityReport is teacher/admin-facing
+    }
+
+    // Admin audit trail: written only by Cloud Functions (callable awardXP
+    // admin adjustment path). Admin-read-only; no client writes.
+    match /admin_actions/{actionId} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Functions bypass rules
+    }
+
+    // ==========================================
+    // DRIVING QUESTION BOARD (DQB)
+    // Top-level collections, section-scoped, initials-only.
+    // ==========================================
+
+    // Does the requesting student's section (per their user doc) intersect the
+    // given board's `sections` array? Mirrors getUserSectionForClass() in
+    // types.ts: check classSections[classType] first, then the legacy `section`
+    // field when the user is enrolled in that class.
+    function studentInBoardSection(boardData) {
+      let user = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let userSection = (
+        user.classSections != null && user.classSections.get(boardData.classType, null) != null
+          ? user.classSections.get(boardData.classType)
+          : (
+              (user.classType == boardData.classType
+                || (user.enrolledClasses != null && user.enrolledClasses.hasAny([boardData.classType])))
+                ? user.section
+                : null
+            )
+      );
+      return userSection != null && boardData.sections.hasAny([userSection]);
+    }
+
+    // ─── question_boards/{boardId} ───
+    match /question_boards/{boardId} {
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.status != 'archived' && studentInBoardSection(resource.data));
+      allow create: if isAdmin() &&
+        request.resource.data.keys().hasOnly([
+          'title', 'prompt', 'classType', 'sections', 'schoolYear',
+          'status', 'seedQuestion', 'createdBy', 'createdAt'
+        ]) &&
+        request.resource.data.title is string && request.resource.data.title.size() <= 200 &&
+        request.resource.data.prompt is string && request.resource.data.prompt.size() <= 2000 &&
+        request.resource.data.classType is string && request.resource.data.classType.size() <= 100 &&
+        request.resource.data.sections is list && request.resource.data.sections.size() > 0 &&
+        request.resource.data.sections.size() <= 50 &&
+        request.resource.data.schoolYear is string && request.resource.data.schoolYear.size() <= 20 &&
+        request.resource.data.status in ['open', 'frozen', 'archived'] &&
+        (!request.resource.data.keys().hasAny(['seedQuestion']) ||
+          (request.resource.data.seedQuestion is string && request.resource.data.seedQuestion.size() <= 500)) &&
+        request.resource.data.createdBy is string;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── board_questions/{qid} ───
+    match /board_questions/{qid} {
+      allow read: if isAdmin() || (isAuthenticated() && studentInBoardSection(
+        get(/databases/$(database)/documents/question_boards/$(resource.data.boardId)).data));
+
+      // Students create pending questions on an open board in their section.
+      // Students cannot categorize at post time — categoryId must be null (hasOnly
+      // ensures the key is present exactly so this null check is enforced).
+      // Admins (teachers) may seed live questions with any status/category.
+      allow create: if isAdmin() ||
+        (isAuthenticated() && !isAdmin() &&
+        request.resource.data.keys().hasOnly([
+          'boardId', 'text', 'initials', 'authorId', 'categoryId', 'status', 'createdAt'
+        ]) &&
+        request.resource.data.authorId == request.auth.uid &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() >= 10 && request.resource.data.text.size() <= 280 &&
+        request.resource.data.initials is string &&
+        request.resource.data.initials.size() >= 2 && request.resource.data.initials.size() <= 3 &&
+        request.resource.data.categoryId == null &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.boardId is string &&
+        studentInBoardSection(
+          get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data) &&
+        get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data.status == 'open');
+
+      // Students may ONLY change categoryId, and only while the board is open.
+      allow update: if isAdmin() || (isAuthenticated() && !isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categoryId']) &&
+        get(/databases/$(database)/documents/question_boards/$(resource.data.boardId)).data.status == 'open');
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── board_categories/{cid} ───
+    match /board_categories/{cid} {
+      allow read: if isAdmin() || (isAuthenticated() && studentInBoardSection(
+        get(/databases/$(database)/documents/question_boards/$(resource.data.boardId)).data));
+
+      // Students create categories on an open board in their section.
+      allow create: if isAdmin() || (isAuthenticated() &&
+        request.resource.data.keys().hasOnly(['boardId', 'name', 'createdBy', 'createdAt']) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40 &&
+        request.resource.data.boardId is string &&
+        studentInBoardSection(
+          get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data) &&
+        get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data.status == 'open';
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── board_endorsements/{eid} ───
+    // Doc id = `${questionId}_${userId}` — one endorsement per student per question.
+    match /board_endorsements/{eid} {
+      allow read: if isAdmin() || (isAuthenticated() && studentInBoardSection(
+        get(/databases/$(database)/documents/question_boards/$(resource.data.boardId)).data));
+
+      // Students endorse questions on an open board in their section.
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasOnly(['questionId', 'boardId', 'userId', 'createdAt']) &&
+        request.resource.data.userId == request.auth.uid &&
+        eid == request.resource.data.questionId + '_' + request.auth.uid &&
+        request.resource.data.questionId is string &&
+        request.resource.data.boardId is string &&
+        !exists(/databases/$(database)/documents/board_endorsements/$(eid)) &&
+        studentInBoardSection(
+          get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data) &&
+        get(/databases/$(database)/documents/question_boards/$(request.resource.data.boardId)).data.status == 'open';
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin() ||
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
     // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
