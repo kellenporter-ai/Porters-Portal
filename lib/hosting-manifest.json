@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T13:45:50.205Z",
+  "generatedAt": "2026-09-18T16:43:34.831Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/codeword": "/codeword-lookup.html",
@@ -15,6 +15,7 @@
   },
   "dirs": [
     "/forensic-branches",
+    "/power-strip-reading",
     "/texas-blackout-articles",
     "/textbook/ch2-kinematics-1d"
   ]

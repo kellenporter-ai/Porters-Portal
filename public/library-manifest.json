@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T13:45:50.165Z",
+  "generatedAt": "2026-09-18T16:43:34.791Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -55,6 +55,36 @@
       "path": "/forensic-branches/toxicologist.html",
       "fingerprint": "/forensic-branches/toxicologist.html",
       "sizeBytes": 24913
+    },
+    {
+      "path": "/power-strip-reading/",
+      "fingerprint": "/power-strip-reading/",
+      "sizeBytes": 15054
+    },
+    {
+      "path": "/power-strip-reading/section-1-complete-circuit.html",
+      "fingerprint": "/power-strip-reading/section-1-complete-circuit.html",
+      "sizeBytes": 13284
+    },
+    {
+      "path": "/power-strip-reading/section-2-circuit-breakers.html",
+      "fingerprint": "/power-strip-reading/section-2-circuit-breakers.html",
+      "sizeBytes": 13606
+    },
+    {
+      "path": "/power-strip-reading/section-3-insulation.html",
+      "fingerprint": "/power-strip-reading/section-3-insulation.html",
+      "sizeBytes": 13882
+    },
+    {
+      "path": "/power-strip-reading/section-4-ground-wire.html",
+      "fingerprint": "/power-strip-reading/section-4-ground-wire.html",
+      "sizeBytes": 13825
+    },
+    {
+      "path": "/power-strip-reading/section-5-light-bulbs.html",
+      "fingerprint": "/power-strip-reading/section-5-light-bulbs.html",
+      "sizeBytes": 14473
     },
     {
       "path": "/privacy.html",
