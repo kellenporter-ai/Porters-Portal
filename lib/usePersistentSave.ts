@@ -62,6 +62,13 @@ interface UsePersistentSaveReturn {
   setInitialResponses: (responses: Record<string, unknown>, serverTimestamp?: string) => void;
   /** R3: Re-fetch the server draft and reconcile, for reconnect recovery. */
   refetchServerDraft: () => void;
+  /**
+   * B-2: flush pending debounce + block future autosaves. Consumers that
+   * delete the draft doc (submit/retake) MUST call this BEFORE deleteDoc —
+   * otherwise an in-flight debounced write can land after delete and
+   * recreate a ghost draft.
+   */
+  stopAutosave: () => void;
 }
 
 export function usePersistentSave({
@@ -88,6 +95,12 @@ export function usePersistentSave({
   const isInErrorRef = useRef(false);
   const sessionTokenRef = useRef(sessionToken);
   sessionTokenRef.current = sessionToken; // Always up-to-date, even for stale timers
+  // B-2: once stopAutosave() is called, no further autosave writes are allowed.
+  // Prevents a debounced write from landing after the caller deleted the doc.
+  const stoppedRef = useRef(false);
+  // B-4: tracks previous online state to fire sync-on-reconnect only on the
+  // false→true transition (not on every online re-render).
+  const prevOnlineRef = useRef<boolean | null>(null);
 
   const docId = userId && assignmentId ? `${userId}_${assignmentId}_blocks` : null;
   const lsKey = userId && assignmentId ? draftKey('draft', userId, assignmentId) : null;
@@ -145,8 +158,10 @@ export function usePersistentSave({
     });
   }, [disabled, docId, userId, assignmentId, collection, lsKey, setStatus]);
 
-  // Debounced save trigger
+  // Debounced save trigger — B-2: no-op after stopAutosave() so a post-submit
+  // keystroke (retake, admin nudge) can't recreate the deleted draft doc.
   const scheduleSave = useCallback(() => {
+    if (stoppedRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
@@ -197,8 +212,10 @@ export function usePersistentSave({
     scheduleSave();
   }, [disabled, scheduleSave, onResponsesChange, lsKey, userId, assignmentId]);
 
-  // Public: immediate flush (awaitable)
+  // Public: immediate flush (awaitable). B-2: no-op after stopAutosave() —
+  // a post-submit flush would resurrect the deleted draft doc.
   const flushNow = useCallback((): Promise<WriteStatus> | undefined => {
+    if (stoppedRef.current) return undefined;
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -325,6 +342,18 @@ export function usePersistentSave({
     }
   }, [disabled, isOnline, lsKey, docId, collection, setStatus, onResponsesChange, refetchServerDraft]);
 
+  // B-4: sync-on-reconnect. On the offline→online transition, push any dirty
+  // local work up immediately via doSave() (not just a server re-read).
+  // Unconditional per the audit: a healthy client that kept typing offline has
+  // dirty localStorage work that would otherwise never sync if the student
+  // stops typing after reconnecting.
+  useEffect(() => {
+    const prev = prevOnlineRef.current;
+    prevOnlineRef.current = isOnline;
+    if (disabled || !isOnline || prev !== false) return;
+    doSave();
+  }, [disabled, isOnline, doSave]);
+
   // Background retry: periodically attempt re-sync when in error state
   // Uses a ref to avoid the interval being killed by intermediate status transitions (e.g., 'retrying')
   useEffect(() => {
@@ -410,6 +439,18 @@ export function usePersistentSave({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // B-2: teardown — flush pending debounce + block future autosaves. Returned
+  // as stopAutosave() so consumers (ResourceViewer.submitAssessment) can stop
+  // the pipeline BEFORE deleting the draft doc.
+  const stopAutosave = useCallback(() => {
+    stoppedRef.current = true;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+      doSave(); // flush-and-stop
+    }
+  }, [doSave]);
+
   return {
     saveStatus,
     lastSavedAt,
@@ -424,5 +465,6 @@ export function usePersistentSave({
     setInitialResponses,
     refetchServerDraft,
     setSaveStatus: setStatus,
+    stopAutosave,
   };
 }

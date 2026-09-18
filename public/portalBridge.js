@@ -127,6 +127,7 @@
                     PortalBridge.connected = true;
                     PortalBridge.userId = data.payload.userId;
                     PortalBridge.assignmentId = data.payload.assignmentId || null;
+                    PortalBridge.sessionId = data.payload.sessionId || null;
                     PortalBridge.completionInfo = data.payload.completionInfo || null;
                     updateStatus('Connected', '#4ade80');
                     if (_onLoad && !_onLoadFired) {
@@ -189,7 +190,9 @@
                     // R1 FIX: key is assignment-scoped (portalBridge_{userId}_{assignmentId}_lastState)
                     // so recovery state can never bleed into another assignment.
                     try {
-                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + '_lastState';
+                        // B-5: sessionId (if provided) scopes the key to this mount;
+                        // missing sessionId falls back to the legacy two-arg key.
+                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + (PortalBridge.sessionId ? '_' + PortalBridge.sessionId : '') + '_lastState';
                         localStorage.setItem(key, JSON.stringify({
                             state: PortalBridge._lastState,
                             timestamp: new Date().toISOString()
@@ -204,7 +207,9 @@
             window.addEventListener('pagehide', function() {
                 if (PortalBridge._lastState) {
                     try {
-                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + '_lastState';
+                        // B-5: sessionId (if provided) scopes the key to this mount;
+                        // missing sessionId falls back to the legacy two-arg key.
+                        var key = 'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + (PortalBridge.sessionId ? '_' + PortalBridge.sessionId : '') + '_lastState';
                         localStorage.setItem(key, JSON.stringify({
                             state: PortalBridge._lastState,
                             timestamp: new Date().toISOString()

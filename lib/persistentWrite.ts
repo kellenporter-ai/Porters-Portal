@@ -160,6 +160,33 @@ export async function persistentWrite(
 ): Promise<WriteStatus> {
   onStatusChange?.('saving');
 
+  // B-1: Read-before-write no-clobber guard. If the server copy's lastUpdated
+  // is NEWER than the local payload's basis timestamp, another writer (another
+  // tab, a retake reset, a server-side submit) owns the doc — skip the write
+  // rather than clobbering newer server work. Fail-open: on getDoc error,
+  // proceed with the write exactly as before.
+  const localBasisTs = typeof data.lastUpdated === 'string' ? data.lastUpdated : null;
+  if (localBasisTs) {
+    try {
+      const snap = await getDoc(doc(db, collectionPath, docId));
+      if (snap.exists()) {
+        const serverTs = snap.data().lastUpdated as string | undefined;
+        if (serverTs && serverTs > localBasisTs) {
+          reportError(new Error('Draft write skipped: server copy is newer (reconciliation needed)'), {
+            method: 'persistentWrite', collectionPath, docId, serverTs, localTs: localBasisTs,
+          });
+          window.dispatchEvent(new CustomEvent('portal-draft-reconciliation-needed', {
+            detail: { collectionPath, docId, serverTs, localTs: localBasisTs },
+          }));
+          onStatusChange?.('saved');
+          return 'saved';
+        }
+      }
+    } catch {
+      // Can't read server — fail-open, write anyway (preserves today's behavior)
+    }
+  }
+
   const writeWithTimeout = async (
     writeFn: () => Promise<void>,
   ): Promise<'ok' | 'timeout'> => {

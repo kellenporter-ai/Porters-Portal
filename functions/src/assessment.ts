@@ -21,6 +21,10 @@ function validateClassType(classType: string): void {
   }
 }
 
+// C-1: marker written on a submission doc after XP is awarded server-side.
+// Never mutated by clients (submission writes are CF-only) — durable dedupe key.
+export const XP_AWARDED_FIELD = "xpAwarded" as const;
+
 // ==========================================
 // ASSESSMENT GRADING HELPER — Reusable block grading logic
 // ==========================================
@@ -36,7 +40,6 @@ function validateClassType(classType: string): void {
  * assignment doc so grading is identical before/after the migration runs.
  */
 export type GradingBlock = Record<string, unknown> & { id: string };
-
 export async function resolveGradingBlocks(
   db: admin.firestore.Firestore,
   assignmentId: string,
@@ -76,6 +79,75 @@ function isResponseTombstone(value: unknown): boolean {
     (value as { __delete__?: unknown }).__delete__ === true &&
     typeof (value as { blockId?: unknown }).blockId === "string"
   );
+}
+
+/**
+ * D-10 — Key-aware needsReview for the formerly always-manual block types.
+ *
+ * Only types with a deterministic, reviewed comparator flip to auto-grading,
+ * and ONLY when the block carries a real answer key. Anything else keeps
+ * `needsReview: true` (safe default).
+ *
+ * Current comparators:
+ * - CHECKLIST: requires exact boolean match on every required item
+ *   (`items: string[]`, `correctStates: boolean[]`).
+ *
+ * Remaining manual (no verified comparator — never auto-grade without one):
+ * - BAR_CHART: no canonical key schema for bar values; per-bar tolerance
+ *   comparator not yet defined.
+ * - DATA_TABLE: no canonical key schema for expected cell values.
+ * - DRAWING: open-ended; no canonical key schema or similarity threshold.
+ * - MATH_RESPONSE: steps are free-form LaTeX; no canonical final-answer key.
+ */
+export function hasAnswerKeyForManualBlock(block: GradingBlock): boolean {
+  const type = block.type as string;
+  if (type === "CHECKLIST") {
+    const items = block.items;
+    const correctStates = block.correctStates;
+    return (
+      Array.isArray(items) && items.length > 0 &&
+      Array.isArray(correctStates) && correctStates.length === items.length &&
+      correctStates.every((s) => typeof s === "boolean")
+    );
+  }
+  // No key schema defined for the other manual types yet — always manual.
+  return false;
+}
+
+export function gradeKeyedManualBlock(
+  block: GradingBlock,
+  response: unknown,
+): boolean | null {
+  const type = block.type as string;
+  if (type === "CHECKLIST") {
+    // Caller guarantees hasAnswerKeyForManualBlock(block) was true.
+    const correctStates = block.correctStates as boolean[];
+    const resp = (response ?? {}) as Record<string, unknown>;
+    const checked = Array.isArray(resp.checked) ? resp.checked : [];
+    return correctStates.every((state, idx) => !!checked[idx] === state);
+  }
+  // No verified comparator — must not auto-grade.
+  return null;
+}
+
+/**
+ * C-1 soft late flag: server-authoritative lateness. True iff the assignment
+ * has a dueDate and submission time is past it. Never blocks submission.
+ * `dueDate` may be epoch ms (number), ISO string, or a Firestore Timestamp.
+ */
+export function computeSubmittedLate(dueDate: unknown, nowMs: number): boolean {
+  if (dueDate === undefined || dueDate === null) return false;
+  let dueMs: number | null = null;
+  if (typeof dueDate === "number" && Number.isFinite(dueDate)) {
+    dueMs = dueDate;
+  } else if (typeof dueDate === "string") {
+    const parsed = Date.parse(dueDate);
+    if (!Number.isNaN(parsed)) dueMs = parsed;
+  } else if (typeof dueDate === "object" && typeof (dueDate as { toMillis?: unknown }).toMillis === "function") {
+    dueMs = (dueDate as { toMillis: () => number }).toMillis();
+  }
+  if (dueMs === null) return false;
+  return nowMs > dueMs;
 }
 
 function gradeAssessmentBlocks(
@@ -126,9 +198,20 @@ function gradeAssessmentBlocks(
       }
     }
 
-    // Non-auto-gradable interactive blocks — always require manual/rubric review
+    // Non-auto-gradable interactive blocks — require manual/rubric review by
+    // default (D-10). Exception: when the block carries a real answer key AND
+    // a verified comparator exists, auto-grade deterministically.
     if (["DRAWING", "MATH_RESPONSE", "BAR_CHART", "DATA_TABLE", "CHECKLIST"].includes(block.type as string)) {
       const resp = (responses as Record<string, unknown>)[block.id as string] ?? null;
+      if (hasAnswerKeyForManualBlock(block as GradingBlock)) {
+        const auto = gradeKeyedManualBlock(block as GradingBlock, resp);
+        if (auto !== null) {
+          total++;
+          if (auto) correct++;
+          perBlock[block.id as string] = { correct: auto, answer: resp };
+          continue;
+        }
+      }
       perBlock[block.id as string] = { correct: false, answer: resp, needsReview: true };
     }
   }
@@ -201,6 +284,28 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
     logWithCorrelation('info', 'startAssessmentSession: forceNew requested — skipping reuse', correlationId, { uid, assignmentId });
   }
 
+  // C-1 resubmit gate: if the student's latest submission is graded (teacher
+  // actively grading) and has NOT been returned, block a new attempt. Allow
+  // when never graded or when the latest is RETURNED (feedback-then-retry loop).
+  // maxAttempts semantics are unchanged below.
+  {
+    const subsSnap = await db.collection("submissions")
+      .where("userId", "==", uid)
+      .where("assignmentId", "==", assignmentId)
+      .where("isAssessment", "==", true)
+      .orderBy("submittedAt", "desc")
+      .limit(1)
+      .get();
+    if (!subsSnap.empty) {
+      const latest = subsSnap.docs[0].data();
+      if (latest.rubricGrade && latest.status !== "RETURNED") {
+        logWithCorrelation('info', 'startAssessmentSession: blocked — latest attempt still being graded', correlationId, { uid, assignmentId });
+        throw new HttpsError("failed-precondition",
+          "Your previous attempt is still being graded. Wait for your teacher to return it, then start a new attempt.");
+      }
+    }
+  }
+
   // Check max attempts
   const cfg = assignment.assessmentConfig || {};
   if (cfg.maxAttempts && cfg.maxAttempts > 0) {
@@ -251,6 +356,33 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
 
   // 2. Validate session token + signature (prevents token forgery and replay)
   const db = admin.firestore();
+
+  // C-1 XP dedupe: pre-check OUTSIDE the token-claim transaction (avoids a
+  // document read hot-spotting the claim transaction). If the student already
+  // has a prior XP-eligible submission for this assessment, XP is never
+  // re-awarded. Race between this check and a concurrent submit is harmless:
+  // the winner marks `xpAwarded` in a post-commit update (XP-award transaction
+  // re-checks the marker), so at most one extra award can slip through per
+  // concurrent attempt set, and farming via sequential resubmits is impossible.
+  let xpEligible = true;
+  try {
+    const priorXPSnap = await db.collection("submissions")
+      .where("userId", "==", uid)
+      .where("assignmentId", "==", assignmentId)
+      .where("isAssessment", "==", true)
+      .where(XP_AWARDED_FIELD, "==", true)
+      .limit(1)
+      .get();
+    if (!priorXPSnap.empty) {
+      xpEligible = false;
+      logWithCorrelation('info', 'submitAssessment: XP skipped — prior XP-eligible submission exists', correlationId, { uid, assignmentId });
+    }
+  } catch (xpCheckErr) {
+    // Fail-open: check failure must not block submission; XP tx below also
+    // re-verifies the marker, so a failed check cannot double-award on retry.
+    logWithCorrelation('error', 'submitAssessment: XP eligibility pre-check failed', correlationId, { uid, assignmentId, error: String(xpCheckErr) });
+  }
+
   let sessionStartedAt: number | null = null;
   const tokenRef = sessionToken ? db.collection("assessment_sessions").doc(sessionToken) : null;
 
@@ -541,6 +673,8 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
     transaction.set(counterRef, { count: txAttemptNumber }, { merge: true });
 
     // 6. Create submission doc (using clamped metrics for integrity, raw metrics for forensics)
+    // Soft late flag (Kellen-approved): server-authoritative, no blocking.
+    const submittedLate = computeSubmittedLate(assignment.dueDate, Date.now());
     const assessmentSubmission = {
       userId: uid,
       userName: userName || "Student",
@@ -569,6 +703,7 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         ...(assistiveTechOverrides ? { assistiveTechOverrides } : {}),
       },
       submittedAt: new Date().toISOString(),
+      submittedLate,
       status: txStatus,
       feedback,
       score: gradeResult.percentage,
@@ -615,9 +750,10 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
 
   // 7. Award XP scaled by percentage (outside try/catch — XP failure must NOT
   // rollback a successful submission. Missing 0-50 XP is non-critical.)
+  // C-1: never re-award — XP is per-assessment, not per-submission-event.
   const baseXP = Math.round(percentage * 0.5); // 0-50 XP
   try {
-    if (baseXP > 0) {
+    if (baseXP > 0 && xpEligible) {
       // Get active multiplier
       const effectiveClass = classType || "Uncategorized";
       const now = new Date().toISOString();
@@ -636,7 +772,33 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       xpEarned = Math.round(baseXP * multiplier);
 
       const userRef = db.doc(`users/${uid}`);
+      // Latest submission for THIS attempt — XP marker target. Read by ref,
+      // not query, so no composite index is required (see firestore.indexes).
+      let latestSubmissionRef: admin.firestore.DocumentReference | null = null;
+      try {
+        const latestSnap = await db.collection("submissions")
+          .where("userId", "==", uid)
+          .where("assignmentId", "==", assignmentId)
+          .where("isAssessment", "==", true)
+          .orderBy("submittedAt", "desc")
+          .limit(1)
+          .get();
+        if (!latestSnap.empty) latestSubmissionRef = latestSnap.docs[0].ref;
+      } catch (markerErr) {
+        logWithCorrelation('error', 'submitAssessment: XP marker lookup failed', correlationId, { uid, assignmentId, error: String(markerErr) });
+      }
+
       await db.runTransaction(async (transaction) => {
+        // Re-check the dedupe marker inside the transaction (closes the race
+        // with a concurrent first-award submit).
+        if (latestSubmissionRef) {
+          const markerSnap = await transaction.get(latestSubmissionRef);
+          if (markerSnap.exists && markerSnap.data()?.[XP_AWARDED_FIELD] === true) {
+            logWithCorrelation('info', 'submitAssessment: XP skipped in tx — marker already set', correlationId, { uid, assignmentId });
+            xpEarned = 0;
+            return;
+          }
+        }
         const userSnap = await transaction.get(userRef);
         if (!userSnap.exists) return;
         const data = userSnap.data()!;
@@ -646,6 +808,14 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
           "gamification.xp": (gam.xp || 0) + xpEarned,
           [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
         });
+        // Post-commit: mark this submission XP-awarded. Best-effort (inside
+        // try/catch) — a failed marker write may allow a bounded one-time
+        // re-award on a future attempt; XP loss is preferred over blocking.
+        if (latestSubmissionRef) {
+          latestSubmissionRef.update({ [XP_AWARDED_FIELD]: true }).catch((markerWriteErr: unknown) => {
+            logWithCorrelation('error', 'submitAssessment: failed to set XP marker', correlationId, { uid, assignmentId, error: String(markerWriteErr) });
+          });
+        }
       });
     }
   } catch (xpErr) {

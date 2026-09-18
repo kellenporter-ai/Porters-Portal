@@ -10,8 +10,12 @@
  * practice_progress doc.
  */
 
-/** PHASE 1 (R1 FIX): key is scoped by userId + assignmentId. */
-export function bridgeRecoveryKey(userId: string, assignmentId: string): string {
+/** PHASE 1 (R1 FIX): key is scoped by userId + assignmentId.
+ * B-5: optional sessionId scopes the key to a single Proctor mount. During
+ * transition, a missing sessionId yields the legacy two-arg envelope key so
+ * orphaned in-flight legacy envelopes are still consumed. */
+export function bridgeRecoveryKey(userId: string, assignmentId: string, sessionId?: string): string {
+  if (sessionId) return `portalBridge_${userId}_${assignmentId}_${sessionId}_lastState`;
   return `portalBridge_${userId}_${assignmentId}_lastState`;
 }
 

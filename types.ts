@@ -604,6 +604,8 @@ export interface Submission {
   aiSuggestedGrade?: AISuggestedGrade;
   userSection?: string;
   classType?: string;
+  /** True when submitted after the assignment due date (server-computed). */
+  submittedLate?: boolean;
   flaggedAsAI?: boolean;
   flaggedAsAIBy?: string;
   flaggedAsAIAt?: string;

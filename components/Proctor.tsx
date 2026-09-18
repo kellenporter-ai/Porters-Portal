@@ -11,7 +11,7 @@ import LessonBlocks, { LessonBlock, BlockResponseMap } from './LessonBlocks';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
 import { sfx } from '../lib/sfx';
-import { reportError } from '../lib/errorReporting';
+import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { usePersistentSave } from '../lib/usePersistentSave';
 import { useToast } from './ToastProvider';
 import { useT, useInterpolate } from '../lib/i18n';
@@ -46,6 +46,12 @@ interface ProctorProps {
   hasSidebar?: boolean;
   /** Ref exposed upward so ResourceViewer can call flushNow() for Save & Exit flow. */
   flushRef?: React.MutableRefObject<(() => Promise<WriteStatus> | undefined) | null>;
+  /**
+   * B-2: Ref exposed upward so ResourceViewer can stopAutosave() BEFORE the
+   * draft deleteDoc in submitAssessment — prevents an in-flight debounced
+   * write from resurrecting the deleted doc (ghost draft on retake).
+   */
+  stopAutosaveRef?: React.MutableRefObject<(() => void) | null>;
   /** Lockdown mode for assessments — auto-fullscreen, blocks copy/paste/contextmenu/devtools. */
   lockdownMode?: boolean;
   /** Whether students can access reading_materials during this assessment. */
@@ -114,7 +120,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, previewMode, hasSidebar, flushRef, lockdownMode, allowStudyMaterial }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, previewMode, hasSidebar, flushRef, stopAutosaveRef, lockdownMode, allowStudyMaterial }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const metricsFailCountRef = useRef(0);
   const lastInteractionRef = useRef<number>(Date.now());
@@ -197,6 +203,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
   // Session token state — must be declared before usePersistentSave
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  // B-5: session-scoped bridge recovery key — one UUID per Proctor mount so a
+  // stale envelope from a prior mount of the same assignment is never consumed.
+  const [sessionId] = useState(() => crypto.randomUUID());
 
   // Lesson block response persistence
   const [savedBlockResponses, setSavedBlockResponses] = useState<BlockResponseMap | undefined>(undefined);
@@ -214,6 +223,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     saveStatus,
     updateResponse: hookUpdateResponse,
     flushNow,
+    stopAutosave,
     getResponses,
     clearAll: clearSavedResponses,
     isOnline,
@@ -253,6 +263,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
     if (flushRef) flushRef.current = flushNow;
     return () => { if (flushRef) flushRef.current = null; };
   }, [flushRef, flushNow]);
+
+  // B-2: Expose stopAutosave upward so ResourceViewer halts autosave BEFORE
+  // deleting the draft in submitAssessment (prevents post-delete resurrection).
+  useEffect(() => {
+    if (stopAutosaveRef) stopAutosaveRef.current = stopAutosave;
+    return () => { if (stopAutosaveRef) stopAutosaveRef.current = null; };
+  }, [stopAutosaveRef, stopAutosave]);
+
+  // B-2: Stop autosave on unmount so no queued debounced write fires after teardown.
+  useEffect(() => () => stopAutosave(), [stopAutosave]);
 
   // Sync dirty practice drafts from localStorage on mount and online recovery
   useEffect(() => {
@@ -317,7 +337,33 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           return;
         } catch (err: unknown) {
           if (cancelled) return;
-          const errMsg = err instanceof Error ? err.message : String(err);
+          const errCode = extractFirebaseErrorCode(err);
+          // Normalize the message across Error instances and Firebase-style
+          // {code, message} rejection shapes, and strip the "functions/<code>: "
+          // prefix so server text is student-presentable.
+          const rawMsg = err instanceof Error
+            ? err.message
+            : (err && typeof err === 'object' && typeof (err as { message?: unknown }).message === 'string'
+                ? (err as { message: string }).message
+                : String(err));
+          const errMsg = rawMsg.replace(/^functions\/[\w-]+:?\s*/, '');
+
+          // PROJECT CONVENTION — failed-precondition payload-shape distinction:
+          // `failed-precondition` is overloaded. A PLAIN-STRING message is an
+          // actionable, permanent gate (e.g. resubmit blocked while the prior
+          // attempt is still being graded) — surface it verbatim, NEVER retry.
+          // A JSON-string envelope ({message, hasUnsavedWork, hint}) is the
+          // transient session-expiry shape — keep it on the retry path below.
+          if (errCode === 'failed-precondition') {
+            const payload = errMsg.replace(/^.*?\{/, '{');
+            const isJsonEnvelope = payload.startsWith('{') && payload.endsWith('}');
+            if (!isJsonEnvelope) {
+              setSessionTokenError(interpolate('proctor.session.tokenBlocked', { reason: errMsg }));
+              onSessionToken?.(null);
+              return;
+            }
+          }
+
           // If it's a definitive error (not transient), don't retry
           if (errMsg.includes('resource-exhausted') || errMsg.includes('permission-denied')) {
             setSessionTokenError(errMsg);
@@ -1169,15 +1215,16 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
             iframe.contentWindow?.postMessage({
               type: 'portal-init',
-              payload: { userId, assignmentId, savedState, completionInfo }
+              payload: { userId, assignmentId, sessionId, savedState, completionInfo }
             }, targetOrigin);
 
             // Check for bridge localStorage recovery data (from beforeunload/pagehide).
             // R1 FIX: key is assignment-scoped, so recovery state can only ever be
             // written into the assignment it originated from. A legacy unscoped key
             // is consumed once (it predates scoping, so its origin is ambiguous) and
-            // then removed.
-            const bridgeKey = bridgeRecoveryKey(userId, assignmentId);
+            // then removed. B-5: sessionId scopes the key to this mount; the legacy
+            // two-arg key is still consumed when no session-scoped envelope exists.
+            const bridgeKey = bridgeRecoveryKey(userId, assignmentId, sessionId);
             const legacyBridgeKey = legacyBridgeRecoveryKey(userId);
             try {
               const scopedRaw = localStorage.getItem(bridgeKey);
@@ -1450,7 +1497,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [userId, assignmentId, classType, handleInteraction]);
+  }, [userId, assignmentId, sessionId, classType, handleInteraction]);
 
   // Handle replay button click (parent-initiated replay)
   const handleReplayClick = useCallback(() => {

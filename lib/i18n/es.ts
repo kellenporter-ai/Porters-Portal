@@ -341,6 +341,7 @@ export const es: Dictionary = {
   'proctor.session.active': 'Sesión Activa',
   'proctor.session.paused': 'Ausente (Pausado)',
   'proctor.session.tokenError': 'No se pudo iniciar la sesión de evaluación. Revisa tu conexión a internet y actualiza la página.',
+  'proctor.session.tokenBlocked': 'Aún no puedes iniciar un nuevo intento — {{reason}}',
 
   // ── Proctor body (student-visible) ──
   'proctor.body.clearResponsesFailed': 'No se pudieron borrar tus respuestas guardadas en el servidor — pueden reaparecer. Inténtalo de nuevo.',

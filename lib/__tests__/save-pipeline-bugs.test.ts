@@ -66,6 +66,19 @@ describe('R1: Bridge recovery cross-contamination (FIXED)', () => {
     expect(keyB).toBe(`portalBridge_${userId}_assignment-B_lastState`);
   });
 
+  it('B-5: sessionId scopes the recovery key per-mount; legacy two-arg key still works', () => {
+    const userId = 'user-abc';
+    // Two-arg (legacy) call produces the transition envelope key.
+    const legacy = bridgeRecoveryKey(userId, 'assignment-A');
+    expect(legacy).toBe(`portalBridge_${userId}_assignment-A_lastState`);
+    // Three-arg call produces a mount-scoped key that differs from legacy.
+    const s1 = bridgeRecoveryKey(userId, 'assignment-A', 'session-1');
+    const s2 = bridgeRecoveryKey(userId, 'assignment-A', 'session-2');
+    expect(s1).toBe(`portalBridge_${userId}_assignment-A_session-1_lastState`);
+    expect(s1).not.toBe(s2);
+    expect(s1).not.toBe(legacy);
+  });
+
   it('two different assignments no longer share a recovery slot (contamination impossible)', () => {
     const userId = 'user-abc';
     // Activity A writes its recovery state to A's scoped slot.
@@ -284,19 +297,22 @@ describe('portalBridge.js string invariant (R1 seam drift guard)', () => {
 
   it('recovery key format matches bridgeRecoveryKey seam', () => {
     const seamKey = bridgeRecoveryKey('UID', 'AID');
-    // portalBridge computes: 'portalBridge_' + userId + '_' + assignmentId + '_lastState'
-    const bridgeLine = `'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + '_lastState'`;
+    const seamSessionKey = bridgeRecoveryKey('UID', 'AID', 'SID');
+    // B-5: sessionId-scoped and legacy (two-arg) keys share the same prefix shape.
     expect(seamKey).toBe(`portalBridge_UID_AID_lastState`);
-    // The exact concatenation line must appear in the bridge source (both
-    // beforeunload and pagehide handlers).
+    expect(seamSessionKey).toBe(`portalBridge_UID_AID_SID_lastState`);
+    // portalBridge computes the key with an optional sessionId segment — the
+    // exact concatenation line must appear twice (beforeunload + pagehide).
+    const bridgeLine = `'portalBridge_' + (PortalBridge.userId || 'unknown') + '_' + (PortalBridge.assignmentId || 'unknown') + (PortalBridge.sessionId ? '_' + PortalBridge.sessionId : '') + '_lastState'`;
     const occurrences = bridgeSrc.split(bridgeLine).length - 1;
     expect(occurrences).toBe(2);
     // Legacy unscoped concatenation (userId + '_lastState', no assignmentId) must be gone.
     expect(bridgeSrc).not.toContain(`(PortalBridge.userId || 'unknown') + '_lastState'`);
   });
 
-  it('portal-init handshake captures assignmentId from the parent payload', () => {
+  it('portal-init handshake captures assignmentId and sessionId from the parent payload', () => {
     expect(bridgeSrc).toContain('PortalBridge.assignmentId = data.payload.assignmentId');
+    expect(bridgeSrc).toContain('PortalBridge.sessionId = data.payload.sessionId');
   });
 });
 

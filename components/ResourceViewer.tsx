@@ -70,6 +70,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [saveExitElapsed, setSaveExitElapsed] = useState(0);
   const [showSaveFailedModal, setShowSaveFailedModal] = useState(false);
   const flushRef = useRef<(() => Promise<WriteStatus> | undefined) | null>(null);
+  const stopAutosaveRef = useRef<(() => void) | null>(null);
 
   // Track elapsed seconds during Save & Exit so the button doesn't feel frozen
   useEffect(() => {
@@ -342,6 +343,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           // Also clear Firestore draft (belt-and-suspenders — server also deletes on submit)
           try {
             const draftDocId = `${user.id}_${activeAssignment.id}_blocks`;
+            // B-2: Halt autosave BEFORE deleting the draft so no queued debounced
+            // write resurrects it after submission.
+            stopAutosaveRef.current?.();
             deleteDoc(doc(db, 'lesson_block_responses', draftDocId)).catch(() => {});
           } catch { /* ignore */ }
         }
@@ -940,6 +944,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 })()}
                 <Proctor
                   flushRef={flushRef}
+                  stopAutosaveRef={stopAutosaveRef}
                   lockdownMode={isLiveAssessment}
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {
@@ -1015,6 +1020,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 })()}
                 <Proctor
                   flushRef={flushRef}
+                  stopAutosaveRef={stopAutosaveRef}
                   lockdownMode={isLiveAssessment}
                   onComplete={handleEngagementComplete}
                   onBlockProgress={(completed) => {

@@ -172,6 +172,9 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
                     {group.latest.submittedAt && !group.isInProgress && (
                       <span className="text-xs text-[var(--text-muted)]">{formatLastSeen(group.latest.submittedAt)}</span>
                     )}
+                    {group.latest.submittedLate === true && (
+                      <span className="text-[11.5px] font-bold bg-orange-500/20 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded shrink-0">Late</span>
+                    )}
                   </div>
                 </div>
                 <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-600 dark:text-blue-400' : getScoreColor(displayPct)}`}>

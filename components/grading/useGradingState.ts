@@ -347,14 +347,30 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setDraftResponses(null);
   }, []);
 
-  const navigateUnified = useCallback((delta: number) => {
+  // ─── Action handlers ──────────────────────────────────────────────────────
+  // Dirty flag: true when rubric draft or feedback draft has unsaved edits.
+  const isDirty = useMemo(() => {
+    if (feedbackDraft.trim().length > 0) return true;
+    return Object.values(rubricDraft).some(q => Object.values(q).some(g => g.selectedTier > 0));
+  }, [rubricDraft, feedbackDraft]);
+
+  const navigateUnified = useCallback(async (delta: number) => {
     const nextIdx = currentUnifiedIndex + delta;
     if (nextIdx < 0 || nextIdx >= unifiedList.length) return;
+    if (isDirty) {
+      const ok = await confirm({
+        title: 'Unsaved Grades',
+        message: 'You have unsaved grade or feedback edits. Navigating away will lose them. Continue?',
+        confirmLabel: 'Discard & Continue',
+        variant: 'warning',
+      });
+      if (!ok) return;
+    }
     const entry = unifiedList[nextIdx];
     if (entry.type === 'submitted') selectStudent(entry.group.userId);
-    else if (entry.type === 'draft') selectDraftStudent(entry.student.id);
+    else if (entry.type === 'draft') await selectDraftStudent(entry.student.id);
     else selectNotStartedStudent(entry.student.id);
-  }, [currentUnifiedIndex, unifiedList, selectStudent, selectDraftStudent, selectNotStartedStudent]);
+  }, [currentUnifiedIndex, unifiedList, isDirty, confirm, selectStudent, selectDraftStudent, selectNotStartedStudent]);
 
   const handleAttemptChange = useCallback((attemptId: string) => {
     const newSub = selectedGroup?.submissions.find(s => s.id === attemptId);
@@ -365,7 +381,6 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     }
   }, [selectedGroup]);
 
-  // ─── Action handlers ──────────────────────────────────────────────────────
   const handleSaveRubric = useCallback(async () => {
     if (!selectedAssessment?.rubric || !sub) return;
     setIsSavingRubric(true);
@@ -810,6 +825,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     feedbackDraft,
     setFeedbackDraft,
     isSavingRubric,
+    isDirty,
     currentUnifiedIndex,
     mobileTab,
     setMobileTab,

@@ -47,6 +47,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     feedbackDraft,
     setFeedbackDraft,
     isSavingRubric,
+    isDirty,
     currentUnifiedIndex,
     assessmentSearch,
     setAssessmentSearch,
@@ -99,6 +100,17 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     handleDismissAISuggestion,
     handleAcceptAllAI,
   } = state;
+
+  // Warn on tab close / reload while unsaved edits exist
+  React.useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   const hasSubs = unifiedList.length > 0;
   const hasNoResults = selectedAssessmentId && allStudentGroups.length === 0 && studentGroups.length === 0 && notStartedStudents.length === 0;
@@ -265,7 +277,9 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
         <div
           className="flex flex-col lg:flex-row gap-0 bg-[var(--surface-glass)] border border-[var(--border)] rounded-3xl overflow-hidden backdrop-blur-md flex-1 min-h-0"
           onKeyDown={(e) => {
-            const tag = (e.target as HTMLElement).tagName;
+            const target = e.target as HTMLElement;
+            if (target.isContentEditable) return;
+            const tag = target.tagName;
             if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
             if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); navigateUnified(-1); }
             if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); navigateUnified(1); }

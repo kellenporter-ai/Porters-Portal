@@ -172,3 +172,79 @@ describe('draftKey', () => {
     expect(draftKey('draft', 'u1', 'a1')).toBe('draft_u1_a1');
   });
 });
+
+// ---------------------------------------------------------------------------
+// B-1: Read-before-write no-clobber guard on persistentWrite
+// ---------------------------------------------------------------------------
+describe('B-1: no-clobber guard (read-before-write)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('skips the write when the server copy lastUpdated is NEWER than the local basis', async () => {
+    getDocMock.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ lastUpdated: 't9', responses: { b1: 'server-newer' } }),
+    });
+
+    const dispatched: string[] = [];
+    const origDispatch = window.dispatchEvent.bind(window);
+    const spy = vi.spyOn(window, 'dispatchEvent').mockImplementation((e: Event) => {
+      dispatched.push((e as CustomEvent).type);
+      return true;
+    });
+
+    const status = await persistentWrite(
+      'lesson_block_responses',
+      'u1_a1_blocks',
+      { userId: 'u1', assignmentId: 'a1', responses: { b1: 'stale-local' }, lastUpdated: 't0' },
+      'draft_u1_a1',
+    );
+
+    expect(status).toBe('saved'); // reported as saved — no pending dirty work
+    expect(updateDocMock).not.toHaveBeenCalled();
+    expect(setDocMock).not.toHaveBeenCalled();
+    expect(dispatched).toContain('portal-draft-reconciliation-needed');
+    spy.mockRestore();
+    void origDispatch;
+  });
+
+  it('proceeds with the write when the server copy is older than the local basis', async () => {
+    getDocMock.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ lastUpdated: 't0', responses: { b1: 'old' } }),
+    });
+    updateDocMock.mockResolvedValueOnce(undefined);
+
+    const status = await persistentWrite(
+      'lesson_block_responses',
+      'u1_a1_blocks',
+      { userId: 'u1', assignmentId: 'a1', responses: { b1: 'fresh-local' }, lastUpdated: 't9' },
+      'draft_u1_a1',
+    );
+
+    expect(status).toBe('saved');
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fail-open: proceeds with the write when getDoc throws', async () => {
+    getDocMock.mockRejectedValueOnce(new Error('network down'));
+    updateDocMock.mockResolvedValueOnce(undefined);
+
+    const status = await persistentWrite(
+      'lesson_block_responses',
+      'u1_a1_blocks',
+      { userId: 'u1', assignmentId: 'a1', responses: { b1: 'x' }, lastUpdated: 't0' },
+      'draft_u1_a1',
+    );
+
+    expect(status).toBe('saved');
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+  });
+});

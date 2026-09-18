@@ -347,6 +347,28 @@
       ]
     },
     {
+      "collectionGroup": "submissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "assignmentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isAssessment",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "xpAwarded",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "question_boards",
       "queryScope": "COLLECTION",
       "fields": [

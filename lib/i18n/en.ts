@@ -341,6 +341,7 @@ export const en: Dictionary = {
   'proctor.session.active': 'Active Session',
   'proctor.session.paused': 'Away (Paused)',
   'proctor.session.tokenError': 'Unable to start assessment session. Please check your internet connection and refresh the page.',
+  'proctor.session.tokenBlocked': 'You can\'t start a new attempt yet — {{reason}}',
 
   // ── Proctor body (student-visible) ──
   'proctor.body.clearResponsesFailed': "Couldn't clear your saved responses on the server — they may reappear. Please try again.",

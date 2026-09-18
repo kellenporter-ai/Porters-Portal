@@ -13,6 +13,8 @@ import { reportError } from '../../lib/errorReporting';
 import { callSubmitOnBehalf } from '../../lib/firebase';
 import { useConfirm } from '../ConfirmDialog';
 import { useToast } from '../ToastProvider';
+import DiagramReplay, { type HtmlActivityState } from './DiagramReplay';
+import GraphingReplay from './GraphingReplay';
 
 interface StudentResponsePanelProps {
   selectedGroup: StudentGroup | null;
@@ -354,6 +356,12 @@ function resolveBlockAnswer(block: LessonBlock, rawAnswer: Record<string, unknow
   };
 }
 
+// Read-only replay renderers keyed by block type. To add a new block type,
+// add one entry here — the resolveBlockAnswer lookup picks it up automatically.
+const REPLAY_RENDERERS: Record<string, (block: LessonBlock, rawAnswer: Record<string, unknown>) => React.ReactNode | null> = {
+  GRAPHING: (block, rawAnswer) => <GraphingReplay response={rawAnswer} block={block} />,
+};
+
 const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
   selectedGroup,
   sub,
@@ -616,6 +624,9 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
         <NavButtons />
 
         <h4 className="text-sm font-bold text-[var(--text-primary)]">{selectedGroup.userName}</h4>
+        {sub.submittedLate === true && (
+          <span className="text-[11.5px] font-bold bg-orange-500/20 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded">Late</span>
+        )}
         {selectedGroup.userSection && (
           <span className="text-xs text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-2 py-0.5 rounded">{selectedGroup.userSection}</span>
         )}
@@ -775,6 +786,13 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
           />
         )}
 
+        {/* HTML Activity spatial replay (static SVG of placed symbols) */}
+        {!!sub.blockResponses?.__htmlActivity && (
+          <DiagramReplay
+            state={sub.blockResponses.__htmlActivity as HtmlActivityState}
+          />
+        )}
+
         {sub.assessmentScore?.perBlock && assessmentWithKeys?.lessonBlocks ? (
           <div className="space-y-2">
             {assessmentWithKeys.lessonBlocks
@@ -823,6 +841,7 @@ const StudentResponsePanel: React.FC<StudentResponsePanelProps> = ({
                           <div className="mt-1 text-[var(--text-secondary)] bg-[var(--surface-glass)] rounded px-2 py-1.5 whitespace-pre-wrap">{displayAnswer}</div>
                         )}
                         {richRenderer}
+                        {rawAnswer && REPLAY_RENDERERS[block.type]?.(block, rawAnswer)}
                       </div>
                     </div>
                   </div>
