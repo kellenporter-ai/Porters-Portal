@@ -110,17 +110,17 @@ function deserializeEndorsement(id: string, data: Record<string, unknown>): Boar
 
 // ─── Real-time hooks (resilientSnapshot wraps onSnapshot, returns unsubscribe) ───
 
-/** All boards for a classType (any status). Pass `null` to skip the subscription. */
-export function useBoards(classType: string | null): { boards: QuestionBoard[]; loading: boolean } {
+/** All boards created by a teacher (any status, any target class). Pass `null` to skip the subscription. */
+export function useBoards(creatorUid: string | null): { boards: QuestionBoard[]; loading: boolean } {
   const [boards, setBoards] = useState<QuestionBoard[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!classType) { setBoards([]); setLoading(false); return; }
+    if (!creatorUid) { setBoards([]); setLoading(false); return; }
     setLoading(true);
     const q = query(
       collection(db, 'question_boards'),
-      where('classType', '==', classType),
+      where('createdBy', '==', creatorUid),
       orderBy('createdAt', 'desc'),
     );
     const unsub = resilientSnapshot('question_boards', q, (snapshot) => {
@@ -128,7 +128,7 @@ export function useBoards(classType: string | null): { boards: QuestionBoard[]; 
       setLoading(false);
     });
     return unsub;
-  }, [classType]);
+  }, [creatorUid]);
 
   return { boards, loading };
 }

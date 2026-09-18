@@ -689,7 +689,7 @@ const BoardDetail: React.FC<{
 
 // ─── Main page ───
 const TeacherBoardsPage: React.FC<TeacherBoardsPageProps> = ({ teacher, students }) => {
-  const { boards, loading } = useBoards(teacher.classType && teacher.classType !== 'Uncategorized' ? teacher.classType : null);
+  const { boards, loading } = useBoards(teacher.id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
