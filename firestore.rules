@@ -611,15 +611,21 @@ service cloud.firestore {
     // field when the user is enrolled in that class.
     function studentInBoardSection(boardData) {
       let user = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      // Null-safe short-circuit: an absent (never-written) user doc or missing
+      // section data must fail closed (deny), not throw / produce null-deref.
+      let fromClassSections = (
+        user.classSections != null
+          ? user.classSections.get(boardData.classType, null)
+          : null
+      );
+      let enrolled = (
+        user.classType == boardData.classType
+          || (user.enrolledClasses != null && user.enrolledClasses.hasAny([boardData.classType]))
+      );
       let userSection = (
-        user.classSections != null && user.classSections.get(boardData.classType, null) != null
-          ? user.classSections.get(boardData.classType)
-          : (
-              (user.classType == boardData.classType
-                || (user.enrolledClasses != null && user.enrolledClasses.hasAny([boardData.classType])))
-                ? user.section
-                : null
-            )
+        fromClassSections != null
+          ? fromClassSections
+          : (enrolled ? user.section : null)
       );
       return userSection != null && boardData.sections.hasAny([userSection]);
     }

@@ -44,7 +44,7 @@ const BoardProjectorPage: React.FC = () => {
   // Escape exits projection mode.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') navigate(`/boards/${boardId}`);
+      if (e.key === 'Escape') navigate('/boards');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -80,7 +80,7 @@ const BoardProjectorPage: React.FC = () => {
             Live · {grouped.reduce((n, g) => n + g.questions.length, 0)}
           </span>
           <button
-            onClick={() => navigate(`/boards/${boardId}`)}
+            onClick={() => navigate('/boards')}
             aria-label="Exit projector view"
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
