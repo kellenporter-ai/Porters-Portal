@@ -21,7 +21,7 @@ import {
 import { getSectionsForClass } from '../../types';
 import type { User, QuestionBoard, BoardQuestion, BoardCategory } from '../../types';
 
-const VALID_CLASS_TYPES = ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science'];
+const VALID_CLASS_TYPES = ['AP Physics', 'Honors Physics', 'Physics', 'Forensic Science', 'Sandbox Class'];
 
 interface TeacherBoardsPageProps {
   teacher: User;
