@@ -55,11 +55,25 @@ const CreateBoardForm: React.FC<{
     (perSection ? selectedSections.length > 0 : true) &&
     (!seedQuestion.trim() || (seedQuestion.trim().length >= QUESTION_MIN_LENGTH && seedQuestion.trim().length <= QUESTION_MAX_LENGTH));
 
+  const seedTrimmed = seedQuestion.trim();
+  const seedTooShort = seedTrimmed.length > 0 && seedTrimmed.length < QUESTION_MIN_LENGTH;
+  const seedTooLong = seedTrimmed.length > QUESTION_MAX_LENGTH;
+  const reasons: string[] = [];
+  if (!title.trim()) reasons.push('Add a title.');
+  if (!prompt.trim()) reasons.push('Add the prompt shown to students.');
+  if (perSection && selectedSections.length === 0) reasons.push('Check at least one section, or uncheck "Create one board per checked section".');
+  if (seedTooShort) reasons.push(`Seed question must be at least ${QUESTION_MIN_LENGTH} characters.`);
+  if (seedTooLong) reasons.push(`Seed question must be ${QUESTION_MAX_LENGTH} characters or fewer.`);
+
   const handleCreate = async () => {
-    if (!valid) return;
+    if (!valid || creating) return;
     setCreating(true);
     try {
       const targets = perSection ? selectedSections : sections;
+      if (targets.length === 0) {
+        error('Could not create the board. Please try again.');
+        return;
+      }
       const created: QuestionBoard[] = [];
       for (const section of targets) {
         const ref = await addDoc(collection(db, 'question_boards'), {
@@ -202,6 +216,11 @@ const CreateBoardForm: React.FC<{
             {creating ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Plus className="w-4 h-4" aria-hidden="true" />}
             {perSection ? `Create ${selectedSections.length || 0} board${selectedSections.length === 1 ? '' : 's'}` : 'Create board'}
           </button>
+          {reasons.length > 0 && (
+            <ul className="mt-2 text-xs text-red-600 dark:text-red-400" role="status" aria-live="polite">
+              {reasons.map(r => <li key={r}>{r}</li>)}
+            </ul>
+          )}
         </div>
       </div>
     </details>
