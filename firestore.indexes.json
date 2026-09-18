@@ -415,6 +415,42 @@
       ]
     },
     {
+      "collectionGroup": "board_questions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "boardId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "question_boards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "classType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "board_categories",
       "queryScope": "COLLECTION",
       "fields": [
