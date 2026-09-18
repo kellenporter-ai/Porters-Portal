@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Complete Circuit: Lesson 2 Reading, Section 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --measure: 65ch;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 19px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .display {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .eyebrow {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Language toggle ──────────────────── */
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: var(--dash);
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+
+  .lang-toggle button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .lang-toggle button + button { border-left: var(--dash); }
+
+  .lang-toggle button.active {
+    color: var(--accent);
+    background: rgba(255, 77, 38, 0.06);
+  }
+
+  html[lang="en"] .lang-es { display: none !important; }
+  html[lang="es"] .lang-en { display: none !important; }
+
+  /* ── Masthead ─────────────────────────── */
+  .masthead {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .back-link {
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border: var(--dash);
+    padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Article header ───────────────────── */
+  .article-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 32px 48px;
+  }
+
+  .article-eyebrow { margin-bottom: 32px; }
+
+  .header-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .article-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(80px, 10vw, 140px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .article-title {
+    font-size: clamp(32px, 4.5vw, 56px);
+    max-width: 20ch;
+  }
+
+  html[lang="es"] .article-title { font-size: clamp(28px, 3.8vw, 48px); max-width: 24ch; }
+
+  /* ── Article hero image (21:9 editorial banner, dashed frame) ── */
+  .article-figure {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    padding: 0 32px;
+  }
+
+  .article-figure .frame {
+    border: var(--dash);
+    padding: 10px;
+  }
+
+  .article-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+  }
+
+  /* ── Body ─────────────────────────────── */
+  .article-body {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 32px 48px;
+  }
+
+  .article-body p {
+    margin-bottom: 1.6em;
+  }
+
+  .article-body p.lede {
+    font-size: 22px;
+    line-height: 1.55;
+  }
+
+  .figure-inline {
+    margin: 2.2em 0;
+    border: var(--dash);
+    padding: 10px;
+  }
+
+  .figure-inline img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  .figure-inline figcaption {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    line-height: 1.4;
+  }
+
+  .think-box {
+    margin: 2.4em 0 0;
+    padding: 24px 24px 12px;
+    border: var(--dash);
+  }
+
+  .think-box .think-label {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .think-box p {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    margin-bottom: 1em;
+  }
+
+  /* ── Prev / Next ──────────────────────── */
+  .prev-next {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .pn-card {
+    border: var(--dash);
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .pn-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+  }
+
+  .pn-card.next { text-align: right; align-items: flex-end; }
+
+  .pn-label {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .pn-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .pn-title {
+    font-family: 'Archivo', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    max-width: 28ch;
+  }
+
+  /* ── Reveal ───────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .pn-card { transition: none; }
+    .pn-card:hover { transform: none; }
+  }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 700px) {
+    body { font-size: 17px; }
+    .header-flex { flex-direction: column; gap: 20px; }
+    .prev-next { grid-template-columns: 1fr; }
+    .article-body p.lede { font-size: 19px; }
+    html[lang="es"] .article-title { font-size: clamp(24px, 8vw, 36px); }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="masthead">
+    <a href="index.html" class="back-link"><span class="lang-en">&larr; All sections</span><span class="lang-es">&larr; Todas las secciones</span></a>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </nav>
+
+  <header class="article-header">
+    <p class="eyebrow article-eyebrow"><span class="lang-en">Lesson 2 Reading &middot; Section 1 of 5</span><span class="lang-es">Lectura de la Lección 2 &middot; Sección 1 de 5</span></p>
+    <div class="header-flex">
+      <div class="article-num">01</div>
+      <h1 class="article-title display"><span class="lang-en">A Complete Circuit</span><span class="lang-es">Un circuito completo</span></h1>
+    </div>
+  </header>
+
+  <figure class="article-figure">
+    <div class="frame">
+      <img src="images/complete-circuit.jpg" alt="A wooden utility pole with power lines and a transformer along a quiet residential street" width="1280" height="549" loading="lazy" style="object-position: center 40%;">
+    </div>
+  </figure>
+
+  <main class="article-body">
+
+    <p class="lede reveal lang-en">In class, we dissected a power strip to create two separate, unbroken paths of metal: a path from our battery to each device, and another path from each device back to the battery. To transfer electrical energy in a building, you also need at least two separate, unbroken paths of metal between the energy source and the device. This is called a complete circuit or closed circuit. If these paths are broken accidentally or by using a switch, the devices do not work--this is called an open circuit or broken circuit.</p>
+
+    <p class="reveal lang-es">En clase, diseccionamos una regleta de enchufes para crear dos caminos de metal separados e ininterrumpidos: un camino de nuestra batería a cada dispositivo, y otro camino de cada dispositivo de regreso a la batería. Para transferir energía eléctrica en un edificio, también necesita al menos dos caminos de metal separados e ininterrumpidos entre la fuente de energía y el dispositivo. Esto se llama un circuito completo o circuito cerrado. Si estas rutas se interrumpen accidentalmente o mediante el uso de un interruptor, los dispositivos no funcionan; esto se denomina circuito abierto o circuito roto.</p>
+
+    <p class="reveal lang-en">The wires that come into a building are also part of complete circuits. They are connected to power lines like the one shown here--unbroken paths of metal between an energy source and the devices in each building. Switches can change a circuit from open to closed and vice versa. We find switches on individual devices, power strips, and even on entire buildings or substations.</p>
+
+    <p class="reveal lang-es">Los cables que entran en un edificio también forman parte de circuitos completos. Están conectados a líneas eléctricas como la que se muestra aquí: caminos continuos de metal entre una fuente de energía y los dispositivos en cada edificio. Interruptores pueden cambiar un circuito de abierto a cerrado y viceversa. Encontramos interruptores en dispositivos individuales, regletas de enchufes e incluso en edificios completos o subestaciones.</p>
+
+    <div class="think-box reveal">
+      <p class="think-label lang-en">Think about it</p>
+      <p class="think-label lang-es">Piénsalo</p>
+      <p class="lang-en">Where are the switches in your home or school? What do you think each one controls?</p>
+      <p class="lang-es">¿Dónde están los interruptores en tu casa o escuela? ¿Qué crees que controla cada uno?</p>
+    </div>
+
+  </main>
+
+  <nav class="prev-next">
+    <a href="index.html" class="pn-card prev">
+      <span class="pn-label lang-en">Back to all sections</span>
+      <span class="pn-label lang-es">Volver a todas las secciones</span>
+      <span class="pn-num">&middot;</span>
+      <span class="pn-title lang-en">Electricity Related Parts</span>
+      <span class="pn-title lang-es">Piezas relacionadas con la electricidad</span>
+    </a>
+    <a href="section-2-circuit-breakers.html" class="pn-card next">
+      <span class="pn-label lang-en">Next</span>
+      <span class="pn-label lang-es">Siguiente</span>
+      <span class="pn-num">02</span>
+      <span class="pn-title lang-en">Circuit Breakers</span>
+      <span class="pn-title lang-es">Disyuntores</span>
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      // ── Language toggle ──
+      var KEY = 'psrLang';
+      var root = document.documentElement;
+      function setLang(lang) {
+        if (lang !== 'es') lang = 'en';
+        root.setAttribute('lang', lang);
+        try { localStorage.setItem(KEY, lang); } catch (e) {}
+        document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+      }
+      var stored = 'en';
+      try { stored = localStorage.getItem(KEY) || 'en'; } catch (e) {}
+      setLang(stored);
+      document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+        b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+      });
+
+      // ── Reveal on scroll ──
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>

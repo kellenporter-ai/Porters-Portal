@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electricity Related Parts: Lesson 2 Reading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .display {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .eyebrow {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ── Language toggle ──────────────────── */
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: var(--dash);
+    font-family: 'Archivo', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+
+  .lang-toggle button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .lang-toggle button + button { border-left: var(--dash); }
+
+  .lang-toggle button.active {
+    color: var(--accent);
+    background: rgba(255, 77, 38, 0.06);
+  }
+
+  html[lang="en"] .lang-es { display: none !important; }
+  html[lang="es"] .lang-en { display: none !important; }
+
+  /* ── Hero ─────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 48px 24px;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 28px;
+  }
+
+  .hero h1 {
+    font-size: clamp(48px, 8vw, 112px);
+    max-width: 12ch;
+  }
+
+  html[lang="es"] .hero h1 { font-size: clamp(40px, 6.8vw, 92px); }
+
+  .hero h1 .accent { color: var(--accent); }
+
+  .hero-sub {
+    margin-top: 32px;
+    font-size: clamp(15px, 1.6vw, 18px);
+    color: var(--ink-soft);
+    max-width: 52ch;
+    line-height: 1.55;
+  }
+
+  .hero-figure {
+    width: min(840px, 92vw);
+    margin-top: 8px;
+    border: var(--dash);
+    padding: 10px;
+    background: var(--paper);
+  }
+
+  .hero-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+    object-position: center 60%;
+  }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-family: 'Archivo', sans-serif;
+    font-weight: 500;
+  }
+
+  /* ── Card image (16:9 crop, dashed frame) ── */
+  .card-img {
+    border: var(--dash);
+    padding: 6px;
+    margin-bottom: 20px;
+    background: var(--paper);
+  }
+
+  .card-img img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  /* ── Collage ──────────────────────────── */
+  .collage {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 96px 32px 120px;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 32px 28px;
+    position: relative;
+  }
+
+  .card {
+    border: var(--dash);
+    padding: 32px 28px 28px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    position: relative;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+  }
+
+  .card-num {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(56px, 6vw, 84px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(20px, 2vw, 26px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  html[lang="es"] .card-title { font-size: clamp(19px, 1.8vw, 24px); }
+
+  .card-teaser {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .card-meta {
+    margin-top: auto;
+    padding-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card-tag {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .card-source {
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* Asymmetric placement */
+  .c1 { grid-column: 1 / span 5; grid-row: 1; }
+  .c2 { grid-column: 8 / span 4; grid-row: 1; margin-top: 72px; }
+  .c3 { grid-column: 3 / span 4; grid-row: 2; margin-top: -24px; }
+  .c4 { grid-column: 9 / span 4; grid-row: 2; margin-top: 48px; }
+  .c5 { grid-column: 1 / span 4; grid-row: 3; margin-top: 16px; }
+
+  /* ── Footer ───────────────────────────── */
+  footer {
+    border-top: var(--dash);
+    padding: 28px 32px;
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Reveal ───────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .card { transition: none; }
+    .card:hover { transform: none; }
+  }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 900px) {
+    .collage { grid-template-columns: 1fr; gap: 24px; padding: 64px 24px 80px; }
+    .c1, .c2, .c3, .c4, .c5 {
+      grid-column: 1 / -1;
+      grid-row: auto;
+      margin-top: 0;
+    }
+    .hero h1 { font-size: clamp(40px, 11vw, 68px); }
+    html[lang="es"] .hero h1 { font-size: clamp(34px, 9vw, 58px); }
+  }
+</style>
+</head>
+<body>
+
+  <section class="hero">
+    <p class="eyebrow hero-eyebrow">OpenSciEd Unit P.1 &middot; Lesson 2</p>
+    <h1 class="display"><span class="lang-en">Electricity related <span class="accent">parts</span></span><span class="lang-es">Piezas relacionadas con la <span class="accent">electricidad</span></span></h1>
+    <p class="hero-sub lang-en">In class you took apart a power strip and found two separate, unbroken metal paths. This reading explains how buildings use the same idea. Five short sections on circuits, breakers, insulation, ground wires, and light bulbs.</p>
+    <p class="hero-sub lang-es">En clase desarmaste una regleta de enchufes y encontraste dos caminos de metal separados e ininterrumpidos. Esta lectura explica cómo usan la misma idea los edificios. Cinco secciones cortas sobre circuitos, disyuntores, aislamiento, cables de tierra y bombillas.</p>
+    <figure class="hero-figure">
+      <img src="images/hub-hero.jpg" alt="A dissected power strip with its casing removed, showing copper bus bars and internal wires on a workbench" width="1280" height="698" fetchpriority="high">
+    </figure>
+    <p class="scroll-cue lang-en">Scroll</p>
+    <p class="scroll-cue lang-es">Desplázate</p>
+    <div class="lang-toggle" style="position:absolute; top:28px; right:32px;" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </section>
+
+  <main class="collage">
+
+    <a href="section-1-complete-circuit.html" class="card c1 reveal">
+      <div class="card-img"><img src="images/complete-circuit.jpg" alt="A wooden utility pole with power lines and a transformer along a quiet residential street" width="1280" height="698" loading="lazy"></div>
+      <div class="card-num">01</div>
+      <h2 class="card-title"><span class="lang-en">A Complete Circuit</span><span class="lang-es">Un circuito completo</span></h2>
+      <p class="card-teaser lang-en">Why every device needs two separate, unbroken paths of metal.</p>
+      <p class="card-teaser lang-es">Por qué cada dispositivo necesita dos caminos de metal separados e ininterrumpidos.</p>
+      <div class="card-meta">
+        <span class="card-tag lang-en">Section 1 of 5</span>
+        <span class="card-tag lang-es">Sección 1 de 5</span>
+        <span class="card-source">Reading</span>
+      </div>
+    </a>
+
+    <a href="section-2-circuit-breakers.html" class="card c2 reveal">
+      <div class="card-img"><img src="images/circuit-breakers.jpg" alt="An open residential circuit breaker panel with rows of black switches and colored wires" width="1280" height="698" loading="lazy" style="object-position: 62% 40%;"></div>
+      <div class="card-num">02</div>
+      <h2 class="card-title"><span class="lang-en">Circuit Breakers</span><span class="lang-es">Disyuntores</span></h2>
+      <p class="card-teaser lang-en">Special switches that turn themselves off when energy flow becomes unsafe.</p>
+      <p class="card-teaser lang-es">Interruptores especiales que se apagan solos cuando la energía se vuelve insegura.</p>
+      <div class="card-meta">
+        <span class="card-tag lang-en">Section 2 of 5</span>
+        <span class="card-tag lang-es">Sección 2 de 5</span>
+        <span class="card-source">Reading</span>
+      </div>
+    </a>
+
+    <a href="section-3-insulation.html" class="card c3 reveal">
+      <div class="card-img"><img src="images/insulation.jpg" alt="A cut electrical cable showing separate insulated wires with exposed copper strands at the end" width="1280" height="698" loading="lazy" style="object-position: center 45%;"></div>
+      <div class="card-num">03</div>
+      <h2 class="card-title"><span class="lang-en">Insulation</span><span class="lang-es">Aislamiento</span></h2>
+      <p class="card-teaser lang-en">The rubber and ceramic materials that keep energy inside the wires.</p>
+      <p class="card-teaser lang-es">Los materiales de goma y cerámica que mantienen la energía dentro de los cables.</p>
+      <div class="card-meta">
+        <span class="card-tag lang-en">Section 3 of 5</span>
+        <span class="card-tag lang-es">Sección 3 de 5</span>
+        <span class="card-source">Reading</span>
+      </div>
+    </a>
+
+    <a href="section-4-ground-wire.html" class="card c4 reveal">
+      <div class="card-img"><img src="images/ground-wire.jpg" alt="A three-prong plug held near a wall outlet with a green ground wire visible inside the open outlet box" width="1280" height="698" loading="lazy" style="object-position: center 50%;"></div>
+      <div class="card-num">04</div>
+      <h2 class="card-title"><span class="lang-en">The Ground Wire</span><span class="lang-es">El cable de tierra</span></h2>
+      <p class="card-teaser lang-en">A safe place for extra electrical energy to go.</p>
+      <p class="card-teaser lang-es">Un lugar seguro al cual ir la energía eléctrica extra.</p>
+      <div class="card-meta">
+        <span class="card-tag lang-en">Section 4 of 5</span>
+        <span class="card-tag lang-es">Sección 4 de 5</span>
+        <span class="card-source">Reading</span>
+      </div>
+    </a>
+
+    <a href="section-5-light-bulbs.html" class="card c5 reveal">
+      <div class="card-img"><img src="images/light-bulbs.jpg" alt="A clear incandescent bulb with a visible filament next to a white LED bulb on a pale surface" width="1280" height="698" loading="lazy" style="object-position: center 55%;"></div>
+      <div class="card-num">05</div>
+      <h2 class="card-title"><span class="lang-en">Incandescent and LED Light Bulbs</span><span class="lang-es">Bombillas incandescentes y LED</span></h2>
+      <p class="card-teaser lang-en">Why old bulbs get hot and new ones do not.</p>
+      <p class="card-teaser lang-es">Por qué las bombillas antiguas se calientan y las nuevas no.</p>
+      <div class="card-meta">
+        <span class="card-tag lang-en">Section 5 of 5</span>
+        <span class="card-tag lang-es">Sección 5 de 5</span>
+        <span class="card-source">Reading</span>
+      </div>
+    </a>
+
+  </main>
+
+  <footer>
+    <p class="lang-en">OpenSciEd Unit P.1, Lesson 2 reading. Photographs are AI-generated illustrations for classroom use.</p>
+    <p class="lang-es">Lectura de OpenSciEd Unidad P.1, Lección 2. Las fotografías son ilustraciones generadas por IA para uso en el aula.</p>
+  </footer>
+
+  <script>
+    (function () {
+      // ── Language toggle ──
+      var KEY = 'psrLang';
+      var root = document.documentElement;
+      function setLang(lang) {
+        if (lang !== 'es') lang = 'en';
+        root.setAttribute('lang', lang);
+        try { localStorage.setItem(KEY, lang); } catch (e) {}
+        var btns = document.querySelectorAll('.lang-toggle button');
+        btns.forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+      }
+      var stored = 'en';
+      try { stored = localStorage.getItem(KEY) || 'en'; } catch (e) {}
+      setLang(stored);
+      document.querySelectorAll('.lang-toggle button').forEach(function (b) {
+        b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+      });
+
+      // ── Reveal on scroll ──
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>
