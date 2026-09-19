@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T16:43:34.791Z",
+  "generatedAt": "2026-09-19T00:50:40.424Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -150,6 +150,11 @@
       "path": "/tools/tangent-secant-explorer.html",
       "fingerprint": "/tools/tangent-secant-explorer.html",
       "sizeBytes": 15713
+    },
+    {
+      "path": "/weekly-reflection-journal-rubric.html",
+      "fingerprint": "/weekly-reflection-journal-rubric.html",
+      "sizeBytes": 53828
     }
   ]
 }
