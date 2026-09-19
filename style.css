@@ -137,6 +137,16 @@ code, .font-mono, kbd, pre, samp {
   }
 }
 
+/* Engaged-indicator dot pulse (Proctor resource HUD). Honors the global
+   prefers-reduced-motion rule above: reduced-motion users see a static dot. */
+@keyframes pp-engaged-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pp-engaged-pulse {
+  animation: pp-engaged-pulse 2.4s ease-in-out infinite;
+}
+
 body {
   background-color: var(--surface-base);
   color: var(--text-primary);

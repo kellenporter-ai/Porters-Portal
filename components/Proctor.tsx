@@ -124,6 +124,9 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const metricsFailCountRef = useRef(0);
   const lastInteractionRef = useRef<number>(Date.now());
+  // Bug 3: pointer/focus is inside the iframe element (cross-origin fallback —
+  // see bridge effect below for same-origin vs cross-origin handling).
+  const iframeEngagedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const [isActive, setIsActive] = useState(true);
   const isActiveRef = useRef(true);
@@ -955,7 +958,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           // against elapsed session time).
           metricsRef.current.engagementTime += 1;
           setDisplayTime(metricsRef.current.engagementTime);
-          if (now - lastInteractionRef.current < 60000) {
+          if (now - lastInteractionRef.current < 60000 || iframeEngagedRef.current) {
               if (!isActiveRef.current) {
                 isActiveRef.current = true;
                 setIsActive(true);
@@ -1492,12 +1495,101 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
           // Telemetry heartbeat from iframe — engagement timer already updated via handleInteraction() above
           break;
         }
+
+        case 'portal-activity': {
+          // Bridge activity heartbeat (~30s) — the student is genuinely
+          // interacting inside the iframe, so refresh the bounded engagement
+          // heuristic the same way a real pointer event would.
+          iframeEngagedRef.current = true;
+          break;
+        }
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [userId, assignmentId, sessionId, classType, handleInteraction]);
+
+  // Bug 3 — iframe engagement detection. Interactions inside a cross-origin
+  // iframe never reach the parent window, so the AFK timer can mark a student
+  // "Away" while they are actively reading/scrolling the embedded resource.
+  // Same-origin iframes: inject listeners directly into the LIVE iframe
+  // document from the onLoad handler (the effect-time contentDocument can be
+  // the old/empty document when the src changes in-session). Cross-origin
+  // iframes: contentDocument access throws SecurityError, so we fall back to
+  // pointerenter/focusin on the iframe element itself, TIME-BOXED to
+  // ENGAGED_HOVER_MS — pointerleave doesn't fire reliably when the pointer
+  // slides into browser chrome, so without a timeout an idle student could
+  // stay "Active" forever and bypass the 60s AFK gate. Same-origin documents
+  // genuinely report interaction (their events keep the engagement ref
+  // refreshed); cross-origin gets only this bounded hover/focus heuristic,
+  // plus the bridge 'portal-activity' heartbeat (see the message handler).
+  const ENGAGED_HOVER_MS = 60000;
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    let hoverTimer: number | undefined;
+
+    const setEngaged = () => {
+      iframeEngagedRef.current = true;
+      // Time-box the hover/focus heuristic: refresh only lasts
+      // ENGAGED_HOVER_MS unless real interaction re-arms it. Prevents a
+      // stuck "Active" when pointerleave never fires (browser chrome).
+      if (hoverTimer !== undefined) window.clearTimeout(hoverTimer);
+      hoverTimer = window.setTimeout(() => {
+        iframeEngagedRef.current = false;
+      }, ENGAGED_HOVER_MS);
+    };
+    const clearEngaged = () => {
+      iframeEngagedRef.current = false;
+      if (hoverTimer !== undefined) {
+        window.clearTimeout(hoverTimer);
+        hoverTimer = undefined;
+      }
+    };
+
+    const tryInject = () => {
+      removeInjected?.();
+      removeInjected = undefined;
+      let doc: Document | null = null;
+      try {
+        doc = iframe.contentDocument;
+      } catch {
+        // SecurityError — cross-origin iframe; element-level fallback below
+      }
+      if (doc) {
+        const events = ['mousemove', 'pointerdown', 'scroll', 'keydown'] as const;
+        const handler = () => { setEngaged(); };
+        events.forEach((evt) => doc.addEventListener(evt, handler, { passive: true }));
+        removeInjected = () => {
+          events.forEach((evt) => doc.removeEventListener(evt, handler));
+        };
+      }
+    };
+    let removeInjected: (() => void) | undefined;
+
+    // Inject into the live document — onLoad fires after every src change,
+    // so listeners always target the current document.
+    iframe.addEventListener('load', tryInject);
+    // Initial injection in case the iframe already loaded before this effect.
+    tryInject();
+
+    iframe.addEventListener('pointerenter', setEngaged);
+    iframe.addEventListener('pointerleave', clearEngaged);
+    iframe.addEventListener('focusin', setEngaged);
+    iframe.addEventListener('focusout', clearEngaged);
+    return () => {
+      removeInjected?.();
+      if (hoverTimer !== undefined) window.clearTimeout(hoverTimer);
+      iframe.removeEventListener('load', tryInject);
+      iframe.removeEventListener('pointerenter', setEngaged);
+      iframe.removeEventListener('pointerleave', clearEngaged);
+      iframe.removeEventListener('focusin', setEngaged);
+      iframe.removeEventListener('focusout', clearEngaged);
+      iframeEngagedRef.current = false;
+    };
+  }, [contentUrl]);
 
   // Handle replay button click (parent-initiated replay)
   const handleReplayClick = useCallback(() => {
@@ -1813,6 +1905,26 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                 {!hasSidebar && bridgeConnected && (
                     <div className="flex items-center gap-1.5 text-[11.5px] text-green-600 dark:text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase font-bold tracking-widest">
                         <Zap className="w-3 h-3" /> XP Linked
+                    </div>
+                )}
+                {/* DECISION B — non-numeric engaged indicator: reassures the
+                    student their time is accruing without estimating XP
+                    (server multipliers/caps make client numbers misleading).
+                    Plain text, no live region — announcing a pulsing status
+                    every few seconds would spam screen-reader users. */}
+                {!hasSidebar && !isAssessment && (
+                    <div
+                      className={`flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border uppercase font-bold tracking-widest ${
+                        isActive
+                          ? 'text-[var(--accent-text)] bg-[var(--accent-muted)] border-[var(--border-accent)]'
+                          : 'text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/20'
+                      }`}
+                    >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full bg-current ${isActive ? 'pp-engaged-pulse' : ''}`}
+                          aria-hidden="true"
+                        />
+                        {t('proctor.session.engagedIndicator')}
                     </div>
                 )}
                 {!hasSidebar && !isActive && (

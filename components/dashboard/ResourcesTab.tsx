@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { sortUnitKeys } from '../../lib/sortUnitKeys';
 import { useT, useInterpolate } from '../../lib/i18n';
+import { computeUnitProgress } from '../../lib/unitProgress';
 
 /*
  * ResourcesTab — Variation D ("Anchored") rebuild.
@@ -243,20 +244,11 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     return 'past';
   }, [activeUnitKey, allSortedUnitKeys]);
 
-  /** Compute unit progress: {completed, total, pct}. */
-  const unitProgress = useCallback((items: EnrichedAssignment[]) => {
-    let completed = 0;
-    for (const r of items) {
-      if (practiceCompletion[r.id]?.completed) { completed += 1; continue; }
-      if (r.isAssessment) {
-        const sub = submissions.find(s => s.assignmentId === r.id && s.isAssessment);
-        if (sub && sub.status !== 'STARTED') { completed += 1; continue; }
-      }
-    }
-    const total = items.length;
-    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { completed, total, pct };
-  }, [practiceCompletion, submissions]);
+  /** Compute unit progress: {completed, total, pct}. See lib/unitProgress.ts
+   *  (extracted so the completable filtering is unit-testable). */
+  const unitProgress = useCallback((items: EnrichedAssignment[]) =>
+    computeUnitProgress(items, practiceCompletion, submissions),
+  [practiceCompletion, submissions]);
 
   // Summary meta for page header
   const summary = useMemo(() => {
@@ -647,27 +639,35 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
           </div>
           <div className="flex-1" />
           <div className="text-right shrink-0">
-            <div className="text-[11px] font-mono text-[var(--text-tertiary)]">
-              {interpolate('resources.progress', { completed: progress.completed, total: progress.total, plural: progress.completed === 1 ? '' : 's' })}
-              {progress.total > 0 && <span className="ml-1">· {progress.pct}%</span>}
-            </div>
-            {(status === 'active' || (status === 'past' && progress.pct === 100)) && progress.total > 0 && (
-              <div
-                className="w-24 h-1 rounded-full overflow-hidden mt-1 ml-auto bg-[var(--surface-sunken)]"
-                role="progressbar"
-                aria-valuenow={progress.pct}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={interpolate('resources.progressAria', { unit: unitKey, pct: progress.pct })}
-              >
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${progress.pct}%`,
-                    background: progress.pct === 100 ? 'var(--accent)' : 'var(--accent)',
-                  }}
-                />
-              </div>
+            {progress.total === 0 ? (
+              <span className="inline-block font-mono text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded whitespace-nowrap bg-[var(--surface-raised)] text-[var(--text-tertiary)]">
+                {t('resources.readingTag')}
+              </span>
+            ) : (
+              <>
+                <div className="text-[11px] font-mono text-[var(--text-tertiary)]">
+                  {interpolate('resources.progress', { completed: progress.completed, total: progress.total, plural: progress.completed === 1 ? '' : 's' })}
+                  <span className="ml-1">· {progress.pct}%</span>
+                </div>
+                {(status === 'active' || (status === 'past' && progress.pct === 100)) && (
+                  <div
+                    className="w-24 h-1 rounded-full overflow-hidden mt-1 ml-auto bg-[var(--surface-sunken)]"
+                    role="progressbar"
+                    aria-valuenow={progress.pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={interpolate('resources.progressAria', { unit: unitKey, pct: progress.pct })}
+                  >
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${progress.pct}%`,
+                        background: 'var(--accent)',
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </button>

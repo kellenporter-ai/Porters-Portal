@@ -244,6 +244,7 @@ export const es: Dictionary = {
   'resources.unitLabel': 'Unidad {number} · {status}',
   'resources.progress': '{completed} de {total} hecho{plural}',
   'resources.progressAria': 'Progreso de {unit}: {pct}%',
+  'resources.readingTag': 'Lectura',
 
   // ── Feedback page ──
   'feedback.backAria': 'Volver al inicio',
@@ -339,6 +340,8 @@ export const es: Dictionary = {
 
   // ── Proctor session chrome ──
   'proctor.session.active': 'Sesión Activa',
+  'rv.xp.earnedBanner': 'Sesión confirmada. Ganaste {xp} XP por este recurso.',
+  'proctor.session.engagedIndicator': 'En sesión · El XP se acumula al terminar',
   'proctor.session.paused': 'Ausente (Pausado)',
   'proctor.session.tokenError': 'No se pudo iniciar la sesión de evaluación. Revisa tu conexión a internet y actualiza la página.',
   'proctor.session.tokenBlocked': 'Aún no puedes iniciar un nuevo intento — {{reason}}',

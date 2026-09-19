@@ -243,6 +243,7 @@ export const en: Dictionary = {
   'resources.unitLabel': 'Unit {number} · {status}',
   'resources.progress': '{completed} of {total} done',
   'resources.progressAria': '{unit} progress: {pct}%',
+  'resources.readingTag': 'Reading',
 
   // ── Proctor session chrome ──
   // ── Feedback page ──
@@ -340,6 +341,8 @@ export const en: Dictionary = {
   // ── Proctor session chrome ──
   'proctor.session.active': 'Active Session',
   'proctor.session.paused': 'Away (Paused)',
+  'rv.xp.earnedBanner': 'Session confirmed. You earned {xp} XP for this resource.',
+  'proctor.session.engagedIndicator': 'Engaged · XP accrues when you finish',
   'proctor.session.tokenError': 'Unable to start assessment session. Please check your internet connection and refresh the page.',
   'proctor.session.tokenBlocked': 'You can\'t start a new attempt yet — {{reason}}',
 

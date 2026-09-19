@@ -11,7 +11,7 @@ import { useToast } from './ToastProvider';
 import { useT, useInterpolate } from '../lib/i18n';
 import { reportError, extractFirebaseErrorCode } from '../lib/errorReporting';
 import { draftKey, clearDraft, WriteStatus } from '../lib/persistentWrite';
-import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, CheckCircle2, AlertTriangle, X, BookOpen, Bot, Home, Eye, LogOut, MessageSquare, ChevronDown, Play } from 'lucide-react';
+import { ArrowLeft, Brain, BookOpen as BookOpenIcon, Settings as SettingsIcon, Users, Loader2, Shield, Send, CheckCircle2, AlertTriangle, X, BookOpen, Bot, Home, Eye, LogOut, MessageSquare, ChevronDown, Play, Zap } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
 import { BlockResponseMap } from './LessonBlocks';
 import { sfx } from '../lib/sfx';
@@ -104,6 +104,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const [reviewMode, setReviewMode] = useState(false);
   const [studyNotesExpanded, setStudyNotesExpanded] = useState(true);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
+  // Bug 2b: XP earned this resource session, confirmed by the server on
+  // engagement submit — shown in an on-exit banner.
+  const [exitXp, setExitXp] = useState<{ xp: number; assignmentId: string } | null>(null);
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
@@ -261,7 +264,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     if (a.isAssessment) return;
     if (metrics.engagementTime < 10) return;
     try {
-      await dataService.submitEngagement(u.id, u.name, a.id, a.title, metrics, a.classType, metrics.sessionToken);
+      const result = await dataService.submitEngagement(u.id, u.name, a.id, a.title, metrics, a.classType, metrics.sessionToken);
+      if (result && typeof result.xpEarned === 'number' && result.xpEarned > 0) {
+        setExitXp({ xp: result.xpEarned, assignmentId: a.id });
+      }
     } catch (err) {
       reportError(err, { method: 'submitEngagement', assignmentId: a.id });
     }
@@ -978,6 +984,20 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
           )}
           {assignViewMode === 'WORK' && !(isLiveAssessment && !assessmentResult && (!existingSubmission || isRetakingRef.current)) && (
             <div className="h-full flex flex-col md:flex-row gap-4">
+              {/* Bug 2b: on-exit confirmation banner — XP confirmed by the server
+                  when engagement was submitted on Proctor unmount */}
+              {exitXp && exitXp.assignmentId === id && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mx-1 mb-3 flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3"
+                >
+                  <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                  <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                    {interpolate('rv.xp.earnedBanner', { xp: exitXp.xp })}
+                  </p>
+                </div>
+              )}
               <div className="flex-1 flex flex-col">
                 {/* Study Notes banner for retakes (non-assessment or preview path) */}
                 {isRetakingRef.current && existingSubmission?.studentNotes && Object.keys(existingSubmission.studentNotes).length > 0 && (() => {
