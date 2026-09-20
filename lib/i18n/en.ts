@@ -350,7 +350,6 @@ export const en: Dictionary = {
   // ── Proctor body (student-visible) ──
   'proctor.body.clearResponsesFailed': "Couldn't clear your saved responses on the server — they may reappear. Please try again.",
   'proctor.body.cannotStart': 'Cannot Start Assessment',
-  'proctor.body.refreshPage': 'Refresh Page',
   'proctor.body.replayPrompt': 'Replay from start?',
   'proctor.body.replayYes': 'Yes',
   'proctor.body.replayCancel': 'Cancel',

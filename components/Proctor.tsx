@@ -1825,12 +1825,6 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         <p className="text-[var(--text-secondary)] text-sm max-w-md mb-4">{sessionTokenError}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
-          >
-            {t('proctor.body.refreshPage')}
-          </button>
-          <button
             onClick={() => {
               // Guarded fullscreen exit (aa87ab7 pattern): no-op when not fullscreen.
               if (document.fullscreenElement) document.exitFullscreen().catch(() => {});

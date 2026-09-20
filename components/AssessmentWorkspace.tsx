@@ -94,7 +94,17 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   const interpolate = useInterpolate();
   const [takingSelectedSkill, setTakingSelectedSkill] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Tracks the student's explicit toggle so immersive-mode auto-collapse
+  // doesn't permanently fight their choice. Entering immersive/focus mode
+  // collapses the chrome; exiting it re-expands the sidebar unless the
+  // student manually collapsed it during this session.
+  const userCollapsedRef = useRef(false);
   const [immersiveMode, setImmersiveMode] = useState(false);
+
+  const collapseSidebar = useCallback((collapsed: boolean, fromUser = false) => {
+    if (fromUser) userCollapsedRef.current = collapsed;
+    setSidebarCollapsed(collapsed);
+  }, []);
   const [selected, setSelected] = useState<SidebarSelection>(() => {
     const rubric = activeAssignment.rubric;
     const questions = rubric?.questions ?? [];
@@ -109,21 +119,23 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   useEffect(() => {
     if (lockdownMode) {
       setImmersiveMode(true);
-      setSidebarCollapsed(true);
+      collapseSidebar(true);
       document.documentElement.requestFullscreen().catch(() => {});
     }
-  }, [lockdownMode]);
+  }, [lockdownMode, collapseSidebar]);
 
   // Sync immersiveMode with fullscreen state (user may press Escape or F11)
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isFs = !!document.fullscreenElement;
       setImmersiveMode(isFs);
-      if (isFs) setSidebarCollapsed(true);
+      // Collapse chrome in fullscreen; re-expand on exit unless the student
+      // manually collapsed the sidebar during this session.
+      collapseSidebar(isFs ? true : userCollapsedRef.current);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [collapseSidebar]);
 
   // Escape key exits immersive mode (fallback when fullscreen API unavailable)
   useEffect(() => {
@@ -172,7 +184,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
               onClick={async () => {
                 if (!immersiveMode) {
                   setImmersiveMode(true);
-                  setSidebarCollapsed(true);
+                  collapseSidebar(true);
                   try {
                     await document.documentElement.requestFullscreen();
                   } catch {
@@ -180,6 +192,9 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                   }
                 } else {
                   setImmersiveMode(false);
+                  // Re-expand the sidebar on exit unless the student manually
+                  // collapsed it during this session.
+                  collapseSidebar(userCollapsedRef.current);
                   if (document.fullscreenElement) {
                     try {
                       await document.exitFullscreen();
@@ -205,7 +220,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             {/* Collapse toggle */}
             <button
               type="button"
-              onClick={() => setSidebarCollapsed(v => !v)}
+              onClick={() => collapseSidebar(!sidebarCollapsed, true)}
               className="self-end p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition mb-1"
               title={sidebarCollapsed ? t('workspace.expandSidebar') : t('workspace.collapseSidebar')}
             >
@@ -298,7 +313,7 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl px-4 py-2 shadow-2xl">
                 <button
                   type="button"
-                  onClick={() => setSidebarCollapsed(v => !v)}
+                  onClick={() => collapseSidebar(!sidebarCollapsed, true)}
                   className="flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-2.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
                   title={t('workspace.toggleSidebar')}
                 >
