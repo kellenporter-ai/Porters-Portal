@@ -44,6 +44,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     gradingStudentId,
     gradingAttemptId,
     rubricDraft,
+    hasActiveRubricDraft,
     feedbackDraft,
     setFeedbackDraft,
     isSavingRubric,
@@ -339,6 +340,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
               sub={sub}
               selectedAssessment={selectedAssessment}
               rubricDraft={rubricDraft}
+              hasActiveRubricDraft={hasActiveRubricDraft}
               feedbackDraft={feedbackDraft}
               isSavingRubric={isSavingRubric}
               viewingDraftUserId={viewingDraftUserId}

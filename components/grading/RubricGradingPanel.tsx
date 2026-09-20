@@ -1,7 +1,7 @@
 import React, { Suspense, useState } from 'react';
 import {
   BookOpen, Save, Undo2, ChevronRight, RefreshCw, Sparkles, Bot, X, Eye, Users, FileText,
-  ChevronDown, ChevronUp, MessageSquare, Send,
+  ChevronDown, ChevronUp, MessageSquare, Send, PencilLine,
 } from 'lucide-react';
 import SnippetsPopover from './SnippetsPopover';
 import StudentFeedbackFeed from './StudentFeedbackFeed';
@@ -18,6 +18,9 @@ interface RubricGradingPanelProps {
   sub: Submission | null;
   selectedAssessment: Assignment | null;
   rubricDraft: Record<string, Record<string, RubricSkillGrade>>;
+  /** True when the viewed submission has a session draft that differs from
+   *  its saved grade (drives the "Unsaved draft" indicator). */
+  hasActiveRubricDraft: boolean;
   feedbackDraft: string;
   isSavingRubric: boolean;
   viewingDraftUserId: string | null;
@@ -47,6 +50,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   sub,
   selectedAssessment,
   rubricDraft,
+  hasActiveRubricDraft,
   feedbackDraft,
   isSavingRubric,
   viewingDraftUserId,
@@ -207,6 +211,11 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
       <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
         <h5 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
           <BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> Rubric Grading
+          {hasActiveRubricDraft && (
+            <span className="text-[11.5px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full ml-1 inline-flex items-center gap-1">
+              <PencilLine className="w-3 h-3" aria-hidden="true" /> Unsaved draft
+            </span>
+          )}
           {isAlreadyGraded && (
             <span className="text-[11.5px] bg-green-500/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full ml-1">Graded</span>
           )}

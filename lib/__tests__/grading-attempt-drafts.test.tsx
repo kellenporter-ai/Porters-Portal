@@ -10,7 +10,7 @@ import RubricViewer from '../../components/RubricViewer';
 import { ConfirmProvider } from '../../components/ConfirmDialog';
 import { ToastProvider } from '../../components/ToastProvider';
 import type { StudentGroup } from '../../components/grading/gradingHelpers';
-import type { Assignment, Submission, LessonBlock } from '../../types';
+import type { Assignment, Submission, LessonBlock, Rubric } from '../../types';
 
 const mockSubmissions = vi.hoisted(() => ({ current: [] as Submission[] }));
 
@@ -31,6 +31,8 @@ vi.mock('../../services/dataService', () => ({
       return () => {};
     }),
     getLatestIntegrityReport: vi.fn().mockResolvedValue(null),
+    saveRubricGrade: vi.fn().mockResolvedValue({ clearedAIFlag: false }),
+    saveGradingCorrections: vi.fn().mockResolvedValue(undefined),
   },
 }));
 vi.mock('../../lib/firebase', () => ({
@@ -201,7 +203,7 @@ describe('drawing replay viewBox (no clipping)', () => {
 
 // ─── Bug 2b: best-attempt baseline outline ──────────────────────────────────
 
-const rubric = {
+const rubric: Rubric = {
   title: 'Rubric',
   rawMarkdown: '',
   questions: [
@@ -256,6 +258,264 @@ describe('best-attempt baseline outline', () => {
       />
     );
     expect(container.querySelector('[data-baseline]')).toBeNull();
+  });
+});
+
+// ─── Session-scoped rubric drafts (Google Classroom behavior) ───────────────
+
+import { UserRole, AssignmentStatus } from '../../types';
+import type { RubricGrade } from '../../types';
+
+function renderGradingHarness({
+  users,
+  assignments = [],
+  submissions,
+  initialEntry,
+  onReady,
+  harness: Harness,
+}: {
+  users: Array<{ id: string; role: UserRole }>;
+  assignments?: unknown[];
+  submissions: Submission[];
+  initialEntry: string;
+  onReady: (a: Record<string, unknown>) => void;
+  harness: React.ComponentType<any>;
+}) {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <ConfirmProvider>
+        <ToastProvider>
+          <Routes>
+            <Route
+              path="/grading/:assessmentId"
+              element={
+                <Harness users={users} assignments={assignments} submissions={submissions} onReady={onReady} />
+              }
+            />
+            <Route
+              path="/grading/:assessmentId/:studentId"
+              element={
+                <Harness users={users} assignments={assignments} submissions={submissions} onReady={onReady} />
+              }
+            />
+          </Routes>
+        </ToastProvider>
+      </ConfirmProvider>
+    </MemoryRouter>
+  );
+}
+
+const savedGradeA: RubricGrade = {
+  grades: { q1: { sk1: { selectedTier: 3, percentage: 85 } } },
+  overallPercentage: 85,
+  gradedAt: '2026-01-01',
+  gradedBy: 'Admin',
+};
+
+const studentA = { id: 'u1', name: 'Student One', role: UserRole.STUDENT } as never;
+const studentB = { id: 'u2', name: 'Student Two', role: UserRole.STUDENT } as never;
+
+// A: best attempt saved-graded; older attempt ungraded. B: single ungraded attempt.
+const subA1 = makeSubmission({ id: 'sub-a1', userId: 'u1', userName: 'Student One', attemptNumber: 1, rubricGrade: savedGradeA });
+const subA2 = makeSubmission({ id: 'sub-a2', userId: 'u1', userName: 'Student One', attemptNumber: 2, score: 90, assessmentScore: { correct: 0, total: 1, percentage: 90, perBlock: {} } });
+const subB1 = makeSubmission({ id: 'sub-b1', userId: 'u2', userName: 'Student Two', attemptNumber: 1, score: 95, assessmentScore: { correct: 0, total: 1, percentage: 95, perBlock: {} } });
+
+describe('useGradingState session-scoped rubric drafts', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    mockSubmissions.current = [];
+  });
+
+  function stubLocalStorage() {
+    if (typeof globalThis.localStorage === 'undefined') {
+      const store = new Map<string, string>();
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => { store.set(k, v); },
+        removeItem: (k: string) => { store.delete(k); },
+        clear: () => { store.clear(); },
+      });
+    }
+  }
+
+  it('draft survives student switch and restores on switch-back', async () => {
+    const { useGradingState } = await import('../../components/grading/useGradingState');
+    stubLocalStorage();
+    mockSubmissions.current = [subA1, subA2, subB1];
+
+    let api: Record<string, any> = {};
+    function Harness({ onReady }: { onReady: (a: Record<string, unknown>) => void }) {
+      const hookApi = useGradingState({
+        users: [studentA, studentB],
+        assignments: [],
+        submissions: mockSubmissions.current,
+      });
+      React.useEffect(() => { onReady(hookApi); });
+      return null;
+    }
+
+    await act(async () => {
+      renderGradingHarness({
+        users: [studentA, studentB],
+        submissions: [subA1, subA2, subB1],
+        initialEntry: '/grading/a1/u1',
+        onReady: (a) => { api = a as Record<string, any>; },
+        harness: Harness,
+      });
+    });
+
+    // Viewing best attempt (a2, ungraded).
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-a2'); });
+    expect(api.rubricDraft).toEqual({});
+
+    // Draft a tier on student A (unsaved).
+    await act(async () => { api.handleRubricGradeChange('q1', 'sk1', 2); });
+    expect(api.rubricDraft.q1.sk1.selectedTier).toBe(2);
+
+    // Switch to student B: no saved grade and no stashed draft -> empty.
+    await act(async () => { api.selectStudent('u2'); });
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-b1'); });
+    expect(api.rubricDraft).toEqual({});
+    // The draft for student A must still exist in the session map.
+    expect(api.rubricDrafts['sub-a2']).toBeDefined();
+
+    // Switch back to student A: draft restored, not lost.
+    await act(async () => { api.selectStudent('u1'); });
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-a2'); });
+    expect(api.rubricDraft.q1.sk1.selectedTier).toBe(2);
+    expect(api.hasActiveRubricDraft).toBe(true);
+  });
+
+  it('saved grade wins over a stashed draft for the same submission', async () => {
+    const { useGradingState } = await import('../../components/grading/useGradingState');
+    stubLocalStorage();
+    mockSubmissions.current = [subA1, subA2, subB1];
+
+    let api: Record<string, any> = {};
+    function Harness({ onReady }: { onReady: (a: Record<string, unknown>) => void }) {
+      const hookApi = useGradingState({
+        users: [studentA, studentB],
+        assignments: [],
+        submissions: mockSubmissions.current,
+      });
+      React.useEffect(() => { onReady(hookApi); });
+      return null;
+    }
+
+    await act(async () => {
+      renderGradingHarness({
+        users: [studentA, studentB],
+        submissions: [subA1, subA2, subB1],
+        initialEntry: '/grading/a1/u1',
+        onReady: (a) => { api = a as Record<string, any>; },
+        harness: Harness,
+      });
+    });
+
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-a2'); });
+
+    // Switch to attempt a1 which has a saved grade: saved wins.
+    await act(async () => { api.handleAttemptChange('sub-a1'); });
+    expect(api.rubricDraft.q1.sk1.selectedTier).toBe(3);
+    expect(api.hasActiveRubricDraft).toBe(false);
+  });
+
+  it('assessment change clears all session drafts', async () => {
+    const { useGradingState } = await import('../../components/grading/useGradingState');
+    stubLocalStorage();
+    mockSubmissions.current = [subA1, subA2, subB1];
+
+    let api: Record<string, any> = {};
+    function Harness({ onReady }: { onReady: (a: Record<string, unknown>) => void }) {
+      const hookApi = useGradingState({
+        users: [studentA, studentB],
+        assignments: [],
+        submissions: mockSubmissions.current,
+      });
+      React.useEffect(() => { onReady(hookApi); });
+      return null;
+    }
+
+    await act(async () => {
+      renderGradingHarness({
+        users: [studentA, studentB],
+        submissions: [subA1, subA2, subB1],
+        initialEntry: '/grading/a1/u1',
+        onReady: (a) => { api = a as Record<string, any>; },
+        harness: Harness,
+      });
+    });
+
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-a2'); });
+    await act(async () => { api.handleRubricGradeChange('q1', 'sk1', 2); });
+    expect(api.rubricDrafts['sub-a2']).toBeDefined();
+
+    // Switch to a different assessment: the whole draft map clears.
+    await act(async () => { api.selectAssessment('a2'); });
+    expect(api.rubricDrafts).toEqual({});
+  });
+
+  it('saving a grade clears that submission draft but keeps others', async () => {
+    const { dataService } = await import('../../services/dataService');
+    const { useGradingState } = await import('../../components/grading/useGradingState');
+    stubLocalStorage();
+    mockSubmissions.current = [subA1, subA2, subB1];
+
+    const saveRubricGrade = vi.mocked(dataService.saveRubricGrade);
+
+    const assignmentWithRubric = {
+      id: 'a1',
+      title: 'Quiz',
+      description: '',
+      classType: 'Sandbox Class',
+      status: AssignmentStatus.ACTIVE,
+      resources: [],
+      publicComments: [],
+      isAssessment: true,
+      rubric,
+    };
+
+    let api: Record<string, any> = {};
+    function Harness({ onReady }: { onReady: (a: Record<string, unknown>) => void }) {
+      const hookApi = useGradingState({
+        users: [studentA, studentB],
+        assignments: [assignmentWithRubric],
+        submissions: mockSubmissions.current,
+      });
+      React.useEffect(() => { onReady(hookApi); });
+      return null;
+    }
+
+    await act(async () => {
+      renderGradingHarness({
+        users: [studentA, studentB],
+        assignments: [assignmentWithRubric],
+        submissions: [subA1, subA2, subB1],
+        initialEntry: '/grading/a1/u1',
+        onReady: (a) => { api = a as Record<string, any>; },
+        harness: Harness,
+      });
+    });
+
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-a2'); });
+
+    // Draft tiers on A's ungraded attempt.
+    await act(async () => { api.handleRubricGradeChange('q1', 'sk1', 4); });
+    expect(api.rubricDrafts['sub-a2']).toBeDefined();
+
+    // Draft tiers on B as well.
+    await act(async () => { api.selectStudent('u2'); });
+    await vi.waitFor(() => { expect(api.sub?.id).toBe('sub-b1'); });
+    await act(async () => { api.handleRubricGradeChange('q1', 'sk1', 1); });
+    expect(api.rubricDrafts['sub-b1']).toBeDefined();
+
+    // Save B's grade: only B's draft clears.
+    await act(async () => { await api.handleSaveRubric(); });
+    expect(saveRubricGrade).toHaveBeenCalledWith('sub-b1', expect.objectContaining({ overallPercentage: 55 }), 'u2', 'Quiz');
+    expect(api.rubricDrafts['sub-b1']).toBeUndefined();
+    expect(api.rubricDrafts['sub-a2']).toBeDefined();
+    expect(api.hasActiveRubricDraft).toBe(false);
+    vi.doUnmock('../../services/dataService');
   });
 });
 
