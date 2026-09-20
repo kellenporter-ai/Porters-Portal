@@ -3,10 +3,9 @@ import * as admin from "firebase-admin";
 import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 
 // ==========================================
-// ONE-TIME MIGRATION — sync classXp for single-class students
-// REMOVE THIS FUNCTION AFTER RUNNING
+// ONE-TIME MIGRATION — remove gamification.classXp (unified to gamification.xp)
 // ==========================================
-export const migrateClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+export const migrateRemoveClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
   const correlationId = generateCorrelationId();
   await verifyAdmin(request.auth);
 
@@ -23,96 +22,76 @@ export const migrateClassXp = onCall({ memory: "1GiB", timeoutSeconds: 300 }, as
   const db = admin.firestore();
   const BATCH_SIZE = 400;
 
-  let skippedMultiClass = 0;
-  let skippedAlreadyCorrect = 0;
-  let skippedNoClass = 0;
-  let skippedNoXp = 0;
   let totalScanned = 0;
-  let updated = 0;
-
-  const preview: { name: string; classType: string; from: number; to: number; gain: number }[] = [];
+  let wouldRemove = 0;
+  let removed = 0;
+  const discrepancies: { uid: string; totalXp: number; classXpSum: number }[] = [];
+  const preview: string[] = [];
 
   let lastDoc: any = null;
   while (true) {
-    let query = db.collection("users").where("role", "==", "STUDENT").orderBy("__name__").limit(500);
+    let query = db.collection("users").orderBy("__name__").limit(500);
     if (lastDoc) query = query.startAfter(lastDoc);
     const snapshot = await query.get();
     if (snapshot.empty) break;
     lastDoc = snapshot.docs[snapshot.docs.length - 1];
     totalScanned += snapshot.size;
 
-    const toUpdate: { id: string; classType: string; totalXp: number }[] = [];
+    const toRemove: string[] = [];
 
     snapshot.forEach(doc => {
       if (!doc.exists) return;
       const data = doc.data();
       const gam = data.gamification || {};
-      const totalXp: number = gam.xp || 0;
-      const classXpMap: Record<string, number> = gam.classXp || {};
+      const classXpMap: Record<string, number> = gam.classXp;
+      if (!classXpMap || typeof classXpMap !== "object" || Array.isArray(classXpMap)) return;
 
-      const classes: string[] = data.enrolledClasses?.length
-        ? data.enrolledClasses
-        : data.classType ? [data.classType] : [];
+      const totalXp: number = typeof gam.xp === "number" ? gam.xp : 0;
+      const classXpSum = Object.values(classXpMap).reduce(
+        (sum: number, v) => sum + (typeof v === "number" ? v : 0), 0);
 
-      if (classes.length === 0) { skippedNoClass++; return; }
-      if (classes.length > 1)   { skippedMultiClass++; return; }
-      if (totalXp === 0)        { skippedNoXp++; return; }
-
-      const singleClass = classes[0];
-      const currentClassXp = classXpMap[singleClass] || 0;
-
-      if (currentClassXp >= totalXp) { skippedAlreadyCorrect++; return; }
-
-      if (preview.length < 20) {
-        preview.push({
-          name: data.name || doc.id,
-          classType: singleClass,
-          from: currentClassXp,
-          to: totalXp,
-          gain: totalXp - currentClassXp,
-        });
+      if (classXpSum > totalXp) {
+        discrepancies.push({ uid: doc.id, totalXp, classXpSum });
       }
 
-      toUpdate.push({ id: doc.id, classType: singleClass, totalXp });
+      if (preview.length < 20) preview.push(doc.id);
+      toRemove.push(doc.id);
     });
 
-    if (!dryRun && toUpdate.length > 0) {
-      for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
-        const chunk = toUpdate.slice(i, i + BATCH_SIZE);
+    wouldRemove += toRemove.length;
+
+    if (!dryRun && toRemove.length > 0) {
+      for (let i = 0; i < toRemove.length; i += BATCH_SIZE) {
+        const chunk = toRemove.slice(i, i + BATCH_SIZE);
         const batch = db.batch();
-        chunk.forEach(({ id, classType, totalXp }) => {
+        chunk.forEach((id) => {
           batch.update(db.doc(`users/${id}`), {
-            [`gamification.classXp.${classType}`]: totalXp,
+            "gamification.classXp": admin.firestore.FieldValue.delete(),
           });
         });
         await batch.commit();
-        updated += chunk.length;
+        removed += chunk.length;
       }
-    } else {
-      updated += toUpdate.length;
     }
 
     if (snapshot.size < 500) break;
   }
 
-  logWithCorrelation('info', 'migrateClassXp complete', correlationId, {
+  logWithCorrelation('info', 'migrateRemoveClassXp complete', correlationId, {
     dryRun,
     totalScanned,
-    updated,
-    skippedMultiClass,
-    skippedAlreadyCorrect,
-    skippedNoClass,
-    skippedNoXp,
+    wouldRemove,
+    removed,
+    discrepancyCount: discrepancies.length,
     previewCount: preview.length,
   });
   return {
     dryRun,
     totalScanned,
-    updated,
-    skippedMultiClass,
-    skippedAlreadyCorrect,
-    skippedNoClass,
-    skippedNoXp,
+    wouldRemove,
+    removed,
+    discrepancyCount: discrepancies.length,
+    discrepancies: discrepancies.slice(0, 50),
     preview,
   };
 });
@@ -861,4 +840,201 @@ export const migrateAssignmentContent = onCall({ memory: "1GiB", timeoutSeconds:
   });
 
   return { dryRun, totalScanned, migrated, skippedAlreadyMigrated, errors: errors.slice(0, 20), preview };
+});
+
+// ==========================================
+// ONE-TIME MIGRATION — normalize equipment slot vocab to uppercase
+// ==========================================
+
+const SLOT_VOCAB_MAP: Record<string, string> = {
+  helmet: "HEAD",
+  head: "HEAD",
+  chest: "CHEST",
+  gloves: "HANDS",
+  hands: "HANDS",
+  boots: "FEET",
+  feet: "FEET",
+  belt: "BELT",
+  weapon: "WEAPON",
+  accessory1: "RING",
+  accessory2: "AMULET",
+  mount: "MOUNT",
+};
+
+function normalizeSlotVocab(slot: string): string {
+  if (!slot) return slot;
+  if (SLOT_VOCAB_MAP[slot]) return SLOT_VOCAB_MAP[slot];
+  const upper = slot.toUpperCase();
+  if (SLOT_VOCAB_MAP[upper.toLowerCase()]) return SLOT_VOCAB_MAP[upper.toLowerCase()];
+  if (upper === "RING1" || upper === "RING2") return "RING";
+  if (upper === "WEAPON1" || upper === "WEAPON2") return "WEAPON";
+  return upper;
+}
+
+interface SlotItem { slot?: string; [key: string]: unknown }
+
+/**
+ * Rewrites legacy lowercase equipment slot keys to canonical uppercase
+ * EquipmentSlot/ItemSlot vocab in:
+ *   - gamification.classProfiles.*.equipped  (map keys + item.slot)
+ *   - gamification.classProfiles.*.inventory (item.slot)
+ *   - gamification.equipped / gamification.inventory (legacy top-level)
+ *
+ * Mount items are normalized to slot "MOUNT" and kept in data (loadout UI
+ * hides them). Admin-only. Idempotent — already-canonical docs are skipped.
+ * dryRun defaults to true. Uses pagination + 400-write batches.
+ */
+export const migrateSlotVocabulary = onCall({ memory: "1GiB", timeoutSeconds: 300 }, async (request) => {
+  const correlationId = generateCorrelationId();
+  await verifyAdmin(request.auth);
+
+  const { dryRun: dryRunRaw = true, ...rest } = request.data || {};
+  if (Object.keys(rest).length > 0) {
+    throw new HttpsError("invalid-argument", `Unexpected parameters: ${Object.keys(rest).join(", ")}`);
+  }
+  if (typeof dryRunRaw !== "boolean") {
+    throw new HttpsError("invalid-argument", "dryRun must be a boolean.");
+  }
+  const dryRun = dryRunRaw !== false;
+
+  const db = admin.firestore();
+  const BATCH_SIZE = 400;
+
+  let totalScanned = 0;
+  let docsUpdated = 0;
+  let itemsRewritten = 0;
+  let keysRewritten = 0;
+  const errors: string[] = [];
+  const preview: string[] = [];
+
+  let lastDoc: admin.firestore.QueryDocumentSnapshot | null = null;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    let query: admin.firestore.Query = db.collection("users").orderBy(admin.firestore.FieldPath.documentId()).limit(500);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    totalScanned += snapshot.size;
+
+    const pending: Array<{ ref: admin.firestore.DocumentReference; updates: Record<string, unknown> }> = [];
+
+    for (const docSnap of snapshot.docs) {
+      try {
+        const data = docSnap.data();
+        const gam = data.gamification;
+        if (!gam || typeof gam !== "object") continue;
+
+        const updates: Record<string, unknown> = {};
+        let docChanged = false;
+
+        // Helper: normalize an items array; returns new array if any slot changed.
+        const normalizeItems = (items: SlotItem[]): { arr: SlotItem[]; changed: number } | null => {
+          if (!Array.isArray(items)) return null;
+          let changed = 0;
+          const arr = items.map((it) => {
+            if (!it || typeof it.slot !== "string" || !it.slot) return it;
+            const norm = normalizeSlotVocab(it.slot);
+            if (norm !== it.slot) { changed++; return { ...it, slot: norm }; }
+            return it;
+          });
+          return { arr, changed };
+        };
+
+        // Helper: normalize an equipped map; returns new map if any key/slot changed.
+        const normalizeEquippedMap = (equipped: Record<string, SlotItem>): { map: Record<string, SlotItem>; keysChanged: number; slotsChanged: number } | null => {
+          if (!equipped || typeof equipped !== "object" || Array.isArray(equipped)) return null;
+          let keysChanged = 0;
+          let slotsChanged = 0;
+          const map: Record<string, SlotItem> = {};
+          for (const [key, item] of Object.entries(equipped)) {
+            if (!item) continue;
+            const normKey = normalizeSlotVocab(key);
+            if (normKey !== key) keysChanged++;
+            let newItem = item;
+            if (typeof item.slot === "string" && item.slot) {
+              const normSlot = normalizeSlotVocab(item.slot);
+              if (normSlot !== item.slot) { slotsChanged++; newItem = { ...item, slot: normSlot }; }
+            }
+            map[normKey] = newItem;
+          }
+          return { map, keysChanged, slotsChanged };
+        };
+
+        // 1) Per-class profiles
+        const classProfiles: Record<string, { equipped?: Record<string, SlotItem>; inventory?: SlotItem[] }> = gam.classProfiles;
+        if (classProfiles && typeof classProfiles === "object" && !Array.isArray(classProfiles)) {
+          for (const [classType, profile] of Object.entries(classProfiles)) {
+            if (!profile || typeof profile !== "object") continue;
+            const base = `gamification.classProfiles.${classType}`;
+
+            const eqNorm = normalizeEquippedMap(profile.equipped || {});
+            if (eqNorm && (eqNorm.keysChanged > 0 || eqNorm.slotsChanged > 0)) {
+              updates[`${base}.equipped`] = eqNorm.map;
+              keysRewritten += eqNorm.keysChanged;
+              itemsRewritten += eqNorm.slotsChanged;
+              docChanged = true;
+            }
+
+            const invNorm = normalizeItems(profile.inventory || []);
+            if (invNorm && invNorm.changed > 0) {
+              updates[`${base}.inventory`] = invNorm.arr;
+              itemsRewritten += invNorm.changed;
+              docChanged = true;
+            }
+          }
+        }
+
+        // 2) Legacy top-level fields
+        const legacyEq = normalizeEquippedMap(gam.equipped || {});
+        if (legacyEq && (legacyEq.keysChanged > 0 || legacyEq.slotsChanged > 0)) {
+          updates["gamification.equipped"] = legacyEq.map;
+          keysRewritten += legacyEq.keysChanged;
+          itemsRewritten += legacyEq.slotsChanged;
+          docChanged = true;
+        }
+        const legacyInv = normalizeItems(gam.inventory || []);
+        if (legacyInv && legacyInv.changed > 0) {
+          updates["gamification.inventory"] = legacyInv.arr;
+          itemsRewritten += legacyInv.changed;
+          docChanged = true;
+        }
+
+        if (docChanged) {
+          if (preview.length < 20) preview.push(docSnap.id);
+          pending.push({ ref: docSnap.ref, updates });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${docSnap.id}: ${msg}`);
+      }
+    }
+
+    if (!dryRun && pending.length > 0) {
+      for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+        const chunk = pending.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+        for (const p of chunk) {
+          batch.update(p.ref, p.updates);
+        }
+        await batch.commit();
+        docsUpdated += chunk.length;
+      }
+    } else {
+      docsUpdated += pending.length;
+    }
+
+    if (snapshot.size < 500) break;
+  }
+
+  logWithCorrelation('info', 'migrateSlotVocabulary complete', correlationId, {
+    dryRun,
+    totalScanned,
+    docsUpdated,
+    itemsRewritten,
+    keysRewritten,
+    errorCount: errors.length,
+  });
+
+  return { dryRun, totalScanned, docsUpdated, itemsRewritten, keysRewritten, errors: errors.slice(0, 20), preview };
 });

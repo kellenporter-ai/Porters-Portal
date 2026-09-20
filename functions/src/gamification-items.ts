@@ -20,6 +20,42 @@ const SLOTS = [
   "accessory1", "accessory2", "mount",
 ];
 
+// ── Slot vocabulary ─────────────────────────────────────────────────
+// Canonical slot names are the UPPERCASE UI EquipmentSlot/ItemSlot vocab.
+// CF-internal lowercase slots are mapped here. `mount` has no UI slot
+// (hidden from loadout); it maps to MOUNT for data consistency.
+const SLOT_MAP: Record<string, string> = {
+  helmet: "HEAD",
+  chest: "CHEST",
+  gloves: "HANDS",
+  boots: "FEET",
+  belt: "BELT",
+  weapon: "WEAPON",
+  accessory1: "RING",
+  accessory2: "AMULET",
+  mount: "MOUNT",
+};
+
+/** Normalize any slot string (legacy lowercase or already-uppercase) to the
+ *  canonical uppercase vocabulary. Unknown slots are uppercased as-is. */
+export function normalizeSlot(slot: string): string {
+  if (typeof slot !== "string" || !slot) return slot;
+  const lower = slot.toLowerCase();
+  if (SLOT_MAP[lower]) return SLOT_MAP[lower];
+  const upper = slot.toUpperCase();
+  if (upper === "RING1" || upper === "RING2") return "RING";
+  if (upper === "WEAPON1" || upper === "WEAPON2") return "WEAPON";
+  return upper;
+}
+
+/** Normalize an item's slot field in-place (returns the item). */
+function normalizeItemSlot<T extends { slot?: unknown }>(item: T): T {
+  if (item && typeof item.slot === "string") {
+    item.slot = normalizeSlot(item.slot);
+  }
+  return item;
+}
+
 // ── Base items per slot ─────────────────────────────────────────────
 interface BaseItemDef {
   name: string;
@@ -28,19 +64,21 @@ interface BaseItemDef {
   baseStats: Record<string, number>;
 }
 
+// Base item defs use canonical uppercase slots; generateLoot normalizes
+// any legacy lowercase slot it encounters through normalizeSlot().
 const BASE_ITEMS: BaseItemDef[] = [
-  { name: "Blaster Pistol", slot: "weapon", visualId: "blaster_pistol", baseStats: { tech: 2 } },
-  { name: "Nano Sabre", slot: "weapon", visualId: "nano_sabre", baseStats: { tech: 3 } },
-  { name: "Tactical Jacket", slot: "chest", visualId: "tactical_jacket", baseStats: { focus: 2 } },
-  { name: "Energy Armor", slot: "chest", visualId: "energy_armor", baseStats: { analysis: 2 } },
-  { name: "Recon Visor", slot: "helmet", visualId: "recon_visor", baseStats: { focus: 1, analysis: 1 } },
-  { name: "Titan Helm", slot: "helmet", visualId: "titan_helm", baseStats: { charisma: 2 } },
-  { name: "Tech Gloves", slot: "gloves", visualId: "tech_gloves", baseStats: { tech: 1, focus: 1 } },
-  { name: "Stealth Boots", slot: "boots", visualId: "stealth_boots", baseStats: { focus: 2 } },
-  { name: "Command Boots", slot: "boots", visualId: "command_boots", baseStats: { charisma: 2 } },
-  { name: "Data Chip", slot: "accessory1", visualId: "data_chip", baseStats: { analysis: 2 } },
-  { name: "Focus Lens", slot: "accessory2", visualId: "focus_lens", baseStats: { focus: 2 } },
-  { name: "Hoverboard", slot: "mount", visualId: "hoverboard", baseStats: { charisma: 3 } },
+  { name: "Blaster Pistol", slot: "WEAPON", visualId: "blaster_pistol", baseStats: { tech: 2 } },
+  { name: "Nano Sabre", slot: "WEAPON", visualId: "nano_sabre", baseStats: { tech: 3 } },
+  { name: "Tactical Jacket", slot: "CHEST", visualId: "tactical_jacket", baseStats: { focus: 2 } },
+  { name: "Energy Armor", slot: "CHEST", visualId: "energy_armor", baseStats: { analysis: 2 } },
+  { name: "Recon Visor", slot: "HEAD", visualId: "recon_visor", baseStats: { focus: 1, analysis: 1 } },
+  { name: "Titan Helm", slot: "HEAD", visualId: "titan_helm", baseStats: { charisma: 2 } },
+  { name: "Tech Gloves", slot: "HANDS", visualId: "tech_gloves", baseStats: { tech: 1, focus: 1 } },
+  { name: "Stealth Boots", slot: "FEET", visualId: "stealth_boots", baseStats: { focus: 2 } },
+  { name: "Command Boots", slot: "FEET", visualId: "command_boots", baseStats: { charisma: 2 } },
+  { name: "Data Chip", slot: "RING", visualId: "data_chip", baseStats: { analysis: 2 } },
+  { name: "Focus Lens", slot: "AMULET", visualId: "focus_lens", baseStats: { focus: 2 } },
+  { name: "Hoverboard", slot: "MOUNT", visualId: "hoverboard", baseStats: { charisma: 3 } },
 ];
 
 // ── Prefix / Suffix affix tables ────────────────────────────────────
@@ -85,7 +123,7 @@ interface UniqueDef {
 const UNIQUES: UniqueDef[] = [
   {
     name: "Eternity Edge",
-    slot: "weapon",
+    slot: "WEAPON",
     visualId: "eternity_edge",
     stats: { tech: 8, focus: 5 },
     effects: [{ id: "eternity_proc", name: "Eternal Strike", description: "10% chance to deal double damage", type: "combat" }],
@@ -93,7 +131,7 @@ const UNIQUES: UniqueDef[] = [
   },
   {
     name: "Voidweave Cloak",
-    slot: "chest",
+    slot: "CHEST",
     visualId: "voidweave_cloak",
     stats: { analysis: 8, charisma: 4 },
     effects: [{ id: "void_shroud", name: "Void Shroud", description: "Reduces incoming damage by 15%", type: "combat" }],
@@ -101,7 +139,7 @@ const UNIQUES: UniqueDef[] = [
   },
   {
     name: "Crown of the Architect",
-    slot: "helmet",
+    slot: "HEAD",
     visualId: "architect_crown",
     stats: { focus: 8, analysis: 5 },
     effects: [{ id: "architects_gaze", name: "Architect's Gaze", description: "Reveals hidden traps in dungeons", type: "exploration" }],
@@ -109,7 +147,7 @@ const UNIQUES: UniqueDef[] = [
   },
   {
     name: "Starlight Gauntlets",
-    slot: "gloves",
+    slot: "HANDS",
     visualId: "starlight_gauntlets",
     stats: { tech: 6, focus: 4, charisma: 2 },
     effects: [{ id: "starlight_touch", name: "Starlight Touch", description: "Crafting success rate +20%", type: "crafting" }],
@@ -117,7 +155,7 @@ const UNIQUES: UniqueDef[] = [
   },
   {
     name: "Chrono Boots",
-    slot: "boots",
+    slot: "FEET",
     visualId: "chrono_boots",
     stats: { focus: 10 },
     effects: [{ id: "time_dilation", name: "Time Dilation", description: "+15% movement speed in all modes", type: "movement" }],
@@ -162,7 +200,8 @@ function generateLoot(
 ): LootItem {
   if (customPool && customPool.length > 0 && Math.random() < 0.5) {
     const item = pick(customPool)!;
-    return { ...item, id: `${item.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, obtainedAt: new Date().toISOString() };
+    // Normalize legacy lowercase slots on custom-pool items before persisting.
+    return { ...normalizeItemSlot({ ...item }), id: `${item.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, obtainedAt: new Date().toISOString() };
   }
   const roll = Math.random();
   let rarity: string;
@@ -199,7 +238,9 @@ function generateLoot(
     }
   }
 
-  const base = pick(BASE_ITEMS.filter((b) => b.slot === pick(SLOTS))) || BASE_ITEMS[0];
+  // BASE_ITEMS slots are canonical uppercase; SLOTS is legacy lowercase, so
+  // normalize the comparison slot before matching.
+  const base = pick(BASE_ITEMS.filter((b) => b.slot === normalizeSlot(pick(SLOTS) || ""))) || BASE_ITEMS[0];
   const affixes: Affix[] = [];
   if (rarity !== "COMMON") {
     const prefix = pick(PREFIX_DEFS);
@@ -303,8 +344,8 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
   const db = admin.firestore();
   const userRef = db.collection("users").doc(userId);
   const rateLimitRef = db.collection("xp_rate_limits").doc(userId);
-  let diag: { previousXp: number; newXp: number; previousClassXp: number | null; newClassXp: number | null } = {
-    previousXp: 0, newXp: 0, previousClassXp: null, newClassXp: null,
+  let diag: { previousXp: number; newXp: number } = {
+    previousXp: 0, newXp: 0,
   };
   await db.runTransaction(async (t) => {
     const [userSnap, rateSnap] = await Promise.all([
@@ -364,8 +405,6 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     diag = {
       previousXp: data.gamification?.xp ?? 0,
       newXp: result.newXP,
-      previousClassXp: classType ? (data.gamification?.classXp?.[classType] ?? 0) : null,
-      newClassXp: classType ? (finalUpdates[`gamification.classXp.${classType}`] ?? null) : null,
     };
   });
   logWithCorrelation('info', 'XP awarded', correlationId, { userId, xpAmount, classType, ...diag });
@@ -375,22 +414,25 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
 export const equipItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const correlationId = generateCorrelationId();
   const userId = verifyAuth(request.auth);
-  const { itemId, slot, classType } = request.data || {};
-  if (typeof itemId !== "string" || typeof slot !== "string") {
-    throw new HttpsError("invalid-argument", "itemId and slot are required.");
+  const { itemId, classType } = request.data || {};
+  if (typeof itemId !== "string") {
+    throw new HttpsError("invalid-argument", "itemId is required.");
   }
   const paths = getProfilePaths(classType);
   const db = admin.firestore();
   const userRef = db.collection("users").doc(userId);
+  let equippedSlot: string | null = null;
   await db.runTransaction(async (t) => {
     const snap = await t.get(userRef);
     if (!snap.exists) throw new HttpsError("not-found", "User not found.");
     const data = snap.data()!;
     const { inventory, equipped } = getProfileData(data, classType);
     const itemIndex = inventory.findIndex((it: any) => it.id === itemId);
-    if (itemIndex === -1) throw new HttpsError("not-found", "Item not found in inventory.");
+    if (itemIndex === -1) throw new HttpsError("not-found", `Item ${itemId} not found in inventory. Unequip-and-re-equip flows require the item to be present.`);
     const item = inventory[itemIndex];
-    if (item.slot !== slot) throw new HttpsError("invalid-argument", `Item ${item.name} cannot be equipped in ${slot} slot.`);
+    if (typeof item.slot !== "string" || !item.slot) throw new HttpsError("internal", `Item ${itemId} is missing its slot field.`);
+    const slot = normalizeSlot(item.slot);
+    equippedSlot = slot;
     const newInventory = inventory.filter((_: any, i: number) => i !== itemIndex);
     const newEquipped = { ...equipped, [slot]: item };
     if (classType && classType !== "Uncategorized") {
@@ -399,7 +441,7 @@ export const equipItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async 
       t.update(userRef, { "gamification.inventory": newInventory, "gamification.equipped": newEquipped });
     }
   });
-  logWithCorrelation('info', 'Item equipped', correlationId, { userId, itemId, slot, classType });
+  logWithCorrelation('info', 'Item equipped', correlationId, { userId, itemId, slot: equippedSlot, classType });
   return { success: true };
 });
 
@@ -418,10 +460,17 @@ export const unequipItem = onCall({ memory: "256MiB", timeoutSeconds: 60 }, asyn
     if (!snap.exists) throw new HttpsError("not-found", "User not found.");
     const data = snap.data()!;
     const { inventory, equipped } = getProfileData(data, classType);
-    const item = equipped[slot];
-    if (!item) throw new HttpsError("not-found", "No item equipped in that slot.");
+    // Normalize the client-passed key to canonical uppercase; fall back to any
+    // legacy lowercase key still present in pre-migration data.
+    const canonical = normalizeSlot(slot);
+    const legacyKey = Object.keys(equipped).find(
+      (k) => normalizeSlot(k) === canonical
+    );
+    const equippedKey = equipped[canonical] ? canonical : legacyKey;
+    const item = equippedKey ? equipped[equippedKey] : undefined;
+    if (!item || !equippedKey) throw new HttpsError("not-found", "No item equipped in that slot.");
     const newEquipped = { ...equipped };
-    delete newEquipped[slot];
+    delete newEquipped[equippedKey];
     const newInventory = [...inventory, item];
     if (classType && classType !== "Uncategorized") {
       t.update(userRef, { [`${paths.inventory}`]: newInventory, [`${paths.equipped}`]: newEquipped });
@@ -655,3 +704,4 @@ export {
   generateLoot,
   getDisenchantValue,
 };
+// force redeploy Sun Sep 20 05:37:09 PM EDT 2026
