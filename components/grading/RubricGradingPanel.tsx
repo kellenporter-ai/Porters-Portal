@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import SnippetsPopover from './SnippetsPopover';
 import StudentFeedbackFeed from './StudentFeedbackFeed';
-import type { Submission, Assignment, DraftFeedbackMessage } from '../../types';
+import type { Submission, Assignment, DraftFeedbackMessage, RubricGrade } from '../../types';
 import type { StudentGroup } from './gradingHelpers';
 import { calculateRubricPercentage } from '../../lib/rubricParser';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
@@ -31,6 +31,10 @@ interface RubricGradingPanelProps {
   onDraftFeedbackChange: (v: string) => void;
   onSendDraftFeedback: () => void;
   onGradeChange: (questionId: string, skillId: string, tierIndex: number) => void;
+  /** Grades from the student's best SAVED attempt, shown as an outline
+   *  reference while grading a different attempt. Null when none exists. */
+  baselineGrade: RubricGrade | null;
+  baselineAttemptNumber: number;
   onAcceptAllAI: () => void;
   onDismissAISuggestion: () => void;
   onSaveRubric: () => void;
@@ -61,6 +65,8 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   onSaveRubric,
   onReturnToStudent,
   onSelectStudent,
+  baselineGrade,
+  baselineAttemptNumber,
 }) => {
   const [isFeedbackHistoryOpen, setIsFeedbackHistoryOpen] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
@@ -184,6 +190,9 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   const rubricPct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
   const isAlreadyGraded = !!sub.rubricGrade;
   const isReturnedAttempt = sub.status === 'RETURNED';
+  // Show the best attempt's saved tiers as a reference only while grading a
+  // different attempt. If no attempt has a saved grade, show nothing.
+  const showBaseline = !!baselineGrade && baselineGrade !== sub.rubricGrade && selectedGroup.bestGraded?.id !== sub.id;
 
   // "Grade Next" logic
   type SubmittedEntry = { type: string; group?: { userId: string; needsGrading: boolean } | null };
@@ -260,8 +269,28 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
             aiSuggestedGrade={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? sub.aiSuggestedGrade : undefined}
             onGradeChange={isReturnedAttempt ? undefined : onGradeChange}
             onAcceptAllAI={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? onAcceptAllAI : undefined}
+            baselineGrades={showBaseline ? baselineGrade?.grades : undefined}
           />
         </Suspense>
+        {showBaseline && (
+          <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+            Best attempt {baselineAttemptNumber} ({baselineGrade!.overallPercentage}%) selected:{' '}
+            {(() => {
+              const counts = new Map<string, number>();
+              for (const skills of Object.values(baselineGrade!.grades)) {
+                for (const g of Object.values(skills)) {
+                  const label = selectedAssessment.rubric!.questions
+                    .flatMap(q => q.skills)
+                    .flatMap(s => s.tiers)[g.selectedTier]?.label;
+                  if (label) counts.set(label, (counts.get(label) || 0) + 1);
+                }
+              }
+              return Array.from(counts.entries())
+                .map(([label, n]) => `${label}${n > 1 ? ` (${n})` : ''}`)
+                .join(', ');
+            })()}
+          </p>
+        )}
       </div>
 
       {/* Teacher feedback + save bar */}

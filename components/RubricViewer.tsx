@@ -63,14 +63,16 @@ interface TierDescriptorListProps {
   compact: boolean;
   onTierClick: (questionId: string, skillId: string, tierIndex: number) => void;
   aiSuggestion?: AISuggestedSkillGrade | null;
+  baselineTier?: number | null;
 }
 
-const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questionId, skillId, selectedTier, compact, onTierClick, aiSuggestion }) => (
+const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questionId, skillId, selectedTier, compact, onTierClick, aiSuggestion, baselineTier = null }) => (
   <div className={`${compact ? 'px-2 pb-2 pt-1.5 space-y-1' : 'px-3 pb-3 pt-2 space-y-1.5'}`}>
     {tiers.map((tier, tierIdx) => {
       const colors = RUBRIC_TIER_COLORS[tier.label];
       const isSelected = selectedTier === tierIdx;
       const isAISuggested = aiSuggestion?.suggestedTier === tierIdx;
+      const isBaseline = baselineTier === tierIdx;
 
       return (
         <div
@@ -78,7 +80,9 @@ const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questio
           role="button"
           tabIndex={0}
           aria-pressed={isSelected}
-          className={`rounded-lg ${compact ? 'px-3 py-2' : 'px-4 py-3'} border text-[13px] leading-relaxed transition-all select-none ${
+          data-baseline={isBaseline || undefined}
+          className={`relative rounded-lg ${compact ? 'px-3 py-2' : 'px-4 py-3'} border text-[13px] leading-relaxed transition-all select-none ${
+            isBaseline ? 'ring-1 ring-sky-400/50 border-sky-400/50' : ''} ${
             isSelected
               ? `${colors.bg} ${colors.border} ${colors.text} ring-2 ring-[var(--border)]`
               : isAISuggested
@@ -97,6 +101,9 @@ const TierDescriptorList = React.memo<TierDescriptorListProps>(({ tiers, questio
             {tier.label} ({tier.percentage}%):
           </span>
           {isAISuggested && !isSelected && <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 inline ml-1.5" aria-hidden="true" />}
+          {isBaseline && (
+            <span className="absolute top-1 right-1.5 text-[9px] font-bold uppercase tracking-wider text-sky-500 dark:text-sky-400">Best</span>
+          )}
           {' '}{tier.descriptor}
         </div>
       );
@@ -112,13 +119,15 @@ interface RubricViewerProps {
   rubricGrade?: RubricGrade;
   aiSuggestedGrade?: AISuggestedGrade;
   onGradeChange?: (questionId: string, skillId: string, tierIndex: number) => void;
+  /** Grades from the best saved attempt, shown as outline reference while grading another attempt */
+  baselineGrades?: Record<string, Record<string, { selectedTier: number; percentage: number }>>;
   onAcceptAllAI?: () => void;
   className?: string;
   /** When true, render a compact variant optimized for side-by-side grading panels */
   compact?: boolean;
 }
 
-const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, aiSuggestedGrade, onGradeChange, onAcceptAllAI, className = '', compact = false }) => {
+const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, aiSuggestedGrade, onGradeChange, baselineGrades, onAcceptAllAI, className = '', compact = false }) => {
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(rubric.questions[0]?.id || null);
   const [flashTier, setFlashTier] = useState<string | null>(null);
@@ -275,6 +284,7 @@ const RubricViewer: React.FC<RubricViewerProps> = ({ rubric, mode, rubricGrade, 
                           compact={compact}
                           onTierClick={handleTierClick}
                           aiSuggestion={aiSuggestion}
+                          baselineTier={baselineGrades?.[question.id]?.[skill.id]?.selectedTier ?? null}
                         />
                       ) : (
                         <>

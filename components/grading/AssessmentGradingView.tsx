@@ -357,6 +357,8 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
               onSelectStudent={selectStudent}
               onDraftFeedbackChange={setDraftFeedbackDraft}
               onSendDraftFeedback={handleSendDraftFeedback}
+              baselineGrade={selectedGroup?.bestGraded?.rubricGrade || null}
+              baselineAttemptNumber={selectedGroup?.bestGraded?.attemptNumber || 1}
             />
           </div>
         </div>

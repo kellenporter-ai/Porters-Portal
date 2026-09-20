@@ -69,6 +69,9 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
 
   // ─── Local state ──────────────────────────────────────────────────────────
   const [rubricDraft, setRubricDraft] = useState<Record<string, Record<string, RubricSkillGrade>>>({});
+  // Unsaved rubric selections stashed per attempt (submission id) so they
+  // survive attempt switches without being persisted to Firestore.
+  const [rubricDraftsByAttempt, setRubricDraftsByAttempt] = useState<Record<string, Record<string, Record<string, RubricSkillGrade>>>>({});
   const [feedbackDraft, setFeedbackDraft] = useState('');
   const [isSavingRubric, setIsSavingRubric] = useState(false);
   const [assessmentSearch, setAssessmentSearch] = useState('');
@@ -250,6 +253,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
       setFeedbackDraft('');
     }
     setGradingAttemptId(bestSub.id);
+    setRubricDraftsByAttempt({});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlStudentId, selectedGroup?.userId]);
 
@@ -286,6 +290,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     navigate(`/grading/${selectedAssessmentId}/${userId}`);
     setViewingDraftUserId(null);
     setDraftResponses(null);
+    setRubricDraftsByAttempt({});
     // rubricDraft will be populated by the URL-sync effect above
     const bestSub = group.best;
     setGradingAttemptId(bestSub.id);
@@ -312,6 +317,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setGradingStudentId(null);
     setGradingAttemptId(null);
     setRubricDraft({});
+    setRubricDraftsByAttempt({});
     setFeedbackDraft('');
     setDraftFeedbackDraft('');
     setDraftFeedbackMessages([]);
@@ -375,11 +381,24 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   const handleAttemptChange = useCallback((attemptId: string) => {
     const newSub = selectedGroup?.submissions.find(s => s.id === attemptId);
     if (newSub) {
+      // Stash in-progress selections for the current attempt before switching.
+      setRubricDraftsByAttempt(prev => {
+        if (!sub || sub.rubricGrade) return prev;
+        const filtered = Object.fromEntries(
+          Object.entries(rubricDraft).filter(([, skills]) =>
+            Object.values(skills).some(g => g.selectedTier > 0))
+        );
+        const next = { ...prev };
+        if (Object.keys(filtered).length > 0) next[sub.id] = filtered;
+        else delete next[sub.id];
+        return next;
+      });
       setGradingAttemptId(newSub.id);
-      setRubricDraft(newSub.rubricGrade?.grades || {});
+      // Saved grade wins; only un-graded attempts restore a stashed draft.
+      setRubricDraft(newSub.rubricGrade?.grades || rubricDraftsByAttempt[newSub.id] || {});
       setFeedbackDraft(newSub.rubricGrade?.teacherFeedback || '');
     }
-  }, [selectedGroup]);
+  }, [selectedGroup, sub, rubricDraft, rubricDraftsByAttempt]);
 
   const handleSaveRubric = useCallback(async () => {
     if (!selectedAssessment?.rubric || !sub) return;
@@ -444,6 +463,11 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
       }
 
       setRubricDraft({});
+      setRubricDraftsByAttempt(prev => {
+        const next = { ...prev };
+        delete next[sub.id];
+        return next;
+      });
       setFeedbackDraft('');
       clearDraftFromLocalStorage(sub.id);
       if (result.clearedAIFlag) {
@@ -822,6 +846,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     gradingStudentId,
     gradingAttemptId,
     rubricDraft,
+    rubricDraftsByAttempt,
     feedbackDraft,
     setFeedbackDraft,
     isSavingRubric,
