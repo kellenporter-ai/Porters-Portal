@@ -80,10 +80,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ users, assignments, submiss
 
   // ─── XP Distribution Histogram ───
   const xpDistribution = useMemo(() => {
-    const xps = users.map(u => {
-      const classXps = u.gamification?.classXp || {};
-      return Object.values(classXps).reduce((a: number, b: unknown) => a + (typeof b === 'number' ? b : 0), 0);
-    });
+    const xps = users.map(u => u.gamification?.xp || 0);
 
     if (xps.length === 0) return [];
 

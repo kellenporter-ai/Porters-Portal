@@ -66,11 +66,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
   }, [user.enrolledClasses, classList]);
 
   const leaders = useMemo(() => {
+    // Decision: keep the class filter UI, but rank/display by TOTAL account XP
     return allStudents
         .filter(u => u.enrolledClasses?.includes(selectedClass))
         .sort((a, b) => {
-            const xpA = a.gamification?.classXp?.[selectedClass] || 0;
-            const xpB = b.gamification?.classXp?.[selectedClass] || 0;
+            const xpA = a.gamification?.xp || 0;
+            const xpB = b.gamification?.xp || 0;
             return xpB - xpA;
         });
   }, [allStudents, selectedClass]);
@@ -119,8 +120,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                         if (!u) return null;
                         const isPrivate = u.settings?.privacyMode;
                         const displayName = isPrivate ? (u.gamification?.codename || t('leaderboard.unknownAgent')) : u.name;
-                        const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                        const lvl = levelForXp(classXP);
+                        const totalXP = u.gamification?.xp || 0;
+                        const lvl = levelForXp(totalXP);
                         const rd = getRankDetails(lvl);
                         const isFirst = rank === 0;
                         const heights = ['h-28', 'h-20', 'h-16'];
@@ -146,7 +147,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                 </div>
                                 <div className={`text-center ${isFirst ? 'mt-2' : 'mt-1'}`}>
                                     <div className={`font-bold truncate max-w-[100px] ${isFirst ? 'text-sm text-[var(--text-primary)]' : 'text-xs text-[var(--text-secondary)]'} ${isPrivate ? 'italic' : ''}`}>{displayName}</div>
-                                    <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{classXP.toLocaleString()}</div>
+                                    <div className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500 ${isFirst ? 'text-xl' : 'text-base'}`}>{totalXP.toLocaleString()}</div>
                                     <div className={`text-[11.5px] font-mono uppercase ${rd.tierColor.split(' ').slice(1).join(' ')}`}>{rd.rankName}</div>
                                     <button onClick={() => handleInspect(u.id)} className="mt-1 text-[11.5px] text-[var(--text-muted)] hover:text-purple-700 dark:hover:text-purple-400 transition flex items-center gap-0.5 mx-auto">
                                         <Eye className="w-3 h-3" /> {t('leaderboard.inspect')}
@@ -174,8 +175,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                             const i = leaders.length >= 3 ? virtualRow.index + 3 : virtualRow.index;
                             const isPrivate = u.settings?.privacyMode;
                             const displayName = isPrivate ? (u.gamification?.codename || t('leaderboard.unknownAgent')) : u.name;
-                            const classXP = u.gamification?.classXp?.[selectedClass] || 0;
-                            const level = levelForXp(classXP);
+                            const totalXP = u.gamification?.xp || 0;
+                            const level = levelForXp(totalXP);
                             const rankDetails = getRankDetails(level);
 
                             return (
@@ -184,7 +185,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
                                     ref={rowVirtualizer.measureElement}
                                     data-index={virtualRow.index}
                                     role="listitem"
-                                    aria-label={interpolate('leaderboard.rankAria', { rank: i + 1, name: displayName, xp: classXP.toLocaleString() })}
+                                    aria-label={interpolate('leaderboard.rankAria', { rank: i + 1, name: displayName, xp: totalXP.toLocaleString() })}
                                     className="p-5 flex items-center gap-5 transition hover:bg-[var(--surface-glass)] border-b border-[var(--border)] absolute top-0 left-0 w-full"
                                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                                 >
@@ -219,9 +220,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
 
                                     <div className="text-right">
                                         <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 dark:from-cyan-400 to-blue-700 dark:to-blue-500">
-                                            {classXP.toLocaleString()}
+                                            {totalXP.toLocaleString()}
                                         </div>
-                                        <div className="text-[11.5px] text-[var(--text-muted)] font-mono tracking-widest">{t('leaderboard.classXp')}</div>
+                                        <div className="text-[11.5px] text-[var(--text-muted)] font-mono tracking-widest">{t('leaderboard.totalXp')}</div>
                                     </div>
                                     <button
                                         onClick={() => handleInspect(u.id)}

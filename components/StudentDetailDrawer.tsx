@@ -27,10 +27,9 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
   const playerStats = calculatePlayerStats(student);
   const enrolledClasses = student.enrolledClasses || (student.classType ? [student.classType] : []);
 
-  // Per-class breakdown
+  // Per-class breakdown — XP derived from submission history (classXp field removed)
   const classBreakdown = useMemo(() => {
     return enrolledClasses.map(cls => {
-      const classXp = student.gamification?.classXp?.[cls] || 0;
       const profile = getClassProfile(student, cls);
       const gearScore = calculateGearScore(profile.equipped);
       const inventoryCount = profile.inventory.length;
@@ -38,6 +37,7 @@ const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ student, subm
         const a = assignments.find(a => a.id === s.assignmentId);
         return a?.classType === cls;
       });
+      const classXp = classSubs.reduce((acc, s) => acc + (s.score || 0), 0);
       const totalTime = Math.round(classSubs.reduce((acc, s) => acc + (s.metrics?.engagementTime || 0), 0) / 60);
       return { cls, classXp, gearScore, inventoryCount, resourcesViewed: classSubs.length, totalTime };
     });

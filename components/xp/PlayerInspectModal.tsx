@@ -74,7 +74,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
   const { equipped, appearance } = getClassProfile(player, classType);
   const stats = calculatePlayerStats({ gamification: { ...gam, equipped } } as any);
   const gearScore = calculateGearScore(equipped);
-  const classXP = gam.classXp?.[classType] || 0;
+  const totalXP = gam.xp || 0;
 
   const equippedItems = Object.values(equipped).filter(Boolean) as RPGItem[];
   const activeSets = getActiveSetBonuses(equippedItems);
@@ -131,7 +131,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-1">
                   <Zap className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
-                  <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold">{classXP.toLocaleString()} XP</span>
+                  <span className="text-xs text-cyan-700 dark:text-cyan-400 font-bold">{totalXP.toLocaleString()} XP</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Shield className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />

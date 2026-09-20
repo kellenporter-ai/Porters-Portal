@@ -522,7 +522,7 @@ export const es: Dictionary = {
   'stats.title': 'Expediente de inteligencia',
   'stats.subtitle': 'Análisis clasificado del operativo — {className}',
   'stats.level': 'Nivel {level}',
-  'stats.classXp': 'XP de clase',
+  'stats.classXp': 'XP de clase (de entregas)',
   'stats.classXpSub': '{total} en total en todas las clases',
   'stats.gearScore': 'Puntuación de equipo',
   'stats.gearScoreSub': '{filled}/8 espacios ocupados',
@@ -864,7 +864,7 @@ export const es: Dictionary = {
   'leaderboard.empty': 'Sin agentes clasificados en {class}.',
   'leaderboard.rankingsAria': 'Clasificación de {class}',
   'leaderboard.rankAria': 'Puesto {rank}: {name}, {xp} XP',
-  'leaderboard.classXp': 'XP DE CLASE',
+  'leaderboard.classXp': 'XP TOTAL',
 
   // ── Notificaciones ──
   'notifications.title': 'Notificaciones',

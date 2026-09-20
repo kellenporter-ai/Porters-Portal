@@ -15,8 +15,6 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
   const xp = student.gamification?.xp || 0;
   const level = student.gamification?.level || 1;
   const currency = student.gamification?.currency || 0;
-  const enrolledClasses = student.enrolledClasses || [];
-  const classXp = student.gamification?.classXp || {};
   const loginStreak = student.gamification?.loginStreak || 0;
 
   const highestAlert = alerts.length > 0
@@ -52,17 +50,7 @@ const OverallStanding: React.FC<OverallStandingProps> = ({ student, bucket, aler
         </div>
       </div>
 
-      {/* Per-class XP */}
-      {enrolledClasses.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {enrolledClasses.map(cls => (
-            <div key={cls} className="bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl px-3 py-1.5 text-xs print:border-gray-300">
-              <span className="text-[var(--text-tertiary)] print:text-gray-600">{cls}:</span>{' '}
-              <span className="text-[var(--text-primary)] font-bold print:text-black">{(classXp[cls] || 0).toLocaleString()} XP</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Per-class XP removed in XP unification — classXp field no longer stored. Total XP shown above. */}
 
       {/* Bucket + Alert */}
       <div className="flex flex-wrap gap-3">

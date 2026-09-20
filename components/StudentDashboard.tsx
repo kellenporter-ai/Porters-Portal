@@ -205,24 +205,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   }, [user.id]);
 
   // Detect XP changes and show floating animation
-  const classXp = user.gamification?.classXp?.[activeClass] || 0;
-  const prevXpRef = React.useRef(classXp);
-  const prevClassRef = React.useRef(activeClass);
+  const totalXp = user.gamification?.xp || 0;
+  const prevXpRef = React.useRef(totalXp);
   useEffect(() => {
-      // Reset ref when switching classes to avoid spurious animations
-      if (prevClassRef.current !== activeClass) {
-          prevClassRef.current = activeClass;
-          prevXpRef.current = classXp;
-          return;
-      }
-      if (classXp > prevXpRef.current && prevXpRef.current >= 0) {
-          const gained = classXp - prevXpRef.current;
+      if (totalXp > prevXpRef.current && prevXpRef.current >= 0) {
+          const gained = totalXp - prevXpRef.current;
           if (gained > 0 && gained < 500) {
               sfx.xpGain();
           }
       }
-      prevXpRef.current = classXp;
-  }, [classXp]);
+      prevXpRef.current = totalXp;
+  }, [totalXp]);
 
   // Daily login reward — single attempt on mount, no retry
   useEffect(() => {

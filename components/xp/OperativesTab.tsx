@@ -84,8 +84,8 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
           case 'flux':  { const av = a.gamification?.currency || 0; const bv = b.gamification?.currency || 0; return sortDir === 'asc' ? av - bv : bv - av; }
           case 'gear':  { const av = getAggregateGearScore(a); const bv = getAggregateGearScore(b); return sortDir === 'asc' ? av - bv : bv - av; }
           case 'xp': default: {
-            const av = filterClass !== 'All Classes' ? (a.gamification?.classXp?.[filterClass] || 0) : (a.gamification?.xp || 0);
-            const bv = filterClass !== 'All Classes' ? (b.gamification?.classXp?.[filterClass] || 0) : (b.gamification?.xp || 0);
+            const av = a.gamification?.xp || 0;
+            const bv = b.gamification?.xp || 0;
             return sortDir === 'asc' ? av - bv : bv - av;
           }
         }
@@ -162,7 +162,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
               <OpSortHeader label="Operative" col="name" className="pl-4" />
               <OpSortHeader label="Class" col="class" />
               <OpSortHeader label="Level" col="level" className="text-center" />
-              <OpSortHeader label={filterClass !== 'All Classes' ? "Class XP" : "XP"} col="xp" className="text-center" />
+              <OpSortHeader label="Total XP" col="xp" className="text-center" />
               <OpSortHeader label="Flux" col="flux" className="hidden lg:table-cell text-center" />
               <OpSortHeader label="Gear" col="gear" className="hidden xl:table-cell text-center" />
               <th className="pb-4 text-right pr-4">Actions</th>
@@ -243,7 +243,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
                   </div>
                   <div className="w-20 py-3 text-center">
                     <span className="text-sm font-bold text-[var(--text-secondary)]">
-                      {(filterClass !== 'All Classes' ? (student.gamification?.classXp?.[filterClass] || 0) : (student.gamification?.xp || 0)).toLocaleString()}
+                      {(student.gamification?.xp || 0).toLocaleString()}
                     </span>
                   </div>
                   <div className="w-16 py-3 text-center hidden lg:block">

@@ -522,7 +522,7 @@ export const en: Dictionary = {
   'stats.title': 'Intel Dossier',
   'stats.subtitle': 'Classified operative analysis — {className}',
   'stats.level': 'Level {level}',
-  'stats.classXp': 'Class XP',
+  'stats.classXp': 'Class XP (from submissions)',
   'stats.classXpSub': '{total} total across all classes',
   'stats.gearScore': 'Gear Score',
   'stats.gearScoreSub': '{filled}/8 slots filled',
@@ -864,7 +864,7 @@ export const en: Dictionary = {
   'leaderboard.empty': 'No operatives ranked in {class}.',
   'leaderboard.rankingsAria': '{class} rankings',
   'leaderboard.rankAria': 'Rank {rank}: {name}, {xp} XP',
-  'leaderboard.classXp': 'CLASS XP',
+  'leaderboard.classXp': 'TOTAL XP',
 
   // ── Notifications ──
   'notifications.title': 'Notifications',

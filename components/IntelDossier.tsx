@@ -62,7 +62,6 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
   const t = useT();
   const interpolate = useInterpolate();
   const gam = user.gamification;
-  const classXp = gam?.classXp?.[activeClass] || 0;
   const totalXp = gam?.xp || 0;
   const level = gam?.level || 1;
   const currency = gam?.currency || 0;
@@ -98,6 +97,9 @@ const IntelDossier: React.FC<IntelDossierProps> = ({ user, submissions, assignme
     const classAssignmentIds = new Set(assignments.filter(a => a.classType === activeClass).map(a => a.id));
     return submissions.filter(s => classAssignmentIds.has(s.assignmentId));
   }, [submissions, assignments, activeClass]);
+
+  // classXp field removed — derive per-class XP from submission history
+  const classXp = classSubmissions.reduce((acc, s) => acc + (s.score || 0), 0);
 
   const xpBreakdown = useMemo(() => {
     // Engagement XP: approximate from total engagement time

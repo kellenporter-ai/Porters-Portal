@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell,
 } from 'recharts';
 import { User, XPEvent, BossEvent } from '../../types';
 import { BarChart3, TrendingUp, Users, Trophy, Zap } from 'lucide-react';
@@ -13,8 +12,6 @@ interface GamificationAnalyticsTabProps {
   events: XPEvent[];
   quizBosses: BossEvent[];
 }
-
-const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
 const StatCard = ({ label, value, sub, icon }: { label: string; value: string | number; sub?: string; icon: React.ReactNode }) => (
   <div className="bg-[var(--panel-bg)] rounded-xl p-4 border border-[var(--border)]">
@@ -57,19 +54,10 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
       .sort((a, b) => parseInt(a.level.slice(2)) - parseInt(b.level.slice(2)));
   }, [students]);
 
-  // --- Class XP breakdown ---
-  const classXpData = useMemo(() => {
-    const totals: Record<string, number> = {};
-    students.forEach(s => {
-      const classXp = s.gamification?.classXp || {};
-      Object.entries(classXp).forEach(([cls, xp]) => {
-        totals[cls] = (totals[cls] || 0) + (xp as number);
-      });
-    });
-    return Object.entries(totals)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [students]);
+  // --- Class XP breakdown removed in XP unification (2026) ---
+  // Per-class XP is no longer stored on user docs. Deriving it from submission
+  // history for a whole roster would require a query per student — too expensive
+  // for this view. Per decision, show total XP only (see summary stats below).
 
   // --- Flux Economy ---
   const fluxStats = useMemo(() => {
@@ -163,17 +151,14 @@ const GamificationAnalyticsTab: React.FC<GamificationAnalyticsTabProps> = ({ stu
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Class XP Breakdown */}
+        {/* Total XP summary (replaces removed Class XP Breakdown pie) */}
         <div className="bg-[var(--panel-bg)] rounded-2xl border border-[var(--border)] p-5">
-          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Class XP Breakdown</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={classXpData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                {classXpData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ ...chartTheme.tooltipStyle, fontSize: 12 }} formatter={(value: number) => value.toLocaleString()} />
-            </PieChart>
-          </ResponsiveContainer>
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Total XP</h3>
+          <div className="flex flex-col items-center justify-center h-[200px] text-center">
+            <div className="text-3xl font-black text-purple-600 dark:text-purple-400">{summaryStats.totalXP.toLocaleString()}</div>
+            <div className="text-xs text-[var(--text-muted)] mt-1 uppercase font-bold tracking-widest">across {students.length} operatives</div>
+            <div className="text-sm text-[var(--text-secondary)] mt-3">avg {summaryStats.avgXP.toLocaleString()} XP</div>
+          </div>
         </div>
 
         {/* Engagement Streaks */}

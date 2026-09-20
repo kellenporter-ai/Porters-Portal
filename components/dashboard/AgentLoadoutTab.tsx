@@ -131,8 +131,8 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
       setInspectItem(null);
       sfx.equip();
       toast.success(interpolate('loadout.toastEquipped', { name: item.name }));
-    } catch {
-      toast.error(t('loadout.toastEquipFailed'));
+    } catch (e: any) {
+      toast.error(e?.message || t('loadout.toastEquipFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -141,7 +141,11 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
   const handleUnequip = async (slot: string) => {
     setIsProcessing(true);
     try {
-      await dataService.unequipItem(user.id, slot, activeClass);
+      // CF stores items under canonical ItemSlot keys — map paired grid slots back.
+      const cfSlot = slot === 'RING1' || slot === 'RING2' ? 'RING'
+                   : slot === 'WEAPON1' || slot === 'WEAPON2' ? 'WEAPON'
+                   : slot;
+      await dataService.unequipItem(user.id, cfSlot, activeClass);
       setInspectItem(null);
       toast.success(t('loadout.toastUnequipped'));
     } catch {
@@ -292,8 +296,20 @@ const AgentLoadoutTab: React.FC<AgentLoadoutTabProps> = ({ user, activeClass, le
   };
 
   // --- Droppable Equipment Slot ---
+  // CF persists items under canonical ItemSlot keys (RING, WEAPON). The grid
+  // uses EquipmentSlot keys (RING1/RING2, WEAPON1/WEAPON2) for layout, so we
+  // resolve the stored item by mapping back to the canonical key.
+  const resolveStoredSlot = (slot: EquipmentSlot): EquipmentSlot | 'RING' | 'WEAPON' => {
+    if (slot === 'RING1' || slot === 'RING2') return 'RING';
+    if (slot === 'WEAPON1' || slot === 'WEAPON2') return 'WEAPON';
+    return slot;
+  };
+
   const SlotRender: React.FC<{ slot: EquipmentSlot }> = ({ slot }) => {
-    const item = equipped[slot];
+    const storedSlot = resolveStoredSlot(slot);
+    const directItem = equipped[slot];
+    // Fallback: for the first of a paired slot, surface the canonically-keyed item.
+    const item = directItem || (slot === 'RING1' || slot === 'WEAPON1' ? equipped[storedSlot as EquipmentSlot] : undefined);
     const colors = item ? getAssetColors(item.rarity) : { border: 'border-[var(--border)]', bg: 'bg-[var(--panel-bg)]', text: 'text-[var(--text-muted)]', glow: '', shimmer: '' };
 
     const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `slot-${slot}` });
