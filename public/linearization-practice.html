@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linearization Practice</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+<style>
+:root{
+  --navy:#002147; --navy2:#003359; --gold:#d4a941; --bg:#eef2f6;
+  --card:#ffffff; --line:#c9d4e0; --ink:#1a2430; --muted:#5a6b7d;
+  --sel:#e8f0fb; --green:#1e7d3c; --greenbg:#e6f4ea; --red:#b3261e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+button{font-family:inherit;cursor:pointer}
+
+.hd{background:var(--navy);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:20}
+.hd .brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9fb6d4}
+.hd .title{font-size:17px;font-weight:600}
+.hd .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.hd .tag{font-size:11px;border:1px solid #4d6a8f;color:#bcd0ea;padding:3px 10px;border-radius:999px;letter-spacing:.06em;text-transform:uppercase}
+.progress-num{font-variant-numeric:tabular-nums;font-size:14px;background:rgba(255,255,255,.12);padding:5px 12px;border-radius:6px}
+.subhd{background:#e2e9f2;border-bottom:1px solid var(--line);padding:8px 20px;font-size:13px;color:var(--muted)}
+.subhd b{color:var(--navy)}
+
+.wrap{display:flex;gap:20px;padding:20px;max-width:1280px;margin:0 auto;align-items:flex-start}
+.main{flex:1;min-width:0}
+.side{width:300px;flex-shrink:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px rgba(16,35,60,.08)}
+
+.tierbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tierbtn{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.25}
+.tierbtn:hover{border-color:#8aa5c4}
+.tierbtn .lv{font-size:11px;color:var(--muted);font-weight:700}
+.tierbtn.cur{background:var(--navy);border-color:var(--navy);color:#fff}
+.tierbtn.cur .lv{color:#bcd0ea}
+.tierbtn.doneall .lv{color:var(--green)}
+
+.pcard{padding:24px 30px;margin-bottom:18px}
+.phead{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.pnum{font-size:14px;font-weight:700;color:var(--navy)}
+.pctx{font-size:12px;background:#eaf1fa;color:#28518c;padding:3px 10px;border-radius:999px}
+.pctx.lab{background:#f6efe0;color:#8a6d1f}
+.pctx.pure{background:#ece9f8;color:#5b4fb0}
+.pdiff{font-size:12px;color:var(--muted)}
+.constline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.constbadge{font-size:11.5px;font-weight:700;color:#8a6d1f;background:#f6efe0;border:1px solid #e3d5ab;border-radius:4px;padding:3px 8px;letter-spacing:.02em}
+.infolink{background:none;border:none;color:#28518c;font-size:13px;text-decoration:underline;padding:0 0 0 2px}
+.infolink:hover{color:var(--navy)}
+.infopanel{display:none;margin:0 0 12px;border-left:3px solid #8aa5c4;background:#f7fafd;padding:8px 14px;border-radius:0 6px 6px 0}
+.infopanel.open{display:block}
+.inforow{display:flex;gap:10px;align-items:baseline;margin:6px 0;font-size:13.5px;line-height:1.5}
+.infosym{flex-shrink:0;min-width:42px;text-align:center;font-size:14px}
+.infoname{color:var(--ink)}
+.infoconst{color:var(--muted);font-style:italic}
+.infosep{color:var(--muted);flex-shrink:0}
+
+.equation{background:#f5f8fc;border:1px solid var(--line);border-radius:8px;padding:14px 18px;font-size:20px;text-align:center;margin:6px 0 14px}
+.equation .katex{font-size:1.5em}
+.ansline .katex{font-size:1.1em}
+.solbody{line-height:1.9}
+.steps .mv{align-items:center}
+.stem{font-size:16px;line-height:1.6;margin-bottom:14px}
+
+.qblock{border:1px solid #e1e8f0;border-radius:8px;padding:12px 16px;margin:10px 0;background:#fff}
+.qlabel{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.qinput{width:100%;border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;font-size:15px;font-family:inherit;color:var(--ink)}
+.qinput:focus{outline:none;border-color:var(--navy)}
+.qhint{font-size:12px;color:var(--muted);margin-top:5px}
+
+.sol{margin-top:10px}
+.soltoggle{background:#fff;border:1.5px solid var(--line);color:var(--navy);border-radius:6px;font-size:14px;padding:8px 16px;font-weight:600}
+.soltoggle:hover{background:#f2f6fb}
+.solbody{display:none;margin-top:12px;border-left:3px solid var(--gold);padding:4px 0 4px 16px}
+.solbody.open{display:block}
+.ansline{font-size:15.5px;margin:6px 0;line-height:1.5}
+.ansline b{color:var(--navy)}
+.steps{font-size:14.5px;line-height:1.6;margin-top:8px}
+.steps .mv{display:flex;gap:8px;margin:5px 0;align-items:baseline}
+.steps .mv .nm{flex-shrink:0;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8a6d1f;background:#f6efe0;border-radius:4px;padding:2px 7px;white-space:nowrap}
+.steps .mv .fx{font-family:"Cambria Math",Georgia,serif;font-size:15px}
+.steps .mv .fx .katex{font-family:KaTeX_Main,Times New Roman,serif}
+
+.pfoot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:10px;flex-wrap:wrap}
+.btnrow{display:flex;gap:10px}
+.btn{border-radius:6px;font-size:15px;padding:9px 18px;border:1.5px solid transparent;font-weight:600}
+.btn.primary{background:var(--navy);color:#fff}
+.btn.primary:hover{background:var(--navy2)}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--navy)}
+.btn.ghost:hover{background:#f2f6fb}
+.donedot{font-size:13px;color:var(--green);font-weight:700;display:none}
+.pcard.isdone .donedot{display:inline}
+
+.side .card{padding:16px;position:sticky;top:76px}
+.side h3{font-size:14px;color:var(--navy);margin-bottom:4px}
+.side .count{font-size:12px;color:var(--muted);margin-bottom:12px}
+.tierlist{display:flex;flex-direction:column;gap:8px}
+.trow-side{display:flex;align-items:center;gap:10px;font-size:13px}
+.trow-side .tl{font-weight:700;color:var(--navy);width:58px;flex-shrink:0}
+.trow-side .bar{flex:1;height:8px;background:#e1e8f0;border-radius:4px;overflow:hidden}
+.trow-side .bar i{display:block;height:100%;background:var(--navy);border-radius:4px}
+.trow-side .tc{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;width:38px;text-align:right}
+.resetlink{margin-top:16px;font-size:12px;color:var(--muted);background:none;border:none;text-decoration:underline;padding:0}
+.resetlink:hover{color:var(--red)}
+
+.welcome{max-width:760px;margin:40px auto;padding:40px 44px}
+.welcome .brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d1f;font-weight:700}
+.welcome h1{font-size:28px;color:var(--navy);margin:10px 0 6px;line-height:1.3}
+.welcome .meta{color:var(--muted);font-size:14px;margin-bottom:22px}
+.welcome .box{background:#f5f8fc;border:1px solid var(--line);border-radius:8px;padding:18px 22px;margin-bottom:24px}
+.welcome .box h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.welcome ol{padding-left:22px;font-size:14.5px;line-height:1.8}
+.welcome .actions{display:flex;gap:12px;flex-wrap:wrap}
+
+@media (max-width:900px){
+  .wrap{flex-direction:column}
+  .side{width:100%}
+  .side .card{position:static}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<script>
+const TIERS=[
+{l:0,t:"Level 0: Slope-intercept, numerical slope",b:"Already y = m*f(x). Read off what to plot.",p:[
+{e:"v = 2t",c:"1-D Kinematics",lab:false,a:{d:"v",i:"t",s:"2"},st:[["recognize form","$v = 2t$ is already $y = m\\cdot t + b$ with $b = 0$"],["dependent axis","plot $v$ on the vertical axis"],["independent axis","plot $t$ on the horizontal axis"],["read slope","slope = $2$"]]},
+{e:"x = \\frac{1}{2}at^2",c:"1-D Kinematics (from rest)",lab:false,a:{d:"x",i:"t^2",s:"\\frac{1}{2}a"},st:[["recognize form","$x = \\frac{1}{2}a\\,t^2$ is already slope-intercept form in $t^2$ with $b = 0$"],["dependent axis","plot $x$ on the vertical axis"],["independent axis","plot $t^2$ on the horizontal axis"],["read slope","slope = $\\frac{1}{2}a$"]]},
+{e:"v^2 = 2ad",c:"1-D Kinematics",lab:false,a:{d:"v^2",i:"d",s:"2a"},st:[["recognize form","$v^2 = 2a\\,d$ is already linear with no added constant"],["dependent axis","plot $v^2$ on the vertical axis"],["independent axis","plot $d$ on the horizontal axis"],["read slope","slope = $2a$"]]},
+{e:"T^2 = 4L \\text{ (units omitted)}",c:"Pendulum",lab:true,consts:"\\(4\\)",info:[{sym:"T",name:"time for one full swing",const:"you measure this"},{sym:"L",name:"pendulum length",const:"this is what you change"},{sym:"4",name:"a fixed number that bundles \\(4\\pi^2/g\\)",const:"same everywhere near Earth's surface, so it stays fixed"}],a:{d:"T^2",i:"L",s:"4"},st:[["recognize form","$T^2 = 4L$ is already $y = m\\cdot x + b$ with $b = 0$"],["dependent axis","plot $T^2$ on the vertical axis"],["independent axis","plot $L$ on the horizontal axis"],["read slope","slope = $4$"]]},
+{e:"z = 4w^3",c:"Pure Math",pure:true,a:{d:"z",i:"w^3",s:"4"},st:[["recognize form","$z = 4w^3$ is already $y = m\\cdot f(x) + b$ with $f(x) = w^3$ and $b = 0$"],["dependent axis","plot $z$ on the vertical axis"],["independent axis","plot $w^3$ on the horizontal axis"],["read slope","slope = $4$"]]},
+{e:"A = \\frac{7}{B}",c:"Pure Math",pure:true,a:{d:"A",i:"\\frac{1}{B}",s:"7"},st:[["rewrite","$A = 7\\cdot\\frac{1}{B}$; dividing by $B$ is the same as multiplying by $\\frac{1}{B}$"],["recognize form","$A = m\\cdot\\frac{1}{B} + b$ with $m = 7$ and $b = 0$"],["dependent axis","plot $A$ on the vertical axis"],["independent axis","plot $\\frac{1}{B}$ on the horizontal axis"],["read slope","slope = $7$"]]}]},
+{l:1,t:"Level 1: Slope-intercept, with intercept",b:"y = m*f(x) + b. Watch for a nonzero intercept.",p:[
+{e:"v = 3t + 1.5",c:"1-D Kinematics",lab:false,a:{d:"v",i:"t",s:"3"},st:[["recognize form","$v = 3t + 1.5$ is already slope-intercept form"],["dependent axis","plot $v$ on the vertical axis"],["independent axis","plot $t$ on the horizontal axis"],["read slope","slope = $3$ (the intercept $1.5$ does not change the slope)"]]},
+{e:"x = 4t^2 + 2",c:"1-D Kinematics",lab:false,a:{d:"x",i:"t^2",s:"4"},st:[["recognize form","$x = 4t^2 + 2$ is already linear in $t^2$"],["dependent axis","plot $x$ on the vertical axis"],["independent axis","plot $t^2$ on the horizontal axis"],["read slope","slope = $4$"]]},
+{e:"v^2 = 5d + 10",c:"1-D Kinematics",lab:false,a:{d:"v^2",i:"d",s:"5"},st:[["recognize form","$v^2 = 5d + 10$ is already slope-intercept form"],["dependent axis","plot $v^2$ on the vertical axis"],["independent axis","plot $d$ on the horizontal axis"],["read slope","slope = $5$"]]},
+{e:"F = 20x + 5",c:"Springs (force vs stretch, with preload)",lab:true,consts:"\\(20, 5\\)",info:[{sym:"F",name:"force the spring pushes back with",const:"you measure this"},{sym:"x",name:"how far you stretch the spring",const:"this is what you change"},{sym:"20",name:"stiffness of THIS spring",const:"fixed, it is one spring"},{sym:"5",name:"preload, a head start force before you stretch",const:"same spring, so it stays fixed"}],a:{d:"F",i:"x",s:"20"},st:[["recognize form","$F = 20x + 5$ is already slope-intercept form"],["dependent axis","plot $F$ on the vertical axis"],["independent axis","plot $x$ on the horizontal axis"],["read slope","slope = $20$"]]},
+{e:"y = 3\\sqrt{x} + 2",c:"Pure Math",pure:true,a:{d:"y",i:"\\sqrt{x}",s:"3"},st:[["recognize form","$y = 3\\sqrt{x} + 2$ matches $y = m\\cdot f(x) + b$ with $f(x) = \\sqrt{x}$"],["dependent axis","plot $y$ on the vertical axis"],["independent axis","plot $\\sqrt{x}$ on the horizontal axis"],["read slope","slope = $3$ (the intercept $2$ does not change the slope)"]]},
+{e:"P = 5Q^2 + 1",c:"Pure Math",pure:true,a:{d:"P",i:"Q^2",s:"5"},st:[["recognize form","$P = 5Q^2 + 1$ is already linear in $Q^2$"],["dependent axis","plot $P$ on the vertical axis"],["independent axis","plot $Q^2$ on the horizontal axis"],["read slope","slope = $5$"]]}]},
+{l:2,t:"Level 2: Slope-intercept, symbolic slope",b:"m is an expression of constants. The slope is the whole expression.",p:[
+{e:"v = v_0 + at",c:"1-D Kinematics",lab:false,a:{d:"v",i:"t",s:"a"},st:[["recognize form","$v = at + v_0$ matches $y = m\\cdot x + b$"],["dependent axis","plot $v$ on the vertical axis"],["independent axis","plot $t$ on the horizontal axis"],["read slope","slope = $a$ (an expression, not a number)"]]},
+{e:"x = x_0 + v_0 t",c:"1-D Kinematics",lab:false,a:{d:"x",i:"t",s:"v_0"},st:[["recognize form","$x = v_0\\,t + x_0$ matches $y = m\\cdot x + b$"],["dependent axis","plot $x$ on the vertical axis"],["independent axis","plot $t$ on the horizontal axis"],["read slope","slope = $v_0$"]]},
+{e:"x = \\frac{1}{2}at^2 + x_0",c:"1-D Kinematics",lab:false,a:{d:"x",i:"t^2",s:"\\frac{1}{2}a"},st:[["recognize form","$x = \\frac{1}{2}a\\,t^2 + x_0$ is slope-intercept form in $t^2$"],["dependent axis","plot $x$ on the vertical axis"],["independent axis","plot $t^2$ on the horizontal axis"],["read slope","slope = $\\frac{1}{2}a$"]]},
+{e:"V = \\frac{kq}{r}",c:"Electric potential near a point charge",lab:true,consts:"\\(k, q\\)",info:[{sym:"V",name:"electric potential",const:"you measure this"},{sym:"k",name:"universal constant of nature",const:"always the same number"},{sym:"q",name:"charge of the point charge",const:"fixed, it is one charge"},{sym:"r",name:"distance from the charge",const:"this is what you change"}],a:{d:"V",i:"\\frac{1}{r}",s:"kq"},st:[["rewrite","$V = kq\\cdot\\frac{1}{r}$; dividing by $r$ is the same as multiplying by $\\frac{1}{r}$"],["recognize form","$V = m\\cdot\\frac{1}{r} + b$ with $m = kq$ and $b = 0$"],["dependent axis","plot $V$ on the vertical axis"],["independent axis","plot $\\frac{1}{r}$ on the horizontal axis"],["read slope","slope = $kq$"]]},
+{e:"y = a\\,x^3 \\quad (a \\text{ constant})",c:"Pure Math",pure:true,consts:"\\(a\\)",info:[{sym:"y",name:"the output",const:"you measure this"},{sym:"a",name:"a fixed number for this model",const:"constant by definition"},{sym:"x",name:"the input",const:"this is what you change"}],a:{d:"y",i:"x^3",s:"a"},st:[["recognize form","$y = a\\,x^3$ is already slope-intercept form in $x^3$ with $b = 0$"],["dependent axis","plot $y$ on the vertical axis"],["independent axis","plot $x^3$ on the horizontal axis"],["read slope","slope = $a$ (an expression, not a number)"]]},
+{e:"u = \\frac{c w^2}{d} \\quad (c, d \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(c, d\\)",info:[{sym:"u",name:"the output",const:"you measure this"},{sym:"c",name:"a fixed number",const:"constant by definition"},{sym:"d",name:"another fixed number",const:"constant by definition"},{sym:"w",name:"the input",const:"this is what you change"}],a:{d:"u",i:"w^2",s:"\\frac{c}{d}"},st:[["split the numerator","$u = \\frac{c}{d}\\cdot w^2; one fraction can hide a slope times a variable$"],["recognize form","$u = \\frac{c}{d}\\,w^2$ is already slope-intercept form in $w^2$ with slope $\\frac{c}{d}$"],["dependent axis","plot $u$ on the vertical axis"],["independent axis","plot $w^2$ on the horizontal axis"],["read slope","slope = $\\frac{c}{d}$"]]}]},
+{l:3,t:"Level 3: Rearrange first, numerical slope",b:"NOT in slope-intercept form. Rearrange before you decide what to plot.",p:[
+{e:"3t = 2v",c:"1-D Kinematics",lab:false,a:{d:"v",i:"t",s:"\\frac{3}{2}"},st:[["divide both sides by 2","$v = \\frac{3}{2}t$"],["recognize form","$v = \\frac{3}{2}t + 0$ matches $y = m\\cdot x + b$"],["dependent axis","plot $v$ on the vertical axis"],["independent axis","plot $t$ on the horizontal axis"],["read slope","slope = $\\frac{3}{2}$"]]},
+{e:"d = \\frac{1}{2}vt",c:"1-D Kinematics (from rest, v is final velocity)",lab:false,a:{d:"d",i:"t",s:"\\frac{1}{2}v"},st:[["recognize form","$d = \\frac{v}{2}\\,t + 0$ is already slope-intercept form in $t$"],["dependent axis","plot $d$ on the vertical axis"],["independent axis","plot $t$ on the horizontal axis"],["read slope","slope = $\\frac{1}{2}v$"]]},
+{e:"4x = 8t^2",c:"1-D Kinematics",lab:false,a:{d:"x",i:"t^2",s:"2"},st:[["divide both sides by 4","$x = 2t^2$"],["recognize form","$x = 2t^2 + 0$ matches $y = m\\cdot x + b$"],["dependent axis","plot $x$ on the vertical axis"],["independent axis","plot $t^2$ on the horizontal axis"],["read slope","slope = $2$"]]},
+{e:"F = ma,\\quad F = 10 \\text{ held constant}",c:"Newton's second law (Math Lab)",lab:true,consts:"F is fixed at 10",info:[{sym:"F",name:"force, fixed at 10",const:"held constant in this experiment"},{sym:"m",name:"mass of the object",const:"this is what you change"},{sym:"a",name:"acceleration",const:"you measure this"}],a:{d:"a",i:"\\frac{1}{m}",s:"10"},st:[["divide both sides by m","$a = F\\cdot\\frac{1}{m}$"],["substitute constant","$a = 10\\cdot\\frac{1}{m}$, since $F = 10$"],["dependent axis","plot $a$ on the vertical axis"],["independent axis","plot $\\frac{1}{m}$ on the horizontal axis"],["read slope","slope = $10$"]]},
+{e:"y^2 = 9x",c:"Pure Math",pure:true,a:{d:"y^2",i:"x",s:"9"},st:[["recognize form","$y^2 = 9x$ matches $f(y) = m\\cdot x + b$ with $f(y) = y^2$ and $b = 0$"],["dependent axis","plot $y^2$ on the vertical axis"],["independent axis","plot $x$ on the horizontal axis"],["read slope","slope = $9$"]]},
+{e:"q^3 = 5p",c:"Pure Math",pure:true,a:{d:"q^3",i:"p",s:"5"},st:[["recognize form","$q^3 = 5p$ matches $f(y) = m\\cdot x + b$ with $f(y) = q^3$ and $b = 0$"],["dependent axis","plot $q^3$ on the vertical axis"],["independent axis","plot $p$ on the horizontal axis"],["read slope","slope = $5$"]]}]},
+{l:4,t:"Level 4: Rearrange first, symbolic slope",b:"Rearrange AND the slope is an expression of constants.",p:[
+{e:"F = ma",c:"Newton's second law",lab:false,a:{d:"a",i:"F",s:"\\frac{1}{m}"},st:[["divide both sides by m","$a = \\frac{1}{m}\\cdot F$"],["recognize form","$a = m\\cdot x + b$ with slope $\\frac{1}{m}$ and intercept $0$"],["dependent axis","plot $a$ on the vertical axis"],["independent axis","plot $F$ on the horizontal axis"],["read slope","slope = $\\frac{1}{m}$"]]},
+{e:"v^2 = v_0^2 + 2ad",c:"1-D Kinematics",lab:false,a:{d:"v^2",i:"d",s:"2a"},st:[["recognize form","$v^2 = 2a\\,d + v_0^2$ is already slope-intercept form in $d$"],["dependent axis","plot $v^2$ on the vertical axis"],["independent axis","plot $d$ on the horizontal axis"],["read slope","slope = $2a$"]]},
+{e:"T^2 = \\frac{4\\pi^2 L}{g}",c:"Pendulum period",lab:true,consts:"\\(g\\)",info:[{sym:"T",name:"time for one full swing",const:"you measure this"},{sym:"L",name:"pendulum length",const:"this is what you change"},{sym:"g",name:"gravitational field strength",const:"same everywhere near Earth's surface, so it stays fixed"},{sym:"\\pi",name:"a number (about 3.14)",const:"a number, not a variable"}],a:{d:"T^2",i:"L",s:"\\frac{4\\pi^2}{g}"},st:[["recognize form","$T^2 = \\frac{4\\pi^2}{g}\\,L + 0$ is already slope-intercept form"],["dependent axis","plot $T^2$ on the vertical axis"],["independent axis","plot $L$ on the horizontal axis"],["read slope","slope = $\\frac{4\\pi^2}{g}$"]]},
+{e:"xy = k \\quad (k \\text{ constant})",c:"Pure Math",pure:true,consts:"\\(k\\)",info:[{sym:"x",name:"one input",const:"this is what you change"},{sym:"y",name:"the other input",const:"linked to \\(x\\), you compute it"},{sym:"k",name:"a fixed number",const:"constant by definition"}],a:{d:"y",i:"\\frac{1}{x}",s:"k"},st:[["solve for y","divide both sides by $x$: $y = \\frac{k}{x}$"],["rewrite","$y = k\\cdot\\frac{1}{x}$; dividing by $x$ is the same as multiplying by $\\frac{1}{x}$"],["recognize form","$y = m\\cdot\\frac{1}{x} + b$ with $m = k$ and $b = 0$"],["dependent axis","plot $y$ on the vertical axis"],["independent axis","plot $\\frac{1}{x}$ on the horizontal axis"],["read slope","slope = $k$"]]},
+{e:"\\sqrt{\\frac{y}{c}} = x \\quad (c \\text{ constant})",c:"Pure Math",pure:true,consts:"\\(c\\)",info:[{sym:"x",name:"the input",const:"this is what you change"},{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"c",name:"a fixed number",const:"constant by definition"}],a:{d:"y",i:"x^2",s:"c"},st:[["square both sides","$\\frac{y}{c} = x^2$"],["multiply both sides by c","$y = c\\,x^2$"],["recognize form","$y = c\\,x^2 + 0$ is slope-intercept form in $x^2$"],["dependent axis","plot $y$ on the vertical axis"],["independent axis","plot $x^2$ on the horizontal axis"],["read slope","slope = $c$"]]},
+{e:"PV = nRT",c:"Ideal gas (pressure vs volume)",lab:true,consts:"\\(n, R, T\\)",info:[{sym:"P",name:"gas pressure",const:"you measure it"},{sym:"V",name:"container volume",const:"this is what you change"},{sym:"n",name:"amount of gas",const:"fixed for one sealed sample"},{sym:"R",name:"the gas constant",const:"a fixed number of nature"},{sym:"T",name:"temperature",const:"held fixed during the experiment"}],a:{d:"P",i:"\\frac{1}{V}",s:"nRT"},st:[["divide both sides by V","$P = \\frac{nRT}{V}$"],["rewrite","$P = nRT \\cdot \\frac{1}{V}$; dividing by $V$ is the same as multiplying by $\\frac{1}{V}$"],["recognize form","$P = m\\cdot\\frac{1}{V} + b$ with $m = nRT$ and $b = 0$"],["dependent axis","plot $P$ on the vertical axis"],["independent axis","plot $\\frac{1}{V}$ on the horizontal axis"],["read slope","slope = $nRT$"]]}]},
+{l:5,t:"Level 5: Both sides transformed",b:"The dependent variable itself is f(y). Plot f(y) versus f(x).",rule:"Rule: f(y) and f(x) must both transform the original variables. A plain y on the left or a plain x on the right does not count.",p:[
+{e:"\\frac{1}{T^2} = \\frac{k}{4\\pi^2 m}",c:"Spring-mass oscillator",lab:true,consts:"\\(k\\)",info:[{sym:"T",name:"oscillation period, time for one back-and-forth",const:"you measure it"},{sym:"m",name:"the hanging mass",const:"this is what you change"},{sym:"k",name:"stiffness of THIS spring",const:"fixed, it is one spring"}],a:{d:"\\frac{1}{T^2}",i:"\\frac{1}{m}",s:"\\frac{k}{4\\pi^2}"},st:[["split the denominator","$\\frac{1}{T^2} = \\frac{k}{4\\pi^2}\\cdot\\frac{1}{m}; one fraction can hide a slope times a reciprocal$"],["recognize form","$\\frac{1}{T^2} = \\frac{k}{4\\pi^2}\\cdot\\frac{1}{m}$ is already slope-intercept form of the transformed variables"],["dependent axis","plot $\\frac{1}{T^2}$ on the vertical axis"],["independent axis","plot $\\frac{1}{m}$ on the horizontal axis"],["read slope","slope = $\\frac{k}{4\\pi^2}$"]]},
+{e:"\\frac{1}{T^2} = \\frac{g}{4\\pi^2 L}",c:"Simple pendulum",lab:true,consts:"\\(g\\)",info:[{sym:"T",name:"swing period, time for one back-and-forth",const:"you measure it"},{sym:"L",name:"pendulum length",const:"this is what you change"},{sym:"g",name:"gravitational field strength",const:"same everywhere near Earth's surface, so it stays fixed"}],a:{d:"\\frac{1}{T^2}",i:"\\frac{1}{L}",s:"\\frac{g}{4\\pi^2}"},st:[["split the denominator","$\\frac{1}{T^2} = \\frac{g}{4\\pi^2}\\cdot\\frac{1}{L}$"],["recognize form","$\\frac{1}{T^2} = \\frac{g}{4\\pi^2}\\cdot\\frac{1}{L}$ is already slope-intercept form of the transformed variables"],["dependent axis","plot $\\frac{1}{T^2}$ on the vertical axis"],["independent axis","plot $\\frac{1}{L}$ on the horizontal axis"],["read slope","slope = $\\frac{g}{4\\pi^2}$"]]},
+{e:"\\frac{1}{v^2} = \\frac{\\mu}{F_T}",c:"Wave on a rope",lab:true,consts:"\\(\\mu\\)",info:[{sym:"v",name:"wave speed along the rope",const:"you measure it"},{sym:"F_T",name:"tension, how hard the rope is pulled",const:"this is what you change"},{sym:"\\mu",name:"mass per length of THIS rope",const:"fixed for one rope"}],a:{d:"\\frac{1}{v^2}",i:"\\frac{1}{F_T}",s:"\\mu"},st:[["split the fraction","$\\frac{1}{v^2} = \\mu\\cdot\\frac{1}{F_T}; dividing by F_T is the same as multiplying by its reciprocal$"],["recognize form","$\\frac{1}{v^2} = \\mu\\cdot\\frac{1}{F_T}$ is already slope-intercept form of the transformed variables"],["dependent axis","plot $\\frac{1}{v^2}$ on the vertical axis"],["independent axis","plot $\\frac{1}{F_T}$ on the horizontal axis"],["read slope","slope = $\\mu$"]]},
+{e:"\\frac{1}{g} = \\frac{r^2}{GM}",c:"Gravitation (solved form)",lab:true,consts:"\\(G, M\\)",info:[{sym:"g",name:"gravitational field strength at distance r",const:"you measure it"},{sym:"r",name:"distance from the planet's center",const:"this is what you change"},{sym:"G",name:"universal constant of nature",const:"always the same number"},{sym:"M",name:"mass of the planet",const:"fixed for one planet"}],a:{d:"\\frac{1}{g}",i:"r^2",s:"\\frac{1}{GM}"},st:[["split the denominator","$\\frac{1}{g} = \\frac{1}{GM}\\cdot r^2$"],["recognize form","$\\frac{1}{g} = \\frac{1}{GM}\\,r^2$ matches $f(y) = m\\cdot f(x) + b$ with $b = 0$"],["dependent axis","plot $\\frac{1}{g}$ on the vertical axis"],["independent axis","plot $r^2$ on the horizontal axis"],["read slope","slope = $\\frac{1}{GM}$"]]},
+{e:"y^2 = a\\,x^2 + b \\quad (a, b \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a",name:"a fixed number",const:"constant by definition"},{sym:"b",name:"another fixed number",const:"constant by definition"}],a:{d:"y^2",i:"x^2",s:"a"},st:[["recognize form","$y^2 = a\\,x^2 + b$ matches $f(y) = m\\cdot f(x) + b$ with $f(y) = y^2$ and $f(x) = x^2$"],["dependent axis","plot $y^2$ on the vertical axis"],["independent axis","plot $x^2$ on the horizontal axis"],["read slope","slope = $a$"]]},
+{e:"\\frac{1}{y} = \\frac{a}{x} + 2 \\quad (a \\text{ constant})",c:"Pure Math",pure:true,consts:"\\(a\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a",name:"a fixed number",const:"constant by definition"}],a:{d:"\\frac{1}{y}",i:"\\frac{1}{x}",s:"a"},st:[["recognize form","$\\frac{1}{y} = a\\cdot\\frac{1}{x} + 2$ matches $f(y) = m\\cdot f(x) + b$ with $f(y) = \\frac{1}{y}$ and $f(x) = \\frac{1}{x}$"],["dependent axis","plot $\\frac{1}{y}$ on the vertical axis"],["independent axis","plot $\\frac{1}{x}$ on the horizontal axis"],["read slope","slope = $a$ (the intercept $2$ does not change the slope)"]]}]},
+{l:6,t:"Level 6: Rearrange, then transform both sides",b:"Hardest case: rearrange first, then recognize f(y) = m*f(x) + b.",rule:"Rule: f(y) and f(x) must both transform the original variables. A plain y on the left or a plain x on the right does not count.",p:[
+{e:"F\\,r^2 = k\\,q_1 q_2",c:"Coulomb's law",lab:true,consts:"\\(k, q_1, q_2\\)",info:[{sym:"F",name:"force between the charges",const:"you measure it"},{sym:"r",name:"separation distance",const:"this is what you change"},{sym:"k",name:"Coulomb's constant, a fixed number of nature",const:"always the same number"},{sym:"q_1, q_2",name:"the two charges",const:"fixed for one pair of spheres"}],a:{d:"\\frac{1}{F}",i:"r^2",s:"\\frac{1}{k q_1 q_2}"},st:[["divide both sides by F","$r^2 = \\frac{k q_1 q_2}{F}$"],["take reciprocals of both sides","$\\frac{1}{r^2} = \\frac{F}{k q_1 q_2}$"],["divide both sides by $k q_1 q_2$","$\\frac{1}{F} = \\frac{1}{k q_1 q_2}\\,r^2$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $f(y) = \\frac{1}{F}$ and $b = 0$"],["dependent axis","plot $\\frac{1}{F}$ on the vertical axis"],["independent axis","plot $r^2$ on the horizontal axis"],["read slope","slope = $\\frac{1}{k q_1 q_2}$"]]},
+{e:"v^2\\,C\\rho A = 2D",c:"Air drag at terminal speed",lab:true,consts:"\\(C, \\rho, A\\)",info:[{sym:"v",name:"terminal speed, fastest falling speed",const:"you measure it"},{sym:"D",name:"the object's weight, the drag force",const:"this is what changes between objects"},{sym:"C",name:"drag shape factor",const:"fixed for one shape"},{sym:"\\rho",name:"air density",const:"fixed in one room"},{sym:"A",name:"cross-sectional area",const:"fixed for one object"}],a:{d:"\\frac{1}{v^2}",i:"\\frac{1}{D}",s:"\\frac{C\\rho A}{2}"},st:[["divide both sides by $2D$","$\\frac{v^2 C\\rho A}{2D} = 1$"],["rearrange","$\\frac{1}{v^2} = \\frac{C\\rho A}{2}\\cdot\\frac{1}{D}$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $f(y) = \\frac{1}{v^2}$ and $f(x) = \\frac{1}{D}$"],["dependent axis","plot $\\frac{1}{v^2}$ on the vertical axis"],["independent axis","plot $\\frac{1}{D}$ on the horizontal axis"],["read slope","slope = $\\frac{C\\rho A}{2}$"]]},
+{e:"v^2\\,\\mu = F_T",c:"Wave on a rope (unsolved)",lab:true,consts:"\\(\\mu\\)",info:[{sym:"v",name:"wave speed along the rope",const:"you measure it"},{sym:"F_T",name:"tension, how hard the rope is pulled",const:"this is what you change"},{sym:"\\mu",name:"mass per length of THIS rope",const:"fixed for one rope"}],a:{d:"\\frac{1}{v^2}",i:"\\frac{1}{F_T}",s:"\\mu"},st:[["divide both sides by $v^2 F_T$","$\\frac{\\mu}{F_T} = \\frac{1}{v^2}$"],["reorder","$\\frac{1}{v^2} = \\mu\\cdot\\frac{1}{F_T}$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $b = 0$"],["dependent axis","plot $\\frac{1}{v^2}$ on the vertical axis"],["independent axis","plot $\\frac{1}{F_T}$ on the horizontal axis"],["read slope","slope = $\\mu$"]]},
+{e:"y^3 x^2 = c \\quad (c \\text{ constant})",c:"Pure Math",pure:true,consts:"\\(c\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"c",name:"a fixed number",const:"constant by definition"}],a:{d:"y^3",i:"\\frac{1}{x^2}",s:"c"},st:[["divide both sides by $x^2$","$y^3 = \\frac{c}{x^2}$"],["rewrite","$y^3 = c\\cdot\\frac{1}{x^2}$; dividing by $x^2$ is the same as multiplying by $\\frac{1}{x^2}$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $f(y) = y^3$ and $b = 0$"],["dependent axis","plot $y^3$ on the vertical axis"],["independent axis","plot $\\frac{1}{x^2}$ on the horizontal axis"],["read slope","slope = $c$"]]},
+{e:"\\frac{c}{y^2} = x \\quad (c \\text{ constant})",c:"Pure Math",pure:true,consts:"\\(c\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"c",name:"a fixed number",const:"constant by definition"}],a:{d:"y^2",i:"\\frac{1}{x}",s:"c"},st:[["multiply both sides by $y^2$","$c = x\\,y^2$"],["divide both sides by $x$","$y^2 = \\frac{c}{x}$"],["rewrite","$y^2 = c\\cdot\\frac{1}{x}$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $f(y) = y^2$ and $b = 0$"],["dependent axis","plot $y^2$ on the vertical axis"],["independent axis","plot $\\frac{1}{x}$ on the horizontal axis"],["read slope","slope = $c$"]]},
+{e:"\\frac{x}{y} = a + b\\,x \\quad (a, b \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a",name:"a fixed number",const:"constant by definition"},{sym:"b",name:"another fixed number",const:"constant by definition"}],a:{d:"\\frac{1}{y}",i:"\\frac{1}{x}",s:"a"},st:[["divide both sides by $x$","$\\frac{1}{y} = \\frac{a}{x} + b$"],["rewrite","$\\frac{1}{y} = a\\cdot\\frac{1}{x} + b$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $f(y) = \\frac{1}{y}$ and $f(x) = \\frac{1}{x}$"],["dependent axis","plot $\\frac{1}{y}$ on the vertical axis"],["independent axis","plot $\\frac{1}{x}$ on the horizontal axis"],["read slope","slope = $a$ (the intercept $b$ does not change the slope)"]]}]},
+{l:7,t:"Level 7: Multi-constant slope",b:"The slope itself is built from several constants. Group them into one slope.",rule:"Rule: f(y) and f(x) must both transform the original variables. A plain y on the left or a plain x on the right does not count.",p:[
+{e:"T^2 = \\frac{4\\pi^2 a^3}{GM}",c:"Kepler's third law",lab:true,consts:"\\(G, M\\)",info:[{sym:"T",name:"orbital period, time for one full orbit",const:"you measure it"},{sym:"a",name:"orbit size, the semi-major axis",const:"this changes between planets"},{sym:"G",name:"universal constant of nature",const:"always the same number"},{sym:"M",name:"mass of the central star",const:"fixed for one star"}],a:{d:"T^2",i:"a^3",s:"\\frac{4\\pi^2}{GM}"},st:[["separate the constants from the variable","$T^2 = \\frac{4\\pi^2}{GM}\\cdot a^3$"],["recognize form","$T^2 = \\frac{4\\pi^2}{GM}\\,a^3$ matches $f(y) = m\\cdot f(x) + b$ with $b = 0$"],["group the constants","the slope is the whole expression $\\frac{4\\pi^2}{GM}$; resist the urge to split it"],["dependent axis","plot $T^2$ on the vertical axis"],["independent axis","plot $a^3$ on the horizontal axis"],["read slope","slope = $\\frac{4\\pi^2}{GM}$"]]},
+{e:"y^2 = \\frac{a b x^3}{c} \\quad (a, b, c \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b, c\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a, b, c",name:"fixed numbers",const:"constant by definition"}],a:{d:"y^2",i:"x^3",s:"\\frac{ab}{c}"},st:[["separate the constants from the variable","$y^2 = \\frac{ab}{c}\\cdot x^3$"],["recognize form","$y^2 = \\frac{ab}{c}\\,x^3$ matches $f(y) = m\\cdot f(x) + b$ with $b = 0$"],["group the constants","the slope is the whole expression $\\frac{ab}{c}$"],["dependent axis","plot $y^2$ on the vertical axis"],["independent axis","plot $x^3$ on the horizontal axis"],["read slope","slope = $\\frac{ab}{c}$"]]},
+{e:"\\frac{1}{y} = \\frac{a+b}{c x} \\quad (a, b, c \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b, c\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a, b, c",name:"fixed numbers",const:"constant by definition"}],a:{d:"\\frac{1}{y}",i:"\\frac{1}{x}",s:"\\frac{a+b}{c}"},st:[["split the denominator","$\\frac{1}{y} = \\frac{a+b}{c}\\cdot\\frac{1}{x}$"],["recognize form","$\\frac{1}{y} = \\frac{a+b}{c}\\cdot\\frac{1}{x}$ matches $f(y) = m\\cdot f(x) + b$ with $b = 0$"],["group the constants","the slope is the whole expression $\\frac{a+b}{c}$, a sum over a single number"],["dependent axis","plot $\\frac{1}{y}$ on the vertical axis"],["independent axis","plot $\\frac{1}{x}$ on the horizontal axis"],["read slope","slope = $\\frac{a+b}{c}$"]]},
+{e:"\\frac{1}{y} = \\frac{a}{b c \\sqrt{x}} \\quad (a, b, c \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b, c\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a, b, c",name:"fixed numbers",const:"constant by definition"}],a:{d:"\\frac{1}{y}",i:"\\frac{1}{\\sqrt{x}}",s:"\\frac{a}{bc}"},st:[["split the denominator","$\\frac{1}{y} = \\frac{a}{bc}\\cdot\\frac{1}{\\sqrt{x}}$"],["recognize form","$\\frac{1}{y} = \\frac{a}{bc}\\cdot\\frac{1}{\\sqrt{x}}$ matches $f(y) = m\\cdot f(x) + b$ with $f(x) = \\frac{1}{\\sqrt{x}}$ and $b = 0$"],["group the constants","the slope is the whole expression $\\frac{a}{bc}$"],["dependent axis","plot $\\frac{1}{y}$ on the vertical axis"],["independent axis","plot $\\frac{1}{\\sqrt{x}}$ on the horizontal axis"],["read slope","slope = $\\frac{a}{bc}$"]]}]},
+{l:8,t:"Level 8: Constant expressions everywhere",b:"Both the slope AND the intercept are expressions of constants. Sort the letters into three piles: transformed y, transformed x, everything else.",rule:"Rule: f(y) and f(x) must both transform the original variables. A plain y on the left or a plain x on the right does not count.",p:[
+{e:"\\frac{1}{f} = \\frac{1}{d_o} + \\frac{1}{d_i}",c:"Thin lens equation",lab:true,consts:"\\(f\\)",info:[{sym:"d_i",name:"image distance, where the picture forms",const:"you measure it"},{sym:"d_o",name:"object distance, where the thing sits",const:"this is what you move"},{sym:"f",name:"focal length of THIS lens",const:"fixed for one lens"}],a:{d:"\\frac{1}{d_i}",i:"\\frac{1}{d_o}",s:"-1"},st:[["subtract $\\frac{1}{d_o}$ from both sides","$\\frac{1}{d_i} = \\frac{1}{f} - \\frac{1}{d_o}$"],["reorder into slope-intercept form","$\\frac{1}{d_i} = -1\\cdot\\frac{1}{d_o} + \\frac{1}{f}$"],["recognize form","this matches $f(y) = m\\cdot f(x) + b$ with $f(y) = \\frac{1}{d_i}$ and $f(x) = \\frac{1}{d_o}$"],["note the mixed case","the slope $-1$ is a plain number while the intercept $\\frac{1}{f}$ is a constant expression; both are allowed at Level 8"],["dependent axis","plot $\\frac{1}{d_i}$ on the vertical axis"],["independent axis","plot $\\frac{1}{d_o}$ on the horizontal axis"],["read slope","slope = $-1$"]]},
+{e:"F^2 = k^2 x^2 + F_0^2",c:"Springs (energy-style relation)",lab:true,consts:"\\(k, F_0\\)",info:[{sym:"F",name:"force the spring pushes back with",const:"you measure this"},{sym:"x",name:"how far you stretch the spring",const:"this is what you change"},{sym:"k",name:"stiffness of THIS spring",const:"fixed, it is one spring"},{sym:"F_0",name:"a preload force",const:"same spring, so it stays fixed"}],a:{d:"F^2",i:"x^2",s:"k^2"},st:[["recognize form","$F^2 = k^2\\,x^2 + F_0^2$ matches $f(y) = m\\cdot f(x) + b$"],["sort the constants","slope $k^2$ and intercept $F_0^2$ are both constant expressions"],["dependent axis","plot $F^2$ on the vertical axis"],["independent axis","plot $x^2$ on the horizontal axis"],["read slope","slope = $k^2$"]]},
+{e:"y^2 = \\frac{a x^3}{b} + \\frac{c}{d} \\quad (a, b, c, d \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b, c, d\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a, b, c, d",name:"fixed numbers",const:"constant by definition"}],a:{d:"y^2",i:"x^3",s:"\\frac{a}{b}"},st:[["separate the constants from the variable","$y^2 = \\frac{a}{b}\\cdot x^3 + \\frac{c}{d}$"],["recognize form","$y^2 = \\frac{a}{b}\\,x^3 + \\frac{c}{d}$ matches $f(y) = m\\cdot f(x) + b$"],["sort the constants","slope $\\frac{a}{b}$ and intercept $\\frac{c}{d}$ are both constant expressions"],["dependent axis","plot $y^2$ on the vertical axis"],["independent axis","plot $x^3$ on the horizontal axis"],["read slope","slope = $\\frac{a}{b}$"]]},
+{e:"\\frac{1}{y} = \\frac{a}{b x} + \\frac{c}{e} \\quad (a, b, c, e \\text{ constants})",c:"Pure Math",pure:true,consts:"\\(a, b, c, e\\)",info:[{sym:"y",name:"the output",const:"linked to \\(x\\), you compute it"},{sym:"x",name:"the input",const:"this is what you change"},{sym:"a, b, c, e",name:"fixed numbers",const:"constant by definition"}],a:{d:"\\frac{1}{y}",i:"\\frac{1}{x}",s:"\\frac{a}{b}"},st:[["split the denominator","$\\frac{1}{y} = \\frac{a}{b}\\cdot\\frac{1}{x} + \\frac{c}{e}$"],["recognize form","$\\frac{1}{y} = \\frac{a}{b}\\cdot\\frac{1}{x} + \\frac{c}{e}$ matches $f(y) = m\\cdot f(x) + b$"],["sort the constants","slope $\\frac{a}{b}$ and intercept $\\frac{c}{e}$ are both constant expressions"],["dependent axis","plot $\\frac{1}{y}$ on the vertical axis"],["independent axis","plot $\\frac{1}{x}$ on the horizontal axis"],["read slope","slope = $\\frac{a}{b}$"]]}]}
+];
+const NPROB=TIERS.reduce((n,t)=>n+t.p.length,0);
+const KEY="linz-practice-v1";
+let S=null,curTier=0,view="welcome";
+function fresh(){return{done:{},inputs:{},open:{},info:{},visited:{}};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function loadState(){try{const r=localStorage.getItem(KEY);if(!r)return null;const d=JSON.parse(r);if(!d||typeof d!=="object")return null;return Object.assign(fresh(),d);}catch(e){return null;}}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function pk(l,i){return"l"+l+"p"+i;}
+function tierDone(l){return TIERS[l].p.filter((x,i)=>S.done[pk(l,i)]).length;}
+function totalDone(){return Object.keys(S.done).filter(k=>S.done[k]).length;}
+
+function vWelcome(){
+  return '<div class="card welcome">'+
+    '<div class="brand">Physics 1 · Graphical Analysis</div>'+
+    '<h1>Linearization Practice</h1>'+
+    '<div class="meta">'+NPROB+' self-paced problems across '+TIERS.length+' levels. No timers, no grades. Work each problem on your whiteboard, then check yourself.</div>'+
+    '<div class="box"><h4>How this works</h4><ol>'+
+    '<li>For each equation, decide what to plot on each axis so the graph is a straight line.</li>'+
+    '<li>Work it on your whiteboard before touching anything.</li>'+
+    '<li>Click <b>Show solution</b> to reveal the answer and a step-by-step explanation. Solutions are hidden until you ask.</li>'+
+    '<li>Click <b>Mark done</b> to track your progress. Levels are not locked, jump anywhere.</li>'+
+    '</ol></div>'+
+    '<div class="box"><h4>Levels</h4><ol>'+
+    TIERS.map((t,i)=>'<li><b>'+esc(t.t.split(":")[0])+'</b>: '+esc(t.t.split(":")[1])+'</li>').join("")+
+    '</ol></div>'+
+    '<div class="actions"><button class="btn primary" id="b-start">Start practicing</button>'+
+    '<button class="btn ghost" id="b-reset-w">Reset progress</button></div></div>';
+}
+
+function vShell(inner){
+  let side="";
+  TIERS.forEach((t,l)=>{
+    const d=tierDone(l);
+    side+='<div class="trow-side"><span class="tl">Lv '+l+'</span>'+
+      '<span class="bar"><i style="width:'+Math.round(100*d/t.p.length)+'%"></i></span>'+
+      '<span class="tc">'+d+'/'+t.p.length+'</span></div>';
+  });
+  let bar="";
+  TIERS.forEach((t,l)=>{
+    const d=tierDone(l),all=d===t.p.length;
+    bar+='<button class="tierbtn'+(l===curTier?" cur":"")+(all?" doneall":"")+'" data-tier="'+l+'">'+
+      '<span class="lv">Lv '+l+'</span><span>'+d+'/'+t.p.length+'</span></button>';
+  });
+  const t=TIERS[curTier];
+  return '<div class="hd"><div><div class="brand">Physics 1 · Graphical Analysis</div>'+
+    '<div class="title">Linearization Practice</div></div>'+
+    '<div class="right"><span class="progress-num">'+totalDone()+' / '+NPROB+' done</span>'+
+    '<span class="tag">Self-paced</span></div></div>'+
+    '<div class="subhd">Pick a level. For each equation: what goes on each axis, and what does the slope equal?</div>'+
+    '<div class="wrap"><div class="main">'+
+    '<div class="tierbar">'+bar+'</div>'+
+    '<div class="card" style="padding:16px 20px;margin-bottom:16px"><b style="color:var(--navy)">'+esc(t.t)+'</b><br>'+
+    '<span style="font-size:14px;color:var(--muted)">'+esc(t.b)+'</span>'+
+    (t.rule?'<div style="margin-top:10px;font-size:13.5px;line-height:1.5;color:#28518c;background:#eaf1fa;border-left:3px solid var(--navy);padding:8px 12px;border-radius:0 6px 6px 0"><b>Canon rule.</b> '+esc(t.rule)+'</div>':"")+
+    '</div>'+
+    inner+
+    '</div><div class="side"><div class="card"><h3>Your progress</h3>'+
+    '<div class="count">'+totalDone()+' of '+NPROB+' problems marked done</div>'+
+    '<div class="tierlist">'+side+'</div>'+
+    '<button class="resetlink" id="b-reset">Reset all progress</button>'+
+    '</div></div></div>';
+}
+
+function vTier(){
+  const t=TIERS[curTier];
+  let inner="";
+  t.p.forEach((p,i)=>{
+    const k=pk(curTier,i),done=S.done[k],open=S.open[k];
+    const inp=S.inputs[k]||{};
+    inner+='<div class="card pcard'+(done?" isdone":"")+'">'+
+      '<div class="phead"><span class="pnum">Problem '+(i+1)+'</span>'+
+      '<span class="pctx'+(p.lab?" lab":"")+(p.pure?" pure":"")+'">'+esc(p.c)+
+      (p.lab?" · Math Lab":"")+(p.pure?" · Pure Math":"")+'</span>'+
+      '<span class="donedot">✓ done</span></div>'+
+      '<div class="equation">\\(\\displaystyle '+p.e+'\\)</div>'+
+      (p.consts?'<div class="constline"><span class="constbadge">Treat as constants: '+p.consts+'</span></div>':"")+
+      (p.info?'<button class="infolink" data-k="'+k+'">'+(S.info[k]?"Hide letter meanings":"Curious what these letters mean?")+'</button>'+
+      '<div class="infopanel'+(S.info[k]?" open":"")+'">'+p.info.map(r=>'<div class="inforow"><span class="infosym">\\('+r.sym+'\\)</span><span class="infoname">'+esc(r.name)+'</span><span class="infosep">·</span><span class="infoconst">'+esc(r.const)+'</span></div>').join("")+'</div>':"")+
+      '<div class="stem">You want a straight-line graph of this relationship.</div>'+
+      '<div class="qblock"><div class="qlabel">1. Plot what on the vertical (dependent) axis?</div>'+
+      '<input class="qinput" data-k="'+k+'" data-f="d" value="'+esc(inp.d||"")+'" placeholder="e.g. v, or v^2"></div>'+
+      '<div class="qblock"><div class="qlabel">2. Plot what on the horizontal (independent) axis?</div>'+
+      '<input class="qinput" data-k="'+k+'" data-f="i" value="'+esc(inp.i||"")+'" placeholder="e.g. t, or t^2"></div>'+
+      '<div class="qblock"><div class="qlabel">3. What does the slope of the line equal?</div>'+
+      '<input class="qinput" data-k="'+k+'" data-f="s" value="'+esc(inp.s||"")+'" placeholder="expression"></div>'+
+      '<div class="sol"><button class="soltoggle" data-k="'+k+'">'+(open?"Hide solution":"Show solution")+'</button>'+
+      '<div class="solbody'+(open?" open":"")+'">'+
+      '<div class="ansline"><b>Vertical axis:</b> \\('+p.a.d+'\\)</div>'+
+      '<div class="ansline"><b>Horizontal axis:</b> \\('+p.a.i+'\\)</div>'+
+      '<div class="ansline"><b>Slope:</b> \\('+p.a.s+'\\)</div>'+
+      '<div class="steps">'+p.st.map(m=>'<div class="mv"><span class="nm">'+esc(m[0])+'</span><span class="fx">'+esc(m[1])+'</span></div>').join("")+'</div>'+
+      '</div></div>'+
+      '<div class="pfoot"><div class="btnrow">'+
+      '<button class="btn '+(done?"ghost":"primary")+' markdone" data-k="'+k+'">'+(done?"Mark not done":"Mark done")+'</button>'+
+      '</div><span style="font-size:12px;color:var(--muted)">Work it on your whiteboard first.</span></div>'+
+      '</div>';
+  });
+  return vShell(inner);
+}
+
+function render(){
+  document.getElementById("app").innerHTML=view==="welcome"?vWelcome():vTier();
+  wire();
+  if(window.renderMathInElement){
+    renderMathInElement(document.getElementById("app"),{delimiters:[
+      {left:"\\[",right:"\\]",display:true},
+      {left:"\\(",right:"\\)",display:false},
+      {left:"$",right:"$",display:false}
+    ]});
+  }
+}
+
+function wire(){
+  const bs=document.getElementById("b-start");
+  if(bs)bs.onclick=()=>{view="tier";render();window.scrollTo(0,0);};
+  const brw=document.getElementById("b-reset-w");
+  if(brw)brw.onclick=doReset;
+  const br=document.getElementById("b-reset");
+  if(br)br.onclick=doReset;
+  document.querySelectorAll(".tierbtn").forEach(b=>{
+    b.onclick=()=>{curTier=+b.getAttribute("data-tier");S.visited[curTier]=1;save();render();window.scrollTo(0,0);};
+  });
+  document.querySelectorAll(".qinput").forEach(inp=>{
+    inp.addEventListener("input",()=>{
+      const k=inp.getAttribute("data-k"),f=inp.getAttribute("data-f");
+      if(!S.inputs[k])S.inputs[k]={};
+      S.inputs[k][f]=inp.value;save();
+    });
+  });
+  document.querySelectorAll(".soltoggle").forEach(b=>{
+    b.onclick=()=>{
+      const k=b.getAttribute("data-k");
+      S.open[k]=!S.open[k];save();
+      const body=b.parentElement.querySelector(".solbody");
+      body.classList.toggle("open",S.open[k]);
+      b.textContent=S.open[k]?"Hide solution":"Show solution";
+    };
+  });
+  document.querySelectorAll(".infolink").forEach(b=>{
+    b.onclick=()=>{
+      const k=b.getAttribute("data-k");
+      S.info[k]=!S.info[k];save();
+      const panel=b.parentElement.querySelector(".infopanel");
+      panel.classList.toggle("open",S.info[k]);
+      b.textContent=S.info[k]?"Hide letter meanings":"Curious what these letters mean?";
+    };
+  });
+  document.querySelectorAll(".markdone").forEach(b=>{
+    b.onclick=()=>{
+      const k=b.getAttribute("data-k");
+      S.done[k]=!S.done[k];save();render();
+    };
+  });
+}
+
+function doReset(){
+  if(confirm("Reset all progress? This clears which problems you marked done.")){
+    S=fresh();save();render();
+  }
+}
+
+/* portal bridge: no-op when standalone */
+let portalBlockId=null;
+function sendToParent(m){if(window.parent!==window){window.parent.postMessage(Object.assign({},m,{blockId:portalBlockId}),"*");}}
+window.addEventListener("message",e=>{
+  const d=e.data;if(!d||typeof d!=="object")return;
+  if(d.type==="portal-init"){portalBlockId=d.blockId||null;if(d.state){S=Object.assign(fresh(),d.state);save();render();}}
+  else if(d.type==="portal-get-state"){sendToParent({type:"html-activity-state",state:JSON.parse(JSON.stringify(S))});}
+  else if(d.type==="portal-set-state"&&d.state){S=Object.assign(fresh(),d.state);save();render();}
+});
+sendToParent({type:"html-activity-ready",blockId:portalBlockId});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>
+<script>
+S=loadState()||fresh();
+render();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T00:50:40.445Z",
+  "generatedAt": "2026-09-20T21:50:52.356Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/codeword": "/codeword-lookup.html",
@@ -11,7 +11,9 @@
     "/texas-blackout-articles": "/texas-blackout-articles/index.html",
     "/forensic-branches": "/forensic-branches/index.html",
     "/texas-grid-blackout": "/texas-grid-blackout.html",
-    "/ap1-kinematics-practice": "/ap1-kinematics-practice.html"
+    "/ap1-kinematics-practice": "/ap1-kinematics-practice.html",
+    "/linearization-practice": "/linearization-practice.html",
+    "/guess-who": "/games/guess-who-evidence.html"
   },
   "dirs": [
     "/forensic-branches",

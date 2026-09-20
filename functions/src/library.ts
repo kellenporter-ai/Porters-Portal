@@ -42,13 +42,37 @@ function titleFromFilename(path: string): string {
 }
 
 /**
- * Strip the `.html` extension so stub URLs match the firebase.json clean
- * rewrites (e.g. `/circuit-diagram-builder`). Directory-style paths ending in
- * `/` are kept as-is. Only used for the display `url` — `sourceFingerprint`
+ * Clean-URL rewrites from firebase.json `hosting.rewrites`. Keep in sync with
+ * firebase.json — the stripped form of a bundled manifest path is only usable
+ * as a display URL when Firebase actually rewrites it to a real file.
+ */
+const CLEAN_URL_REWRITES = new Set([
+  "/privacy",
+  "/codeword",
+  "/circuit-diagram-builder",
+  "/electroscope-charge-assessment",
+  "/tools/bar-chart",
+  "/tools/force-diagram",
+  "/textbook/ch2-kinematics-1d",
+  "/texas-blackout-articles",
+  "/forensic-branches",
+  "/texas-grid-blackout",
+  "/ap1-kinematics-practice",
+  "/linearization-practice",
+  "/guess-who",
+]);
+
+/**
+ * Strip the `.html` extension ONLY when the stripped path is one of the
+ * firebase.json clean-URL rewrites (e.g. `/circuit-diagram-builder`). Other
+ * paths (e.g. `/games/guess-who-evidence.html`) are served as static files at
+ * their literal `.html` path, so stripping would yield a URL that matches the
+ * SPA catch-all instead. Only used for the display `url` — `sourceFingerprint`
  * always keeps the raw manifest path so scan dedup is unaffected.
  */
 function cleanUrlFromManifestPath(path: string): string {
-  return path.replace(/\.html?$/i, "");
+  const stripped = path.replace(/\.html?$/i, "");
+  return CLEAN_URL_REWRITES.has(stripped) ? stripped : path;
 }
 
 /** Best-effort contentKind guess from the file path. */
