@@ -234,9 +234,9 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={onExit}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center gap-2 border border-transparent"
+                  className="w-full text-left px-3 py-3 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center gap-2 border border-transparent"
                 >
-                  <LogOut className="w-3.5 h-3.5 shrink-0" />
+                  <LogOut className="w-4 h-4 shrink-0" />
                   {t('workspace.saveExit')}
                 </button>
 
@@ -244,9 +244,9 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => onSubmit?.()}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-[15px] font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2"
+                  className="w-full text-left px-3 py-3 rounded-lg text-sm font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2"
                 >
-                  <Send className="w-3.5 h-3.5 shrink-0" />
+                  <Send className="w-4 h-4 shrink-0" />
                   {t('workspace.submit')}
                 </button>
               </>
@@ -257,18 +257,18 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={onExit}
-                  className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center justify-center"
+                  className="p-3 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-glass)] hover:text-[var(--text-primary)] transition-all flex items-center justify-center"
                   title={t('workspace.saveExit')}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-5 h-5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onSubmit?.()}
-                  className="p-2 rounded-lg font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center justify-center"
+                  className="p-3 rounded-lg font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center justify-center"
                   title={t('workspace.submit')}
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" />
                 </button>
               </>
             )}
@@ -284,28 +284,28 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => setSidebarCollapsed(v => !v)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
+                  className="flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-2.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
                   title={t('workspace.toggleSidebar')}
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{t('workspace.sidebar')}</span>
+                  <span>{t('workspace.sidebar')}</span>
                 </button>
                 <div className="w-px h-4 bg-[var(--border)]" />
                 <button
                   type="button"
                   onClick={onExit}
-                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
+                  className="flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-2.5 rounded-lg hover:bg-[var(--surface-glass)] transition-all"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('workspace.saveExit')}</span>
+                  <span>{t('workspace.saveExit')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => onSubmit?.()}
-                  className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg transition-all"
+                  className="flex items-center gap-1.5 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg transition-all"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('workspace.submit')}</span>
+                  <span>{t('workspace.submit')}</span>
                 </button>
               </div>
             )}
@@ -480,6 +480,21 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
             <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Assessment Returned for Revision</p>
             <p className="text-xs text-amber-700 dark:text-amber-400/70">{t('workspace.returnedBanner')}</p>
           </div>
+        </div>
+      )}
+
+      {/* Revise & Resubmit CTA — RETURNED submissions with a grade land here first */}
+      {existingSubmission?.status === 'RETURNED' && canRetake && onRetake && (
+        <div className="shrink-0 mx-5 mt-3 flex items-center justify-between gap-3 p-3 bg-purple-500/10 border border-purple-500/25 rounded-xl">
+          <p className="text-sm text-[var(--text-secondary)]">{t('workspace.reviseResubmitPrompt')}</p>
+          <button
+            type="button"
+            onClick={onRetake}
+            className="flex items-center gap-2 text-sm font-bold bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg transition shrink-0"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {t('workspace.reviseResubmit')}
+          </button>
         </div>
       )}
 

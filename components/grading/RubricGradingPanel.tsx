@@ -23,6 +23,7 @@ interface RubricGradingPanelProps {
   hasActiveRubricDraft: boolean;
   feedbackDraft: string;
   isSavingRubric: boolean;
+  isReturning: boolean;
   viewingDraftUserId: string | null;
   draftUserIds: Set<string>;
   unifiedList: Array<{ type: string; group?: { userId: string; needsGrading: boolean } | null }>;
@@ -53,6 +54,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
   hasActiveRubricDraft,
   feedbackDraft,
   isSavingRubric,
+  isReturning,
   viewingDraftUserId,
   draftUserIds,
   unifiedList,
@@ -422,7 +424,8 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               {sub.status !== 'RETURNED' && sub.status !== 'STARTED' && (
                 <button
                   onClick={onReturnToStudent}
-                  className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 min-h-[44px] rounded-lg transition"
+                  disabled={isSavingRubric || isReturning}
+                  className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 px-3 py-2 min-h-[44px] rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Return assessment to ${selectedGroup.userName}`}
                 >
                   <Undo2 className="w-3.5 h-3.5" aria-hidden="true" /> Return to Student

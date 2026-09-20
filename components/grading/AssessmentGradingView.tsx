@@ -48,6 +48,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     feedbackDraft,
     setFeedbackDraft,
     isSavingRubric,
+    isReturning,
     isDirty,
     currentUnifiedIndex,
     assessmentSearch,
@@ -343,6 +344,7 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
               hasActiveRubricDraft={hasActiveRubricDraft}
               feedbackDraft={feedbackDraft}
               isSavingRubric={isSavingRubric}
+              isReturning={isReturning}
               viewingDraftUserId={viewingDraftUserId}
               draftUserIds={draftUserIds}
               unifiedList={unifiedList}

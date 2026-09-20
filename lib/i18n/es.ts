@@ -403,6 +403,8 @@ export const es: Dictionary = {
   'workspace.retake': 'Repetir',
   'workspace.exit': 'Salir',
   'workspace.attemptsLeft': '{count} restante{plural}',
+  'workspace.reviseResubmit': 'Revisar y Reenviar',
+  'workspace.reviseResubmitPrompt': 'Revisa los comentarios de tu docente y luego corrige y reenvía tu evaluación.',
   'workspace.returnedBanner': 'Tu docente devolvió esta evaluación. Revisa los comentarios y haz clic en Repetir para entregar una versión corregida.',
   'workspace.noResponses': 'Aún no hay respuestas enviadas.',
   'workspace.fullReview': 'Revisión Completa',

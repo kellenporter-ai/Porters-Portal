@@ -403,6 +403,8 @@ export const en: Dictionary = {
   'workspace.retake': 'Retake',
   'workspace.exit': 'Exit',
   'workspace.attemptsLeft': '{count} left',
+  'workspace.reviseResubmit': 'Revise & Resubmit',
+  'workspace.reviseResubmitPrompt': 'Review your teacher\'s feedback, then revise and resubmit your assessment.',
   'workspace.returnedBanner': 'Your teacher returned this assessment. Review the feedback and click Retake to submit a revised version.',
   'workspace.noResponses': 'No responses submitted yet.',
   'workspace.fullReview': 'Full Review',

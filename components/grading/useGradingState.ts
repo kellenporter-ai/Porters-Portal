@@ -80,6 +80,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   rubricDraftsRef.current = rubricDrafts;
   const [feedbackDraft, setFeedbackDraft] = useState('');
   const [isSavingRubric, setIsSavingRubric] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
   const [assessmentSearch, setAssessmentSearch] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
   const [assessmentSectionFilter, setAssessmentSectionFilter] = useState('');
@@ -555,12 +556,50 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     if (!sub || !selectedGroup) return;
     const ok = await confirm({
       title: 'Return Assessment',
-      message: `This will return ${selectedGroup.userName}'s assessment for revision. Their previous answers will be preserved and they can edit and resubmit. The existing grade will be kept for your reference.`,
+      message: `This will save the current grade and feedback, then return ${selectedGroup.userName}'s assessment for revision. They will see their feedback first, and their previous answers will be preserved so they can edit and resubmit.`,
       confirmLabel: 'Return to Student',
       variant: 'warning',
     });
     if (!ok) return;
+    setIsReturning(true);
     try {
+      // If there are unsaved rubric grades/feedback, persist them first so the
+      // student sees the feedback when the assessment is returned. A save
+      // failure aborts the return (student would lose the grade reference).
+      const currentGrades = { ...(sub.rubricGrade?.grades || {}), ...rubricDraft };
+      const hasAnyGrade = Object.values(currentGrades).some(q => Object.keys(q).length > 0);
+      const hasNewFeedback = feedbackDraft.trim().length > 0;
+      if (hasAnyGrade || hasNewFeedback) {
+        if (!selectedAssessment?.rubric) {
+          toast.error('Could not save grade. Please try again.');
+          return;
+        }
+        const pct = calculateRubricPercentage(currentGrades, selectedAssessment.rubric);
+        const rubricGrade: RubricGrade = {
+          grades: currentGrades,
+          overallPercentage: pct,
+          gradedAt: new Date().toISOString(),
+          gradedBy: 'Admin',
+          ...(feedbackDraft.trim() ? { teacherFeedback: feedbackDraft.trim() } : {}),
+        };
+        const hadAISuggestion = sub.aiSuggestedGrade?.status === 'pending_review';
+        const result = hadAISuggestion
+          ? await dataService.acceptAISuggestedGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title)
+          : await dataService.saveRubricGrade(sub.id, rubricGrade, sub.userId, selectedAssessment.title);
+        setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
+          ...s, rubricGrade, score: pct,
+          ...(hadAISuggestion ? { aiSuggestedGrade: { ...s.aiSuggestedGrade!, status: 'accepted' as const } } : {}),
+          ...(result?.clearedAIFlag ? { flaggedAsAI: false, flaggedAsAIBy: '', flaggedAsAIAt: '', status: 'NORMAL' as const } : {}),
+        } : s));
+        setRubricDraft({});
+        setRubricDrafts(prev => {
+          const next = { ...prev };
+          delete next[sub.id];
+          return next;
+        });
+        setFeedbackDraft('');
+        clearDraftFromLocalStorage(sub.id);
+      }
       await callReturnAssessment({ submissionId: sub.id });
       setAssessmentSubmissions(prev => prev.map(s => s.id === sub.id ? {
         ...s,
@@ -572,8 +611,10 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     } catch (err) {
       reportError(err, { method: 'callReturnAssessment' });
       toast.error('Could not return this assessment. Try again.');
+    } finally {
+      setIsReturning(false);
     }
-  }, [sub, selectedGroup, confirm, toast]);
+  }, [sub, selectedGroup, confirm, toast, rubricDraft, feedbackDraft, selectedAssessment]);
 
   const handleFlagAsAI = useCallback(async () => {
     if (!sub || !selectedAssessment) return;
@@ -908,6 +949,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     feedbackDraft,
     setFeedbackDraft,
     isSavingRubric,
+    isReturning,
     isDirty,
     currentUnifiedIndex,
     mobileTab,

@@ -184,9 +184,28 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
     return () => unsub();
   }, [id, user.id, user.role, activeAssignment?.isAssessment]);
 
+  // Exit fullscreen focus mode (guarded — no-op when not fullscreen)
+  const exitFocusMode = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }, []);
+
   // Auto-recover: if server has a submission but client never showed the score modal
   // (handles network errors during submit response, page refresh after submit, etc.)
   useEffect(() => {
+    // RETURNED with a grade: land on the feedback/results view first so the
+    // student reviews their rubric feedback before revising.
+    if (existingSubmission && existingSubmission.status === 'RETURNED' && existingSubmission.rubricGrade && !assessmentResult && isLiveAssessment && !isRetakingRef.current) {
+      setAssessmentResult({
+        correct: existingSubmission.assessmentScore?.correct ?? 0,
+        total: existingSubmission.assessmentScore?.total ?? 0,
+        percentage: existingSubmission.rubricGrade.overallPercentage ?? existingSubmission.assessmentScore?.percentage ?? 0,
+        perBlock: existingSubmission.assessmentScore?.perBlock ?? {},
+        attemptNumber: existingSubmission.attemptNumber ?? 1,
+        status: 'RETURNED',
+        xpEarned: 0,
+      });
+      return;
+    }
     if (existingSubmission && existingSubmission.status !== 'RETURNED' && !assessmentResult && isLiveAssessment && !isRetakingRef.current) {
       setAssessmentResult({
         correct: existingSubmission.assessmentScore?.correct ?? 0,
@@ -355,6 +374,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
             deleteDoc(doc(db, 'lesson_block_responses', draftDocId)).catch(() => {});
           } catch { /* ignore */ }
         }
+        exitFocusMode();
         toast.success(interpolate(t('rv.submit.successToast'), { pct: result.assessmentScore.percentage }));
         setIsSubmitting(false);
         return;
@@ -480,6 +500,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   }, [activeAssignment, config, existingSubmission, id, user.id, assessmentResult, confirm]);
 
   const handleExit = () => {
+    exitFocusMode();
     if (id) sessionStorage.removeItem(`submit_failed_${id}`);
     setAssignViewMode('WORK');
     // Admin preview opens in a new tab — close it to return to the editor
@@ -802,7 +823,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <button
                 onClick={handleSaveAndExit}
                 disabled={isSavingExit || isSubmitting}
-                className="flex items-center gap-1.5 text-xs font-bold bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 text-xs font-bold bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-4 py-2.5 text-sm rounded-lg border border-[var(--border)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSavingExit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
                 {isSavingExit ? (saveExitElapsed > 2 ? interpolate(t('rv.saveExit.savingSec'), { seconds: saveExitElapsed }) : t('rv.saveExit.saving')) : t('rv.saveExit')}
@@ -810,7 +831,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               <button
                 onClick={handleAssessmentSubmit}
                 disabled={isSubmitting || isSavingExit}
-                className="flex items-center gap-1.5 text-xs font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 {isSubmitting ? t('rv.submitting') : t('rv.submit')}
@@ -1120,14 +1141,24 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 </span>
               )}
             </div>
-            <button
-              onClick={handleAssessmentSubmit}
-              disabled={isSubmitting}
-              className="flex items-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
-            >
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {isSubmitting ? t('rv.submitting') : t('rv.submit')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveAndExit}
+                disabled={isSavingExit || isSubmitting}
+                className="flex items-center gap-1.5 text-sm font-bold bg-[var(--surface-glass-heavy)] hover:bg-[var(--surface-glass)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-4 py-3 rounded-lg border border-[var(--border)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSavingExit ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                {isSavingExit ? t('rv.saveExit.saving') : t('rv.saveExit')}
+              </button>
+              <button
+                onClick={handleAssessmentSubmit}
+                disabled={isSubmitting || isSavingExit}
+                className="flex items-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isSubmitting ? t('rv.submitting') : t('rv.submit')}
+              </button>
+            </div>
           </div>
         </div>
       )}
