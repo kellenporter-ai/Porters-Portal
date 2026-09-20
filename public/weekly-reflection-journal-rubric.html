@@ -224,6 +224,16 @@
   }
   .examples li { margin-bottom: 6px; }
   .examples li:last-child { margin-bottom: 0; }
+  .explainer h2 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 15pt;
+    margin: 0 0 6px;
+  }
+  .explainer-framing { margin: 0 0 10px; color: var(--ink-soft); }
+  .explainer ol { margin: 0; padding-left: 22px; }
+  .explainer li { margin: 0 0 8px; line-height: 1.45; }
+  .explainer-compact { margin: 2px 0 6px; }
+
   .page-ref-line {
     color: var(--ink-soft);
     font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
@@ -302,6 +312,7 @@
     .tier { break-inside: avoid; }
     .question-block { break-before: page; }
     .question-block.first { break-before: auto; }
+    .explainer-wrap { break-after: page; }
     .question-block.collapsed .q-inner, .tier-detail.collapsed { display: block !important; }
     .grid-panel { overflow: visible; }
     .grid-cell { min-height: 0; }
@@ -333,6 +344,7 @@
     body.mode-card .card-ladder .cl { font-size: 5.6pt; padding: 3px 4px; }
     body.mode-card .card-ladder .cl strong { font-size: 5.8pt; }
     body.mode-card .card-footer { font-size: 6pt; margin: 5px 0 0; }
+    body.mode-card .explainer-compact { font-size: 6.4pt; margin: 1px 0 4px; line-height: 1.3; }
   }
 
   @page { margin: 0.4in; }
@@ -419,40 +431,24 @@ var GISTS = {
     skillGists: [
       "Name what you learned and describe it clearly",
       "Explain what activity helped you learn",
-      "Name what is unclear and why it matters",
-      "Finish all three questions each day, or note your absences."
+      "Name what is unclear and why it matters"
     ],
     cells: {
       q1: ["Nothing submitted.", "Names a topic but adds no description.", "Names a real idea, describes it too generally.", "Names a specific idea and describes it in own words.", "Explains with a detail or example anyone can follow."],
       q2: ["Nothing submitted.", "Repeats the answer without naming how it was learned.", "Names an activity but not how it helped.", "Names an activity and connects it to understanding.", "Explains why that way of learning worked."],
-      q3: ["Nothing submitted.", "Says \"nothing\" or \"I don't know\" with no idea.", "Names a real question but not why it matters.", "Names a specific question and says why it matters.", "Explains why it matters and proposes a next step."],
-      q4: [
-     "Nothing submitted, or placeholders only.",
-     "A genuine try on some days, under 60%.",
-     "About 3 of 5 days done (60 to 79%).",
-     "Most days done (80 to 99%).",
-     "Every school day done, or absences noted."
-    ]
+      q3: ["Nothing submitted.", "Says \"nothing\" or \"I don't know\" with no idea.", "Names a real question but not why it matters.", "Names a specific question and says why it matters.", "Explains why it matters and proposes a next step."]
     }
   },
   es: {
     skillGists: [
       "Nombra lo que aprendiste y descríbelo con claridad",
       "Explica qué actividad te ayudó a aprender",
-      "Nombra tu duda y explica por qué importa",
-      "Completa las tres preguntas cada día, o anota tus ausencias."
+      "Nombra tu duda y explica por qué importa"
     ],
     cells: {
       q1: ["No se entregó nada.", "Nombra un tema pero no agrega descripción.", "Nombra una idea real, la describe muy general.", "Nombra una idea específica y la describe con sus palabras.", "Explica con un detalle o ejemplo que cualquiera entiende."],
       q2: ["No se entregó nada.", "Repite la respuesta sin decir cómo se aprendió.", "Nombra una actividad pero no cómo ayudó.", "Conecta la actividad con cómo entendió la idea.", "Explica por qué esa forma de aprender funcionó."],
-      q3: ["No se entregó nada.", "Dice \"nada\" o \"no sé\" sin agregar una idea.", "Nombra una pregunta real pero no por qué importa.", "Nombra una pregunta específica y dice por qué importa.", "Explica por qué importa y propone un próximo paso."],
-      q4: [
-     "Nada entregado, o solo rellenos.",
-     "Un intento real algunos días, menos del 60%.",
-     "Unos 3 de 5 días hechos (60 a 79%).",
-     "La mayoría de los días hechos (80 a 99%).",
-     "Cada día de clases hecho, o ausencias anotadas."
-    ]
+      q3: ["No se entregó nada.", "Dice \"nada\" o \"no sé\" sin agregar una idea.", "Nombra una pregunta real pero no por qué importa.", "Nombra una pregunta específica y dice por qué importa.", "Explica por qué importa y propone un próximo paso."]
     }
   }
 };
@@ -467,15 +463,57 @@ var TIERS = [
 
 /* PDF page numbers per cell, per language. null = no page ref shown.
    Fill these in after the rubric PDFs are built. */
+var EXPLAINER = {
+  en: {
+    heading: "How your journal grade is decided",
+    framing: "Your journal is graded on three skills. Here is how your weekly grade works.",
+    points: [
+      { lead: "Your weakest day sets the grade.",
+        text: "Each skill is graded on your weakest day of the week. Example: you answer Question 3 at Developing level Monday through Thursday, but Emerging on Friday. Your Question 3 grade for the week is Emerging." },
+      { lead: "Absences are excused when noted.",
+        text: "If you are absent, fill in the absence note for that day with a few words about why (\"out sick\", \"family trip\"). No private details needed. That day does not count at all. It is left out of the week." },
+      { lead: "A missing day with no note counts as a weak day.",
+        text: "An in-school day with no entry and no absence note counts against you. It pulls each skill's grade down. The easy fix: write the absence note." },
+      { lead: "Grace floor + resubmits.",
+        text: "Any skill with at least one genuine attempt earns at least Emerging. You can resubmit your journal to raise your grades. The goal is Developing on every skill." }
+    ],
+    compact: "Your weakest day sets each skill's grade. Absent? Write the absence note and that day is excused. Goal: Developing on all three skills."
+  },
+  es: {
+    heading: "Cómo se decide tu calificación del diario",
+    framing: "Tu diario se califica en tres habilidades. Así funciona tu calificación semanal.",
+    points: [
+      { lead: "Tu día más débil decide la calificación.",
+        text: "Cada habilidad se califica según tu día más débil de la semana. Ejemplo: respondes la Pregunta 3 al nivel En desarrollo de lunes a jueves, pero Emergente el viernes. Tu calificación de la Pregunta 3 para la semana es Emergente." },
+      { lead: "Las ausencias se perdonan cuando las anotas.",
+        text: "Si estás ausente, llena la nota de ausencia para ese día con unas palabras sobre el porqué (\"enfermo\", \"viaje familiar\"). No necesitas detalles privados. Ese día no cuenta para nada. Se queda fuera de la semana." },
+      { lead: "Un día sin entrada y sin nota cuenta como un día débil.",
+        text: "Un día de clases sin entrada y sin nota de ausencia te perjudica. Baja la calificación de cada habilidad. La solución fácil: escribe la nota de ausencia." },
+      { lead: "Piso de gracia y entregas de nuevo.",
+        text: "Cualquier habilidad con al menos un intento genuino gana al menos Emergente. Puedes entregar tu diario de nuevo para subir tus calificaciones. La meta es En desarrollo en cada habilidad." }
+    ],
+    compact: "Tu día más débil decide la calificación de cada habilidad. ¿Ausente? Escribe la nota de ausencia y ese día se perdona. Meta: En desarrollo en las tres habilidades."
+  }
+};
+
+function explainerHTML(compact) {
+  var E = EXPLAINER[state.lang];
+  if (compact) return '<p class="explainer-compact">' + esc(E.compact) + "</p>";
+  var h = '<div class="panel explainer"><h2>' + esc(E.heading) + "</h2>" +
+    '<p class="explainer-framing">' + esc(E.framing) + "</p><ol>";
+  for (var i = 0; i < E.points.length; i++) {
+    h += "<li><strong>" + esc(E.points[i].lead) + "</strong> " + esc(E.points[i].text) + "</li>";
+  }
+  return h + "</ol></div>";
+}
+
 var PDF_PAGES = {
-  en: { "q1-t0": 1, "q1-t1": 1, "q1-t2": 2, "q1-t3": 3, "q1-t4": 4,
-        "q2-t0": 5, "q2-t1": 5, "q2-t2": 6, "q2-t3": 7, "q2-t4": 8,
-        "q3-t0": 9, "q3-t1": 9, "q3-t2": 10, "q3-t3": 11, "q3-t4": 12,
-        "q4-t0": 13, "q4-t1": 13, "q4-t2": 14, "q4-t3": 15, "q4-t4": 16 },
-  es: { "q1-t0": 1, "q1-t1": 1, "q1-t2": 2, "q1-t3": 3, "q1-t4": 4,
-        "q2-t0": 5, "q2-t1": 5, "q2-t2": 6, "q2-t3": 7, "q2-t4": 8,
-        "q3-t0": 9, "q3-t1": 9, "q3-t2": 10, "q3-t3": 11, "q3-t4": 12,
-        "q4-t0": 13, "q4-t1": 13, "q4-t2": 14, "q4-t3": 15, "q4-t4": 16 }
+  en: { "q1-t0": 2, "q1-t1": 2, "q1-t2": 3, "q1-t3": 4, "q1-t4": 5,
+        "q2-t0": 6, "q2-t1": 6, "q2-t2": 7, "q2-t3": 8, "q2-t4": 9,
+        "q3-t0": 10, "q3-t1": 10, "q3-t2": 11, "q3-t3": 12, "q3-t4": 13 },
+  es: { "q1-t0": 2, "q1-t1": 2, "q1-t2": 3, "q1-t3": 4, "q1-t4": 5,
+        "q2-t0": 6, "q2-t1": 6, "q2-t2": 7, "q2-t3": 8, "q2-t4": 9,
+        "q3-t0": 10, "q3-t1": 10, "q3-t2": 11, "q3-t3": 12, "q3-t4": 13 }
 };
 
 var DATA = {
@@ -607,66 +645,7 @@ var DATA = {
             "\"I don't fully see why mass did not change the cart's acceleration, because heavier feels like it should fall faster. I want to run the ramp test with a loaded cart to test my own prediction.\""
           ] }
         }
-      },
-      {
-   q: "Completion",
-   skill: "I am able to complete my journal every in-school day, and note my absences.",
-   tiers: {
-    t0: { chip: "Missing 0%", title: null, lines: [
-      "Missing: There is no genuine attempt to complete the journal.",
-      "-OR-",
-      "the whole week is blank, placeholder text, or copied questions with no real answers."
-    ]},
-    t1: { chip: "Emerging 55%", title: null, lines: [
-      "Emerging: There is an attempt to complete the journal",
-      "-BUT-",
-      "the week is under 60% complete, meaning less than three of five days hold genuine answers",
-      "-OR-",
-      "only one or two days have real answers and the rest are blank or placeholders.",
-      "-OR-",
-      "every answer is so thin it barely counts, but at least one day shows a genuine try.",
-      "Note: any genuine attempt, even on a single day, earns at least this tier. Missing days still count against you here."
-    ]},
-    t2: { chip: "Approaching 65%", title: null, lines: [
-      "Approaching: There is a partial attempt to complete the journal",
-      "-BECAUSE-",
-      "the week is 60 to 79% complete, meaning about three of five days hold genuine answers, or two full days plus partial answers that add up",
-      "-BUT-",
-      "one or two in-school days are missing or only partly answered",
-      "-OR-",
-      "an absence is noted for a missing day but the note has no explanation, so the day cannot be excused."
-    ], examples: [
-      "\"3 of 5 days done, Tuesday and Thursday blank\"",
-      "\"2 of 5 days done, 1 day half answered, 2 days blank\"",
-      "\"4 of 5 days done, Friday absence noted with no explanation\""
-    ]},
-    t3: { chip: "Developing 85%", title: null, lines: [
-      "Developing: There is a solid attempt to complete the journal",
-      "-BECAUSE-",
-      "the week is 80 to 99% complete, meaning at least four of five days hold genuine answers",
-      "-AND-",
-      "any missing day is either answered in part or has an absence note with a brief explanation, which excuses that day",
-      "-BUT-",
-      "one in-school day is missing or only partly answered, so the week is not fully complete."
-    ], examples: [
-      "\"4 of 5 days complete, no absences\"",
-      "\"5 of 5 days, one day with only 2 of 3 questions answered\"",
-      "\"3 of 5 days complete, 1 absence noted and explained, 1 day blank\""
-    ]},
-    t4: { chip: "Refining 100%", title: null, lines: [
-      "Refining: There is a strong attempt to complete the journal",
-      "-BECAUSE-",
-      "every in-school day holds genuine answers to all three questions, making the week 100% complete",
-      "-OR-",
-      "every missed day is excused: the absence note for that day is filled in with a brief explanation, and excused days do not count against the week.",
-      "If you are absent, fill in the absence note for that day with a few words about why, like \"out sick\" or \"family trip.\" You do not need to share private details. The day is excused and removed from the count."
-    ], examples: [
-      "\"5 of 5 days, all three questions answered each day\"",
-      "\"4 of 5 days complete, Friday absence noted and explained\"",
-      "\"3 of 5 days complete, 2 absences noted and explained\""
-    ]}
-   }
-  }
+      }
     ],
     ladder: [
       { chip: "Missing · 0%", text: "Nothing was submitted." },
@@ -804,66 +783,7 @@ var DATA = {
             "\"No veo del todo por qué la masa no cambió la aceleración del carrito, porque más pesado se siente como si debería caer más rápido. Quiero hacer la prueba de la rampa con un carrito cargado para comprobar mi propia predicción.\""
           ] }
         }
-      },
-      {
-   q: "Entrega completa",
-   skill: "Soy capaz de completar mi diario cada día de clases y anotar mis ausencias.",
-   tiers: {
-    t0: { chip: "Ausente 0%", title: "Ausente (Missing)", lines: [
-      "Ausente: No hay un intento genuino de completar el diario.",
-      "-O-",
-      "toda la semana está en blanco, tiene texto de relleno, o copia las preguntas sin respuestas reales."
-    ]},
-    t1: { chip: "Emergente 55%", title: "Emergente (Emerging)", lines: [
-      "Emergente: Hay un intento de completar el diario",
-      "-PERO-",
-      "la semana está completa en menos del 60%, es decir, menos de tres de cinco días tienen respuestas genuinas",
-      "-O-",
-      "solo uno o dos días tienen respuestas reales y el resto está en blanco o es de relleno.",
-      "-O-",
-      "todas las respuestas son tan breves que apenas cuentan, pero al menos un día muestra un intento genuino.",
-      "Nota: cualquier intento genuino, aunque sea en un solo día, gana al menos este nivel. Los días faltantes sí cuentan en contra aquí."
-    ]},
-    t2: { chip: "Progresando 65%", title: "Progresando (Approaching)", lines: [
-      "Progresando: Hay un intento parcial de completar el diario",
-      "-PORQUE-",
-      "la semana está completa entre el 60 y el 79%, es decir, unos tres de cinco días tienen respuestas genuinas, o dos días completos más respuestas parciales que suman",
-      "-PERO-",
-      "uno o dos días de clases están faltando o solo tienen respuestas parciales",
-      "-O-",
-      "una ausencia está anotada en un día faltante pero la nota no tiene explicación, así que el día no se puede excusar."
-    ], examples: [
-      "\"3 de 5 días hechos, martes y jueves en blanco\"",
-      "\"2 de 5 días hechos, 1 día medio respondido, 2 días en blanco\"",
-      "\"4 de 5 días hechos, ausencia del viernes anotada sin explicación\""
-    ]},
-    t3: { chip: "En desarrollo 85%", title: "En desarrollo (Developing)", lines: [
-      "En desarrollo: Hay un intento sólido de completar el diario",
-      "-PORQUE-",
-      "la semana está completa entre el 80 y el 99%, es decir, al menos cuatro de cinco días tienen respuestas genuinas",
-      "-Y-",
-      "cualquier día faltante está respondido en parte o tiene una nota de ausencia con una breve explicación, lo cual excusa ese día",
-      "-PERO-",
-      "un día de clases está faltando o solo tiene respuestas parciales, así que la semana no está completamente terminada."
-    ], examples: [
-      "\"4 de 5 días completos, sin ausencias\"",
-      "\"5 de 5 días, un día con solo 2 de 3 preguntas respondidas\"",
-      "\"3 de 5 días completos, 1 ausencia anotada y explicada, 1 día en blanco\""
-    ]},
-    t4: { chip: "Refinando 100%", title: "Refinando (Refining)", lines: [
-      "Refinando: Hay un intento fuerte de completar el diario",
-      "-PORQUE-",
-      "cada día de clases tiene respuestas genuinas a las tres preguntas, así que la semana está 100% completa",
-      "-O-",
-      "cada día perdido está excusado: la nota de ausencia de ese día está llena con una breve explicación, y los días excusados no cuentan en contra de la semana.",
-      "Si estás ausente, llena la nota de ausencia de ese día con unas pocas palabras sobre el porqué, como \"enfermo\" o \"viaje familiar.\" No necesitas compartir detalles privados. El día queda excusado y se quita del conteo."
-    ], examples: [
-      "\"5 de 5 días, las tres preguntas respondidas cada día\"",
-      "\"4 de 5 días completos, ausencia del viernes anotada y explicada\"",
-      "\"3 de 5 días completos, 2 ausencias anotadas y explicadas\""
-    ]}
-   }
-  }
+      }
     ],
     ladder: [
       { chip: "Ausente · 0%", text: "No se entregó nada." },
@@ -907,7 +827,7 @@ function pageRefHTML(qIdx, tierIdx) {
   return '<span class="page-ref">p. ' + n + "</span>";
 }
 
-/* ---------- Shared print markup: overview + 4 question blocks (all expanded) ---------- */
+/* ---------- Shared print markup: overview + 3 question blocks (all expanded) ---------- */
 
 function printTierHTML(qIdx, tierIdx) {
   var q = DATA[state.lang].questions[qIdx];
@@ -980,13 +900,14 @@ function landingHTML() {
   var S = STR[state.lang];
   var G = GISTS[state.lang];
   var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += explainerHTML(false);
   h += '<div class="panel grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
   for (var t = 0; t < TIERS.length; t++) {
     h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' +
       esc(DATA[state.lang].ladder[t].chip) + "</th>";
   }
   h += "</tr></thead><tbody>";
-  for (var q = 0; q < 4; q++) {
+  for (var q = 0; q < 3; q++) {
     h += '<tr><th class="rowhead" scope="row">' +
       '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
       '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
@@ -1022,7 +943,7 @@ function detailHTML(qIdx, tierIdx) {
   var tier = q.tiers[TIERS[tierIdx].key];
   var flat = qIdx * 5 + tierIdx;
   var prevFlat = flat - 1, nextFlat = flat + 1;
-  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= 19;
+  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= 14;
 
   var h = '<a class="backlink no-print" href="#/">&larr; ' + esc(S.backToGrid) + "</a>";
   h += '<p class="detail-qnum">' + esc(S.questionLabel + " " + (qIdx + 1)) + "</p>" +
@@ -1083,12 +1004,13 @@ function cardHTML() {
   var h = '<button type="button" class="print-btn no-print" onclick="window.print()">' + esc(S.printCard) + "</button>";
   h += '<div class="card-doc"><h1>' + esc(S.cardTitle) + "</h1>" +
     '<p class="card-sub">' + esc(S.cardSubtitle) + "</p>";
+  h += explainerHTML(true);
   h += '<div class="grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
   for (var t = 0; t < TIERS.length; t++) {
     h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' + esc(L[t].chip) + "</th>";
   }
   h += "</tr></thead><tbody>";
-  for (var q = 0; q < 4; q++) {
+  for (var q = 0; q < 3; q++) {
     h += '<tr><th class="rowhead" scope="row">' +
       '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
       '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
@@ -1115,7 +1037,8 @@ function cardHTML() {
 function printDocumentHTML() {
   var S = STR[state.lang];
   var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
-  for (var q = 0; q < 4; q++) h += printQuestionBlockHTML(q);
+  h += '<div class="explainer-wrap">' + explainerHTML(false) + "</div>";
+  for (var q = 0; q < 3; q++) h += printQuestionBlockHTML(q);
   h += ladderSummaryHTML();
   return h;
 }
@@ -1127,7 +1050,7 @@ function isCardView() {
 }
 
 function parseHash() {
-  var m = /^#\/q([1-4])\/t([0-4])$/.exec(location.hash || "");
+  var m = /^#\/q([1-3])\/t([0-4])$/.exec(location.hash || "");
   if (!m) return null;
   return { q: parseInt(m[1], 10) - 1, t: parseInt(m[2], 10) };
 }
