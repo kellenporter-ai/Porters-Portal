@@ -503,7 +503,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             case 'section': { const av = getUserSectionForClass(a, type) || ''; const bv = getUserSectionForClass(b, type) || ''; return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
             case 'status': { const av = a.isWhitelisted ? 1 : 0; const bv = b.isWhitelisted ? 1 : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
             case 'lastSeen': { const av = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0; const bv = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0; return sort.dir === 'asc' ? av - bv : bv - av; }
-            case 'xp': { const av = a.gamification?.classXp?.[type] || 0; const bv = b.gamification?.classXp?.[type] || 0; return sort.dir === 'asc' ? av - bv : bv - av; }
+            case 'xp': { const av = a.gamification?.xp || 0; const bv = b.gamification?.xp || 0; return sort.dir === 'asc' ? av - bv : bv - av; }
             case 'name': default: return sort.dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
         }
     });

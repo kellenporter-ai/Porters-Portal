@@ -287,7 +287,6 @@ export interface User {
   };
   gamification?: {
     xp: number; 
-    classXp?: { [key: string]: number }; 
     level: number;
     currency: number; // Cyber-Flux (GLOBAL — shared across classes)
     badges: string[];

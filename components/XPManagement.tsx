@@ -7,7 +7,6 @@ import EndgameStatsModal from './xp/EndgameStatsModal';
 import { dataService } from '../services/dataService';
 import SectionPicker from './SectionPicker';
 import { getClassProfile } from '../lib/classProfile';
-import { resolveXpAdjustClass } from '../lib/xpAdjust';
 import { useToast } from './ToastProvider';
 import { useConfirm } from './ConfirmDialog';
 import Modal from './Modal';
@@ -90,7 +89,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   // --- Handlers ---
   const handleAdjustXP = async (user: User, amount: number) => {
     try {
-        await dataService.adjustUserXP(user.id, amount, resolveXpAdjustClass(user));
+        await dataService.adjustUserXP(user.id, amount);
         toast.success(`${amount > 0 ? '+' : ''}${amount} XP applied to ${user.name}.`);
     } catch (e) {
         // The callable's HttpsError message is server-generated (safe to show);

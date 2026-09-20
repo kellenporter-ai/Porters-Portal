@@ -105,7 +105,7 @@ if (import.meta.env.DEV) {
     app, auth, db, storage, functions,
     findUserByName: async (name: string) => {
       const snap = await getDocs(query(collection(db, 'users'), where('name', '==', name)));
-      return snap.docs.map(d => ({ id: d.id, email: d.data().email, xp: d.data().gamification?.xp ?? 0, classXp: d.data().gamification?.classXp ?? {} }));
+      return snap.docs.map(d => ({ id: d.id, email: d.data().email, xp: d.data().gamification?.xp ?? 0 }));
     },
     getUser: async (uid: string) => {
       const snap = await getDoc(doc(db, 'users', uid));

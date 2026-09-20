@@ -124,16 +124,14 @@ describe('buildXPUpdates', () => {
     expect(Number.isNaN(updates['gamification.xp'])).toBe(false);
   });
 
-  it('tracks classXp and writes loot to the class profile for classType (not Uncategorized)', () => {
+  it('writes level-up loot to the class profile for classType (not Uncategorized)', () => {
     const data = {
       gamification: {
         xp: 49_100, level: 49, currency: 0, skillPoints: 0,
-        classXp: { Physics: 20 },
         classProfiles: { Physics: { inventory: [{ id: 'old' }] } },
       },
     };
     const { updates } = buildXPUpdates(data, 900, 'Physics');
-    expect(updates['gamification.classXp.Physics']).toBe(920);
     expect(updates['gamification.classProfiles.Physics.inventory']).toHaveLength(2);
   });
 
@@ -144,10 +142,10 @@ describe('buildXPUpdates', () => {
     expect(updates['gamification.classProfiles.Uncategorized.inventory']).toBeUndefined();
   });
 
-  it('treats a missing classXp map as 0', () => {
-    const data = { gamification: { xp: 0, level: 1 } };
-    const { updates } = buildXPUpdates(data, 10, 'Physics');
-    expect(updates['gamification.classXp.Physics']).toBe(10);
+  it('creates the class profile inventory on first level-up for that class', () => {
+    const data = { gamification: { xp: 49_100, level: 49 } };
+    const { updates } = buildXPUpdates(data, 900, 'Physics');
+    expect(updates['gamification.classProfiles.Physics.inventory']).toHaveLength(1);
   });
 
   it('rejects an invalid classType with invalid-argument (engagement-mirror parity)', () => {

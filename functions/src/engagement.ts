@@ -1548,7 +1548,6 @@ export const awardBehaviorXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, 
   const userRef = db.doc(`users/${studentId}`);
   batch.update(userRef, {
     "gamification.xp": admin.firestore.FieldValue.increment(xpAmount),
-    [`gamification.classXp.${classType}`]: admin.firestore.FieldValue.increment(xpAmount),
     "gamification.currency": admin.firestore.FieldValue.increment(fluxAmount),
   });
 

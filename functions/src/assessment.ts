@@ -803,10 +803,8 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
         if (!userSnap.exists) return;
         const data = userSnap.data()!;
         const gam = data.gamification || {};
-        const classXp = gam.classXp || {};
         transaction.update(userRef, {
           "gamification.xp": (gam.xp || 0) + xpEarned,
-          [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
         });
         // Post-commit: mark this submission XP-awarded. Best-effort (inside
         // try/catch) — a failed marker write may allow a bounded one-time
@@ -1204,10 +1202,8 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
       if (!userSnap.exists) return;
       const data = userSnap.data()!;
       const gam = data.gamification || {};
-      const classXp = gam.classXp || {};
       transaction.update(userRef, {
         "gamification.xp": (gam.xp || 0) + xpEarned,
-        [`gamification.classXp.${effectiveClass}`]: (classXp[effectiveClass] || 0) + xpEarned,
       });
     });
   }

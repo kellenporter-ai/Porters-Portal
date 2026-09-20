@@ -22,7 +22,6 @@ interface PublicProfile {
     xp: number;
     level: number;
     codename: string | null;
-    classXp: Record<string, number>;
     activeCosmetics: { frame?: string | null } | null;
   };
   updatedAt: FirebaseFirestore.FieldValue;
@@ -42,7 +41,6 @@ function buildPublicProfile(uid: string, data: FirebaseFirestore.DocumentData): 
       xp: typeof gam.xp === "number" ? gam.xp : 0,
       level: typeof gam.level === "number" ? gam.level : 1,
       codename: typeof gam.codename === "string" ? gam.codename : null,
-      classXp: gam.classXp && typeof gam.classXp === "object" ? gam.classXp : {},
       activeCosmetics: gam.activeCosmetics && typeof gam.activeCosmetics === "object" ? { frame: gam.activeCosmetics.frame ?? null } : null,
     },
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),

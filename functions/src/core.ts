@@ -190,11 +190,6 @@ export function buildXPUpdates(
     "gamification.xp": newXP,
     "gamification.level": newLevel,
   };
-  if (classType) {
-    const classXpMap = gam.classXp || {};
-    const currentClassXp = guardNumber(`classXp.${classType}`, classXpMap[classType], 0);
-    updates[`gamification.classXp.${classType}`] = Math.max(0, currentClassXp + boostedXP);
-  }
   if (leveledUp) {
     updates["gamification.currency"] = (gam.currency || 0) + 100;
     const spEarned = Array.from(
