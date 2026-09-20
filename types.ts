@@ -116,8 +116,8 @@ export interface LessonBlock {
   deltaLabel?: string;
   // Linked
   linkedBlockId?: string;
-  // Drawing
-  drawingMode?: 'free' | 'point_model' | 'extended_body';
+  // Drawing — 'diagram' is the simplified draw-and-label preset; absent/undefined = full mode
+  drawingMode?: 'free' | 'diagram';
   canvasHeight?: number;
   backgroundImage?: string;
   // Math Response

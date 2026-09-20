@@ -886,6 +886,10 @@ export const es: Dictionary = {
   'streak.freezeSingular': '{tokens} congelador de racha',
   'streak.freezePlural': '{tokens} congeladores de racha',
 
+  // ── Editor: modo de bloque de dibujo ──
+  'editor.drawingMode.full': 'Completo (todas las herramientas)',
+  'editor.drawingMode.diagram': 'Diagrama (simplificado)',
+
   // ── Varios (404) ──
   'misc.notFoundTitle': 'Señal perdida',
   'misc.notFoundBody': 'No se pudo localizar la transmisión que solicitaste. Puede haber sido movida, desclasificada o nunca existió.',

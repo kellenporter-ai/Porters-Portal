@@ -886,6 +886,10 @@ export const en: Dictionary = {
   'streak.freezeSingular': '{tokens} streak freeze',
   'streak.freezePlural': '{tokens} streak freezes',
 
+  // ── Editor: drawing block mode preset ──
+  'editor.drawingMode.full': 'Full (all tools)',
+  'editor.drawingMode.diagram': 'Diagram (simplified)',
+
   // ── Misc (404) ──
   'misc.notFoundTitle': 'Signal Lost',
   'misc.notFoundBody': 'The transmission you requested could not be located. It may have been moved, declassified, or never existed.',

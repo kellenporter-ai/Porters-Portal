@@ -847,6 +847,41 @@ const LinkedEditor: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onU
 };
 
 // ──────────────────────────────────────────────
+// Drawing block editor (mode selector + canvas height)
+// ──────────────────────────────────────────────
+
+const DrawingBlockEditor: React.FC<{ block: LessonBlock; onUpdate: (b: LessonBlock) => void }> = ({ block, onUpdate }) => (
+  <div className="space-y-3">
+    <div>
+      <label className={labelClass}>Title</label>
+      <input type="text" value={block.title || ''} onChange={e => onUpdate({ ...block, title: e.target.value })} placeholder="Drawing title..." className={inputClass} />
+    </div>
+    <div>
+      <label className={labelClass}>Instructions</label>
+      <textarea value={block.instructions || ''} onChange={e => onUpdate({ ...block, instructions: e.target.value })} placeholder="Explain what to draw..." className={textareaClass} rows={2} />
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className={labelClass} htmlFor="drawing-mode-select">Drawing Mode</label>
+        <select
+          id="drawing-mode-select"
+          value={block.drawingMode ?? 'free'}
+          onChange={e => onUpdate({ ...block, drawingMode: e.target.value as 'free' | 'diagram' })}
+          className={inputClass}
+        >
+          <option value="free">Full (all tools)</option>
+          <option value="diagram">Diagram (simplified)</option>
+        </select>
+      </div>
+      <div>
+        <label className={labelClass}>Canvas Height (px)</label>
+        <input type="number" value={block.canvasHeight || 400} onChange={e => onUpdate({ ...block, canvasHeight: parseInt(e.target.value) || 400 })} min={200} max={800} className={inputClass} />
+      </div>
+    </div>
+  </div>
+);
+
+// ──────────────────────────────────────────────
 // Block editor selector
 // ──────────────────────────────────────────────
 
@@ -872,6 +907,7 @@ const BlockEditor: React.FC<{ block: LessonBlock; allBlocks: LessonBlock[]; onUp
     case 'BAR_CHART': return <BarChartEditor block={block} onUpdate={onUpdate} />;
     case 'RANKING': return <RankingEditor block={block} onUpdate={onUpdate} />;
     case 'LINKED': return <LinkedEditor block={block} allBlocks={allBlocks} onUpdate={onUpdate} />;
+    case 'DRAWING': return <DrawingBlockEditor block={block} onUpdate={onUpdate} />;
     default: return null;
   }
 };

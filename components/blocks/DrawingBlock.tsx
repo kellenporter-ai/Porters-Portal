@@ -422,6 +422,11 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   // When readOnly, behave as if submitted — disable all interaction
   const locked = readOnly || submitted;
 
+  // 'diagram' preset: simplified draw-and-label toolset — pen, eraser, text,
+  // shapes, single-object select/move. No arrows, multi-select, copy/paste,
+  // layer ordering, or arrow precision editor. Full mode = default.
+  const isDiagramMode = block.drawingMode === 'diagram';
+
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [penColor, setPenColor] = useState('#000000');
   const [penWidth, setPenWidth] = useState(4);
@@ -471,6 +476,17 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
   } | null>(null);
   const [precisionLength, setPrecisionLength] = useState('');
   const [precisionAngle, setPrecisionAngle] = useState('');
+
+  // Diagram mode reset: when the preset flips to diagram, drop any stale
+  // arrow-tool / arrow-editor state that the diagram guards now block.
+  useEffect(() => {
+    if (isDiagramMode) {
+      setActiveTool(prev => (prev === 'arrow' ? 'select' : prev));
+      setShowVectorPicker(false);
+      setPrecisionEditor(null);
+      setSelectedIndices(new Set());
+    }
+  }, [isDiagramMode]);
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -948,7 +964,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         }
       }
       // Ctrl+click on arrow endpoint opens precision editor
-      if ((e as React.MouseEvent).ctrlKey || (e as React.MouseEvent).metaKey) {
+      if (!isDiagramMode && ((e as React.MouseEvent).ctrlKey || (e as React.MouseEvent).metaKey)) {
         for (let i = elements.length - 1; i >= 0; i--) {
           const el = elements[i];
           if (el.type === 'arrow' && Math.hypot(pos.x - el.end.x, pos.y - el.end.y) < 20) {
@@ -1035,6 +1051,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         }
       }
     } else if (activeTool === 'arrow') {
+      if (isDiagramMode) return; // diagram preset: arrow creation disabled
       setIsDrawing(true);
       setDragStart(pos);
       setDragEnd(pos);
@@ -1277,6 +1294,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       setElements(prev => [...prev, { type: 'stroke', points: currentStroke, color: penColor, width: penWidth }]);
       setCurrentStroke([]);
     } else if (activeTool === 'arrow' && dragStart && dragEnd) {
+      if (isDiagramMode) { setDragStart(null); setDragEnd(null); return; } // diagram preset: no arrows
       const dist = Math.hypot(dragEnd.x - dragStart.x, dragEnd.y - dragStart.y);
       if (dist > 10) {
         pendingCommitRef.current = true;
@@ -1611,12 +1629,14 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             if (e.shiftKey) handleRedo(); else handleUndo();
             return;
           case 'y': e.preventDefault(); handleRedo(); return;
-          case 'c': e.preventDefault(); handleCopy(); return;
-          case 'v': e.preventDefault(); handlePaste(); return;
+          case 'c': if (!isDiagramMode) { e.preventDefault(); handleCopy(); } return;
+          case 'v': if (!isDiagramMode) { e.preventDefault(); handlePaste(); } return;
           case 'a':
             e.preventDefault();
-            setSelectedIndices(new Set(elements.map((_, i) => i)));
-            setActiveTool('select');
+            if (!isDiagramMode) {
+              setSelectedIndices(new Set(elements.map((_, i) => i)));
+              setActiveTool('select');
+            }
             return;
         }
       }
@@ -1627,15 +1647,15 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           setShowShortcuts(false);
           break;
         case 'v': if (!mod) setActiveTool('select'); break;
-        case 'a': if (!mod) setActiveTool('arrow'); break;
+        case 'a': if (!mod && !isDiagramMode) setActiveTool('arrow'); break;
         case 'p': setActiveTool('pen'); break;
         case 's': setActiveTool('shape'); break;
         case 't': setActiveTool('text'); break;
         case 'e': setActiveTool('eraser'); break;
-        case 'c': if (!mod) toggleComponent(); break;
+        case 'c': if (!mod && !isDiagramMode) toggleComponent(); break;
         case '?': setShowShortcuts(v => !v); break;
-        case ']': if (e.shiftKey) bringToFront(); else moveUp(); break;
-        case '[': if (e.shiftKey) sendToBack(); else moveDown(); break;
+        case ']': if (!isDiagramMode) { if (e.shiftKey) bringToFront(); else moveUp(); } break;
+        case '[': if (!isDiagramMode) { if (e.shiftKey) sendToBack(); else moveDown(); } break;
         case 'arrowup':
         case 'arrowdown':
         case 'arrowleft':
@@ -1734,7 +1754,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
     // Compute midpoint + perpendicular offset for each arrow
     const raw: { idx: number; x: number; y: number }[] = [];
     elements.forEach((el, idx) => {
-      if (el.type !== 'arrow') return;
+      if (el.type !== 'arrow' || isDiagramMode) return;
       const mx = ((el.start.x + el.end.x) / 2) * scaleX;
       const my = ((el.start.y + el.end.y) / 2) * scaleY;
 
@@ -1790,7 +1810,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
       });
     }
     return positions;
-  }, [elements, canvasRef.current?.width, canvasRef.current?.height]);
+  }, [elements, isDiagramMode, canvasRef.current?.width, canvasRef.current?.height]);
 
   // ──────────────────────────────────────────
   // Render
@@ -1825,7 +1845,8 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
         >
           <ToolBtn tool="select" icon={<MousePointer2 size={16} />} label="Select" shortcut="V" />
 
-          {/* Vector/Arrow tool with type picker */}
+          {/* Vector/Arrow tool with type picker (hidden in diagram mode) */}
+          {!isDiagramMode && (
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => { setActiveTool('arrow'); setShowVectorPicker(v => !v); setShowColorPicker(false); setShowFillPicker(false); setShowWidthPicker(false); setShowShapePicker(false); }}
@@ -1902,6 +1923,7 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
               </div>
             )}
           </div>
+          )}
 
           <ToolBtn tool="pen" icon={<Pencil size={16} />} label="Pen" shortcut="P" />
 
@@ -2150,7 +2172,9 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
 
           <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
 
-          {/* Copy / Paste */}
+          {/* Copy / Paste (hidden in diagram mode) */}
+          {!isDiagramMode && (
+          <>
           <button
             onClick={handleCopy}
             disabled={selectedIndices.size === 0}
@@ -2179,8 +2203,12 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           >
             <ClipboardPaste size={16} />
           </button>
+          </>
+          )}
 
-          {/* Layer controls */}
+          {/* Layer controls (hidden in diagram mode) */}
+          {!isDiagramMode && (
+          <>
           <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
           <button
             onClick={bringToFront}
@@ -2238,6 +2266,8 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
           >
             <ArrowDownToLine size={14} />
           </button>
+          </>
+          )}
 
           <div style={{ width: '1px', height: '24px', background: '#ccc', margin: '0 4px' }} />
 
@@ -2553,25 +2583,29 @@ const DrawingBlock: React.FC<DrawingBlockProps> = ({ block, onComplete, savedRes
             </div>
             {[
               ['V', 'Select tool'],
-              ['A', 'Arrow / Force'],
+              ...(!isDiagramMode ? [['A', 'Arrow / Force']] : []),
               ['P', 'Pen'],
               ['S', 'Shape'],
               ['T', 'Text'],
               ['E', 'Eraser'],
-              ['C', 'Toggle component (dashed)'],
+              ...(!isDiagramMode ? [['C', 'Toggle component (dashed)']] : []),
               ['Del', 'Delete selected'],
+              ...(!isDiagramMode ? [
               ['Ctrl+C', 'Copy selected'],
               ['Ctrl+V', 'Paste'],
               ['Ctrl+A', 'Select all'],
+              ] : []),
               ['Ctrl+Z', 'Undo'],
               ['Ctrl+Shift+Z', 'Redo'],
               ['Shift', 'Snap angles / regular shapes'],
+              ...(!isDiagramMode ? [
               ['Shift+Click', 'Add to selection'],
               ['Ctrl+Click', 'Precision editor (on arrow tip)'],
               [']', 'Move up one layer'],
               ['[', 'Move down one layer'],
               ['}', 'Bring to front'],
               ['{', 'Send to back'],
+              ] : []),
               ['?', 'Toggle this panel'],
             ].map(([key, desc]) => (
               <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '13px' }}>
