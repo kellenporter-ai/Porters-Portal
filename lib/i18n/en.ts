@@ -329,6 +329,7 @@ export const en: Dictionary = {
   'rv.submit.errSessionExpired': 'Session expired. Please start a new assessment attempt.',
   'rv.submit.errNotEnrolled': 'You are not enrolled in the class for this assessment.',
   'rv.submit.errNotFound': 'This assessment was not found. It may have been updated — please refresh the page.',
+  'rv.submit.noSession': 'Cannot submit — the assessment could not start. Refresh the page or exit and try again.',
   'rv.submit.errSignedOut': 'You were signed out. Please sign in and try again.',
   'rv.retake.title': 'Retake Assessment',
   'rv.retake.messageBase': 'Your previous answers will be loaded so you can review and edit them before resubmitting.',

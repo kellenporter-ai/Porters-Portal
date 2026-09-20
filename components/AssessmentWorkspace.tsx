@@ -42,6 +42,14 @@ interface AssessmentWorkspaceProps {
   // Taking mode props
   onScrollToBlock?: (blockId: string) => void;
   onSubmit?: () => void;
+  /**
+   * Token-error state (Proctor's "Cannot Start Assessment"): no server session
+   * exists, so Submit must be disabled with a reason. Save & Exit stays enabled
+   * — its handler skips the flush and exits cleanly in this state.
+   */
+  submitDisabled?: boolean;
+  /** Accessible reason shown as the Submit buttons' title/tooltip. */
+  submitDisabledReason?: string;
   blockResponses?: Record<string, unknown>;
   lessonBlocks?: LessonBlock[];
 
@@ -72,6 +80,8 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
   children,
   onScrollToBlock: _onScrollToBlock,
   onSubmit,
+  submitDisabled,
+  submitDisabledReason,
   blockResponses: _blockResponses,
   lessonBlocks: _lessonBlocksProp,
   lockdownMode,
@@ -244,7 +254,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => onSubmit?.()}
-                  className="w-full text-left px-3 py-3 rounded-lg text-sm font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2"
+                  disabled={submitDisabled}
+                  title={submitDisabled ? submitDisabledReason : undefined}
+                  aria-disabled={submitDisabled || undefined}
+                  className="w-full text-left px-3 py-3 rounded-lg text-sm font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600"
                 >
                   <Send className="w-4 h-4 shrink-0" />
                   {t('workspace.submit')}
@@ -265,8 +278,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => onSubmit?.()}
-                  className="p-3 rounded-lg font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center justify-center"
-                  title={t('workspace.submit')}
+                  disabled={submitDisabled}
+                  title={submitDisabled ? (submitDisabledReason ?? t('workspace.submit')) : t('workspace.submit')}
+                  aria-disabled={submitDisabled || undefined}
+                  className="p-3 rounded-lg font-bold bg-green-600 hover:bg-green-500 text-white transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600"
                 >
                   <Send className="w-5 h-5" />
                 </button>
@@ -302,7 +317,10 @@ const AssessmentWorkspace: React.FC<AssessmentWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => onSubmit?.()}
-                  className="flex items-center gap-1.5 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg transition-all"
+                  disabled={submitDisabled}
+                  title={submitDisabled ? submitDisabledReason : undefined}
+                  aria-disabled={submitDisabled || undefined}
+                  className="flex items-center gap-1.5 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{t('workspace.submit')}</span>

@@ -113,6 +113,10 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   // Session token for assessment security (issued by startAssessmentSession Cloud Function)
   const sessionTokenRef = useRef<string | null>(null);
   const tokenSignatureRef = useRef<string | null>(null);
+  // Reactive mirror of Proctor's "Cannot Start Assessment" gate so dependent
+  // UI (Submit disabled state, Save & Exit flush skip) re-renders when the
+  // token request fails — sessionTokenRef alone doesn't trigger a render.
+  const [sessionTokenErrorState, setSessionTokenErrorState] = useState<string | null>(null);
   // Track whether we've already fired the feedbackReadAt write for this session
   const feedbackReadTrackedRef = useRef(false);
   // Suppress auto-recovery during retake flow (so clearing assessmentResult doesn't instantly re-populate)
@@ -142,6 +146,11 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const isPreview = user.role === UserRole.ADMIN;
   const isAssessment = activeAssignment?.isAssessment === true;
   const isLiveAssessment = isAssessment && !isPreview;
+  // Token-error state: Proctor's "Cannot Start Assessment" early return means
+  // no server session was issued — sessionTokenRef stays null. In this state
+  // Submit is meaningless (no attempt exists to submit) and Save & Exit must
+  // skip the flush race.
+  const noSessionToken = isLiveAssessment && (!sessionTokenRef.current || sessionTokenErrorState !== null);
 
   // Persist retake intent across page refreshes (crash recovery for retakes)
   useEffect(() => {
@@ -524,6 +533,15 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   const FLUSH_TIMEOUT_MS = 60_000;
 
   const handleSaveAndExit = async () => {
+    // Token-error state (Proctor's "Cannot Start Assessment" early return): no
+    // server session exists, so there is nothing to flush — the flush would
+    // hang on the 60s retry race or surface the scary save-failed modal.
+    // Skip it and exit fullscreen/navigate back directly.
+    if (noSessionToken) {
+      blockerProceedRef.current = true;
+      handleExit();
+      return;
+    }
     setIsSavingExit(true);
     blockerProceedRef.current = true;
     try {
@@ -830,7 +848,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
               <button
                 onClick={handleAssessmentSubmit}
-                disabled={isSubmitting || isSavingExit}
+                disabled={isSubmitting || isSavingExit || noSessionToken}
+                title={noSessionToken ? t('rv.submit.noSession') : undefined}
                 className="flex items-center gap-1.5 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
@@ -929,6 +948,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                 }}
                 onSubmit={handleAssessmentSubmit}
                 onExit={handleSaveAndExit}
+                submitDisabled={noSessionToken}
+                submitDisabledReason={noSessionToken ? t('rv.submit.noSession') : undefined}
               >
                 {/* Study Notes banner for retakes */}
                 {isRetakingRef.current && existingSubmission?.studentNotes && Object.keys(existingSubmission.studentNotes).length > 0 && (() => {
@@ -997,6 +1018,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
                   onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}
+                  onSessionTokenError={(err) => { setSessionTokenErrorState(err); }}
                   previewMode={isPreview}
                   hasSidebar={true}
                 />
@@ -1082,6 +1104,7 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   onGetMetricsAndResponses={getMetricsAndResponsesRef}
                   onSessionToken={(token) => { sessionTokenRef.current = token; }}
                   onTokenSignature={(sig) => { tokenSignatureRef.current = sig; }}
+                  onSessionTokenError={(err) => { setSessionTokenErrorState(err); }}
                   previewMode={isPreview}
                   hasSidebar={!!(activeAssignmentFull?.lessonBlocks && activeAssignmentFull?.lessonBlocks.length >= 3)}
                 />
@@ -1152,7 +1175,8 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
               </button>
               <button
                 onClick={handleAssessmentSubmit}
-                disabled={isSubmitting || isSavingExit}
+                disabled={isSubmitting || isSavingExit || noSessionToken}
+                title={noSessionToken ? t('rv.submit.noSession') : undefined}
                 className="flex items-center gap-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

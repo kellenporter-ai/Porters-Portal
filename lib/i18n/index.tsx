@@ -106,6 +106,9 @@ export const LocaleProvider: React.FC<LocaleProviderProps> = ({ userSettings, on
   const interpolate = useCallback((key: string, params: TemplateParams): string => {
     let value = t(key);
     for (const [name, paramValue] of Object.entries(params)) {
+      // Dictionaries use {{name}} (Handlebars-style) — replace both the
+      // brace-wrapped and plain-brace forms so templates never leak.
+      value = value.split(`{{${name}}}`).join(String(paramValue));
       value = value.split(`{${name}}`).join(String(paramValue));
     }
     return value;

@@ -329,6 +329,7 @@ export const es: Dictionary = {
   'rv.submit.errSessionExpired': 'La sesión expiró. Por favor comienza un nuevo intento de la evaluación.',
   'rv.submit.errNotEnrolled': 'No estás inscrito en la clase de esta evaluación.',
   'rv.submit.errNotFound': 'No se encontró esta evaluación. Es posible que haya sido actualizada — por favor actualiza la página.',
+  'rv.submit.noSession': 'No se puede enviar: la evaluación no pudo iniciarse. Actualiza la página o sal e inténtalo de nuevo.',
   'rv.submit.errSignedOut': 'Se cerró tu sesión. Por favor inicia sesión e inténtalo de nuevo.',
   'rv.retake.title': 'Repetir la Evaluación',
   'rv.retake.messageBase': 'Tus respuestas anteriores se cargarán para que puedas revisarlas y editarlas antes de volver a entregar.',

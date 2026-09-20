@@ -40,6 +40,13 @@ interface ProctorProps {
   onGetMetricsAndResponses?: React.MutableRefObject<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>;
   onSessionToken?: (token: string | null) => void;
   onTokenSignature?: (signature: string | null) => void;
+  /**
+   * Fired when the assessment session-token request has failed terminally and
+   * Proctor is showing the "Cannot Start Assessment" card (isAssessment &&
+   * sessionTokenError && !previewMode). Lets the parent gate Submit CTAs and
+   * skip the Save & Exit flush — there is no server attempt to flush/submit.
+   */
+  onSessionTokenError?: (error: string | null) => void;
   /** Admin preview mode — disables all Firestore writes, XP awards, and telemetry persistence. */
   previewMode?: boolean;
   /** Whether LessonProgressSidebar is visible — hides redundant HUD badges */
@@ -120,7 +127,7 @@ interface PracticeProgressDoc {
   completionHistory: CompletionSnapshot[];
 }
 
-const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, previewMode, hasSidebar, flushRef, stopAutosaveRef, lockdownMode, allowStudyMaterial }) => {
+const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentUrl, htmlContent, userId, assignmentId, classType, lessonBlocks, isAssessment, onGetMetricsAndResponses, onSessionToken, onTokenSignature, onSessionTokenError, previewMode, hasSidebar, flushRef, stopAutosaveRef, lockdownMode, allowStudyMaterial }) => {
   const metricsRef = useRef<TelemetryMetrics>(createInitialMetrics());
   const metricsFailCountRef = useRef(0);
   const lastInteractionRef = useRef<number>(Date.now());
@@ -292,6 +299,12 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   const blockTimingRef = useRef<Record<string, number>>({});
   const keystrokeTimesRef = useRef<number[]>([]);
   const [sessionTokenError, setSessionTokenError] = useState<string | null>(null);
+  // Notify the parent when the token-error gate (Cannot Start Assessment) is
+  // entered/exited so it can disable Submit CTAs and skip the Save & Exit flush.
+  useEffect(() => {
+    if (!isAssessment || previewMode) return;
+    onSessionTokenError?.(sessionTokenError);
+  }, [isAssessment, previewMode, sessionTokenError, onSessionTokenError]);
   const [assistiveTech, setAssistiveTech] = useState(false);
   const assistiveTechRef = useRef(false);
   const firstInteractionRef = useRef<number | null>(null);
@@ -1810,12 +1823,23 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
         <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400 mb-4" />
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{t('proctor.body.cannotStart')}</h3>
         <p className="text-[var(--text-secondary)] text-sm max-w-md mb-4">{sessionTokenError}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
-        >
-          {t('proctor.body.refreshPage')}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
+          >
+            {t('proctor.body.refreshPage')}
+          </button>
+          <button
+            onClick={() => {
+              // Guarded fullscreen exit (aa87ab7 pattern): no-op when not fullscreen.
+              if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            }}
+            className="px-4 py-2 bg-[var(--surface-glass-heavy)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] rounded-lg text-sm transition-colors"
+          >
+            {t('proctor.body.exitFullscreenTitle')}
+          </button>
+        </div>
       </div>
     );
   }
