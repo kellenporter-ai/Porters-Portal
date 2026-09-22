@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T21:50:52.331Z",
+  "generatedAt": "2026-09-22T00:44:37.711Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -60,6 +60,11 @@
       "path": "/games/guess-who-evidence.html",
       "fingerprint": "/games/guess-who-evidence.html",
       "sizeBytes": 1441302
+    },
+    {
+      "path": "/infrastructure-tagging/",
+      "fingerprint": "/infrastructure-tagging/",
+      "sizeBytes": 5057778
     },
     {
       "path": "/linearization-practice.html",
