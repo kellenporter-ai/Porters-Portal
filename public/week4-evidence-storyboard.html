@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storyboard: Evidence Types</title>
+<style>
+  :root {
+    --bg0: #0a0a1a;
+    --bg1: #1a1a2e;
+    --text: #e0e0e0;
+    --text-soft: #a0a0b0;
+    --text-faint: #6b6b80;
+    --accent: #6366f1;
+    --panel: rgba(255, 255, 255, 0.05);
+    --panel-border: rgba(255, 255, 255, 0.12);
+    --box-border: rgba(255, 255, 255, 0.22);
+    --success: #22c55e;
+    --focus: #818cf8;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(160deg, var(--bg0) 0%, var(--bg1) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    line-height: 1.5;
+    font-size: 17px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 28px 64px; }
+
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  button { font-family: inherit; }
+
+  /* ---------- Header ---------- */
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 28px;
+  }
+  .brand h1 {
+    font-size: clamp(24px, 3vw, 34px); font-weight: 800; margin: 0;
+    letter-spacing: -0.02em; line-height: 1.1;
+  }
+  .brand h1 .accent { color: var(--accent); }
+  .brand .sub { color: var(--text-soft); font-size: 15px; margin-top: 6px; max-width: 58ch; }
+
+  .lang-toggle {
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden;
+    background: var(--panel); flex-shrink: 0;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 18px; font-size: 13px; font-weight: 700;
+    letter-spacing: 0.12em; color: var(--text-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .lang-toggle button + button { border-left: 1px solid var(--panel-border); }
+  .lang-toggle button[aria-pressed="true"] { color: #fff; background: rgba(99, 102, 241, 0.35); }
+
+  /* ---------- Framing panel (home) ---------- */
+  .framing {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 14px; padding: 22px 26px; margin-bottom: 30px;
+  }
+  .framing .eyebrow {
+    text-transform: uppercase; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.18em; color: var(--accent); margin: 0 0 8px;
+  }
+  .framing p { margin: 0; font-size: 18px; max-width: 68ch; }
+
+  .home-prompt { font-size: 18px; font-weight: 600; color: var(--text-soft); margin: 0 0 16px; }
+
+  /* ---------- Story card grid ---------- */
+  .home-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+  }
+  .story-card {
+    display: block; text-align: left; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 14px; padding: 20px 20px 18px;
+    color: var(--text); text-decoration: none;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  }
+  .story-card:hover, .story-card:focus-visible {
+    border-color: var(--card-c, var(--accent));
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+  }
+  .story-card .card-icon { display: block; margin-bottom: 12px; }
+  .story-card .card-icon svg { display: block; }
+  .story-card .card-name { display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+  .story-card .card-crime { display: block; color: var(--text-soft); font-size: 15px; margin-top: 2px; }
+  .story-card .card-group { display: block; margin-top: 10px; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--card-c, var(--accent));
+  }
+  /* ---------- Story page ---------- */
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: none; border: 1px solid var(--panel-border); border-radius: 8px;
+    color: var(--text-soft); font-size: 14px; font-weight: 600;
+    padding: 8px 14px; cursor: pointer; margin-bottom: 18px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .back-link:hover { color: #fff; border-color: var(--accent); }
+
+  .story-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .story-head .head-icon { flex-shrink: 0; }
+  .story-head h2 { margin: 0; font-size: clamp(24px, 3vw, 32px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  .story-head .crime-tag {
+    display: inline-block; margin-top: 6px; font-size: 13px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--story-c, var(--accent));
+  }
+
+  .story-text {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 14px; padding: 22px 26px; margin-bottom: 20px;
+  }
+  .story-text p { margin: 0; font-size: 17.5px; max-width: 72ch; }
+  .story-text p + p { margin-top: 14px; }
+
+  .task-bar {
+    border-left: 4px solid var(--accent);
+    background: rgba(99, 102, 241, 0.10);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 20px; margin-bottom: 22px;
+    font-size: 17px; max-width: 78ch;
+  }
+  .task-bar strong { color: #c7c9ff; }
+
+  /* ---------- Evidence boxes ---------- */
+  .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .boxes { grid-template-columns: 1fr; } }
+  .ev-box {
+    border: 2px dashed var(--box-border); border-radius: 14px;
+    padding: 16px 18px; min-height: 170px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .ev-box .box-label {
+    font-size: 13px; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-soft);
+  }
+  .ev-box .box-body { flex: 1; }
+  .ev-box .box-hint { color: var(--text-faint); font-size: 14px; font-style: italic; }
+  .ev-box.filled { border-style: solid; border-color: var(--success); background: rgba(34, 197, 94, 0.06); }
+  .ev-box .box-label.filled-label { color: var(--success); }
+  .ev-box .answer { font-size: 16px; line-height: 1.5; }
+  .ev-box .answer .ans-why { color: var(--text-soft); }
+
+  /* ---------- Teacher toggle ---------- */
+  .teacher-bar {
+    margin-top: 24px; padding-top: 16px;
+    border-top: 1px solid var(--panel-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .teacher-bar .t-label { font-size: 13px; color: var(--text-faint); font-weight: 600; }
+  .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0; cursor: pointer;
+    background: rgba(255, 255, 255, 0.12); border: 1px solid var(--panel-border);
+    border-radius: 26px; transition: background 0.2s ease;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%;
+    left: 3px; top: 3px; background: #cfcfda; transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .switch input:checked + .slider { background: rgba(34, 197, 94, 0.35); border-color: var(--success); }
+  .switch input:checked + .slider::before { transform: translateX(20px); background: var(--success); }
+  .switch input:focus-visible + .slider { outline: 2px solid var(--focus); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><span class="accent" id="brand-title">Storyboard</span></h1>
+      <div class="sub" id="brand-sub"></div>
+    </div>
+    <div class="lang-toggle no-print" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+  <main id="app" aria-live="polite"></main>
+</div>
+<script>
+"use strict";
+
+var LANG_KEY = "w4sb-lang";
+
+var STRINGS = {
+  en: {
+    title: "Storyboard: Evidence Types",
+    brandSub: "Forensic Science, Week 4. Seven stories, seven groups. Pick your group's story.",
+    framingEyebrow: "Storyboard / Public Speaking",
+    framingText: "Each group will present their story and example evidence. Any successful challenge or defense will be rewarded with a gummy.",
+    homePrompt: "Choose your group's story:",
+    back: "Back to all stories",
+    taskPrefix: "Task:",
+    taskText: "Read the story again, create and write an example of each type of evidence which could tie the perpetrator to the crime committed. Explain why each example fits its label.",
+    groupPrefix: "Group",
+    boxHint: "Write your example on the whiteboard, then explain why it fits this label.",
+    teacherLabel: "Teacher: show example answers",
+    boxLabels: {
+      dc: "Direct Class Evidence",
+      di: "Direct Individual Evidence",
+      cc: "Circumstantial Class Evidence",
+      ci: "Circumstantial Individual Evidence"
+    }
+  },
+  es: {
+    title: "Guión gráfico: Tipos de evidencia",
+    brandSub: "Ciencias forenses, semana 4. Siete historias, siete grupos. Elige la historia de tu grupo.",
+    framingEyebrow: "Guión gráfico / Hablar en público",
+    framingText: "Cada grupo presentará su historia y sus ejemplos de evidencia. Todo desafío o defensa exitosa será recompensado con un gomín.",
+    homePrompt: "Elige la historia de tu grupo:",
+    back: "Volver a todas las historias",
+    taskPrefix: "Tarea:",
+    taskText: "Lee la historia otra vez, crea y escribe un ejemplo de cada tipo de evidencia que pueda vincular al autor con el delito cometido. Explica por qué cada ejemplo corresponde a su etiqueta.",
+    groupPrefix: "Grupo",
+    boxHint: "Escribe tu ejemplo en la pizarra y luego explica por qué corresponde a esta etiqueta.",
+    teacherLabel: "Docente: mostrar respuestas de ejemplo",
+    boxLabels: {
+      dc: "Evidencia directa de clase",
+      di: "Evidencia directa individual",
+      cc: "Evidencia circunstancial de clase",
+      ci: "Evidencia circunstancial individual"
+    }
+  }
+};
+
+/* Icon motifs, drawn once, tinted per story via currentColor. */
+function icon(kind, size, color) {
+  size = size || 40; color = color || "#6366f1";
+  var s = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 48 48" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">';
+  if (kind === "spray") {
+    s += '<rect x="14" y="14" width="14" height="28" rx="2"/>'
+      + '<path d="M14 20h14"/>'
+      + '<rect x="18" y="8" width="6" height="6"/>'
+      + '<path d="M28 9h6M28 12h8M28 15h6"/>'
+      + '<circle cx="17" cy="13" r="1" fill="' + color + '"/>';
+  } else if (kind === "invoice") {
+    s += '<path d="M12 6h24v36l-4-3-4 3-4-3-4 3-4-3-4 3z"/>'
+      + '<path d="M17 14h14M17 20h14M17 26h9"/>';
+  } else if (kind === "wallet") {
+    s += '<rect x="8" y="14" width="32" height="22" rx="3"/>'
+      + '<path d="M8 20h32"/>'
+      + '<rect x="28" y="24" width="12" height="8" rx="2"/>'
+      + '<circle cx="32" cy="28" r="1" fill="' + color + '"/>';
+  } else if (kind === "car") {
+    s += '<path d="M8 30l3-10a3 3 0 013-2h20a3 3 0 013 2l3 10"/>'
+      + '<rect x="6" y="30" width="36" height="9" rx="2"/>'
+      + '<circle cx="15" cy="39" r="3"/>'
+      + '<circle cx="33" cy="39" r="3"/>';
+  } else if (kind === "flood") {
+    s += '<rect x="10" y="6" width="28" height="24" rx="2"/>'
+      + '<path d="M16 14h16M16 20h10"/>'
+      + '<path d="M8 36c3-3 6-3 9 0s6 3 9 0 6-3 9 0 5 3 6 2"/>';
+  } else if (kind === "fire") {
+    s += '<path d="M14 20h20l-2 20H16z"/>'
+      + '<path d="M19 20v-4M24 20v-4M29 20v-4"/>'
+      + '<path d="M24 10c2 3-2 4 0 7"/>'
+      + '<path d="M31 8c2 3-2 4 0 7"/>';
+  } else if (kind === "bag") {
+    s += '<path d="M12 20h24l-2 20a3 3 0 01-3 3H17a3 3 0 01-3-3z"/>'
+      + '<path d="M18 20v-3a6 6 0 0112 0v3"/>'
+      + '<path d="M19 28h10"/>'
+      + '<circle cx="24" cy="34" r="2"/>';
+  }
+  return s + "</svg>";
+}
+
+var STORIES = [
+  {
+    id: "leo", name: "Leo", icon: "spray", color: "#38bdf8",
+    crime: { en: "Graffiti", es: "Grafiti" },
+    story: {
+      en: [
+        "The hiss of the spray can was a secret language in the silent alley. Leo pressed the nozzle, the cold mist painting a vibrant, angry streak of cobalt blue against the sterile beige brick of the new bank. His design, a complex web of interlocking letters, flowed from muscle memory. For ten minutes, the only sounds were the rattle of the can as he shook it and the sharp scent of aerosol paint cutting through the night air. He worked fast, his body a blur of motion, layering crimson and gold over the blue.",
+        "He took one step back, his breath fogging in the chill, to admire his work. The piece was alive, a burst of defiant color on a bland canvas. A distant siren made him flinch, the brief surge of pride instantly replaced by a jolt of fear. Grabbing his backpack full of cans, he melted back into the shadows of the side streets, leaving his screaming, vibrant crime to greet the morning sun."
+      ],
+      es: [
+        "El siseo de la lata de aerosol era un lenguaje secreto en el callejón silencioso. Leo apretó la boquilla y la fría neblina pintó una viva y furiosa línea de azul cobalto sobre el estéril ladrillo beige del nuevo banco. Su diseño, una compleja red de letras entrelazadas, brotaba de la memoria muscular. Durante diez minutos, los únicos sonidos fueron el traqueteo de la lata al agitarla y el olor agudo de la pintura en aerosol cortando el aire nocturno. Trabajaba rápido, su cuerpo un borrón de movimiento, superponiendo carmesí y dorado sobre el azul.",
+        "Dio un paso atrás, su aliento empañándose en el frío, para admirar su obra. La pieza estaba viva, una explosión de color desafiante sobre un lienzo insulso. Una sirena lejana lo hizo estremecerse, y el breve ímpetu de orgullo fue sustituido al instante por un sobresalto de miedo. Agarrando su mochila llena de latas, se fundió de nuevo entre las sombras de las calles laterales, dejando su estridente y vibrante crimen para saludar el sol de la mañana."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "A neighbor's security camera records a person spraying paint on the bank wall.", why: "Directly shows the crime happening, but the figure is too dark to identify as Leo, so it is class evidence." },
+        di: { ex: "A traffic camera clearly captures Leo's face as he lifts his mask while shaking the can.", why: "It directly shows the crime and identifies Leo as the person who committed it." },
+        cc: { ex: "Spray paint cans of the same rare brand and colors as the graffiti are found in Leo's backpack.", why: "It links Leo to the crime scene indirectly, and the brand of paint is shared by many people." },
+        ci: { ex: "Leo's fingerprints are lifted from a spray can left on the ground beside the wall.", why: "It links only Leo to the scene, but it does not directly show him painting." }
+      },
+      es: {
+        dc: { ex: "La cámara de seguridad de un vecino graba a una persona pintando con aerosol el muro del banco.", why: "Muestra directamente el delito, pero la figura es muy oscura para identificar a Leo, así que es evidencia de clase." },
+        di: { ex: "Una cámara de tráfico captura claramente el rostro de Leo al bajarse la máscara mientras agita la lata.", why: "Muestra directamente el delito e identifica a Leo como la persona que lo cometió." },
+        cc: { ex: "En la mochila de Leo se encuentran latas de aerosol de la misma marca y colores poco comunes del grafiti.", why: "Vincula a Leo con la escena de forma indirecta, y esa marca de pintura la comparten muchas personas." },
+        ci: { ex: "Se levantan las huellas dactilares de Leo de una lata de aerosol dejada en el suelo junto al muro.", why: "Vincula solo a Leo con la escena, pero no lo muestra pintando directamente." }
+      }
+    }
+  },
+  {
+    id: "clara", name: "Clara", icon: "invoice", color: "#f59e0b",
+    crime: { en: "Vendor invoice embezzlement", es: "Desfalco con facturas de proveedores" },
+    story: {
+      en: [
+        "Clara’s office was quiet, the only light coming from her monitor as she worked late again. It wasn’t a dramatic heist, just a quiet series of keystrokes. She created a new vendor in the accounting software: “Mid-Atlantic Paper Solutions.” She drafted a plausible invoice for a bulk order that never existed. With a final click, she approved a payment of $850, routing it not to a supplier, but to a shell account she’d opened a month prior. The numbers on the screen shifted, and it was done.",
+        "She logged out, the soft whir of the computer’s fan seeming to amplify the silence. She packed her bag and walked out, nodding to the night janitor. The crime was invisible, weightless, existing only as digital ghosts in the company server. But as she stepped into the cool night, she could feel its phantom weight settling in the pit of her stomach."
+      ],
+      es: [
+        "La oficina de Clara estaba en silencio; la única luz venía de su monitor mientras trabajaba hasta tarde otra vez. No fue un robo dramático, solo una tranquila serie de pulsaciones de teclas. Creó un proveedor nuevo en el software de contabilidad: “Mid-Atlantic Paper Solutions”. Redactó una factura verosímil por un pedido al por mayor que jamás existió. Con un último clic, aprobó un pago de $850, dirigiéndolo no a un proveedor, sino a una cuenta falsa que había abierto un mes antes. Los números en la pantalla cambiaron, y ya estaba hecho.",
+        "Cerró sesión, y el suave zumbido del ventilador de la computadora parecía amplificar el silencio. Guardó su bolso y salió, saludando con la cabeza al conserje nocturno. El delito era invisible, liviano, existiendo solo como fantasmas digitales en el servidor de la empresa. Pero al pisar la noche fresca, pudo sentir su peso fantasma asentándose en el fondo de su estómago."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "Company records show a payment of $850 approved from Clara's login and sent to a fake vendor.", why: "It directly documents the crime itself, but a login is used by anyone in her role, so it is class evidence." },
+        di: { ex: "Clara's work computer holds the draft invoice file, and forensic analysis timestamps it to her session.", why: "It ties the exact crime directly to Clara and only Clara." },
+        cc: { ex: "Bank records show the $850 landed in a shell account Clara opened a month earlier.", why: "It links Clara to the money indirectly, and bank accounts do not by themselves prove who typed the invoice." },
+        ci: { ex: "Keyboard forensics recover Clara's fingerprints on her office keyboard near the time of the payment.", why: "It shows only Clara touched that keyboard then, but does not directly show the keystrokes of the crime." }
+      },
+      es: {
+        dc: { ex: "Los registros de la empresa muestran un pago de $850 aprobado desde el acceso de Clara y enviado a un proveedor falso.", why: "Documenta directamente el delito, pero un acceso lo usa cualquier persona de su cargo, así que es evidencia de clase." },
+        di: { ex: "La computadora de trabajo de Clara guarda el archivo de la factura, y el análisis forense lo fecha a su sesión.", why: "Vincula el delito exacto directamente con Clara y solo con Clara." },
+        cc: { ex: "Los registros bancarios muestran que los $850 terminaron en una cuenta falsa que Clara abrió un mes antes.", why: "Vincula a Clara con el dinero de forma indirecta, y las cuentas bancarias por sí solas no prueban quién escribió la factura." },
+        ci: { ex: "La forensia del teclado recupera las huellas dactilares de Clara en su teclado cerca de la hora del pago.", why: "Muestra que solo Clara tocó ese teclado en ese momento, pero no muestra directamente las pulsaciones del delito." }
+      }
+    }
+  },
+  {
+    id: "jin", name: "Jin", icon: "wallet", color: "#a78bfa",
+    crime: { en: "Pickpocketing", es: "Carterismo" },
+    story: {
+      en: [
+        "The summer street festival was a chaotic sea of sound, color, and people. Jin moved through it like a ghost. He spotted his mark easily—a tourist, mesmerized by a street performer, his jacket open and his back pocket bulging. Jin initiated a gentle, accidental-seeming bump as he squeezed past. In that single moment of contact, his fingers, light and practiced, dipped into the pocket and retrieved the worn leather wallet. It was a fluid, single motion, over before the man even registered the contact.",
+        "Ducking into a cramped alcove between two food stalls, Jin’s heart hammered with adrenaline. He swiftly removed the cash—six twenties and a ten—and shoved the bills into his own pocket. He glanced at the man’s ID inside the wallet before tossing it into an overflowing trash can. Seeing the stranger's smiling face made the warm cash in his pocket suddenly feel cold and dirty."
+      ],
+      es: [
+        "El festival callejero de verano era un caótico mar de sonido, color y gente. Jin se movía entre la multitud como un fantasma. Localizó a su víctima con facilidad: un turista, embelesado con un artista callejero, con la chaqueta abierta y el bolsillo trasero abultado. Jin provocó un leve golpe, que parecía accidental, al apretarse para pasar. En ese único instante de contacto, sus dedos, ligeros y entrenados, se deslizaron en el bolsillo y sacaron la gastada cartera de cuero. Fue un movimiento fluido y único, terminado antes de que el hombre siquiera registrara el contacto.",
+        "Agachándose en un estrecho hueco entre dos puestos de comida, el corazón de Jin martilleaba por la adrenalina. Retiró rápidamente el efectivo, seis billetes de veinte y uno de diez, y se metió los billetes en su propio bolsillo. Miró la identificación del hombre dentro de la cartera antes de tirarla a un bote de basura desbordado. Al ver la sonriente cara del desconocido, el cálido dinero en su bolsillo de pronto se sintió frío y sucio."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "An eyewitness describes a man in a red festival hoodie loitering near the alcove.", why: "It places someone at the scene, but a hoodie description fits many festivalgoers, so it is class evidence." },
+        di: { ex: "Clear surveillance video shows Jin's face during the bump as he lifts the wallet from the pocket.", why: "It directly shows the theft and identifies Jin as the thief." },
+        cc: { ex: "Six twenties and a ten are found folded in Jin's pocket, matching the stolen cash exactly.", why: "It links Jin to the theft indirectly, and cash of those denominations is common to many people." },
+        ci: { ex: "Jin's fingerprints are lifted from the trashed wallet recovered from the trash can.", why: "It links only Jin to the discarded wallet, but does not directly show the pickpocketing." }
+      },
+      es: {
+        dc: { ex: "Un testigo ocular describe a un hombre con una sudadera roja del festival merodeando cerca del hueco.", why: "Sitúa a alguien en la escena, pero la descripción de una sudadera encaja con muchos asistentes, así que es evidencia de clase." },
+        di: { ex: "Un video de vigilancia claro muestra el rostro de Jin durante el golpe mientras saca la cartera del bolsillo.", why: "Muestra directamente el robo e identifica a Jin como el ladrón." },
+        cc: { ex: "Se encuentran seis billetes de veinte y uno de diez doblados en el bolsillo de Jin, coincidiendo exactamente con el efectivo robado.", why: "Vincula a Jin con el robo de forma indirecta, y ese efectivo en esas denominaciones es común en muchas personas." },
+        ci: { ex: "Se levantan las huellas dactilares de Jin de la cartera tirada recuperada del bote de basura.", why: "Vincula solo a Jin con la cartera descartada, pero no muestra directamente el carterismo." }
+      }
+    }
+  },
+  {
+    id: "alex", name: "Alex", icon: "car", color: "#60a5fa",
+    crime: { en: "Car theft", es: "Robo de auto" },
+    story: {
+      en: [
+        "The old sedan sat under a flickering streetlight, looking forgotten. It was after 2 a.m. and the suburban street was dead. Alex popped the lock with a hangar in under a minute, the soft click sounding like a gunshot in the stillness. He slid behind the wheel, the vinyl seat cracking in protest. He tore the plastic from under the steering column, exposing a nest of wires. Following a diagram he’d memorized online, he stripped two wires and, with a trembling hand, touched them together. A spark flew, and the engine coughed violently to life.",
+        "They peeled away from the curb, tires squealing on the pavement. The initial rush was euphoric, the wind whipping through the open windows as they raced down the empty parkway. But soon, paranoia began to creep in. Every pair of headlights in the rearview mirror became a threat. The joyride soured, the stolen freedom now just a desperate, high-speed search for a place to abandon the car and vanish."
+      ],
+      es: [
+        "El viejo sedán estaba bajo una luz de calle parpadeante, aparentemente olvidado. Era después de las 2 a.m. y la calle suburbana estaba muerta. Alex forzó la cerradura con una percha en menos de un minuto, y el suave clic sonó como un disparo en el silencio. Se deslizó tras el volante, y el asiento de vinilo crujió en señal de protesta. Rasgó el plástico bajo la columna de dirección, dejando al descubierto un nido de cables. Siguiendo un diagrama que había memorizado en internet, peló dos cables y, con mano temblorosa, los tocó entre sí. Saltó una chispa, y el motor tosió violentamente al arrancar.",
+        "Arrancaron alejándose de la acera, con los neumáticos chillando sobre el pavimento. La emoción inicial fue eufórica, el viento azotando por las ventanas abiertas mientras corrían por la desierta autopista. Pero pronto la paranoia empezó a apoderarse. Cada par de faros en el espejo retrovisor se volvió una amenaza. El paseo se agrió, y la libertad robada se convirtió solo en una desesperada búsqueda a alta velocidad de un lugar donde abandonar el auto y desaparecer."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "A doorbell camera records a sedan being hot-wired and driven away on the quiet street.", why: "It directly shows the theft, but the recorder's angle never shows the driver's face, so it is class evidence." },
+        di: { ex: "A gas station camera captures Alex's face clearly as he fills up the stolen sedan an hour later.", why: "It directly connects Alex to the stolen car and identifies him as the driver." },
+        cc: { ex: "Fibers from a distinctive plaid jacket are found on the stripped wires under the steering column.", why: "It links Alex's jacket to the scene indirectly, and that fabric is sold in many stores." },
+        ci: { ex: "Alex's fingerprints are lifted from the torn plastic under the steering column.", why: "It shows only Alex touched that spot, but does not directly show him stealing the car." }
+      },
+      es: {
+        dc: { ex: "Una cámara de timbre graba cómo un sedán es puenteado y se aleja por la calle tranquila.", why: "Muestra directamente el robo, pero el ángulo jamás muestra el rostro del conductor, así que es evidencia de clase." },
+        di: { ex: "Una cámara de gasolinera captura claramente el rostro de Alex mientras llena el tanque del sedán robado una hora después.", why: "Conecta directamente a Alex con el auto robado e lo identifica como el conductor." },
+        cc: { ex: "Se encuentran fibras de una chaqueta a cuadros muy distintiva sobre los cables pelados bajo la columna de dirección.", why: "Vincula la chaqueta de Alex con la escena de forma indirecta, y esa tela se vende en muchas tiendas." },
+        ci: { ex: "Se levantan las huellas dactilares de Alex del plástico rasgado bajo la columna de dirección.", why: "Muestra que solo Alex tocó ese lugar, pero no lo muestra directamente robando el auto." }
+      }
+    }
+  },
+  {
+    id: "mark", name: "Mark", icon: "flood", color: "#22d3ee",
+    crime: { en: "Insurance fraud", es: "Fraude de seguros" },
+    story: {
+      en: [
+        "The plan felt both brilliant and sickening. For two days, Mark had left the upstairs sink faucet dripping, a slow, methodical plink-plink-plink onto the bathroom floor. Now, standing in his basement, he surveyed the \"damage.\" A wide, dark stain spread across the ceiling drywall, and water pooled around the ruined cardboard boxes he had strategically placed. He took a hammer and deliberately cracked the base of an old television, then unplugged the deep freezer, leaving the door ajar.",
+        "He took a deep breath and dialed the number for his insurance company. As the phone rang, he practiced the panicked, distraught tone he would use. \"Hello? Yes, my basement is completely flooded… I don't know what happened!\" Each word was a carefully constructed lie, and the foundation of his home suddenly felt as unstable as his story."
+      ],
+      es: [
+        "El plan le parecía a la vez brillante y asqueante. Durante dos días, Mark había dejado el grifo del lavabo de arriba goteando, un lento y metódico plink-plink-plink sobre el piso del baño. Ahora, de pie en su sótano, examinaba los \"daños\". Una mancha oscura y amplia se extendía por el cielorraso de yeso, y el agua se acumulaba alrededor de las arruinadas cajas de cartón que había colocado estratégicamente. Tomó un martillo y agrietó deliberadamente la base de un televisor viejo, luego desconectó el congelador dejando la puerta entreabierta.",
+        "Respiró hondo y marcó el número de su compañía de seguros. Mientras sonaba el teléfono, practicaba el tono de pánico y angustia que usaría. \"¿Aló? Sí, mi sótano está completamente inundado… ¡No sé qué pasó!\" Cada palabra era una mentira cuidadosamente construida, y los cimientos de su casa de pronto se sintieron tan inestables como su historia."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "A plumber's report states the upstairs faucet had a worn washer that only drips when turned slightly open.", why: "It directly shows the water damage was staged, but any household faucet shares this feature, so it is class evidence." },
+        di: { ex: "Mark's own text messages to a friend, sent before the claim, say the basement \"accident\" is ready.", why: "His own words directly prove he planned the fraud and identify him." },
+        cc: { ex: "The hammer used to crack the television is found in Mark's toolbox with matching paint flecks.", why: "It links the staging to Mark indirectly, and hammers of that model are common." },
+        ci: { ex: "Mark's fingerprints in his own fresh dust are lifted from the inside of the freezer door he unplugged.", why: "It shows only Mark opened that freezer recently, but does not directly show the fraud." }
+      },
+      es: {
+        dc: { ex: "El informe de un plomero indica que el grifo tenía una arandela desgastada que solo gotea cuando se deja ligeramente abierto.", why: "Muestra directamente que los daños fueron provocados, pero cualquier grifo doméstico comparte esa pieza, así que es evidencia de clase." },
+        di: { ex: "Los propios mensajes de texto de Mark a un amigo, enviados antes del reclamo, dicen que el \"accidente\" del sótano está listo.", why: "Sus propias palabras prueban directamente que planeó el fraude y lo identifican." },
+        cc: { ex: "El martillo usado para agrietar el televisor se encuentra en la caja de herramientas de Mark con restos de pintura coincidentes.", why: "Vincula la puesta en escena con Mark de forma indirecta, y martillos de ese modelo son comunes." },
+        ci: { ex: "Las huellas dactilares de Mark en su propio polvo reciente se levantan del interior de la puerta del congelador que desconectó.", why: "Muestra que solo Mark abrió ese congelador recientemente, pero no muestra directamente el fraude." }
+      }
+    }
+  },
+  {
+    id: "david", name: "David", icon: "fire", color: "#f97316",
+    crime: { en: "Arson", es: "Incendio provocado" },
+    story: {
+      en: [
+        "David watched the restaurant from across the street, the embers of his anger glowing hotter than the cigarette in his hand. They had fired him for being five minutes late one too many times. He waited until the last employee left before circling around to the back alley. He unscrewed the cap from a small gas can and liberally doused the overflowing dumpster filled with cardboard and greasy rags. The chemical stench was overpowering.",
+        "He struck a match, the tiny flame dancing in the darkness. For a second he hesitated, but the memory of his manager's condescending smirk pushed him forward. He tossed the match. The dumpster erupted with a deep whoosh, the flames climbing the brick wall with frightening speed. David didn't stay to watch. He ran, the light of the fire chasing his shadow down the street, the satisfaction he’d expected replaced by a hollow, roaring fear."
+      ],
+      es: [
+        "David observaba el restaurante desde el otro lado de la calle, las brasas de su ira brillando más calientes que el cigarrillo en su mano. Lo habían despedido por llegar cinco minutos tarde una vez de más. Esperó hasta que el último empleado saliera antes de rodear hacia el callejón trasero. Destornilló la tapa de una pequeña lata de gasolina y empapó generosamente el contenedor de basura desbordado lleno de cartón y trapos grasosos. El hedor químico era abrumador.",
+        "Encendió un fósforo, y la pequeña llama danzaba en la oscuridad. Por un segundo dudó, pero el recuerdo de la sonrisa condescendiente de su gerente lo empujó hacia adelante. Lanzó el fósforo. El contenedor estalló con un profundo zumbido, y las llamas treparon por la pared de ladrillo a una velocidad aterradora. David no se quedó a mirar. Corrió, con la luz del fuego persiguiendo su sombra calle abajo, y la satisfacción que esperaba fue sustituida por un vacío y rugiente miedo."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "A security camera across the street records the dumpster erupting in flames shortly after 2 a.m.", why: "It directly shows the arson, but the camera never captures the arsonist's face, so it is class evidence." },
+        di: { ex: "A doorbell camera two doors down clearly shows David tossing the match and running.", why: "It directly shows the act of arson and identifies David as the person who did it." },
+        cc: { ex: "Gasoline of the same uncommon brand is found on David's jacket sleeve.", why: "It links David to the crime indirectly, and that brand of gasoline is bought by many people." },
+        ci: { ex: "David's fingerprints are lifted from the gas can left beside the dumpster.", why: "It links only David to the can, but does not directly show him starting the fire." }
+      },
+      es: {
+        dc: { ex: "Una cámara de seguridad al otro lado de la calle graba el contenedor estallando en llamas poco después de las 2 a.m.", why: "Muestra directamente el incendio provocado, pero la cámara jamás capta el rostro del incendiario, así que es evidencia de clase." },
+        di: { ex: "Una cámara de timbre dos puertas más abajo muestra claramente a David lanzando el fósforo y corriendo.", why: "Muestra directamente el acto de incendio provocado e identifica a David como quien lo cometió." },
+        cc: { ex: "Gasolina de la misma marca poco común se encuentra en la manga de la chaqueta de David.", why: "Vincula a David con el delito de forma indirecta, y esa marca de gasolina la compran muchas personas." },
+        ci: { ex: "Se levantan las huellas dactilares de David de la lata de gasolina dejada junto al contenedor.", why: "Vincula solo a David con la lata, pero no lo muestra directamente iniciando el fuego." }
+      }
+    }
+  },
+  {
+    id: "maria", name: "Maria", icon: "bag", color: "#f472b6",
+    crime: { en: "Counterfeit handbag sale", es: "Venta de bolsos falsificados" },
+    story: {
+      en: [
+        "Maria laid the handbags out on her blanket, the fake logos glinting in the afternoon sun. “Gucci, Prada, best price!” she called out, her voice part of the city’s chorus of street vendors. A young couple stopped, the woman picking up a \"Chanel\" with obvious excitement. Maria launched into her script, praising the \"genuine leather\" and \"quality stitching\" of the polyurethane bag that cost her twelve dollars to buy. The girl bought it, handing over eighty dollars with a thrilled smile.",
+        "As the couple walked away, proudly swinging their new prize, Maria quickly folded the cash. Her eyes weren't searching for the next customer, but scanning the crowd for the familiar uniforms of patrol officers. The thrill of the sale was fleeting, instantly replaced by the familiar, gnawing anxiety. She was just a small-time con artist, and the fear of losing it all was the only authentic thing she sold."
+      ],
+      es: [
+        "Maria extendió los bolsos sobre su manta, con las falsas marcas brillando al sol de la tarde. \"¡Gucci, Prada, mejor precio!\", gritaba, su voz parte del coro urbano de vendedores ambulantes. Una pareja joven se detuvo, y la mujer tomó un \"Chanel\" con evidente emoción. Maria comenzó su discurso, elogiando el \"cuero genuino\" y la \"costura de calidad\" del bolso de poliuretano que le había costado doce dólares comprar. La chica lo compró, entregando ochenta dólares con una sonrisa emocionada.",
+        "Mientras la pareja se alejaba, sacudiendo con orgullo su nuevo premio, Maria dobló rápidamente el dinero. Sus ojos no buscaban al próximo cliente, sino que recorrían la multitud buscando los uniformes familiares de los oficiales de patrulla. La emoción de la venta fue efímera, sustituida al instante por la familiar y roedora ansiedad. Era solo una estafadora de poca monta, y el miedo a perderlo todo era lo único auténtico que vendía."
+      ]
+    },
+    answers: {
+      en: {
+        dc: { ex: "An undercover officer records Maria calling out \"Gucci, Prada, best price!\" and selling a fake bag.", why: "It directly shows the sale, but the audio alone could match any vendor, so it is class evidence." },
+        di: { ex: "A city camera clearly shows Maria's face handing over the fake Chanel for eighty dollars.", why: "It directly shows the crime and identifies Maria as the seller." },
+        cc: { ex: "Fake bags matching Maria's stock are found in a storage unit rented in her cousin's name.", why: "It links her operation to the goods indirectly, and identical fakes circulate widely." },
+        ci: { ex: "Maria's fingerprints are lifted from a price tag she taped to a counterfeit bag.", why: "It links only Maria to that specific bag, but does not directly show the sale." }
+      },
+      es: {
+        dc: { ex: "Un oficial encubierto graba a Maria gritando \"¡Gucci, Prada, mejor precio!\" y vendiendo un bolso falso.", why: "Muestra directamente la venta, pero el audio por sí solo podría corresponder a cualquier vendedora, así que es evidencia de clase." },
+        di: { ex: "Una cámara de la ciudad muestra claramente el rostro de Maria entregando el Chanel falso por ochenta dólares.", why: "Muestra directamente el delito e identifica a Maria como la vendedora." },
+        cc: { ex: "Bolsos falsos iguales al inventario de Maria se encuentran en un trastero rentado a nombre de su prima.", why: "Vincula su operación con la mercancía de forma indirecta, y las mismas falsificaciones circulan ampliamente." },
+        ci: { ex: "Se levantan las huellas dactilares de Maria de una etiqueta de precio que pegó a un bolso falsificado.", why: "Vincula solo a Maria con ese bolso específico, pero no muestra directamente la venta." }
+      }
+    }
+  }
+];
+
+var BOX_ORDER = ["dc", "di", "cc", "ci"];
+
+var state = {
+  lang: "en",
+  teacher: {}, // storyId -> bool
+  route: null  // null = home, else story id
+};
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function S() { return STRINGS[state.lang]; }
+
+function setLang(lang) {
+  state.lang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  document.documentElement.lang = lang;
+  document.title = S().title;
+  document.getElementById("brand-sub").textContent = S().brandSub;
+  document.getElementById("lang-en").setAttribute("aria-pressed", String(lang === "en"));
+  document.getElementById("lang-es").setAttribute("aria-pressed", String(lang === "es"));
+  render();
+}
+
+function getStory(id) {
+  for (var i = 0; i < STORIES.length; i++) if (STORIES[i].id === id) return STORIES[i];
+  return null;
+}
+
+function readRoute() {
+  var h = (location.hash || "").replace(/^#\/?/, "").toLowerCase();
+  return h || null;
+}
+
+function navHome() { location.hash = "/"; }
+
+function render() {
+  var app = document.getElementById("app");
+  state.route = readRoute();
+  var story = state.route ? getStory(state.route) : null;
+  if (state.route && !story) {
+    // Unknown route: show home
+    state.route = null;
+  }
+  app.innerHTML = story ? storyHTML(story) : homeHTML();
+  bindEvents(story);
+}
+
+function homeHTML() {
+  var t = S();
+  var h = '<section class="framing">'
+    + '<p class="eyebrow">' + esc(t.framingEyebrow) + '</p>'
+    + '<p>' + esc(t.framingText) + '</p>'
+    + '</section>'
+    + '<p class="home-prompt">' + esc(t.homePrompt) + '</p>'
+    + '<div class="home-grid">';
+  for (var i = 0; i < STORIES.length; i++) {
+    var st = STORIES[i];
+    h += '<a class="story-card" href="#/' + st.id + '" style="--card-c:' + st.color + '">'
+      + '<span class="card-icon">' + icon(st.icon, 40, st.color) + '</span>'
+      + '<span class="card-name">' + esc(st.name) + '</span>'
+      + '<span class="card-crime">' + esc(st.crime[state.lang]) + '</span>'
+      + '<span class="card-group">' + esc(t.groupPrefix) + ' ' + esc(st.name) + '</span>'
+      + '</a>';
+  }
+  return h + '</div>';
+}
+
+function storyHTML(st) {
+  var t = S();
+  var show = !!state.teacher[st.id];
+  var h = '<button type="button" class="back-link" id="back-btn">&larr; ' + esc(t.back) + '</button>'
+    + '<div class="story-head" style="--story-c:' + st.color + '">'
+    + '<span class="head-icon">' + icon(st.icon, 52, st.color) + '</span>'
+    + '<div><h2>' + esc(st.name) + '</h2>'
+    + '<span class="crime-tag">' + esc(st.crime[state.lang]) + '</span></div>'
+    + '</div>'
+    + '<div class="story-text">';
+  for (var i = 0; i < st.story[state.lang].length; i++) {
+    h += '<p>' + esc(st.story[state.lang][i]) + '</p>';
+  }
+  h += '</div>'
+    + '<div class="task-bar"><strong>' + esc(t.taskPrefix) + '</strong> ' + esc(t.taskText) + '</div>'
+    + '<div class="boxes">';
+  for (var j = 0; j < BOX_ORDER.length; j++) {
+    var key = BOX_ORDER[j];
+    var label = t.boxLabels[key];
+    var ans = show ? st.answers[state.lang][key] : null;
+    h += '<div class="ev-box' + (ans ? ' filled' : '') + '">'
+      + '<div class="box-label' + (ans ? ' filled-label' : '') + '">' + esc(label) + '</div>';
+    if (ans) {
+      h += '<div class="box-body answer"><strong>' + esc(ans.ex) + '</strong><br>'
+        + '<span class="ans-why">' + esc(ans.why) + '</span></div>';
+    } else {
+      h += '<div class="box-body box-hint">' + esc(t.boxHint) + '</div>';
+    }
+    h += '</div>';
+  }
+  h += '</div>'
+    + '<div class="teacher-bar">'
+    + '<label class="switch">'
+    + '<input type="checkbox" id="teacher-toggle"' + (show ? ' checked' : '') + '>'
+    + '<span class="slider"></span>'
+    + '</label>'
+    + '<span class="t-label">' + esc(t.teacherLabel) + '</span>'
+    + '</div>';
+  return h;
+}
+
+function bindEvents(story) {
+  if (story) {
+    document.getElementById("back-btn").addEventListener("click", navHome);
+    var tg = document.getElementById("teacher-toggle");
+    if (tg) {
+      tg.addEventListener("change", function () {
+        state.teacher[story.id] = tg.checked;
+        render();
+      });
+    }
+  }
+}
+
+/* ---------- Init ---------- */
+(function init() {
+  var saved = null;
+  try { saved = localStorage.getItem(LANG_KEY); } catch (e) {}
+  if (saved === "en" || saved === "es") state.lang = saved;
+
+  document.getElementById("lang-en").addEventListener("click", function () { if (state.lang !== "en") setLang("en"); });
+  document.getElementById("lang-es").addEventListener("click", function () { if (state.lang !== "es") setLang("es"); });
+
+  window.addEventListener("hashchange", render);
+
+  // Teacher answers default OFF every load, never persisted.
+  render();
+})();
+</script>
+</body>
+</html>
