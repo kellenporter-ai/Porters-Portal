@@ -14,5 +14,8 @@
   "compileOnSave": true,
   "include": [
     "src"
+  ],
+  "exclude": [
+    "scripts/update-assignment-rubric.ts"
   ]
 }

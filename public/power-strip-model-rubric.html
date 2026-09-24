@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power Strip Model Rubric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --focus: #FF4D26;
+    --t0-c: #dc2626; --t0-b: #fee2e2;
+    --t1-c: #d97706; --t1-b: #fef3c7;
+    --t2-c: #ca8a04; --t2-b: #fef9c3;
+    --t3-c: #059669; --t3-b: #d1fae5;
+    --t4-c: #2563eb; --t4-b: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, .brand h1, .rubric-grid .row-q, .rubric-grid th.colhead,
+  .detail-q, .card-doc h1, .score-chip, .ladder-chip, .nav-btn, .backlink,
+  .lang-toggle button, .print-btn, .ladder-summary h2, .eyebrow,
+  .detail-qnum, .connector, .page-ref-line, .card-footer, .card-ladder .cl strong {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 28px 32px 80px; }
+  a { color: var(--accent); }
+
+  /* ---------- Header ---------- */
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 40px;
+  }
+  .brand h1 {
+    font-size: clamp(26px, 3vw, 38px); font-weight: 800; margin: 0;
+    letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .brand h1 .accent { color: var(--accent); }
+  .brand .sub {
+    color: var(--ink-soft); font-size: 15px; margin-top: 8px; max-width: 52ch;
+  }
+  .lang-toggle {
+    display: inline-flex; align-items: center; border: var(--dash);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 16px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .lang-toggle button + button { border-left: var(--dash); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent); background: rgba(255, 77, 38, 0.06);
+  }
+
+  button { font-family: inherit; }
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid var(--focus); outline-offset: 3px;
+  }
+
+  body.mode-card header.top { display: none; }
+
+  /* ---------- Eyebrow ---------- */
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 10px;
+  }
+
+  /* ---------- Panels ---------- */
+  .panel {
+    background: transparent; border: var(--dash);
+    padding: 28px; margin-bottom: 32px;
+  }
+  .overview { border: 0; padding: 0 0 8px; margin-bottom: 40px; }
+  .overview p:last-child { margin: 0; font-size: 17px; max-width: 62ch; }
+
+  /* ---------- Infographic grid ---------- */
+  .grid-panel { padding: 22px; overflow-x: auto; margin-bottom: 48px; }
+  table.rubric-grid {
+    width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed;
+  }
+  .rubric-grid th.corner { width: 18%; }
+  .rubric-grid th.colhead {
+    padding: 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    text-align: center; line-height: 1.25; border: 0;
+  }
+  .rubric-grid th.rowhead {
+    text-align: left; vertical-align: top; padding: 10px 10px 10px 2px; font-weight: 400;
+  }
+  .rubric-grid .row-q {
+    display: block; font-weight: 700; font-size: 15px; line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .rubric-grid .row-gist {
+    display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 6px; line-height: 1.4;
+  }
+  .rubric-grid td.cell { padding: 0; vertical-align: top; }
+  .grid-cell {
+    position: relative; display: block; width: 100%; min-height: 104px;
+    text-align: left; cursor: pointer; text-decoration: none;
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13.5px; line-height: 1.42;
+    background: var(--tb); color: var(--ink);
+    border: var(--dash); border-top: 3px solid var(--tc);
+    padding: 12px 12px 26px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .grid-cell:hover {
+    transform: translateY(-3px);
+    border: 1px solid var(--tc); border-top: 3px solid var(--tc);
+  }
+  .grid-cell .gist { display: block; }
+  .grid-cell .page-ref {
+    position: absolute; bottom: 6px; right: 10px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-soft);
+    font-family: 'Archivo', 'Inter', sans-serif;
+  }
+
+  /* ---------- Tier ladder ---------- */
+  .ladder-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 24px; }
+  .ladder-chip {
+    flex: 1 1 130px; min-width: 120px; text-align: center;
+    border: var(--dash); padding: 12px 10px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+  }
+  .ladder-chip small { display: block; font-weight: 600; opacity: 0.75; font-size: 11px; }
+
+  .ladder-summary { border: 0; padding: 0; margin: 0 0 32px; }
+  .ladder-summary h2 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;
+  }
+  .ladder-row {
+    display: flex; gap: 16px; align-items: baseline; padding: 14px 4px;
+    border-bottom: var(--dash);
+  }
+  .ladder-row:first-of-type { border-top: var(--dash); }
+  .ladder-row .score-chip { flex: 0 0 auto; }
+  .ladder-row p { margin: 0; font-size: 15px; }
+
+  .dl-footer {
+    display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap;
+    padding: 14px 4px; margin: 0 0 32px;
+    border-top: var(--dash); border-bottom: var(--dash);
+  }
+  .dl-footer .eyebrow { flex: 0 0 auto; }
+  .dl-links { display: flex; gap: 22px; flex-wrap: wrap; }
+  .dl-links a {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .dl-links a:hover { color: var(--accent); }
+
+  .score-chip {
+    display: inline-block; font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+    color: var(--tc); background: var(--tb);
+    padding: 6px 16px; white-space: nowrap;
+  }
+
+  /* ---------- Detail view ---------- */
+  .backlink {
+    display: inline-block; margin: 0 0 28px; color: var(--ink-soft);
+    text-decoration: none; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: var(--dash); padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .backlink:hover { color: var(--accent); border-color: var(--accent); }
+  .detail-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 20px; }
+  .detail-head .score-chip {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.01em; padding: 10px 24px;
+  }
+  .detail-score {
+    font-weight: 800; font-size: 20px; color: var(--ink-faint); letter-spacing: -0.01em;
+  }
+  .detail-q {
+    font-size: clamp(28px, 3.6vw, 44px); font-weight: 800; margin: 0 0 10px;
+    letter-spacing: -0.03em; line-height: 1.05; max-width: 22ch;
+  }
+  .detail-qnum {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--accent); margin: 0 0 12px;
+  }
+  .detail-skill {
+    color: var(--ink-soft); font-size: 16px; margin: 0 0 24px;
+    padding-bottom: 16px; border-bottom: var(--dash); max-width: 62ch;
+  }
+  .tier {
+    border: var(--dash); border-left: 4px solid var(--tc);
+    background: transparent; margin-bottom: 12px; overflow: hidden;
+  }
+  .tier-body { padding: 22px 26px 24px 28px; }
+  .tier-line { margin: 0 0 6px; max-width: 68ch; }
+  .connector {
+    display: block; width: fit-content; margin: 14px auto;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--tc); background: transparent;
+    border: 1px dashed var(--tc); padding: 4px 16px;
+  }
+  .examples-label { font-weight: 700; margin: 18px 0 8px; letter-spacing: -0.01em; }
+  .examples {
+    margin: 0; padding: 16px 20px 16px 36px; border: var(--dash);
+    background: rgba(26, 26, 26, 0.02);
+  }
+  .examples li { margin-bottom: 6px; }
+  .examples li:last-child { margin-bottom: 0; }
+  .explainer h2 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 15pt;
+    margin: 0 0 6px;
+  }
+  .explainer-framing { margin: 0 0 10px; color: var(--ink-soft); }
+  .explainer ol { margin: 0; padding-left: 22px; }
+  .explainer li { margin: 0 0 8px; line-height: 1.45; }
+  .explainer-compact { margin: 2px 0 6px; }
+
+  .page-ref-line {
+    color: var(--ink-soft);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 16px 0 0;
+  }
+
+  .tier-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+  .nav-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; border: var(--dash);
+    padding: 11px 20px; color: var(--ink-soft); text-decoration: none;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.3s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
+  .nav-btn.primary { color: var(--ink); border-color: var(--ink-faint); }
+  .nav-btn.primary:hover { color: var(--accent); border-color: var(--accent); }
+  .nav-btn.disabled { opacity: 0.35; pointer-events: none; }
+  .tier-nav .spacer { flex: 1; }
+
+  /* ---------- Card view ---------- */
+  .card-doc { background: transparent; border: var(--dash); padding: 24px 26px; }
+  .card-doc h1 {
+    font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .card-sub { color: var(--ink-soft); font-size: 13px; margin: 6px 0 16px; }
+  .card-footer {
+    color: var(--ink-soft);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    margin: 14px 0 0;
+  }
+  .card-ladder { display: flex; gap: 8px; margin-top: 14px; }
+  .card-ladder .cl {
+    flex: 1; border: var(--dash); padding: 8px 9px; font-size: 11px; line-height: 1.35;
+  }
+  .card-ladder .cl strong { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+  .print-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; color: var(--ink-soft); border: var(--dash);
+    padding: 11px 22px; margin-bottom: 16px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .print-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  /* Print-document markup (full linear rubric): hidden on screen */
+  .print-doc { display: none; }
+  .q-inner .q-text {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px;
+  }
+  .skill {
+    color: var(--ink-soft); font-size: 14px; margin: 0 0 18px;
+    padding-bottom: 12px; border-bottom: var(--dash);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 18px 48px; }
+    header.top { margin-bottom: 24px; }
+    .grid-panel { padding: 12px; }
+  }
+
+  /* ---------- Print: full document (no ?view=card) ---------- */
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    body.mode-card { font-size: 7.6pt; }
+    .wrap { max-width: none; padding: 0; }
+    header.top .lang-toggle, .no-print, .screen-view { display: none !important; }
+    .print-doc { display: block; }
+    .panel, .q-card, .q-inner, .tier, .card-doc { border: 1px solid #999; }
+    .tier { break-inside: avoid; }
+    .question-block { break-before: page; }
+    .question-block.first { break-before: auto; }
+    .explainer-wrap { break-after: page; }
+    .grid-panel { overflow: visible; }
+    .grid-cell { min-height: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  /* ---------- Print: card only ---------- */
+  @media print {
+    body.mode-card .print-btn { display: none !important; }
+    body.mode-card .card-doc { border: 0; padding: 0; }
+    body.mode-card .grid-panel { border: 0; padding: 0; margin: 0; }
+    body.mode-card .rubric-grid { border-spacing: 3px; }
+    body.mode-card .rubric-grid th.corner { width: 16%; }
+    body.mode-card .rubric-grid th.colhead {
+      font-size: 6.6pt; padding: 3px 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .rubric-grid th.rowhead { padding: 2px 4px 2px 0; }
+    body.mode-card .rubric-grid .row-q { font-size: 6.8pt; }
+    body.mode-card .rubric-grid .row-gist { font-size: 6.1pt; margin-top: 1px; }
+    body.mode-card .grid-cell {
+      font-size: 6.2pt; line-height: 1.25; min-height: 0;
+      padding: 4px 4px 11px; border-left-width: 2px; border-top-width: 2px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .grid-cell .gist { font-size: 6.2pt; line-height: 1.25; }
+    body.mode-card .grid-cell .page-ref { font-size: 5.4pt; bottom: 2px; right: 4px; }
+    body.mode-card .card-doc h1 { font-size: 13pt; }
+    body.mode-card .card-sub { font-size: 7.5pt; margin: 1px 0 6px; }
+    body.mode-card .card-ladder .cl { font-size: 5.6pt; padding: 3px 4px; }
+    body.mode-card .card-ladder .cl strong { font-size: 5.8pt; }
+    body.mode-card .card-footer { font-size: 6pt; margin: 5px 0 0; }
+    body.mode-card .explainer-compact { font-size: 6.4pt; margin: 1px 0 4px; line-height: 1.3; }
+  }
+
+  @page { margin: 0.4in; }
+  @page landscape-page { size: letter landscape; margin: 0.4in; }
+  body.mode-card { page: landscape-page; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 id="page-title">Power Strip Model Rubric</h1>
+      <div class="sub" id="page-sub"></div>
+    </div>
+    <div class="lang-toggle no-print" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<script>
+"use strict";
+/* ============================== DATA ============================== */
+
+var STR = {
+  en: {
+    pageTitle: "Power Strip Model Rubric",
+    pageSub: "How your P.1 Lesson 2 Power Strip Model assignment is graded",
+    overviewLabel: "Overview",
+    overview: "This page shows how your Power Strip Model assignment is graded. Part A asks you to list the key structures of the power strip and tell what each one does. Part B asks you to draw a model that shows how electrical energy flows through the power strip to power at least two devices. Each part is graded with five levels. The levels describe how complete and clear your reasoning is. There is no single required list of parts and no single required drawing.",
+    questionLabel: "Question",
+    skillLabel: "Skill",
+    ladderLabel: "Tier ladder",
+    connectors: { "-BECAUSE-": "-BECAUSE-", "-BUT-": "-BUT-", "-AND-": "-AND-", "-OR-": "-OR-" },
+    examplesLabel: "For example:",
+    backToGrid: "Back to all tiers",
+    prevTier: "Previous tier",
+    nextTier: "Next tier",
+    pageRefLine: "Details on p. {n} of the rubric PDF",
+    gridHint: "Click any box to see full details for that level.",
+    cardTitle: "Power Strip Model Rubric",
+    cardSubtitle: "How your Power Strip Model assignment is graded",
+    cardFooter: "See the rubric PDF for full details and examples in each box",
+    printCard: "Print",
+    downloadsLabel: "Downloads",
+    dlFullEn: "Full rubric (EN)",
+    dlFullEs: "Full rubric (ES)",
+    dlCardEn: "Quick card (EN)",
+    dlCardEs: "Quick card (ES)"
+  },
+  es: {
+    pageTitle: "Rúbrica del Modelo de Regleta de Enchufes",
+    pageSub: "Cómo se califica tu tarea del Modelo de Regleta de Enchufes de la Lección 2 de P.1",
+    overviewLabel: "Descripción general",
+    overview: "Esta página muestra cómo se califica tu tarea del Modelo de Regleta de Enchufes. La Parte A te pide enlistar las estructuras clave de la regleta de enchufes y decir qué hace cada una. La Parte B te pide dibujar un modelo que muestre cómo fluye la energía eléctrica a través de la regleta para encender al menos dos dispositivos. Cada parte se califica con cinco niveles. Los niveles describen qué tan completo y claro es tu razonamiento. No hay una única lista de partes requerida ni un único dibujo requerido.",
+    questionLabel: "Pregunta",
+    skillLabel: "Habilidad",
+    ladderLabel: "Escalera de niveles",
+    connectors: { "-BECAUSE-": "-PORQUE-", "-BUT-": "-PERO-", "-AND-": "-Y-", "-OR-": "-O-" },
+    examplesLabel: "Por ejemplo:",
+    backToGrid: "Volver a todos los niveles",
+    prevTier: "Nivel anterior",
+    nextTier: "Nivel siguiente",
+    pageRefLine: "Detalles en la pág. {n} del PDF de la rúbrica",
+    gridHint: "Haz clic en cualquier casilla para ver los detalles completos de ese nivel.",
+    cardTitle: "Rúbrica del Modelo de Regleta de Enchufes",
+    cardSubtitle: "Cómo se califica tu tarea del Modelo de Regleta de Enchufes",
+    cardFooter: "Consulta la rúbrica en PDF para detalles y ejemplos en cada casilla",
+    printCard: "Imprimir",
+    downloadsLabel: "Descargas",
+    dlFullEn: "Rúbrica completa (EN)",
+    dlFullEs: "Rúbrica completa (ES)",
+    dlCardEn: "Tarjeta rápida (EN)",
+    dlCardEs: "Tarjeta rápida (ES)"
+  }
+};
+
+/* One-line gists for the infographic grid (EN + ES) */
+var GISTS = {
+  en: {
+    skillGists: [
+      "Identify the key parts and tell what each one does.",
+      "Model how energy flows to power at least two devices."
+    ],
+    cells: {
+      q1: ["No parts named.", "Only outside parts, no purposes.", "One inside part, vague purposes.", "Inside + outside parts, mostly clear purposes.", "All parts named with purposes that tell the energy story."],
+      q2: ["No drawing.", "Outside only, no energy path.", "Source + one device, path incomplete.", "Source to two devices, most labels, flow mostly clear.", "Source branches to 2+ devices, all parts labeled, flow clear."]
+    }
+  },
+  es: {
+    skillGists: [
+      "Identifica las partes clave y di qué hace cada una.",
+      "Modela cómo fluye la energía para encender al menos dos dispositivos."
+    ],
+    cells: {
+      q1: ["No se nombran partes.", "Solo partes de afuera, sin propósitos.", "Una parte interna, propósitos vagos.", "Partes internas y externas, propósitos casi claros.", "Todas las partes nombradas con propósitos que cuentan la historia de la energía."],
+      q2: ["Sin dibujo.", "Solo el exterior, sin ruta de energía.", "Fuente + un dispositivo, ruta incompleta.", "Fuente a dos dispositivos, casi todo etiquetado, flujo casi claro.", "La fuente se divide a 2+ dispositivos, todo etiquetado, flujo claro."]
+    }
+  }
+};
+
+var TIERS = [
+  { key: "t0", score: "0%" },
+  { key: "t1", score: "55%" },
+  { key: "t2", score: "65%" },
+  { key: "t3", score: "85%" },
+  { key: "t4", score: "100%" }
+];
+
+/* PDF page numbers per cell, per language. null = no page ref shown.
+   Fill these in after the rubric PDFs are built. */
+var PDF_PAGES = {
+  en: { "q1-t0": 2, "q1-t1": 2, "q1-t2": 3, "q1-t3": 3, "q1-t4": 4,
+        "q2-t0": 5, "q2-t1": 5, "q2-t2": 6, "q2-t3": 7, "q2-t4": 7 },
+  es: { "q1-t0": 2, "q1-t1": 2, "q1-t2": 3, "q1-t3": 3, "q1-t4": 4,
+        "q2-t0": 5, "q2-t1": 5, "q2-t2": 6, "q2-t3": 7, "q2-t4": 7 }
+};
+
+/* How-the-grade-works explainer (shown on landing, print doc, and card) */
+var EXPLAINER = {
+  en: {
+    heading: "How this assignment is graded",
+    framing: "The assignment has two parts. Each part is graded on one skill, with five levels for each skill.",
+    points: [
+      { lead: "Part A: key structures.",
+        text: "In Part A you list the parts of the power strip and tell what each part does. Skill 1 is graded on how completely you name parts and how clearly you explain their purposes." },
+      { lead: "Part B: energy-flow model.",
+        text: "In Part B you draw a labeled model showing how energy travels from the source through the strip to at least two devices. Skill 2 is graded on how complete the path, the labels, and the flow direction are." },
+      { lead: "Levels show depth, not one right answer.",
+        text: "A higher level means your reasoning is more complete and more connected. Different students can reach the top level with different parts and different drawings." }
+    ],
+    compact: "Part A: name the parts and their purposes. Part B: model the energy flow. Levels show depth of reasoning, not one right answer."
+  },
+  es: {
+    heading: "Cómo se califica esta tarea",
+    framing: "La tarea tiene dos partes. Cada parte se califica con una habilidad, con cinco niveles para cada habilidad.",
+    points: [
+      { lead: "Parte A: estructuras clave.",
+        text: "En la Parte A enlistas las partes de la regleta de enchufes y dices qué hace cada una. La Habilidad 1 se califica por qué tan completamente nombras las partes y qué tan claramente explicas sus propósitos." },
+      { lead: "Parte B: modelo del flujo de energía.",
+        text: "En la Parte B dibujas un modelo con etiquetas que muestre cómo viaja la energía de la fuente a través de la regleta para encender al menos dos dispositivos. La Habilidad 2 se califica por qué tan completos son la ruta, las etiquetas y la dirección del flujo." },
+      { lead: "Los niveles muestran profundidad, no una única respuesta.",
+        text: "Un nivel más alto significa que tu razonamiento es más completo y más conectado. Distintos estudiantes pueden llegar al nivel más alto con diferentes partes y diferentes dibujos." }
+    ],
+    compact: "Parte A: nombra las partes y sus propósitos. Parte B: modela el flujo de energía. Los niveles muestran profundidad, no una única respuesta."
+  }
+};
+
+function explainerHTML(compact) {
+  var E = EXPLAINER[state.lang];
+  if (compact) return '<p class="explainer-compact">' + esc(E.compact) + "</p>";
+  var h = '<div class="panel explainer"><h2>' + esc(E.heading) + "</h2>" +
+    '<p class="explainer-framing">' + esc(E.framing) + "</p><ol>";
+  for (var i = 0; i < E.points.length; i++) {
+    h += "<li><strong>" + esc(E.points[i].lead) + "</strong> " + esc(E.points[i].text) + "</li>";
+  }
+  return h + "</ol></div>";
+}
+
+var DATA = {
+  en: {
+    questions: [
+      {
+        q: "Part A, Key Structures",
+        skill: "I am able to identify key components in the power strip and recognize their purpose.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: There is no attempt to identify parts of the power strip or their purpose."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: There is an attempt to identify parts of the power strip",
+            "-BUT-", "the parts named are mostly outside the strip (only the wall outlet, the cord, or the devices are mentioned)",
+            "-OR-", "the parts are named without any sense of what they do."
+          ], examples: [
+            "\"the plug and the cord\"",
+            "\"the outlets where you plug things in\""
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: There is a partial attempt to identify parts of the power strip",
+            "-BECAUSE-", "at least one part inside the strip is named",
+            "-BUT-", "the purpose of most parts is missing, vague, or restated as \"it gives power\" without explaining how."
+          ], examples: [
+            "\"the metal pieces inside that carry the electricity\"",
+            "\"the switch turns it on and off\""
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: There is a solid attempt to identify parts of the power strip",
+            "-BECAUSE-", "parts inside the strip are named along with parts you can see from outside",
+            "-AND-", "a purpose is given for most of the named parts",
+            "-BUT-", "the purposes may be loosely worded, or the list leaves out a part that matters for sending energy to more than one device."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: There is a strong attempt to identify parts of the power strip",
+            "-BECAUSE-", "visible parts and internal parts are both named with a clear purpose for each",
+            "-AND-", "the purposes add up to a story of how energy can be sent from one source to several devices at once."
+          ] }
+        }
+      },
+      {
+        q: "Part B, Model Diagram",
+        skill: "I am able to create a model which shows how the electrical energy flows within the power strip in order to use the energy source to power at least two devices.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: There is no attempt to draw a model of the power strip."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: There is an attempt to draw a model",
+            "-BUT-", "the drawing shows only the outside of the power strip or only one device",
+            "-OR-", "there is no visible path for energy to travel from the source to any device."
+          ], examples: [
+            "a rectangle labeled \"power strip\" with one phone plugged in and no arrows",
+            "a drawing of a wall outlet only"
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: There is a partial attempt to draw a model",
+            "-BECAUSE-", "the drawing shows the source and at least one device",
+            "-AND-", "some labels are present",
+            "-BUT-", "the energy path does not reach every device shown,",
+            "-OR-", "the labels name objects without showing how they connect."
+          ], examples: [
+            "a source and two devices drawn but only one connected line",
+            "labels like \"cord\" and \"lamp\" with no arrows"
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: There is a solid attempt to draw a model",
+            "-BECAUSE-", "the drawing shows one energy source connected to the power strip",
+            "-AND-", "the path from the strip reaches at least two devices",
+            "-AND-", "most key parts are labeled",
+            "-BUT-", "the flow direction is missing or unclear at some points,",
+            "-OR-", "one important internal part is unlabeled or missing."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: There is a strong attempt to draw a model",
+            "-BECAUSE-", "the drawing shows one energy source flowing through the power strip",
+            "-AND-", "the path clearly branches to power at least two devices",
+            "-AND-", "visible and internal parts are labeled",
+            "-AND-", "arrows or another clear device shows the direction the energy travels."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Missing · 0%", text: "No attempt at this part." },
+      { chip: "Emerging · 55%", text: "An attempt is there, but the skill is just starting." },
+      { chip: "Approaching · 65%", text: "The skill is partly there, with important pieces missing." },
+      { chip: "Developing · 85%", text: "The skill is mostly there, with a small gap left." },
+      { chip: "Refining · 100%", text: "The skill is clearly there, with complete and connected reasoning." }
+    ]
+  },
+  es: {
+    questions: [
+      {
+        q: "Parte A, Estructuras clave",
+        skill: "Puedo identificar los componentes clave de la regleta de enchufes y reconocer su propósito.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No hay intento de identificar partes de la regleta de enchufes ni su propósito."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay un intento de identificar partes de la regleta de enchufes",
+            "-PERO-", "las partes nombradas están casi todas fuera de la regleta (solo se mencionan el tomacorriente de la pared, el cable o los dispositivos)",
+            "-O-", "se nombran partes sin ninguna idea de lo que hacen."
+          ], examples: [
+            "\"el enchufe y el cable\"",
+            "\"los enchufes donde conectas las cosas\""
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Hay un intento parcial de identificar partes de la regleta de enchufes",
+            "-PORQUE-", "se nombra al menos una parte dentro de la regleta",
+            "-PERO-", "el propósito de la mayoría de las partes falta, es vago, o se repite como \"da energía\" sin explicar cómo."
+          ], examples: [
+            "\"las piezas de metal adentro que llevan la electricidad\"",
+            "\"el interruptor lo prende y lo apaga\""
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: Hay un intento sólido de identificar partes de la regleta de enchufes",
+            "-PORQUE-", "se nombran partes dentro de la regleta junto con partes que se ven por fuera",
+            "-Y-", "se da un propósito para la mayoría de las partes nombradas",
+            "-PERO-", "los propósitos pueden estar poco claros, o la lista deja fuera una parte que importa para enviar energía a más de un dispositivo."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: Hay un intento fuerte de identificar partes de la regleta de enchufes",
+            "-PORQUE-", "las partes visibles y las partes internas se nombran con un propósito claro para cada una",
+            "-Y-", "los propósitos suman una historia de cómo la energía puede enviarse de una fuente a varios dispositivos al mismo tiempo."
+          ] }
+        }
+      },
+      {
+        q: "Parte B, Diagrama del modelo",
+        skill: "Puedo crear un modelo que muestra cómo fluye la energía eléctrica dentro de la regleta de enchufes para usar la fuente de energía y encender al menos dos dispositivos.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No hay intento de dibujar un modelo de la regleta de enchufes."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay un intento de dibujar un modelo",
+            "-PERO-", "el dibujo muestra solo la parte de afuera de la regleta de enchufes o solo un dispositivo",
+            "-O-", "no hay una ruta visible para que la energía viaje de la fuente a ningún dispositivo."
+          ], examples: [
+            "un rectángulo con la etiqueta \"regleta\" con un teléfono conectado y sin flechas",
+            "un dibujo de solo un tomacorriente de la pared"
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Hay un intento parcial de dibujar un modelo",
+            "-PORQUE-", "el dibujo muestra la fuente y al menos un dispositivo",
+            "-Y-", "hay algunas etiquetas",
+            "-PERO-", "la ruta de energía no llega a cada dispositivo dibujado,",
+            "-O-", "las etiquetas nombran objetos sin mostrar cómo se conectan."
+          ], examples: [
+            "una fuente y dos dispositivos dibujados pero solo con una línea de conexión",
+            "etiquetas como \"cable\" y \"lámpara\" sin flechas"
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: Hay un intento sólido de dibujar un modelo",
+            "-PORQUE-", "el dibujo muestra una fuente de energía conectada a la regleta de enchufes",
+            "-Y-", "la ruta desde la regleta llega al menos a dos dispositivos",
+            "-Y-", "la mayoría de las partes clave están etiquetadas",
+            "-PERO-", "la dirección del flujo falta o no es clara en algunos puntos,",
+            "-O-", "una parte interna importante no tiene etiqueta o falta."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: Hay un intento fuerte de dibujar un modelo",
+            "-PORQUE-", "el dibujo muestra una fuente de energía fluyendo a través de la regleta de enchufes",
+            "-Y-", "la ruta se divide claramente para encender al menos dos dispositivos",
+            "-Y-", "las partes visibles y las partes internas están etiquetadas",
+            "-Y-", "las flechas u otro elemento claro muestran la dirección en la que viaja la energía."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Ausente · 0%", text: "No hay intento de esta parte." },
+      { chip: "Emergente · 55%", text: "Hay un intento, pero la habilidad apenas está comenzando." },
+      { chip: "Progresando · 65%", text: "La habilidad está a medias, con partes importantes que faltan." },
+      { chip: "En desarrollo · 85%", text: "La habilidad está casi completa, con un pequeño hueco restante." },
+      { chip: "Refinando · 100%", text: "La habilidad está claramente presente, con razonamiento completo y conectado." }
+    ]
+  }
+};
+
+/* ============================== LOGIC ============================== */
+
+var LANG_KEY = "psm-lang";
+var state = { lang: "en" };
+try {
+  var saved = localStorage.getItem(LANG_KEY);
+  if (saved === "en" || saved === "es") state.lang = saved;
+} catch (e) {}
+var urlLang = /[?&]lang=(es|en)/.exec(location.search);
+if (urlLang) state.lang = urlLang[1];
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function tierVarsCSS(tierIdx) {
+  return "color:var(--" + TIERS[tierIdx].key + "-c);background:var(--" + TIERS[tierIdx].key + "-b)";
+}
+
+function pageRefNum(qIdx, tierIdx) {
+  var map = PDF_PAGES[state.lang];
+  if (!map) return null;
+  var v = map["q" + (qIdx + 1) + "-t" + tierIdx];
+  return (typeof v === "number") ? v : null;
+}
+
+function pageRefHTML(qIdx, tierIdx) {
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n === null) return "";
+  return '<span class="page-ref">p. ' + n + "</span>";
+}
+
+function isConnector(s) {
+  return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s);
+}
+
+function tierBodyHTML(tier) {
+  var S = STR[state.lang];
+  var h = "";
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  return h;
+}
+
+/* ---------- Shared print markup: overview + 2 question blocks (all expanded) ---------- */
+
+function printTierHTML(qIdx, tierIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var h = '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)">' +
+    '<div class="tier-body">' +
+    '<p class="tier-line"><span class="score-chip">' + esc(tier.chip) + "</span></p>";
+  h += tierBodyHTML(tier);
+  h += "</div></div>";
+  return h;
+}
+
+function printQuestionBlockHTML(qIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var S = STR[state.lang];
+  var h = '<section class="question-block' + (qIdx === 0 ? " first" : "") + '">';
+  h += '<div class="q-inner">' +
+    '<p class="q-text">' + esc(S.questionLabel + " " + (qIdx + 1) + ": " + q.q) + "</p>" +
+    '<p class="skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  for (var j = 0; j < TIERS.length; j++) h += printTierHTML(qIdx, j);
+  h += "</div></section>";
+  return h;
+}
+
+function ladderSummaryHTML() {
+  var S = STR[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<div class="panel ladder-summary"><h2>' + esc(S.ladderLabel) + "</h2>";
+  for (var i = 0; i < L.length; i++) {
+    h += '<div class="ladder-row">' +
+      '<span class="score-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(L[i].chip) + "</span>" +
+      "<p>" + esc(L[i].text) + "</p></div>";
+  }
+  h += "</div>";
+  return h;
+}
+
+/* ---------- Landing view ---------- */
+
+function landingHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += explainerHTML(false);
+  h += '<div class="panel grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' +
+      esc(DATA[state.lang].ladder[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < 2; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><a class="grid-cell" href="#/q' + (q + 1) + "/t" + c + '" role="link" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</a></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += downloadsFooterHTML();
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function downloadsFooterHTML() {
+  var S = STR[state.lang];
+  return '<div class="dl-footer no-print"><span class="eyebrow">' + esc(S.downloadsLabel) + "</span>" +
+    '<span class="dl-links">' +
+    '<a href="power-strip-model-rubric-en.pdf">' + esc(S.dlFullEn) + "</a>" +
+    '<a href="power-strip-model-rubric-es.pdf">' + esc(S.dlFullEs) + "</a>" +
+    '<a href="power-strip-model-rubric-card-en.pdf">' + esc(S.dlCardEn) + "</a>" +
+    '<a href="power-strip-model-rubric-card-es.pdf">' + esc(S.dlCardEs) + "</a>" +
+    "</span></div>";
+}
+
+/* ---------- Detail view ---------- */
+
+function detailHTML(qIdx, tierIdx) {
+  var S = STR[state.lang];
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var flat = qIdx * 5 + tierIdx;
+  var prevFlat = flat - 1, nextFlat = flat + 1;
+  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= 9;
+
+  var h = '<a class="backlink no-print" href="#/">&larr; ' + esc(S.backToGrid) + "</a>";
+  h += '<p class="detail-qnum">' + esc(S.questionLabel + " " + (qIdx + 1)) + "</p>" +
+    '<h2 class="detail-q">' + esc(q.q) + "</h2>" +
+    '<p class="detail-skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  h += '<div class="detail-head">' +
+    '<span class="score-chip" style="' + tierVarsCSS(tierIdx) + '">' + esc(tier.chip) + "</span>" +
+    '<span class="detail-score">' + esc(TIERS[tierIdx].score) + "</span></div>";
+
+  h += '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)"><div class="tier-body">';
+  h += tierBodyHTML(tier);
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n !== null) {
+    h += '<p class="page-ref-line">' + esc(S.pageRefLine.replace("{n}", String(n))) + "</p>";
+  }
+  h += "</div></div>";
+
+  h += '<nav class="tier-nav no-print" aria-label="' + esc(S.backToGrid) + '">';
+  if (hasPrev) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(prevFlat / 5) + 1) + "/t" + (prevFlat % 5) + '">&larr; ' + esc(S.prevTier) + "</a>";
+  } else {
+    h += '<span class="nav-btn disabled">&larr; ' + esc(S.prevTier) + "</span>";
+  }
+  h += '<span class="spacer"></span>';
+  h += '<a class="nav-btn primary" href="#/">' + esc(S.backToGrid) + "</a>";
+  h += '<span class="spacer"></span>';
+  if (hasNext) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(nextFlat / 5) + 1) + "/t" + (nextFlat % 5) + '">' + esc(S.nextTier) + " &rarr;</a>";
+  } else {
+    h += '<span class="nav-btn disabled">' + esc(S.nextTier) + " &rarr;</span>";
+  }
+  h += "</nav>";
+  return h;
+}
+
+/* ---------- Card view ---------- */
+
+function cardHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<button type="button" class="print-btn no-print" onclick="window.print()">' + esc(S.printCard) + "</button>";
+  h += '<div class="card-doc"><h1>' + esc(S.cardTitle) + "</h1>" +
+    '<p class="card-sub">' + esc(S.cardSubtitle) + "</p>";
+  h += explainerHTML(true);
+  h += '<div class="grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' + esc(L[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < 2; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><div class="grid-cell" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</div></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += '<div class="card-ladder">';
+  for (var k = 0; k < L.length; k++) {
+    h += '<div class="cl" style="' + tierVarsCSS(k) + '"><strong>' + esc(L[k].chip) + "</strong>" + esc(L[k].text) + "</div>";
+  }
+  h += "</div>";
+  h += '<p class="card-footer">' + esc(S.cardFooter) + "</p>";
+  h += "</div>";
+  return h;
+}
+
+/* ---------- Print document (plain view only): full linear content ---------- */
+
+function printDocumentHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += '<div class="explainer-wrap">' + explainerHTML(false) + "</div>";
+  for (var q = 0; q < 2; q++) h += printQuestionBlockHTML(q);
+  h += ladderSummaryHTML();
+  return h;
+}
+
+/* ---------- Router ---------- */
+
+function isCardView() {
+  return /[?&]view=card/.test(location.search);
+}
+
+function parseHash() {
+  var m = /^#\/q([1-2])\/t([0-4])$/.exec(location.hash || "");
+  if (!m) return null;
+  return { q: parseInt(m[1], 10) - 1, t: parseInt(m[2], 10) };
+}
+
+function render() {
+  var S = STR[state.lang];
+  var card = isCardView();
+  document.body.classList.toggle("mode-card", card);
+  document.documentElement.lang = state.lang;
+  document.title = S.pageTitle;
+  var titleWords = S.pageTitle.split(" ");
+  titleWords[titleWords.length - 1] = '<span class="accent">' + esc(titleWords[titleWords.length - 1]) + "</span>";
+  document.getElementById("page-title").innerHTML = titleWords.join(" ");
+  document.getElementById("page-sub").textContent = S.pageSub;
+  document.getElementById("lang-en").setAttribute("aria-pressed", state.lang === "en");
+  document.getElementById("lang-es").setAttribute("aria-pressed", state.lang === "es");
+
+  var h;
+  if (card) {
+    h = cardHTML();
+  } else {
+    var route = parseHash();
+    if (route) {
+      h = '<div class="screen-view">' + detailHTML(route.q, route.t) + "</div>";
+    } else {
+      if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+        try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      }
+      h = '<div class="screen-view">' + landingHTML() + "</div>";
+    }
+    h += '<div class="print-doc" aria-hidden="true">' + printDocumentHTML() + "</div>";
+  }
+  document.getElementById("app").innerHTML = h;
+  window.scrollTo(0, 0);
+}
+
+function setLang(lang) {
+  state.lang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  render();
+}
+
+document.getElementById("lang-en").addEventListener("click", function () { setLang("en"); });
+document.getElementById("lang-es").addEventListener("click", function () { setLang("es"); });
+window.addEventListener("hashchange", render);
+
+render();
+</script>
+</body>
+</html>
