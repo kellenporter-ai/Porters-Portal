@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T00:44:37.711Z",
+  "generatedAt": "2026-09-24T20:22:04.904Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -57,6 +57,11 @@
       "sizeBytes": 24913
     },
     {
+      "path": "/frq-ch2-unit1-review.html",
+      "fingerprint": "/frq-ch2-unit1-review.html",
+      "sizeBytes": 731912
+    },
+    {
       "path": "/games/guess-who-evidence.html",
       "fingerprint": "/games/guess-who-evidence.html",
       "sizeBytes": 1441302
@@ -70,6 +75,11 @@
       "path": "/linearization-practice.html",
       "fingerprint": "/linearization-practice.html",
       "sizeBytes": 48530
+    },
+    {
+      "path": "/power-strip-model-rubric.html",
+      "fingerprint": "/power-strip-model-rubric.html",
+      "sizeBytes": 45130
     },
     {
       "path": "/power-strip-reading/",
@@ -165,6 +175,11 @@
       "path": "/tools/tangent-secant-explorer.html",
       "fingerprint": "/tools/tangent-secant-explorer.html",
       "sizeBytes": 15713
+    },
+    {
+      "path": "/week4-evidence-storyboard.html",
+      "fingerprint": "/week4-evidence-storyboard.html",
+      "sizeBytes": 44887
     },
     {
       "path": "/weekly-reflection-journal-rubric.html",

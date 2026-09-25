@@ -533,12 +533,20 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
             // Use hook's actual responses (may be local draft if newer)
             setSavedBlockResponses(getResponses());
           } else {
-            setSavedBlockResponses({});
+            // No server doc — keep the hook's responses instead of wiping to {}.
+            // If usePersistentSave restored a dirty localStorage draft at mount
+            // (work that never reached Firestore, e.g. writes rejected by a stale
+            // session token), rendering {} here would mount the blocks empty, and
+            // mount-sync effects (DrawingBlock) would push empty responses over
+            // the draft in localStorage AND Firestore — permanent data loss.
+            setSavedBlockResponses(getResponses());
           }
         }).catch(err => {
           if (cancelled) return;
           reportError(err, { component: 'Proctor', context: 'Failed to load assessment block responses after refresh' });
-          setSavedBlockResponses({});
+          // Read failed — same as above: keep the hook's (draft) responses
+          // rather than clobbering them with {}. Mirrors the R2 non-assessment fix.
+          setSavedBlockResponses(getResponses());
         });
       } else {
         // Check if this is a retake with pre-filled responses from the prior submission
