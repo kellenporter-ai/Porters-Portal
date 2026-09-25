@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T20:22:04.904Z",
+  "generatedAt": "2026-09-25T01:37:31.634Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -10,11 +10,6 @@
       "path": "/circuit-diagram-builder.html",
       "fingerprint": "/circuit-diagram-builder.html",
       "sizeBytes": 44432
-    },
-    {
-      "path": "/codeword-lookup.html",
-      "fingerprint": "/codeword-lookup.html",
-      "sizeBytes": 10485
     },
     {
       "path": "/electroscope-charge-assessment.html",

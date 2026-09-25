@@ -1,8 +1,7 @@
 {
-  "generatedAt": "2026-09-24T20:22:04.941Z",
+  "generatedAt": "2026-09-25T01:37:31.668Z",
   "rewrites": {
     "/privacy": "/privacy.html",
-    "/codeword": "/codeword-lookup.html",
     "/circuit-diagram-builder": "/circuit-diagram-builder.html",
     "/electroscope-charge-assessment": "/electroscope-charge-assessment.html",
     "/tools/bar-chart": "/tools/bar-chart.html",

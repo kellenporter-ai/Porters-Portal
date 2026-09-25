@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Languages } from 'lucide-react';
 import PortalLogo from '../PortalLogo';
-import { CONTENT, type PublicLang } from './landingContent';
+import { useT, useLocale, LOCALE_LABELS, type Locale } from '../../lib/i18n';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
-  lang: PublicLang;
+  /** When false (sub-pages), hides the landing-page section anchor nav. */
+  sectionNav?: boolean;
 }
 
-const PublicLayout: React.FC<PublicLayoutProps> = ({ children, lang }) => {
-  const c = CONTENT[lang];
-  const isEs = lang === 'es';
-  const toggleHref = isEs ? '/' : '/es';
-  const toggleLabel = isEs ? 'English' : 'Español';
+const OTHER_LOCALE: Record<Locale, Locale> = { en: 'es', es: 'en' };
 
-  const navItems = [
-    { label: c.nav.welcome, href: '#welcome' },
-    { label: c.nav.courses, href: '#courses' },
-    { label: c.nav.procedures, href: '#procedures' },
-    { label: c.nav.contact, href: '#contact' },
-  ];
+const PublicLayout: React.FC<PublicLayoutProps> = ({ children, sectionNav = true }) => {
+  const t = useT();
+  const { locale, setLocale } = useLocale();
+  const otherLocale = OTHER_LOCALE[locale];
+
+  const navItems = sectionNav
+    ? [
+        { label: t('public.nav.welcome'), href: '#welcome' },
+        { label: t('public.nav.courses'), href: '#courses' },
+        { label: t('public.nav.procedures'), href: '#procedures' },
+        { label: t('public.nav.contact'), href: '#contact' },
+      ]
+    : [];
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -42,12 +46,25 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children, lang }) => {
     setMobileOpen(false);
   };
 
+  const languageToggle = (
+    <button
+      type="button"
+      onClick={() => setLocale(otherLocale)}
+      aria-label={t('public.nav.toggleAria')}
+      lang={otherLocale}
+      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-transparent px-3 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
+    >
+      <Languages className="h-4 w-4" aria-hidden="true" />
+      {LOCALE_LABELS[otherLocale]}
+    </button>
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-surface-base text-[var(--text-primary)] font-sans">
       <header className="sticky top-0 z-[var(--z-sticky)] border-b border-[var(--border)] bg-[var(--surface-glass)]/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
-            <Link to={isEs ? '/es' : '/'} className="flex items-center gap-3 focus-visible:outline-offset-4">
+            <Link to="/" className="flex items-center gap-3 focus-visible:outline-offset-4">
               <PortalLogo size={36} />
               <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Porter&apos;s Portal</span>
             </Link>
@@ -68,20 +85,13 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children, lang }) => {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                aria-label={c.nav.login}
+                aria-label={t('public.nav.login')}
                 className="hidden md:inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-[var(--text-inverted)] hover:bg-[var(--accent-hover)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
               >
-                {c.nav.login}
+                {t('public.nav.login')}
               </Link>
 
-              <Link
-                to={toggleHref}
-                aria-label={c.nav.toggleAria}
-                lang={isEs ? 'en' : 'es'}
-                className="hidden md:inline-flex items-center justify-center rounded-xl border border-[var(--border)] bg-transparent px-3 py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
-              >
-                {toggleLabel}
-              </Link>
+              <div className="hidden md:block">{languageToggle}</div>
 
               <button
                 type="button"
@@ -115,17 +125,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children, lang }) => {
                 onClick={() => setMobileOpen(false)}
                 className="mt-2 flex items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-3 text-base font-bold text-[var(--text-inverted)] hover:bg-[var(--accent-hover)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
               >
-                {c.nav.login}
+                {t('public.nav.login')}
               </Link>
-              <Link
-                to={toggleHref}
-                onClick={() => setMobileOpen(false)}
-                aria-label={c.nav.toggleAria}
-                lang={isEs ? 'en' : 'es'}
-                className="flex items-center justify-center rounded-xl border border-[var(--border)] bg-transparent px-4 py-3 text-base font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors min-h-[44px] focus-visible:outline-offset-2"
-              >
-                {toggleLabel}
-              </Link>
+              <div onClick={() => setMobileOpen(false)}>{languageToggle}</div>
             </nav>
           </div>
         )}
@@ -137,9 +139,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children, lang }) => {
 
       <footer className="border-t border-[var(--border)] bg-[var(--surface-sunken)] py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-secondary)]">
-          <p>{c.footer.schoolAndRoom}</p>
-          <a href={c.footer.privacyHref} className="hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4">
-            {c.footer.privacy}
+          <p>{t('public.footer.schoolAndRoom')}</p>
+          <a href="/privacy" className="hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4">
+            {t('public.footer.privacy')}
           </a>
         </div>
       </footer>

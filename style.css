@@ -323,6 +323,28 @@ html:not(.dark) .backdrop-blur-2xl {
 .block-reveal[data-stagger="2"] { animation-delay: 0.1s; }
 .block-reveal[data-stagger="3"] { animation-delay: 0.15s; }
 
+/* === Public page scroll reveal (landing + syllabi) ===
+   One-way, transform/opacity only, 350ms — Chromebook-safe. */
+@keyframes pub-rise-in {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.pub-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.pub-reveal.pub-reveal-visible {
+  animation: pub-rise-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.perf-mode .pub-reveal {
+  opacity: 1;
+  transform: none;
+  animation: none !important;
+}
+
 /* Lesson divider section break */
 .lesson-divider {
   position: relative;

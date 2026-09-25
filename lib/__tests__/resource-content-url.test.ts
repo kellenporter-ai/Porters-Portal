@@ -31,8 +31,8 @@ describe('resolveResourceContentUrl', () => {
       .toBe('/ap1-kinematics-practice');
     expect(resolveResourceContentUrl('/texas-grid-blackout'))
       .toBe('/texas-grid-blackout');
-    expect(resolveResourceContentUrl('/codeword'))
-      .toBe('/codeword');
+    expect(resolveResourceContentUrl('/tools/bar-chart'))
+      .toBe('/tools/bar-chart');
     expect(resolveResourceContentUrl('/electroscope-charge-assessment'))
       .toBe('/electroscope-charge-assessment');
     expect(resolveResourceContentUrl('/privacy'))

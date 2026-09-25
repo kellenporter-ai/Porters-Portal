@@ -1,14 +1,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, FileText, FileSearch, Mail, Phone, MapPin, Atom, Microscope, FlaskConical } from 'lucide-react';
-import { CONTENT, type PublicLang } from './landingContent';
+import { BookOpen, FileText, Mail, Phone, MapPin, Atom, Microscope, FlaskConical, ArrowRight } from 'lucide-react';
+import { useT, useInterpolate } from '../../lib/i18n';
 
-interface LandingPageProps {
-  lang: PublicLang;
-}
+const AP_PDFS = [
+  { href: '/assets/public-docs/ap-physics-1-course-overview.pdf', labelKey: 'public.courses.ap.pdf1.label' },
+  { href: '/assets/public-docs/ap-physics-1-course-at-a-glance.pdf', labelKey: 'public.courses.ap.pdf2.label' },
+  { href: '/assets/public-docs/ap-physics-1-course-and-exam-description.pdf', labelKey: 'public.courses.ap.pdf3.label' },
+];
 
-const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
-  const c = CONTENT[lang];
+const GRADING_TIERS = [1, 2, 3, 4, 5] as const;
+
+const LandingPage: React.FC = () => {
+  const t = useT();
+  const interpolate = useInterpolate();
 
   return (
     <>
@@ -26,69 +31,42 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
           <div className="max-w-3xl">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-glass)] px-4 py-1.5 text-sm font-medium text-[var(--text-secondary)]">
               <Atom className="h-4 w-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-              {c.hero.badge}
+              {t('public.hero.badge')}
             </p>
             <h1 className="text-4xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-6xl">
               Porter&apos;s Portal
             </h1>
             <p className="mt-4 text-2xl font-semibold text-purple-600 dark:text-purple-400 sm:text-3xl">
-              {c.hero.motto}
+              {t('public.hero.motto')}
             </p>
-            <p className="mt-6 text-lg text-[var(--text-secondary)]">{c.hero.subtitle}</p>
-            <p className="mt-4 max-w-2xl text-[var(--text-secondary)] leading-relaxed">{c.hero.body}</p>
+            <p className="mt-6 text-lg text-[var(--text-secondary)]">{t('public.hero.subtitle')}</p>
+            <p className="mt-4 max-w-2xl text-[var(--text-secondary)] leading-relaxed">{t('public.hero.body')}</p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 to="/login"
-                aria-label={c.hero.loginBtnAria}
+                aria-label={t('public.hero.loginBtnAria')}
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-[var(--accent)] px-8 text-base font-bold text-[var(--text-inverted)] shadow-sm hover:bg-[var(--accent-hover)] transition-colors focus-visible:outline-offset-2 min-w-[44px]"
               >
-                {c.hero.loginBtn}
+                {t('public.hero.loginBtn')}
               </Link>
               <a
                 href="#courses"
-                aria-label={c.hero.coursesBtnAria}
+                aria-label={t('public.hero.coursesBtnAria')}
                 className="inline-flex h-12 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--surface-glass)] px-6 text-base font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors focus-visible:outline-offset-2 min-w-[44px]"
               >
-                {c.hero.coursesBtn}
+                {t('public.hero.coursesBtn')}
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Seasonal announcement strip — remove after the Forgery Files activity */}
-      {c.announcement && (
-        <section
-          aria-label={c.announcement.label}
-          className="border-b border-indigo-200 bg-indigo-50 dark:border-indigo-500/20 dark:bg-indigo-500/10"
-        >
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-4 sm:px-6 lg:px-8 sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <FileSearch className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-              <p className="truncate text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-                {c.announcement.label}
-                <span className="mx-2 text-indigo-400 dark:text-indigo-500" aria-hidden="true">&middot;</span>
-                <span className="font-normal text-indigo-600 dark:text-indigo-400">{c.announcement.text}</span>
-              </p>
-            </div>
-            {/* Plain <a>, not <Link> — the lookup page is a standalone HTML file outside the SPA router */}
-            <a
-              href={c.announcement.href}
-              aria-label={c.announcement.buttonAria}
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-colors focus-visible:outline-offset-2 min-w-[44px]"
-            >
-              {c.announcement.button}
-            </a>
-          </div>
-        </section>
-      )}
-
       {/* Courses */}
       <section id="courses" className="py-16 sm:py-20 lg:py-24 bg-[var(--surface-raised)]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{c.courses.h2}</h2>
-            <p className="mt-4 text-[var(--text-secondary)]">{c.courses.sub}</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{t('public.courses.h2')}</h2>
+            <p className="mt-4 text-[var(--text-secondary)]">{t('public.courses.sub')}</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -97,23 +75,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
                 <Atom className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">{c.courses.ap.title}</h3>
-              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{c.courses.ap.body}</p>
+              <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">{t('public.courses.ap.title')}</h3>
+              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{t('public.courses.ap.body')}</p>
               <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{c.courses.ap.downloadHeading}</p>
+                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{t('public.courses.ap.downloadHeading')}</p>
                 <ul className="space-y-2">
-                  {c.courses.ap.pdfs.map((pdf) => (
+                  {AP_PDFS.map((pdf) => (
                     <li key={pdf.href}>
                       <a
                         href={pdf.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={c.courses.ap.downloadAria(pdf.label)}
+                        aria-label={interpolate('public.courses.ap.downloadAria', { label: t(pdf.labelKey) })}
                         className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
                       >
                         <FileText className="h-4 w-4" aria-hidden="true" />
-                        {pdf.label}
-                        <span className="sr-only">{c.courses.newTab}</span>
+                        {t(pdf.labelKey)}
+                        <span className="sr-only">{t('public.courses.newTab')}</span>
                       </a>
                     </li>
                   ))}
@@ -126,25 +104,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400">
                 <FlaskConical className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-bold text-cyan-700 dark:text-cyan-400">{c.courses.honors.title}</h3>
-              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{c.courses.honors.body}</p>
+              <h3 className="text-xl font-bold text-cyan-700 dark:text-cyan-400">{t('public.courses.honors.title')}</h3>
+              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{t('public.courses.honors.body')}</p>
               <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{c.courses.honors.downloadHeading}</p>
-                <ul className="space-y-2">
-                  <li>
-                    <a
-                      href="/assets/public-docs/physics-syllabus.pdf"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={c.courses.honors.downloadAria}
-                      className="inline-flex items-center gap-2 rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-cyan-700 shadow-sm hover:bg-cyan-100 dark:border-cyan-500/30 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
-                    >
-                      <FileText className="h-4 w-4" aria-hidden="true" />
-                      {c.courses.honors.pdfLabel}
-                      <span className="sr-only">{c.courses.newTab}</span>
-                    </a>
-                  </li>
-                </ul>
+                <Link
+                  to="/syllabus/physics"
+                  className="inline-flex items-center gap-2 rounded-lg border border-cyan-200 bg-white px-4 py-2.5 text-sm font-bold text-cyan-700 shadow-sm hover:bg-cyan-100 dark:border-cyan-500/30 dark:bg-cyan-900/20 dark:text-cyan-300 dark:hover:bg-cyan-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
+                >
+                  {t('public.courses.honors.syllabusLink')}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
               </div>
             </article>
 
@@ -153,25 +122,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
                 <Microscope className="h-6 w-6" aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-bold text-amber-700 dark:text-amber-400">{c.courses.forensic.title}</h3>
-              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{c.courses.forensic.body}</p>
+              <h3 className="text-xl font-bold text-amber-700 dark:text-amber-400">{t('public.courses.forensic.title')}</h3>
+              <p className="mt-3 flex-1 text-[var(--text-secondary)] leading-relaxed">{t('public.courses.forensic.body')}</p>
               <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{c.courses.forensic.downloadHeading}</p>
-                <ul className="space-y-2">
-                  <li>
-                    <a
-                      href="/assets/public-docs/forensic-science-syllabus.pdf"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={c.courses.forensic.downloadAria}
-                      className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-700 shadow-sm hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
-                    >
-                      <FileText className="h-4 w-4" aria-hidden="true" />
-                      {c.courses.forensic.pdfLabel}
-                      <span className="sr-only">{c.courses.newTab}</span>
-                    </a>
-                  </li>
-                </ul>
+                <Link
+                  to="/syllabus/forensics"
+                  className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-sm font-bold text-amber-700 shadow-sm hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-500/20 transition-colors focus-visible:outline-offset-2 min-h-[44px]"
+                >
+                  {t('public.courses.forensic.syllabusLink')}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
               </div>
             </article>
           </div>
@@ -182,48 +142,49 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
       <section id="procedures" className="py-16 sm:py-20 lg:py-24 bg-[var(--surface-base)]">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{c.procedures.h2}</h2>
-            <p className="mt-4 text-[var(--text-secondary)]">{c.procedures.sub}</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{t('public.procedures.h2')}</h2>
+            <p className="mt-4 text-[var(--text-secondary)]">{t('public.procedures.sub')}</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.cells.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.cells.body}</p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{t('public.procedures.cells.title')}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.cells.body')}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.seating.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.seating.body}</p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{t('public.procedures.seating.title')}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.seating.body')}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.learning.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.learning.body}</p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{t('public.procedures.learning.title')}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.learning.body')}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.portal.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.portal.body}</p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{t('public.procedures.portal.title')}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.portal.body')}</p>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.grading.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.grading.intro}</p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{t('public.procedures.grading.title')}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.grading.intro')}</p>
               <ul className="mt-4 space-y-2 text-[var(--text-secondary)] leading-relaxed">
-                {c.procedures.grading.tiers.map((tier) => (
-                  <li key={tier.name}>
-                    <strong className="text-[var(--text-primary)]">{tier.name}</strong> {tier.desc}
+                {GRADING_TIERS.map((tier) => (
+                  <li key={tier}>
+                    <strong className="text-[var(--text-primary)]">{t(`public.procedures.grading.tier${tier}.name`)}</strong>{' '}
+                    {t(`public.procedures.grading.tier${tier}.desc`)}
                   </li>
                 ))}
               </ul>
             </article>
 
             <article className="rounded-2xl border border-purple-200 bg-purple-50 p-6 dark:border-purple-500/20 dark:bg-purple-500/10 sm:p-8 md:col-span-2">
-              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{c.procedures.resubmit.title}</h3>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p1}</p>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p2}</p>
-              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{c.procedures.resubmit.p3}</p>
+              <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">{t('public.procedures.resubmit.title')}</h3>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.resubmit.p1')}</p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.resubmit.p2')}</p>
+              <p className="mt-3 text-[var(--text-secondary)] leading-relaxed">{t('public.procedures.resubmit.p3')}</p>
             </article>
           </div>
         </div>
@@ -234,8 +195,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{c.contact.h2}</h2>
-              <p className="mt-4 text-lg text-[var(--text-secondary)]">{c.contact.sub}</p>
+              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">{t('public.contact.h2')}</h2>
+              <p className="mt-4 text-lg text-[var(--text-secondary)]">{t('public.contact.sub')}</p>
             </div>
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] p-6 sm:p-8">
@@ -245,8 +206,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
                     <BookOpen className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.teacherLabel}</dt>
-                    <dd className="text-lg font-semibold text-[var(--text-primary)]">{c.contact.teacherValue}</dd>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{t('public.contact.teacherLabel')}</dt>
+                    <dd className="text-lg font-semibold text-[var(--text-primary)]">{t('public.contact.teacherValue')}</dd>
                   </div>
                 </div>
 
@@ -255,14 +216,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
                     <Mail className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.emailLabel}</dt>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{t('public.contact.emailLabel')}</dt>
                     <dd>
                       <a
                         href="mailto:kellporter2@paps.net"
-                        aria-label={c.contact.emailAria}
+                        aria-label={t('public.contact.emailAria')}
                         className="text-lg font-semibold text-[var(--accent-text)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4"
                       >
-                        {c.contact.emailValue}
+                        {t('public.contact.emailValue')}
                       </a>
                     </dd>
                   </div>
@@ -273,8 +234,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
                     <MapPin className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.schoolLabel}</dt>
-                    <dd className="text-lg font-semibold text-[var(--text-primary)]">{c.contact.schoolValue}</dd>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{t('public.contact.schoolLabel')}</dt>
+                    <dd className="text-lg font-semibold text-[var(--text-primary)]">{t('public.contact.schoolValue')}</dd>
                   </div>
                 </div>
 
@@ -283,14 +244,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ lang }) => {
                     <Phone className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{c.contact.mainOfficeLabel}</dt>
+                    <dt className="text-sm font-semibold text-[var(--text-muted)]">{t('public.contact.mainOfficeLabel')}</dt>
                     <dd>
                       <a
                         href="tel:+17323766230"
-                        aria-label={c.contact.mainOfficeAria}
+                        aria-label={t('public.contact.mainOfficeAria')}
                         className="text-lg font-semibold text-[var(--accent-text)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-offset-2 underline underline-offset-4"
                       >
-                        {c.contact.mainOfficeValue}
+                        {t('public.contact.mainOfficeValue')}
                       </a>
                     </dd>
                   </div>

@@ -48,7 +48,6 @@ function titleFromFilename(path: string): string {
  */
 const CLEAN_URL_REWRITES = new Set([
   "/privacy",
-  "/codeword",
   "/circuit-diagram-builder",
   "/electroscope-charge-assessment",
   "/tools/bar-chart",

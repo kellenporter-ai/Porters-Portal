@@ -81,16 +81,6 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/textbook/ch2-kinematics-1d/',
   },
   {
-    title: 'Codeword Lookup',
-    description: 'Forgery Files codeword lookup utility.',
-    url: '/codeword',
-    hostingType: 'bundled',
-    contentKind: 'utility',
-    tags: ['forensics', 'utility'],
-    suggestedCategory: 'Supplemental',
-    sourceFingerprint: '/codeword-lookup.html',
-  },
-  {
     title: 'Privacy Policy',
     description: 'Porter\'s Portal privacy policy.',
     url: '/privacy',

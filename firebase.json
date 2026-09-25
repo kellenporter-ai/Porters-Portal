@@ -64,10 +64,6 @@
         "destination": "/privacy.html"
       },
       {
-        "source": "/codeword",
-        "destination": "/codeword-lookup.html"
-      },
-      {
         "source": "/circuit-diagram-builder",
         "destination": "/circuit-diagram-builder.html"
       },
