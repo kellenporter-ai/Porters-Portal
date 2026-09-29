@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T01:41:08.618Z",
+  "generatedAt": "2026-09-28T23:07:23.420Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -15,6 +15,11 @@
       "path": "/electroscope-charge-assessment.html",
       "fingerprint": "/electroscope-charge-assessment.html",
       "sizeBytes": 362647
+    },
+    {
+      "path": "/evidence-court.html",
+      "fingerprint": "/evidence-court.html",
+      "sizeBytes": 29305
     },
     {
       "path": "/forensic-branches/",
@@ -89,12 +94,12 @@
     {
       "path": "/power-strip-reading/section-2-circuit-breakers.html",
       "fingerprint": "/power-strip-reading/section-2-circuit-breakers.html",
-      "sizeBytes": 13606
+      "sizeBytes": 13591
     },
     {
       "path": "/power-strip-reading/section-3-insulation.html",
       "fingerprint": "/power-strip-reading/section-3-insulation.html",
-      "sizeBytes": 13882
+      "sizeBytes": 14486
     },
     {
       "path": "/power-strip-reading/section-4-ground-wire.html",
@@ -157,6 +162,11 @@
       "sizeBytes": 180722
     },
     {
+      "path": "/the-break-in/",
+      "fingerprint": "/the-break-in/",
+      "sizeBytes": 49740
+    },
+    {
       "path": "/tools/bar-chart.html",
       "fingerprint": "/tools/bar-chart.html",
       "sizeBytes": 41570
@@ -170,6 +180,26 @@
       "path": "/tools/tangent-secant-explorer.html",
       "fingerprint": "/tools/tangent-secant-explorer.html",
       "sizeBytes": 15713
+    },
+    {
+      "path": "/undergrounding-reading/",
+      "fingerprint": "/undergrounding-reading/",
+      "sizeBytes": 13836
+    },
+    {
+      "path": "/undergrounding-reading/section-1-preventable-disaster.html",
+      "fingerprint": "/undergrounding-reading/section-1-preventable-disaster.html",
+      "sizeBytes": 14032
+    },
+    {
+      "path": "/undergrounding-reading/section-2-failure-modes.html",
+      "fingerprint": "/undergrounding-reading/section-2-failure-modes.html",
+      "sizeBytes": 19593
+    },
+    {
+      "path": "/undergrounding-reading/section-3-undergrounding.html",
+      "fingerprint": "/undergrounding-reading/section-3-undergrounding.html",
+      "sizeBytes": 16190
     },
     {
       "path": "/week4-evidence-storyboard.html",
