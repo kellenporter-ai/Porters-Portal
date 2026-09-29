@@ -26,6 +26,89 @@ function validateClassType(classType: string): void {
 export const XP_AWARDED_FIELD = "xpAwarded" as const;
 
 // ==========================================
+// SESSION EXPIRY / STALENESS HELPERS
+// ==========================================
+// Grace window (ms) applied past expiresAt before a session is treated as
+// dead. Mirrors the 5-minute grace already used by submitAssessment and
+// submitOnBehalf when REJECTING expired sessions — the same window is used
+// here when IGNORING/CLAIMING them. A permanently-expired unused session is
+// garbage, not a lock.
+export const SESSION_EXPIRY_GRACE_MS = 5 * 60 * 1000;
+
+/** Accepts a Firestore Timestamp, Date, epoch-ms number, or ISO string. */
+export function sessionExpiryMillis(expiresAt: unknown): number | null {
+  if (expiresAt === undefined || expiresAt === null) return null;
+  if (typeof expiresAt === "object") {
+    const ts = expiresAt as { toMillis?: () => number; getTime?: () => number };
+    if (typeof ts.toMillis === "function") return ts.toMillis();
+    if (typeof ts.getTime === "function") {
+      const t = ts.getTime();
+      return Number.isFinite(t) ? t : null;
+    }
+    return null;
+  }
+  if (typeof expiresAt === "number") return Number.isFinite(expiresAt) ? expiresAt : null;
+  if (typeof expiresAt === "string") {
+    const t = Date.parse(expiresAt);
+    return Number.isFinite(t) ? t : null;
+  }
+  return null;
+}
+
+/**
+ * True when a session is past expiresAt + grace — i.e. permanently dead.
+ * Sessions with NO expiresAt never expire (fail-open, same as the rest of
+ * the codebase: heartbeat and submitAssessment treat missing expiresAt as
+ * non-expiring).
+ */
+export function isSessionEffectivelyExpired(expiresAt: unknown, nowMillis: number): boolean {
+  const exp = sessionExpiryMillis(expiresAt);
+  if (exp === null) return false;
+  return nowMillis > exp + SESSION_EXPIRY_GRACE_MS;
+}
+
+export interface SessionLike {
+  id: string;
+  used?: unknown;
+  expiresAt?: unknown;
+  tokenSignature?: unknown;
+}
+
+export interface SessionPartition {
+  /** Still-valid, unused sessions — these legitimately block return/submit. */
+  active: SessionLike[];
+  /** used:false but past expiresAt + grace — garbage, safe to claim/ignore. */
+  stale: SessionLike[];
+}
+
+/**
+ * Partition unused session docs into active vs stale. Pure + exported so the
+ * exact production predicate is unit-testable without an emulator.
+ */
+export function partitionSessionsByStaleness(
+  sessions: SessionLike[],
+  nowMillis: number,
+): SessionPartition {
+  const active: SessionLike[] = [];
+  const stale: SessionLike[] = [];
+  for (const s of sessions) {
+    if (isSessionEffectivelyExpired(s.expiresAt, nowMillis)) stale.push(s);
+    else active.push(s);
+  }
+  return { active, stale };
+}
+
+/**
+ * Claim fields for a stale session — mirrors the normal claim shape used by
+ * submitAssessment ({used: true, usedAt: serverTimestamp}). Data-level repair
+ * convention (memory: assessment-session-race-limbo): mark stale sessions
+ * consumed, never delete.
+ */
+export function claimStaleSessionUpdate(nowMillis: number): { used: true; usedAt: number } {
+  return { used: true, usedAt: nowMillis };
+}
+
+// ==========================================
 // ASSESSMENT GRADING HELPER — Reusable block grading logic
 // ==========================================
 
@@ -245,49 +328,11 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
   const assignment = assignmentSnap.data()!;
   if (!assignment.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment");
 
-  // Check for existing unused session token (crash recovery — reuse instead of creating new)
-  // forceNew bypasses reuse when the client detects a ghost/missing token loop
-  if (!forceNew) {
-    const existingTokens = await db.collection("assessment_sessions")
-      .where("userId", "==", uid)
-      .where("assignmentId", "==", assignmentId)
-      .where("used", "==", false)
-      .orderBy("__name__")
-      .limit(1)
-      .get();
-    if (!existingTokens.empty) {
-      const now = admin.firestore.Timestamp.now();
-      // Find first non-expired token; expired ones are left for cleanup
-      const candidate = existingTokens.docs.find(doc => {
-        const expiresAt = doc.data().expiresAt;
-        return !expiresAt || expiresAt.toMillis() > now.toMillis();
-      });
-      if (candidate) {
-        // DEFENSIVE: query results can lag behind reality; verify with a direct get
-        const verified = await candidate.ref.get();
-        if (verified.exists) {
-          const vData = verified.data()!;
-          if (vData.used !== true) {
-            logWithCorrelation('info', 'startAssessmentSession: reusing existing token', correlationId, { uid, assignmentId, tokenPrefix: candidate.id.slice(0, 8) });
-            return { sessionToken: candidate.id, tokenSignature: vData.tokenSignature || undefined, startedAt: Date.now() };
-          }
-          // Token was marked used between query and get — fall through
-          logWithCorrelation('warn', 'startAssessmentSession: token became used between query and get', correlationId, { uid, assignmentId, tokenPrefix: candidate.id.slice(0, 8) });
-        } else {
-          // Ghost document in index — log and fall through to create new
-          logWithCorrelation('warn', 'startAssessmentSession: ghost token in query results (doc missing)', correlationId, { uid, assignmentId, tokenPrefix: candidate.id.slice(0, 8) });
-        }
-      }
-      // All existing tokens expired or invalid — fall through to create a new one
-    }
-  } else {
-    logWithCorrelation('info', 'startAssessmentSession: forceNew requested — skipping reuse', correlationId, { uid, assignmentId });
-  }
-
   // C-1 resubmit gate: if the student's latest submission is graded (teacher
   // actively grading) and has NOT been returned, block a new attempt. Allow
   // when never graded or when the latest is RETURNED (feedback-then-retry loop).
-  // maxAttempts semantics are unchanged below.
+  // Runs BEFORE any session token is minted so a blocked student doesn't
+  // consume/create session docs.
   {
     const subsSnap = await db.collection("submissions")
       .where("userId", "==", uid)
@@ -306,7 +351,8 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
     }
   }
 
-  // Check max attempts
+  // Check max attempts (before token creation — a student out of attempts
+  // should not mint new session docs)
   const cfg = assignment.assessmentConfig || {};
   if (cfg.maxAttempts && cfg.maxAttempts > 0) {
     const existingSubs = await db.collection("submissions")
@@ -318,6 +364,84 @@ export const startAssessmentSession = onCall({ memory: "256MiB", timeoutSeconds:
     if (activeSubmissions.length >= cfg.maxAttempts) {
       throw new HttpsError("resource-exhausted", "You have used all available attempts for this assessment.");
     }
+  }
+
+  // Check for existing unused session token (crash recovery — reuse instead of creating new)
+  // forceNew bypasses reuse when the client detects a ghost/missing token loop
+  if (!forceNew) {
+    // RACE FIX (2026-09-29 incident): the reuse-check + create below used to
+    // be a plain query-then-set, so N concurrent calls (observed: 4 within
+    // ~100ms) each minted their own used:false session. Those stale sessions
+    // then hard-blocked returnAssessment forever. The check+create is now
+    // serialized per (userId, assignmentId) via a lock doc transaction —
+    // Firestore queues contending transactions, so at most ONE caller wins
+    // the create; the rest reuse the winner's token (crash-recovery reuse
+    // semantics preserved). Idempotent: identical retries return the same token.
+    const lockRef = db.doc(`assessment_session_locks/${uid}_${assignmentId}`);
+    const reuseResult = await db.runTransaction(async (transaction) => {
+      // HARD RULE: Firestore requires ALL reads before ANY writes in a
+      // transaction — a read after a queued write throws a fatal error.
+      const lockSnap = await transaction.get(lockRef); // locks the (user,assignment) pair
+      void lockSnap; // existence not required; the get itself serializes contenders
+      const existingTokens = await transaction.get(db.collection("assessment_sessions")
+        .where("userId", "==", uid)
+        .where("assignmentId", "==", assignmentId)
+        .where("used", "==", false)
+        .orderBy("__name__"));
+      const nowMillis = Date.now();
+      const partition = partitionSessionsByStaleness(
+        existingTokens.docs.map(d => ({ id: d.id, ...d.data() })),
+        nowMillis,
+      );
+      const candidate = partition.active[0];
+      // DEFENSIVE read of the candidate (if any) BEFORE any writes below.
+      let verified: FirebaseFirestore.DocumentSnapshot | null = null;
+      if (candidate) {
+        // Query index can lag behind reality / ghost docs — verify directly.
+        verified = await transaction.get(db.collection("assessment_sessions").doc(candidate.id));
+      }
+      // --- WRITES START (no reads allowed past this point) ---
+      // Claim stale expired sessions inside the same transaction (mark
+      // consumed, never delete — mirrors the normal claim shape).
+      for (const stale of partition.stale) {
+        transaction.update(db.collection("assessment_sessions").doc(stale.id),
+          claimStaleSessionUpdate(nowMillis));
+      }
+      if (candidate && verified) {
+        if (verified.exists) {
+          const vData = verified.data()!;
+          if (vData.used !== true) {
+            return { token: candidate.id, signature: vData.tokenSignature || undefined };
+          }
+          // Token was marked used between query and get — fall through to create
+        } else {
+          // Ghost document in index — fall through to create new
+        }
+      }
+      // No reusable token — create one. All concurrent contenders block here;
+      // only the first transaction to commit wins, the rest re-read the
+      // winner's token above and reuse it.
+      const crypto = await import("crypto");
+      const token = crypto.randomUUID();
+      const tokenSignature = crypto.randomBytes(32).toString('hex');
+      const maxDurationSec = (assignment.assessmentConfig?.maxDurationMinutes || 240) * 60;
+      transaction.set(db.collection("assessment_sessions").doc(token), {
+        userId: uid,
+        assignmentId,
+        startedAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: admin.firestore.Timestamp.fromMillis(nowMillis + maxDurationSec * 1000),
+        used: false,
+        tokenSignature,
+      });
+      // Best-effort lock-doc touch (keeps the doc alive for the hot path;
+      // lockRef is read above regardless of existence)
+      transaction.set(lockRef, { userId: uid, assignmentId, lastStartAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      return { token, signature: tokenSignature };
+    });
+    logWithCorrelation('info', 'startAssessmentSession: token issued/reused under lock', correlationId, { uid, assignmentId, tokenPrefix: reuseResult.token.slice(0, 8) });
+    return { sessionToken: reuseResult.token, tokenSignature: reuseResult.signature, startedAt: Date.now() };
+  } else {
+    logWithCorrelation('info', 'startAssessmentSession: forceNew requested — skipping reuse', correlationId, { uid, assignmentId });
   }
 
   // Generate cryptographic session token + per-session signature
@@ -852,15 +976,24 @@ export const returnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   if (!sub.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment submission");
   if (sub.status === "RETURNED") throw new HttpsError("already-exists", "This submission has already been returned");
 
-  // 5. Check no active session (student mid-attempt)
+  // 5. Check no active session (student mid-attempt). Expired sessions
+  // (past expiresAt + grace) are garbage, not a lock — claim them so they
+  // stop blocking return forever (2026-09-29 limbo incident).
+  const nowMillis = Date.now();
   const activeSessions = await db.collection("assessment_sessions")
     .where("userId", "==", sub.userId)
     .where("assignmentId", "==", sub.assignmentId)
     .where("used", "==", false)
     .orderBy("__name__")
-    .limit(1)
     .get();
-  if (!activeSessions.empty) {
+  const sessionPartition = partitionSessionsByStaleness(
+    activeSessions.docs.map(d => ({ id: d.id, ...d.data() })),
+    nowMillis,
+  );
+  for (const stale of sessionPartition.stale) {
+    await db.collection("assessment_sessions").doc(stale.id).update(claimStaleSessionUpdate(nowMillis));
+  }
+  if (sessionPartition.active.length > 0) {
     throw new HttpsError("failed-precondition", "Student has an active assessment session. Wait for them to submit or use Submit on Behalf.");
   }
 
@@ -990,10 +1123,13 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     if (behalfTokenSignature && sData.tokenSignature !== behalfTokenSignature) {
       throw new HttpsError("permission-denied", "Invalid session signature for submit on behalf.");
     }
-    // Check expiration
+    // Check expiration. Expired sessions (past expiresAt + grace) are cleared
+    // so an admin can always force a path forward — the draft is saved, and
+    // the student can start a fresh session whose work is restored.
     const now = Date.now();
     const expiresAt = sData.expiresAt?.toMillis ? sData.expiresAt.toMillis() : Number(sData.expiresAt);
-    if (expiresAt && now > expiresAt + 300000) {
+    if (expiresAt && now > expiresAt + SESSION_EXPIRY_GRACE_MS) {
+      await db.collection("assessment_sessions").doc(sessionDoc.id).update(claimStaleSessionUpdate(now));
       throw new HttpsError("deadline-exceeded", "Assessment session has expired. The student's draft answers are still saved — they can refresh to start a new attempt and their work will be restored.");
     }
   }
