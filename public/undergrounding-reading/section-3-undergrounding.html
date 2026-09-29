@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Insulation: Lesson 2 Reading, Section 03</title>
+<title>Design Solution: Undergrounding Power: Lesson 3 Reading, Section 3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -200,28 +200,48 @@
     line-height: 1.4;
   }
 
-  .think-box {
-    margin: 2.4em 0 0;
-    padding: 24px 24px 12px;
-    border: var(--dash);
+  .figure-inline figcaption .caption-src {
+    display: block;
+    margin-top: 2px;
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
   }
 
-  .think-box .think-label {
+  /* ── Inline symbol diagram ────────────── */
+  .diagram-box {
+    margin: 2.4em 0;
+    border: var(--dash);
+    padding: 24px 20px 16px;
+  }
+
+  .diagram-box .diagram-label {
     font-family: 'Archivo', sans-serif;
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
-  .think-box p {
-    font-size: 16px;
-    line-height: 1.55;
-    color: var(--ink-soft);
-    margin-bottom: 1em;
+  .diagram-box svg {
+    display: block;
+    width: 100%;
+    height: auto;
   }
+
+  .diagram-box .svg-t {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 700;
+    fill: var(--ink);
+    letter-spacing: 0.04em;
+  }
+
+  .diagram-box .svg-muted { fill: var(--ink-soft); font-weight: 600; }
+  .diagram-box .svg-accent { fill: var(--accent); }
 
   /* ── Prev / Next ──────────────────────── */
   .prev-next {
@@ -317,71 +337,69 @@
   </nav>
 
   <header class="article-header">
-    <p class="eyebrow article-eyebrow"><span class="lang-en">Lesson 2 Reading &middot; Section 3 of 5</span><span class="lang-es">Lectura de la Lección 2 &middot; Sección 3 de 5</span></p>
+    <p class="eyebrow article-eyebrow"><span class="lang-en">Lesson 3 Reading &middot; Section 3 of 3</span><span class="lang-es">Lectura de la Lección 3 &middot; Sección 3 de 3</span></p>
     <div class="header-flex">
       <div class="article-num">03</div>
-      <h1 class="article-title display"><span class="lang-en">Insulation</span><span class="lang-es">Aislamiento</span></h1>
+      <h1 class="article-title display"><span class="lang-en">Design Solution: Undergrounding Power</span><span class="lang-es">Solución de diseño: energía subterránea</span></h1>
     </div>
   </header>
 
   <figure class="article-figure">
     <div class="frame">
-      <img src="images/insulation.jpg" alt="A cut electrical cable showing separate insulated wires with exposed copper strands" width="1280" height="549" loading="lazy" style="object-position: center 45%;;">
+      <img src="images/underground-construction.jpg" alt="Workers and yellow excavators digging a deep trench along a residential street to lay large underground electrical conduit pipes" width="1280" height="720" loading="lazy" style="aspect-ratio: 21 / 9; object-position: center 60%;">
     </div>
   </figure>
 
   <main class="article-body">
 
-    <p class="lede reveal lang-en">The wires that connect electrical outlets in a building to the electrical circuit panel usually run through the walls, ceiling, and/or floors of a building. The rubber material around these wires (white in the photo) does not transfer electrical energy well. We call these sorts of materials electrical insulators. If you were to peel off the insulating material on the cables in our walls, you would see two or three separate wires in them--like the three wires we saw inside the cable on the power strip. These wires sometimes have a protective metal casing around them to prevent them from getting accidently cut during construction or renovation.</p>
+    <p class="lede reveal lang-en">An engineer&rsquo;s job is to develop solutions to address criteria that are important to customers and other interested parties. An important criterion for energy customers is to prevent a power outage scenario, such as a broken or short circuit. Burying power lines underground is a design solution that can meet this criterion by protecting infrastructure from damage by trees, squirrels, and storms.</p>
 
-    <p class="reveal lang-es">Los cables que conectan los tomacorrientes eléctricos de un edificio al panel del circuito eléctrico generalmente pasan por las paredes, el techo y/o los pisos de un edificio. El material de goma alrededor de estos cables (blanco en la foto) no transfiere bien la energía eléctrica. Llamamos a este tipo de materiales aisladores eléctricos. Si quitara el material aislante de los cables de nuestras paredes, vería dos o tres cables separados en ellos, como los tres cables que vimos dentro del cable en la regleta de enchufes. Estos cables a veces tienen una cubierta protectora de metal alrededor para evitar que se corten accidentalmente durante la construcción o renovación.</p>
+    <p class="reveal lang-es">El trabajo de un ingeniero es desarrollar soluciones para abordar criterios que son importantes para los clientes y otras partes interesadas. Un criterio importante para los clientes de energía es evitar un escenario de corte de energía, como un circuito roto o corto. Enterrar las líneas eléctricas bajo tierra es una solución de diseño que puede cumplir con este criterio al proteger la infraestructura del daño causado por árboles, ardillas y tormentas.</p>
 
-    <figure class="figure-inline reveal">
-      <img src="images/insulation.jpg" alt="A cut electrical cable showing separate insulated wires with exposed copper strands at the cut end" width="1280" height="720" loading="lazy" style="object-position: center 45%;">
-      <figcaption class="lang-en">Inside a cable: separate wires, each wrapped in rubber insulation that does not transfer electrical energy well.</figcaption>
-      <figcaption class="lang-es">Dentro de un cable: cables separados, cada uno envuelto en aislamiento de goma que no transfiere bien la energía eléctrica.</figcaption>
-    </figure>
+    <p class="reveal lang-en">There are many additional advantages to burying our power grid infrastructure. It would allow the land to be used for other things. It could protect birds, squirrels, snakes, and other animals from injury or death. In addition, people don&rsquo;t like looking at unattractive power lines. Putting them underground makes a neighborhood more desirable.</p>
 
-    <p class="reveal lang-en">There are also insulators on the infrastructure you see outside of a building. You may have noticed ceramic discs stacked along power lines, like in the photo. These disks do the same thing as the insulating material on the outside of wires. They prevent electrical energy in the wires from accidentally transferring to another structure nearby.</p>
+    <p class="reveal lang-es">Hay muchas ventajas adicionales al enterrar nuestra infraestructura de red eléctrica. Permitiría que la tierra se usara para otras cosas. Podría proteger a pájaros, ardillas, serpientes y otros animales de lesiones o muerte. Además, a la gente no le gusta mirar líneas eléctricas poco atractivas. Ponerlos bajo tierra hace que un vecindario sea más deseable.</p>
 
-    <p class="reveal lang-es">También hay aisladores en la infraestructura que ves fuera de un edificio. Es posible que haya notado discos de cerámica apilados a lo largo de las líneas eléctricas, como en la foto. Estos discos hacen lo mismo que el material aislante en el exterior de los cables. Evitan que la energía eléctrica de los cables se transfiera accidentalmente a otra estructura cercana.</p>
+    <p class="reveal lang-en">But this solution comes with an important constraint. Burying power lines underground is very expensive. Because of this, most power lines in the United States are still aboveground. The cost of burying power lines is roughly $750 per foot. Compare that to the cost of putting up an aboveground power line, at only $70 per foot. An underground line is more than 10 times more expensive!</p>
+
+    <p class="reveal lang-es">Pero esta solución viene con una importante limitación. Enterrar las líneas eléctricas bajo tierra es muy costoso. Debido a esto, la mayoría de las líneas eléctricas en los Estados Unidos todavía están en la superficie. El costo de enterrar las líneas eléctricas es de aproximadamente $750 por pie. Compare eso con el costo de instalar una línea eléctrica sobre el suelo, a solo $70 por pie. ¡Una línea de metro es más de 10 veces más cara!</p>
 
     <figure class="figure-inline reveal">
-      <img src="images/insulators.jpg" alt="A string of stacked ceramic discs insulating a high-voltage power line from the metal tower" width="960" height="720" loading="lazy">
-      <figcaption class="lang-en">A string of ceramic discs insulates a high-voltage power line from the metal tower, just like the rubber insulation on a wire.</figcaption>
-      <figcaption class="lang-es">Una serie de discos de cerámica aísla una línea eléctrica de alta tensión de la torre metálica, igual que el aislamiento de goma en un cable.</figcaption>
+      <img src="images/undergrounding-cost.jpg" alt="A bar diagram comparing the cost per foot of a buried power line at about $750 to an aboveground power line at about $70" width="1280" height="698" loading="lazy" style="object-fit: contain; background: #F4F3EF;">
+      <figcaption><span class="lang-en">The cost of burying power lines is roughly $750 per foot, compared to about $70 per foot for an aboveground line.</span><span class="lang-es">El costo de enterrar las líneas eléctricas es de aproximadamente $750 por pie, en comparación con unos $70 por pie por una línea sobre el suelo.</span></figcaption>
     </figure>
 
-    <div class="think-box reveal">
-      <p class="think-label lang-en">Think about it</p>
-      <p class="think-label lang-es">Piénsalo</p>
-      <p class="lang-en">Why do power lines have stacks of ceramic discs on the poles?</p>
-      <p class="lang-es">¿Por qué las líneas eléctricas tienen pilas de discos de cerámica en los postes?</p>
-    </div>
+    <p class="reveal lang-en">Cost is not the only constraint on underground power lines. They can also be very difficult to maintain. If there is a problem, workers will need to dig up a lot of dirt to find it. And putting infrastructure underground still does not protect it from other hazards like flooding and earthquakes.</p>
+
+    <p class="reveal lang-es">El costo no es la única limitación de las líneas eléctricas subterráneas. También pueden ser muy difíciles de mantener. Si hay un problema, los trabajadores tendrán que desenterrar mucha tierra para encontrarlo. Y poner la infraestructura bajo tierra aún no la protege de otros peligros como inundaciones y terremotos.</p>
+
+    <p class="reveal lang-en">Putting power lines underground is a design solution that addresses several criteria, including protecting energy infrastructure, protecting wildlife, and making neighborhoods look nicer. But it also comes with some constraints that make it difficult to implement.</p>
+
+    <p class="reveal lang-es">Poner líneas eléctricas bajo tierra es una solución de diseño que aborda varios criterios, incluida la protección de la infraestructura energética, la protección de la vida silvestre y la mejora del aspecto de los vecindarios. Pero también viene con algunas limitaciones que dificultan su implementación.</p>
 
   </main>
 
   <nav class="prev-next">
-    <a href="section-2-circuit-breakers.html" class="pn-card prev">
+    <a href="section-2-failure-modes.html" class="pn-card prev">
       <span class="pn-label lang-en">Previous</span>
       <span class="pn-label lang-es">Anterior</span>
       <span class="pn-num">02</span>
-      <span class="pn-title lang-en">Circuit Breakers</span>
-      <span class="pn-title lang-es">Disyuntores</span>
+      <span class="pn-title lang-en">Broken, Grounded, and Short Circuits</span>
+      <span class="pn-title lang-es">Circuitos rotos, conectados a tierra y en cortocircuito</span>
     </a>
-    <a href="section-4-ground-wire.html" class="pn-card next">
-      <span class="pn-label lang-en">Next</span>
-      <span class="pn-label lang-es">Siguiente</span>
-      <span class="pn-num">04</span>
-      <span class="pn-title lang-en">The Ground Wire</span>
-      <span class="pn-title lang-es">El cable de tierra</span>
+    <a href="index.html" class="pn-card next">
+      <span class="pn-label lang-en">Back to all sections</span>
+      <span class="pn-label lang-es">Volver a todas las secciones</span>
+      <span class="pn-num">&middot;</span>
+      <span class="pn-title lang-en">Undergrounding Power Lines</span>
+      <span class="pn-title lang-es">Líneas eléctricas subterráneas</span>
     </a>
   </nav>
 
   <script>
     (function () {
       // ── Language toggle ──
-      var KEY = 'psrLang';
+      var KEY = 'urLang';
       var root = document.documentElement;
       function setLang(lang) {
         if (lang !== 'es') lang = 'en';

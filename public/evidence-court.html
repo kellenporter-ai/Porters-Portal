@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidence Court</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --ink: #1B1B1F;
+    --ink-soft: rgba(27, 27, 31, .62);
+    --accent: #FF4D26;
+    --accent-dark: #D63A18;
+    --dashed: 1.5px dashed rgba(27, 27, 31, .45);
+    --green: #2E9E5B;
+    --amber: #E8A020;
+    --shadow-card: 6px 6px 0 rgba(27, 27, 31, .15);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.15rem;
+    line-height: 1.45;
+  }
+  .app { max-width: 1200px; margin: 0 auto; padding: 0 20px; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* header */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0 12px; flex-wrap: wrap; }
+  .brand { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: clamp(1.6rem, 3.2vw, 2.3rem); letter-spacing: .02em; line-height: 1; }
+  .brand .accent { color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .group-chip {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1rem;
+    background: var(--ink); color: var(--paper); padding: 8px 18px; border-radius: 999px;
+    max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .lang-toggle { display: flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; }
+  .lang-btn {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: .95rem;
+    background: transparent; color: var(--ink); border: 0; cursor: pointer;
+    padding: 8px 16px; min-height: 40px; min-width: 44px;
+  }
+  .lang-btn.active { background: var(--ink); color: var(--paper); }
+
+  /* buttons */
+  .btn {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.05rem;
+    border-radius: var(--radius); cursor: pointer; min-height: 48px; min-width: 44px; padding: 10px 22px;
+    border: 1.5px solid var(--ink);
+    transition: transform .25s ease, opacity .25s ease, background-color .25s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn-outline { background: transparent; color: var(--ink); }
+  .btn-outline:hover { background: rgba(27, 27, 31, .07); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--ink); text-decoration: underline; }
+  .btn-ghost:hover { color: var(--accent); }
+  .btn-green { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn-amber { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+  .btn-dark { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .btn-big { width: 100%; font-size: 1.25rem; min-height: 58px; margin-top: 8px; }
+  .link-btn {
+    background: none; border: 0; cursor: pointer; color: var(--ink-soft);
+    font-family: 'Inter', sans-serif; font-size: 1rem; text-decoration: underline;
+    min-height: 44px; padding: 6px 8px;
+  }
+  .link-btn:hover { color: var(--accent); }
+
+  /* setup */
+  .screen { flex: 1; }
+  #setup-screen { max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 48px; }
+  .setup-sub { color: var(--ink-soft); margin: 6px 0 22px; max-width: 720px; }
+  .field { margin-bottom: 22px; }
+  .field label, .exhibit-block label { display: block; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; }
+  .field input, .field textarea, .exhibit-block textarea, .exhibit-block select {
+    width: 100%; font-family: 'Inter', sans-serif; font-size: 1.05rem; color: var(--ink);
+    background: #fff; border: 1.5px solid rgba(27, 27, 31, .55); border-radius: var(--radius); padding: 12px 14px;
+  }
+  .field input:focus, .field textarea:focus, .exhibit-block textarea:focus, .exhibit-block select:focus {
+    outline: 2.5px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
+  }
+  .field textarea, .exhibit-block textarea { resize: vertical; }
+  #f-story { min-height: 140px; }
+
+  .exhibit-block {
+    position: relative; border: var(--dashed); border-radius: var(--radius);
+    padding: 20px 18px 18px; margin-bottom: 20px; background: rgba(255, 255, 255, .45);
+  }
+  .exhibit-badge {
+    position: absolute; top: -18px; left: 16px; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--paper); border: 1.5px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.15rem;
+  }
+  .exhibit-block textarea { margin-bottom: 12px; min-height: 84px; }
+  .exhibit-block select { appearance: auto; min-height: 48px; }
+
+  .actions-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .status-line { min-height: 1.4em; font-size: 1rem; color: var(--green); font-weight: 600; }
+  .status-line.error { color: var(--accent-dark); }
+  .hint { color: var(--accent-dark); font-weight: 600; margin: 8px 0; min-height: 1.4em; }
+
+  /* court */
+  #court-screen { display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px; }
+  .docket-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .docket-label { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.1rem; }
+  .docket-btns { display: flex; gap: 12px; flex: 1; min-width: 280px; }
+  .docket-btn {
+    position: relative; flex: 1; max-width: 110px; min-height: 56px; border-radius: var(--radius);
+    cursor: pointer; font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.5rem;
+    background: #fff; color: var(--ink); border: 1.5px solid var(--ink);
+    transition: transform .25s ease, background-color .25s ease, color .25s ease;
+  }
+  .docket-btn:hover { transform: translateY(-2px); }
+  .docket-btn.active { background: var(--ink); color: var(--paper); }
+  .docket-btn .pip { position: absolute; right: 8px; top: 8px; width: 12px; height: 12px; border-radius: 50%; display: none; border: 1.5px solid var(--ink); }
+  .docket-btn .pip.pip-agree { display: block; background: var(--green); border-color: var(--green); }
+  .docket-btn .pip.pip-revise { display: block; background: var(--amber); border-color: var(--amber); }
+  .docket-btn .pip.pip-stands { display: block; background: var(--ink); border-color: var(--ink); }
+
+  .court-split { display: flex; gap: 18px; flex: 1; min-height: 0; align-items: stretch; }
+  .story-panel {
+    flex: 0 0 35%; min-width: 0; border: var(--dashed); border-radius: var(--radius);
+    background: rgba(255, 255, 255, .55); padding: 16px 18px;
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .story-panel h2 { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.25rem; margin-bottom: 10px; }
+  .story-body { overflow-y: auto; font-size: 1.05rem; line-height: 1.55; }
+  .story-body p { margin-bottom: .9em; }
+  .story-body .no-story { color: var(--ink-soft); font-style: italic; }
+
+  .stage-area { flex: 1; min-width: 0; display: flex; }
+  .stage-empty { margin: auto; color: var(--ink-soft); font-size: 1.15rem; text-align: center; padding: 24px; }
+  .stage-card {
+    flex: 1; background: #fff; border: 1.5px solid var(--ink); border-radius: var(--radius);
+    box-shadow: var(--shadow-card); padding: 26px 28px;
+    display: flex; flex-direction: column; gap: 18px; min-height: 260px; border-left-width: 8px;
+  }
+  .stage-card.edge-agree { border-left-color: var(--green); }
+  .stage-card.edge-revise { border-left-color: var(--amber); }
+  .stage-card.edge-stands { border-left-color: var(--ink); }
+  .stage-card.edge-none { border-left-color: var(--accent); }
+  .stage-card.enter { animation: cardIn .3s ease both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .letter-circle {
+    width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.5rem;
+  }
+  .stage-text { font-size: 1.35rem; line-height: 1.5; flex: 1; overflow-y: auto; }
+  .class-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .class-label { font-size: 1rem; color: var(--ink-soft); font-weight: 600; }
+  .claim-chip {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.1rem;
+    background: var(--accent); color: #fff; border-radius: 999px; padding: 8px 20px;
+  }
+
+  .ruling-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    border: var(--dashed); border-radius: var(--radius); padding: 12px 18px; background: rgba(255, 255, 255, .55);
+  }
+  .ruling-prompt { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.1rem; flex: 1; min-width: 240px; }
+  .ruling-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .ruling-btns .btn { min-height: 54px; font-size: 1.1rem; padding: 10px 28px; }
+
+  @media (max-width: 860px) {
+    .court-split { flex-direction: column; }
+    .story-panel { flex-basis: auto; max-height: 220px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="brand" id="brand-title"></h1>
+    <div class="topbar-right">
+      <span class="group-chip" id="group-chip" hidden></span>
+      <button class="btn btn-outline" id="btn-next" hidden></button>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button class="lang-btn active" id="lang-en" type="button">EN</button>
+        <button class="lang-btn" id="lang-es" type="button">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- SCREEN 1: SETUP -->
+    <section class="screen" id="setup-screen">
+      <p class="setup-sub" id="setup-hint"></p>
+
+      <div class="field">
+        <label for="f-group" id="lbl-group"></label>
+        <input type="text" id="f-group" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="f-story" id="lbl-story"></label>
+        <textarea id="f-story"></textarea>
+      </div>
+
+      <div id="exhibit-blocks"></div>
+
+      <div class="actions-row">
+        <button class="btn btn-outline" id="btn-save" type="button"></button>
+        <button class="btn btn-outline" id="btn-load" type="button"></button>
+        <button class="link-btn" id="btn-demo" type="button"></button>
+      </div>
+      <p class="status-line" id="status-line"></p>
+      <p class="hint" id="incomplete-hint"></p>
+      <button class="btn btn-primary btn-big" id="btn-start" type="button"></button>
+    </section>
+
+    <!-- SCREEN 2: COURT -->
+    <section class="screen" id="court-screen" hidden>
+      <div class="docket-row">
+        <span class="docket-label" id="docket-label"></span>
+        <div class="docket-btns" id="docket-btns"></div>
+      </div>
+      <div class="court-split">
+        <aside class="story-panel">
+          <h2 id="story-heading"></h2>
+          <div class="story-body" id="story-body"></div>
+        </aside>
+        <div class="stage-area" id="stage-area"></div>
+      </div>
+      <div class="ruling-bar">
+        <span class="ruling-prompt" id="ruling-prompt"></span>
+        <div class="ruling-btns" id="ruling-btns"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+'use strict';
+
+/* ================= i18n ================= */
+const STRINGS = {
+  en: {
+    title: 'EVIDENCE ',
+    titleAccent: 'COURT',
+    setupHint: 'Groups: fill in your story, your four exhibits, and choose an evidence type for each. Save to this device. When it is your turn, tap Start presenting.',
+    groupLabel: 'Group / team name',
+    groupPh: 'e.g. The Dusting Divas',
+    storyLabel: 'Your story (paste from your storyboard)',
+    storyPh: 'Tell the class what happened in your crime scene...',
+    exhibitLabel: 'Evidence type',
+    exhibitPh: 'Choose the evidence type...',
+    exhibitPlaceholder: 'Describe the evidence example...',
+    save: 'Save to this device',
+    load: 'Load from this device',
+    savedOk: 'Saved to this device.',
+    loadedOk: 'Loaded from this device.',
+    notFound: 'Nothing saved on this device yet.',
+    demo: 'Fill with demo data',
+    start: 'Start presenting',
+    incomplete: 'Incomplete: {list}. Fill every exhibit and choose a type for each.',
+    incompleteText: 'exhibit {l} needs text',
+    incompleteClaim: 'exhibit {l} needs a type',
+    courtStory: 'Story',
+    noStory: 'No story provided.',
+    classifiedAs: 'Classified as',
+    docket: 'Docket',
+    chooseExhibit: 'Tap a letter above to present that exhibit.',
+    promptDefault: 'Does the class agree with this classification?',
+    promptChallenge: 'Challenge heard. Presenter defends, then resolve:',
+    agree: 'Agree',
+    challenge: 'Challenge',
+    revise: 'Revise',
+    stands: 'Stands',
+    nextGroup: 'Next group',
+    q: {
+      ic: 'Individual Circumstantial',
+      cc: 'Class Circumstantial',
+      id: 'Individual Direct',
+      cd: 'Class Direct'
+    },
+    qsub: {
+      ic: 'Ties to one person, implies a fact',
+      cc: 'Shared by a group, implies a fact',
+      id: 'Ties to one person, proves a fact',
+      cd: 'Shared by a group, proves a fact'
+    },
+    demoStory: 'At 9:14 PM the snack vault at Lincoln Middle School was breached. Fourteen bags of chips vanished. One chair was knocked over, the window was open two inches, and a single muddy shoeprint crossed the floor. Four pieces of evidence were collected from the scene.',
+    demoExhibits: [
+      { text: 'A fingerprint lifted from the inside of the vault door, perfectly matching one person in the whole school.', claim: 'ic' },
+      { text: 'A blue fiber snagged on the broken latch, a fabric used by half the jackets in the school store.', claim: 'cc' },
+      { text: 'A security camera clip clearly showing one student opening the vault and taking the chips.', claim: 'id' },
+      { text: 'A torn chip bag found in the trash, a brand sold in every cafeteria in the district.', claim: 'cd' }
+    ]
+  },
+  es: {
+    title: 'CORTE DE ',
+    titleAccent: 'PRUEBAS',
+    setupHint: 'Grupos: escriban su historia, sus cuatro pruebas y elijan un tipo de evidencia para cada una. Guarden en este dispositivo. Cuando sea su turno, toquen Comenzar la presentación.',
+    groupLabel: 'Nombre del grupo / equipo',
+    groupPh: 'p. ej. Los Guardianes de la Escena',
+    storyLabel: 'Su historia (copien desde su guion gráfico)',
+    storyPh: 'Cuéntenle a la clase qué pasó en su escena del crimen...',
+    exhibitLabel: 'Tipo de evidencia',
+    exhibitPh: 'Eligan el tipo de evidencia...',
+    exhibitPlaceholder: 'Describan el ejemplo de evidencia...',
+    save: 'Guardar en este dispositivo',
+    load: 'Cargar de este dispositivo',
+    savedOk: 'Guardado en este dispositivo.',
+    loadedOk: 'Cargado de este dispositivo.',
+    notFound: 'Todavía no hay nada guardado en este dispositivo.',
+    demo: 'Llenar con datos de prueba',
+    start: 'Comenzar la presentación',
+    incomplete: 'Incompleto: {list}. Completen cada prueba y elijan un tipo para cada una.',
+    incompleteText: 'la prueba {l} necesita texto',
+    incompleteClaim: 'la prueba {l} necesita un tipo',
+    courtStory: 'Historia',
+    noStory: 'No se proporcionó una historia.',
+    classifiedAs: 'Clasificado como',
+    docket: 'Lista de pruebas',
+    chooseExhibit: 'Toquen una letra de arriba para presentar esa prueba.',
+    promptDefault: '¿Está de acuerdo la clase con esta clasificación?',
+    promptChallenge: 'Objeción recibida. El expositor se defiende y luego resuelven:',
+    agree: 'De acuerdo',
+    challenge: 'Objeción',
+    revise: 'Revisar',
+    stands: 'Se mantiene',
+    nextGroup: 'Siguiente grupo',
+    q: {
+      ic: 'Circunstancial Individual',
+      cc: 'Circunstancial de Clase',
+      id: 'Directa Individual',
+      cd: 'Directa de Clase'
+    },
+    qsub: {
+      ic: 'Vincula a una persona, implica un hecho',
+      cc: 'Compartida por un grupo, implica un hecho',
+      id: 'Vincula a una persona, prueba un hecho',
+      cd: 'Compartida por un grupo, prueba un hecho'
+    },
+    demoStory: 'A las 9:14 PM abrieron la bóveda de los refrigerios en la escuela secundaria Lincoln. Desaparecieron catorce bolsas de papitas. Una silla estaba volteada, la ventana estaba abierta dos pulgadas y una sola huella de zapato embarrado cruzaba el piso. Se recolectaron cuatro pruebas de la escena.',
+    demoExhibits: [
+      { text: 'Una huella dactilar tomada del interior de la puerta de la bóveda, que coincide perfectamente con una sola persona en toda la escuela.', claim: 'ic' },
+      { text: 'Una fibra azul enganchada en el cerrojo roto, una tela usada por la mitad de las chaquetas de la tienda escolar.', claim: 'cc' },
+      { text: 'Un video de la cámara de seguridad que muestra claramente a un estudiante abriendo la bóveda y llevándose las papitas.', claim: 'id' },
+      { text: 'Una bolsa de papitas rota encontrada en la basura, una marca vendida en cada cafetería del distrito.', claim: 'cd' }
+    ]
+  }
+};
+
+const LETTERS = ['A', 'B', 'C', 'D'];
+const CLAIMS = ['ic', 'cc', 'id', 'cd'];
+const STORAGE_KEY = 'evidenceCourtExhibits';
+
+let lang = 'en';
+function t(key) {
+  const parts = key.split('.');
+  let val = STRINGS[lang];
+  for (const p of parts) { val = val && val[p]; }
+  return (typeof val === 'string') ? val : key;
+}
+
+/* ================= state ================= */
+const state = {
+  screen: 'setup',
+  group: '',
+  story: '',
+  exhibits: LETTERS.map(() => ({ text: '', claim: '' })),
+  outcomes: [null, null, null, null], // agree | revise | stands
+  active: -1,
+  challenged: false
+};
+
+/* ================= dom ================= */
+const $ = (sel) => document.querySelector(sel);
+const els = {
+  brand: $('#brand-title'), groupChip: $('#group-chip'), btnNext: $('#btn-next'),
+  langEn: $('#lang-en'), langEs: $('#lang-es'),
+  setup: $('#setup-screen'), court: $('#court-screen'), setupHint: $('#setup-hint'),
+  fGroup: $('#f-group'), fStory: $('#f-story'),
+  lblGroup: $('#lbl-group'), lblStory: $('#lbl-story'),
+  exhibitBlocks: $('#exhibit-blocks'),
+  btnSave: $('#btn-save'), btnLoad: $('#btn-load'), btnDemo: $('#btn-demo'),
+  btnStart: $('#btn-start'), statusLine: $('#status-line'), hint: $('#incomplete-hint'),
+  docketLabel: $('#docket-label'), docketBtns: $('#docket-btns'),
+  storyHeading: $('#story-heading'), storyBody: $('#story-body'),
+  stageArea: $('#stage-area'), rulingPrompt: $('#ruling-prompt'), rulingBtns: $('#ruling-btns')
+};
+
+const exhibitInputs = []; // [{text, claim}]
+
+/* ================= render helpers ================= */
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function setStatus(msg, isError) {
+  els.statusLine.textContent = msg || '';
+  els.statusLine.classList.toggle('error', !!isError);
+}
+
+function renderBrand() {
+  els.brand.textContent = '';
+  els.brand.appendChild(document.createTextNode(t('title')));
+  const accent = el('span', 'accent', t('titleAccent'));
+  els.brand.appendChild(accent);
+}
+
+function buildExhibitBlocks() {
+  els.exhibitBlocks.textContent = '';
+  exhibitInputs.length = 0;
+  LETTERS.forEach((letter, i) => {
+    const block = el('div', 'exhibit-block');
+    block.appendChild(el('span', 'exhibit-badge', letter));
+
+    const ta = document.createElement('textarea');
+    ta.rows = 3;
+    block.appendChild(ta);
+
+    const lbl = el('label', null, t('exhibitLabel'));
+    lbl.htmlFor = 'exhibit-claim-' + i;
+    block.appendChild(lbl);
+
+    const sel = document.createElement('select');
+    sel.id = 'exhibit-claim-' + i;
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.disabled = true;
+    ph.selected = true;
+    ph.textContent = t('exhibitPh');
+    sel.appendChild(ph);
+    for (const c of CLAIMS) {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = t('q.' + c);
+      sel.appendChild(opt);
+    }
+    block.appendChild(sel);
+    els.exhibitBlocks.appendChild(block);
+    exhibitInputs.push({ text: ta, claim: sel });
+  });
+}
+
+function syncInputsFromState() {
+  els.fGroup.value = state.group;
+  els.fStory.value = state.story;
+  state.exhibits.forEach((ex, i) => {
+    exhibitInputs[i].text.value = ex.text;
+    exhibitInputs[i].claim.value = ex.claim;
+  });
+}
+
+function readFormIntoState() {
+  state.group = els.fGroup.value.trim();
+  state.story = els.fStory.value;
+  state.exhibits = exhibitInputs.map(inp => ({
+    text: inp.text.value.trim(),
+    claim: inp.claim.value
+  }));
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  els.langEn.classList.toggle('active', lang === 'en');
+  els.langEs.classList.toggle('active', lang === 'es');
+  renderBrand();
+  els.setupHint.textContent = t('setupHint');
+  els.lblGroup.textContent = t('groupLabel');
+  els.fGroup.placeholder = t('groupPh');
+  els.lblStory.textContent = t('storyLabel');
+  els.fStory.placeholder = t('storyPh');
+  els.btnSave.textContent = t('save');
+  els.btnLoad.textContent = t('load');
+  els.btnDemo.textContent = t('demo');
+  els.btnStart.textContent = t('start');
+  els.btnNext.textContent = t('nextGroup');
+  els.docketLabel.textContent = t('docket');
+  els.storyHeading.textContent = t('courtStory');
+  readFormIntoState(); // preserve any typed-but-unsaved input across language switches
+  buildExhibitBlocks();
+  syncInputsFromState();
+  if (state.screen === 'court') {
+    renderStory();
+    renderDocket();
+    renderStage();
+    renderRuling();
+  }
+}
+
+/* ================= storage ================= */
+function saveToDevice() {
+  readFormIntoState();
+  const payload = { group: state.group, story: state.story, exhibits: state.exhibits };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    setStatus(t('savedOk'));
+  } catch (err) {
+    setStatus('Save failed: ' + err.message, true);
+  }
+}
+
+function loadFromDevice() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (err) { /* ignore */ }
+  if (!raw) { setStatus(t('notFound'), true); return; }
+  let data = null;
+  try { data = JSON.parse(raw); } catch (err) { setStatus(t('notFound'), true); return; }
+  if (Array.isArray(data)) {
+    // legacy shape: [{text, label}, ...] mapped by letter order ic, cc, id, cd
+    state.group = '';
+    state.story = '';
+    state.exhibits = LETTERS.map((_, i) => {
+      const item = data[i] || {};
+      return { text: (item.text || '').toString(), claim: CLAIMS[i] };
+    });
+  } else if (data && typeof data === 'object') {
+    state.group = (data.group || '').toString();
+    state.story = (data.story || '').toString();
+    state.exhibits = LETTERS.map((_, i) => {
+      const item = (data.exhibits || [])[i] || {};
+      const claim = CLAIMS.indexOf(item.claim) >= 0 ? item.claim : '';
+      return { text: (item.text || '').toString(), claim: claim };
+    });
+  } else {
+    setStatus(t('notFound'), true);
+    return;
+  }
+  syncInputsFromState();
+  setStatus(t('loadedOk'));
+}
+
+function fillDemo() {
+  const d = STRINGS[lang];
+  els.fGroup.value = lang === 'en' ? 'The Dusting Divas' : 'Los Guardianes de la Escena';
+  els.fStory.value = d.demoStory;
+  d.demoExhibits.forEach((ex, i) => {
+    exhibitInputs[i].text.value = ex.text;
+    exhibitInputs[i].claim.value = ex.claim;
+  });
+  setStatus('');
+}
+
+/* ================= setup actions ================= */
+function startPresenting() {
+  readFormIntoState();
+  const missingText = [];
+  const missingClaim = [];
+  state.exhibits.forEach((ex, i) => {
+    if (!ex.text) missingText.push(LETTERS[i]);
+    if (!ex.claim) missingClaim.push(LETTERS[i]);
+  });
+  if (missingText.length || missingClaim.length) {
+    const parts = [];
+    if (missingText.length) parts.push(t('incompleteText').replace('{l}', missingText.join(', ')));
+    if (missingClaim.length) parts.push(t('incompleteClaim').replace('{l}', missingClaim.join(', ')));
+    els.hint.textContent = t('incomplete').replace('{list}', parts.join('; '));
+    return;
+  }
+  els.hint.textContent = '';
+  setStatus('');
+  state.screen = 'court';
+  state.outcomes = [null, null, null, null];
+  state.active = -1;
+  state.challenged = false;
+  els.setup.hidden = true;
+  els.court.hidden = false;
+  els.groupChip.hidden = !state.group;
+  els.groupChip.textContent = state.group;
+  els.btnNext.hidden = false;
+  renderStory();
+  renderDocket();
+  renderStage();
+  renderRuling();
+}
+
+function nextGroup() {
+  state.screen = 'setup';
+  state.group = '';
+  state.story = '';
+  state.exhibits = LETTERS.map(() => ({ text: '', claim: '' }));
+  state.outcomes = [null, null, null, null];
+  state.active = -1;
+  state.challenged = false;
+  syncInputsFromState();
+  els.hint.textContent = '';
+  setStatus('');
+  els.court.hidden = true;
+  els.setup.hidden = false;
+  els.groupChip.hidden = true;
+  els.btnNext.hidden = true;
+}
+
+/* ================= court render ================= */
+function renderStory() {
+  els.storyBody.textContent = '';
+  const text = state.story.trim();
+  if (!text) {
+    els.storyBody.appendChild(el('p', 'no-story', t('noStory')));
+    return;
+  }
+  const paras = text.split(/\n\s*\n/);
+  for (const para of paras) {
+    const p = el('p', null, para.replace(/\n/g, ' '));
+    els.storyBody.appendChild(p);
+  }
+}
+
+function renderDocket() {
+  els.docketBtns.textContent = '';
+  LETTERS.forEach((letter, i) => {
+    const btn = el('button', 'docket-btn');
+    btn.type = 'button';
+    btn.appendChild(document.createTextNode(letter));
+    const pip = el('span', 'pip');
+    if (state.outcomes[i]) pip.classList.add('pip-' + state.outcomes[i]);
+    btn.appendChild(pip);
+    if (i === state.active) btn.classList.add('active');
+    btn.addEventListener('click', () => activateExhibit(i));
+    els.docketBtns.appendChild(btn);
+  });
+}
+
+function renderStage() {
+  els.stageArea.textContent = '';
+  if (state.active < 0) {
+    els.stageArea.appendChild(el('p', 'stage-empty', t('chooseExhibit')));
+    return;
+  }
+  const i = state.active;
+  const ex = state.exhibits[i];
+  const outcome = state.outcomes[i];
+  const card = el('div', 'stage-card enter');
+  card.classList.add(outcome ? 'edge-' + outcome : 'edge-none');
+
+  card.appendChild(el('span', 'letter-circle', LETTERS[i]));
+  card.appendChild(el('p', 'stage-text', ex.text));
+
+  const row = el('div', 'class-row');
+  row.appendChild(el('span', 'class-label', t('classifiedAs')));
+  row.appendChild(el('span', 'claim-chip', t('q.' + ex.claim)));
+  card.appendChild(row);
+
+  els.stageArea.appendChild(card);
+}
+
+function renderRuling() {
+  els.rulingPrompt.textContent = '';
+  els.rulingBtns.textContent = '';
+  if (state.active < 0) {
+    els.rulingPrompt.textContent = t('promptDefault');
+    return;
+  }
+  const outcome = state.outcomes[state.active];
+  if (outcome) {
+    els.rulingPrompt.textContent = t('promptDefault');
+    return;
+  }
+  if (state.challenged) {
+    els.rulingPrompt.textContent = t('promptChallenge');
+    const rev = el('button', 'btn btn-amber', t('revise'));
+    rev.type = 'button';
+    rev.addEventListener('click', () => resolve('revise'));
+    const st = el('button', 'btn btn-dark', t('stands'));
+    st.type = 'button';
+    st.addEventListener('click', () => resolve('stands'));
+    els.rulingBtns.appendChild(rev);
+    els.rulingBtns.appendChild(st);
+    return;
+  }
+  els.rulingPrompt.textContent = t('promptDefault');
+  const agree = el('button', 'btn btn-green', t('agree'));
+  agree.type = 'button';
+  agree.addEventListener('click', () => resolve('agree'));
+  const challenge = el('button', 'btn btn-primary', t('challenge'));
+  challenge.type = 'button';
+  challenge.addEventListener('click', () => {
+    if (state.challenged) return;
+    state.challenged = true;
+    renderRuling();
+  });
+  els.rulingBtns.appendChild(agree);
+  els.rulingBtns.appendChild(challenge);
+}
+
+function activateExhibit(i) {
+  state.active = i;
+  state.challenged = false;
+  renderDocket();
+  renderStage();
+  renderRuling();
+}
+
+function resolve(outcome) {
+  state.outcomes[state.active] = outcome;
+  state.challenged = false;
+  renderDocket();
+  renderStage();
+  renderRuling();
+}
+
+/* ================= events ================= */
+els.langEn.addEventListener('click', () => { lang = 'en'; applyLang(); });
+els.langEs.addEventListener('click', () => { lang = 'es'; applyLang(); });
+els.btnSave.addEventListener('click', saveToDevice);
+els.btnLoad.addEventListener('click', loadFromDevice);
+els.btnDemo.addEventListener('click', fillDemo);
+els.btnStart.addEventListener('click', startPresenting);
+els.btnNext.addEventListener('click', nextGroup);
+
+applyLang();
+</script>
+</body>
+</html>

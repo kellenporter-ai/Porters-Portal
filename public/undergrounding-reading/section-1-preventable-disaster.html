@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Insulation: Lesson 2 Reading, Section 03</title>
+<title>A Preventable Disaster: Lesson 3 Reading, Section 1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -200,28 +200,48 @@
     line-height: 1.4;
   }
 
-  .think-box {
-    margin: 2.4em 0 0;
-    padding: 24px 24px 12px;
-    border: var(--dash);
+  .figure-inline figcaption .caption-src {
+    display: block;
+    margin-top: 2px;
+    font-family: 'Archivo', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
   }
 
-  .think-box .think-label {
+  /* ── Inline symbol diagram ────────────── */
+  .diagram-box {
+    margin: 2.4em 0;
+    border: var(--dash);
+    padding: 24px 20px 16px;
+  }
+
+  .diagram-box .diagram-label {
     font-family: 'Archivo', sans-serif;
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
-  .think-box p {
-    font-size: 16px;
-    line-height: 1.55;
-    color: var(--ink-soft);
-    margin-bottom: 1em;
+  .diagram-box svg {
+    display: block;
+    width: 100%;
+    height: auto;
   }
+
+  .diagram-box .svg-t {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 700;
+    fill: var(--ink);
+    letter-spacing: 0.04em;
+  }
+
+  .diagram-box .svg-muted { fill: var(--ink-soft); font-weight: 600; }
+  .diagram-box .svg-accent { fill: var(--accent); }
 
   /* ── Prev / Next ──────────────────────── */
   .prev-next {
@@ -317,71 +337,57 @@
   </nav>
 
   <header class="article-header">
-    <p class="eyebrow article-eyebrow"><span class="lang-en">Lesson 2 Reading &middot; Section 3 of 5</span><span class="lang-es">Lectura de la Lección 2 &middot; Sección 3 de 5</span></p>
+    <p class="eyebrow article-eyebrow"><span class="lang-en">Lesson 3 Reading &middot; Section 1 of 3</span><span class="lang-es">Lectura de la Lección 3 &middot; Sección 1 de 3</span></p>
     <div class="header-flex">
-      <div class="article-num">03</div>
-      <h1 class="article-title display"><span class="lang-en">Insulation</span><span class="lang-es">Aislamiento</span></h1>
+      <div class="article-num">01</div>
+      <h1 class="article-title display"><span class="lang-en">A Preventable Disaster</span><span class="lang-es">Un desastre evitable</span></h1>
     </div>
   </header>
 
   <figure class="article-figure">
     <div class="frame">
-      <img src="images/insulation.jpg" alt="A cut electrical cable showing separate insulated wires with exposed copper strands" width="1280" height="549" loading="lazy" style="object-position: center 45%;;">
+      <img src="images/blackout-2003-map.jpg" alt="A map of the northeastern United States and Canada shaded to show the extent of the August 14, 2003 blackout, with the origin near Ohio marked" width="1280" height="549" loading="lazy" style="object-position: center 45%;">
     </div>
   </figure>
 
   <main class="article-body">
 
-    <p class="lede reveal lang-en">The wires that connect electrical outlets in a building to the electrical circuit panel usually run through the walls, ceiling, and/or floors of a building. The rubber material around these wires (white in the photo) does not transfer electrical energy well. We call these sorts of materials electrical insulators. If you were to peel off the insulating material on the cables in our walls, you would see two or three separate wires in them--like the three wires we saw inside the cable on the power strip. These wires sometimes have a protective metal casing around them to prevent them from getting accidently cut during construction or renovation.</p>
+    <p class="lede reveal lang-en">Just after 4 p.m. local time on August 14, 2003, some overgrown trees made contact with power lines in a residential neighborhood in Ohio. The energy that would have transferred into homes and other buildings was instead transferred into the surroundings. People in the area immediately lost power.</p>
 
-    <p class="reveal lang-es">Los cables que conectan los tomacorrientes eléctricos de un edificio al panel del circuito eléctrico generalmente pasan por las paredes, el techo y/o los pisos de un edificio. El material de goma alrededor de estos cables (blanco en la foto) no transfiere bien la energía eléctrica. Llamamos a este tipo de materiales aisladores eléctricos. Si quitara el material aislante de los cables de nuestras paredes, vería dos o tres cables separados en ellos, como los tres cables que vimos dentro del cable en la regleta de enchufes. Estos cables a veces tienen una cubierta protectora de metal alrededor para evitar que se corten accidentalmente durante la construcción o renovación.</p>
-
-    <figure class="figure-inline reveal">
-      <img src="images/insulation.jpg" alt="A cut electrical cable showing separate insulated wires with exposed copper strands at the cut end" width="1280" height="720" loading="lazy" style="object-position: center 45%;">
-      <figcaption class="lang-en">Inside a cable: separate wires, each wrapped in rubber insulation that does not transfer electrical energy well.</figcaption>
-      <figcaption class="lang-es">Dentro de un cable: cables separados, cada uno envuelto en aislamiento de goma que no transfiere bien la energía eléctrica.</figcaption>
-    </figure>
-
-    <p class="reveal lang-en">There are also insulators on the infrastructure you see outside of a building. You may have noticed ceramic discs stacked along power lines, like in the photo. These disks do the same thing as the insulating material on the outside of wires. They prevent electrical energy in the wires from accidentally transferring to another structure nearby.</p>
-
-    <p class="reveal lang-es">También hay aisladores en la infraestructura que ves fuera de un edificio. Es posible que haya notado discos de cerámica apilados a lo largo de las líneas eléctricas, como en la foto. Estos discos hacen lo mismo que el material aislante en el exterior de los cables. Evitan que la energía eléctrica de los cables se transfiera accidentalmente a otra estructura cercana.</p>
+    <p class="reveal lang-es">Justo después de las 4 p. m. hora local del 14 de agosto de 2003, algunos árboles demasiado grandes entraron en contacto con las líneas eléctricas en un vecindario residencial de Ohio. La energía que se habría transferido a los hogares y otros edificios se transfirió en cambio a los alrededores. Las personas en el área inmediatamente se quedaron sin electricidad.</p>
 
     <figure class="figure-inline reveal">
-      <img src="images/insulators.jpg" alt="A string of stacked ceramic discs insulating a high-voltage power line from the metal tower" width="960" height="720" loading="lazy">
-      <figcaption class="lang-en">A string of ceramic discs insulates a high-voltage power line from the metal tower, just like the rubber insulation on a wire.</figcaption>
-      <figcaption class="lang-es">Una serie de discos de cerámica aísla una línea eléctrica de alta tensión de la torre metálica, igual que el aislamiento de goma en un cable.</figcaption>
+      <img src="images/blackout-satellite.jpg" alt="Two NOAA satellite images of the northeastern United States at night: bright city lights minutes before the blackout, and the same region dark during the blackout, with Montreal, Boston, and Long Island labeled" width="1242" height="698" loading="lazy">
+      <figcaption><span class="lang-en">Satellite images of the Aug. 2003 blackout in the northeast</span><span class="lang-es">Imágenes de satélite del apagón de agosto de 2003 en el noreste</span><span class="caption-src">NOAA, Defense Meteorological Satellite Program</span></figcaption>
     </figure>
 
-    <div class="think-box reveal">
-      <p class="think-label lang-en">Think about it</p>
-      <p class="think-label lang-es">Piénsalo</p>
-      <p class="lang-en">Why do power lines have stacks of ceramic discs on the poles?</p>
-      <p class="lang-es">¿Por qué las líneas eléctricas tienen pilas de discos de cerámica en los postes?</p>
-    </div>
+    <p class="reveal lang-en">At that point, alarms should have gone off at the power company control room. The alarms are there to warn operators to use circuit breakers to prevent problems from spreading. But a computer glitch prevented the alarms from showing up on their control system. The operators were not able to react or to warn anyone until it was too late. In the end, more than 100 power plants in Canada and the northeastern United States had shut down. More than 50 million people in North America found themselves without power.</p>
+
+    <p class="reveal lang-es">En ese momento, las alarmas deberían haber saltado en la sala de control de la compañía eléctrica. Las alarmas están ahí para advertir a los operadores que usen disyuntores para evitar que se propaguen los problemas. Pero una falla en la computadora evitó que las alarmas aparecieran en su sistema de control. Los operadores no pudieron reaccionar ni advertir a nadie hasta que fue demasiado tarde. Al final, más de 100 centrales eléctricas en Canadá y el noreste de Estados Unidos cerraron. Más de 50 millones de personas en América del Norte se encontraron sin electricidad.</p>
 
   </main>
 
   <nav class="prev-next">
-    <a href="section-2-circuit-breakers.html" class="pn-card prev">
-      <span class="pn-label lang-en">Previous</span>
-      <span class="pn-label lang-es">Anterior</span>
-      <span class="pn-num">02</span>
-      <span class="pn-title lang-en">Circuit Breakers</span>
-      <span class="pn-title lang-es">Disyuntores</span>
+    <a href="index.html" class="pn-card prev">
+      <span class="pn-label lang-en">Back to all sections</span>
+      <span class="pn-label lang-es">Volver a todas las secciones</span>
+      <span class="pn-num">&middot;</span>
+      <span class="pn-title lang-en">Undergrounding Power Lines</span>
+      <span class="pn-title lang-es">Líneas eléctricas subterráneas</span>
     </a>
-    <a href="section-4-ground-wire.html" class="pn-card next">
+    <a href="section-2-failure-modes.html" class="pn-card next">
       <span class="pn-label lang-en">Next</span>
       <span class="pn-label lang-es">Siguiente</span>
-      <span class="pn-num">04</span>
-      <span class="pn-title lang-en">The Ground Wire</span>
-      <span class="pn-title lang-es">El cable de tierra</span>
+      <span class="pn-num">02</span>
+      <span class="pn-title lang-en">Broken, Grounded, and Short Circuits</span>
+      <span class="pn-title lang-es">Circuitos rotos, conectados a tierra y en cortocircuito</span>
     </a>
   </nav>
 
   <script>
     (function () {
       // ── Language toggle ──
-      var KEY = 'psrLang';
+      var KEY = 'urLang';
       var root = document.documentElement;
       function setLang(lang) {
         if (lang !== 'es') lang = 'en';
