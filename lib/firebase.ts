@@ -180,6 +180,7 @@ export const callAdminAddToWhitelist = httpsCallable(functions, 'adminAddToWhite
 
 // Assessment admin actions
 export const callReturnAssessment = httpsCallable(functions, 'returnAssessment');
+export const callBulkReturnAssessment = httpsCallable(functions, 'bulkReturnAssessment');
 export const callSubmitOnBehalf = httpsCallable(functions, 'submitOnBehalf');
 export const callHeartbeat = httpsCallable(functions, 'heartbeat');
 

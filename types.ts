@@ -580,7 +580,7 @@ export interface Submission {
   assignmentTitle: string;
   metrics: TelemetryMetrics;
   submittedAt?: string; 
-  status: 'FLAGGED' | 'SUCCESS' | 'SUPPORT_NEEDED' | 'NORMAL' | 'STARTED' | 'RETURNED';
+  status: 'FLAGGED' | 'SUCCESS' | 'SUPPORT_NEEDED' | 'NORMAL' | 'STARTED' | 'RETURNED' | 'CLEAN';
   feedback?: string;  // Server-generated explanation for FLAGGED / SUPPORT_NEEDED status
   score: number;
   privateComments: Comment[];

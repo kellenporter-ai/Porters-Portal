@@ -956,27 +956,44 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
 // ==========================================
 // RETURN ASSESSMENT — Allow student to revise and resubmit
 // ==========================================
-export const returnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
-  // 1. Verify admin
-  await verifyAdmin(request.auth);
-  const correlationId = generateCorrelationId();
+export type ReturnOneResult =
+  | { ok: true }
+  | { ok: false; reason: string };
 
-  // 2. Validate input
-  const { submissionId } = request.data;
-  if (!submissionId) throw new HttpsError("invalid-argument", "submissionId required");
-
-  // 3. Read submission
-  const db = admin.firestore();
+/**
+ * Per-submission return logic shared by returnAssessment and
+ * bulkReturnAssessment. Does NOT verify admin — auth happens once at the
+ * callable boundary. Per-submission skip cases (not an assessment, already
+ * RETURNED, live active session, submission not found) return
+ * `{ ok: false, reason }` instead of throwing so bulk callers can collect
+ * skips without failing the whole batch.
+ *
+ * `db` is passed in (rather than re-deriving from `admin.firestore()`) so the
+ * helper stays testable and consistent with the caller's Firestore instance.
+ *
+ * Returns a "batched" descriptor instead of writing directly when `batch` is
+ * provided, so bulk callers can chunk related writes under the 500-op
+ * WriteBatch limit (~3 ops per submission: draft pre-fill, submission
+ * update, announcement). Stale-session claims are always committed
+ * immediately (they unblock the return regardless of batch outcome).
+ */
+export async function returnOneSubmission(
+  db: admin.firestore.Firestore,
+  submissionId: string,
+  adminUid: string,
+  batch?: admin.firestore.WriteBatch,
+): Promise<ReturnOneResult> {
+  // 1. Read submission
   const subRef = db.doc(`submissions/${submissionId}`);
   const subSnap = await subRef.get();
-  if (!subSnap.exists) throw new HttpsError("not-found", "Submission not found");
+  if (!subSnap.exists) return { ok: false, reason: "Submission not found" };
   const sub = subSnap.data()!;
 
-  // 4. Validate it's an assessment and not already returned
-  if (!sub.isAssessment) throw new HttpsError("invalid-argument", "Not an assessment submission");
-  if (sub.status === "RETURNED") throw new HttpsError("already-exists", "This submission has already been returned");
+  // 2. Validate it's an assessment and not already returned
+  if (!sub.isAssessment) return { ok: false, reason: "Not an assessment submission" };
+  if (sub.status === "RETURNED") return { ok: false, reason: "Already returned" };
 
-  // 5. Check no active session (student mid-attempt). Expired sessions
+  // 3. Check no active session (student mid-attempt). Expired sessions
   // (past expiresAt + grace) are garbage, not a lock — claim them so they
   // stop blocking return forever (2026-09-29 limbo incident).
   const nowMillis = Date.now();
@@ -994,34 +1011,38 @@ export const returnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     await db.collection("assessment_sessions").doc(stale.id).update(claimStaleSessionUpdate(nowMillis));
   }
   if (sessionPartition.active.length > 0) {
-    throw new HttpsError("failed-precondition", "Student has an active assessment session. Wait for them to submit or use Submit on Behalf.");
+    return { ok: false, reason: "Student has an active assessment session" };
   }
 
-  // 6. Copy blockResponses to lesson_block_responses for pre-fill
+  // 4. Copy blockResponses to lesson_block_responses for pre-fill
   if (sub.blockResponses && Object.keys(sub.blockResponses).length > 0) {
     const draftRef = db.doc(`lesson_block_responses/${sub.userId}_${sub.assignmentId}_blocks`);
-    await draftRef.set({
+    const draftData = {
       userId: sub.userId,
       assignmentId: sub.assignmentId,
       responses: sub.blockResponses,
       lastUpdated: new Date().toISOString(),
       retakePreFilled: true,
-    });
+    };
+    if (batch) batch.set(draftRef, draftData);
+    else await draftRef.set(draftData);
   }
 
-  // 7. Update submission — mark as RETURNED, preserve grades for comparison
-  await subRef.update({
+  // 5. Update submission — mark as RETURNED, preserve grades for comparison
+  const returnedAt = new Date().toISOString();
+  const subUpdate = {
     status: "RETURNED",
-    returnedAt: new Date().toISOString(),
-    returnedBy: request.auth!.uid,
-  });
+    returnedAt,
+    returnedBy: adminUid,
+  };
+  if (batch) batch.update(subRef, subUpdate);
+  else await subRef.update(subUpdate);
 
-  // 8. Notify student
+  // 6. Notify student
   const assignmentSnap = await db.doc(`assignments/${sub.assignmentId}`).get();
   const classType = assignmentSnap.exists ? assignmentSnap.data()!.classType : "";
   const title = sub.assignmentTitle || "Assessment";
-
-  await db.collection("announcements").add({
+  const announcement = {
     title: "Assessment Returned",
     content: `Your assessment "${title}" has been returned for revision. Please review and resubmit.`,
     classType: classType || "GLOBAL",
@@ -1029,10 +1050,87 @@ export const returnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     createdAt: new Date().toISOString(),
     createdBy: "Admin",
     targetStudentIds: [sub.userId],
-  });
+  };
+  if (batch) batch.set(db.collection("announcements").doc(), announcement);
+  else await db.collection("announcements").add(announcement);
+
+  return { ok: true };
+}
+
+/** Map a helper skip reason back to the HttpsError single-returnAssessment throws. */
+function returnSkipToHttpsError(reason: string): HttpsError {
+  switch (reason) {
+    case "Submission not found":
+      return new HttpsError("not-found", "Submission not found");
+    case "Not an assessment submission":
+      return new HttpsError("invalid-argument", "Not an assessment submission");
+    case "Already returned":
+      return new HttpsError("already-exists", "This submission has already been returned");
+    case "Student has an active assessment session":
+      return new HttpsError("failed-precondition", "Student has an active assessment session. Wait for them to submit or use Submit on Behalf.");
+    default:
+      return new HttpsError("internal", reason);
+  }
+}
+
+export const returnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  // 1. Verify admin
+  await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
+
+  // 2. Validate input
+  const { submissionId } = request.data;
+  if (!submissionId) throw new HttpsError("invalid-argument", "submissionId required");
+
+  const db = admin.firestore();
+  const result = await returnOneSubmission(db, submissionId, request.auth!.uid);
+  if (!result.ok) throw returnSkipToHttpsError(result.reason);
 
   logWithCorrelation('info', 'returnAssessment: submission returned', correlationId, { submissionId, returnedBy: request.auth!.uid });
   return { success: true };
+});
+
+// ==========================================
+// BULK RETURN ASSESSMENT — Return many submissions at once
+// ==========================================
+export const bulkReturnAssessment = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  // 1. Verify admin
+  await verifyAdmin(request.auth);
+  const correlationId = generateCorrelationId();
+
+  // 2. Validate input
+  const { submissionIds } = request.data;
+  if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
+    throw new HttpsError("invalid-argument", "submissionIds must be a non-empty array");
+  }
+  if (submissionIds.length > 100) {
+    throw new HttpsError("invalid-argument", "submissionIds is capped at 100 per call");
+  }
+
+  const db = admin.firestore();
+  const returned: string[] = [];
+  const skipped: { id: string; reason: string }[] = [];
+
+  // ~3 Firestore ops per submission (draft pre-fill, submission update,
+  // announcement). Chunk batches under the 500-op WriteBatch limit.
+  const CHUNK_SIZE = 100;
+  for (let i = 0; i < submissionIds.length; i += CHUNK_SIZE) {
+    const chunk = submissionIds.slice(i, i + CHUNK_SIZE);
+    const batch = db.batch();
+    const chunkResults = await Promise.all(
+      chunk.map((id) => returnOneSubmission(db, id, request.auth!.uid, batch)),
+    );
+    await batch.commit();
+
+    for (let j = 0; j < chunk.length; j++) {
+      const result = chunkResults[j];
+      if (result.ok) returned.push(chunk[j]);
+      else skipped.push({ id: chunk[j], reason: result.reason });
+    }
+  }
+
+  logWithCorrelation('info', 'bulkReturnAssessment: batch complete', correlationId, { returned: returned.length, skipped: skipped.length, returnedBy: request.auth!.uid });
+  return { returned, skipped };
 });
 // ==========================================
 // SUBMIT ON BEHALF — Admin submits student's draft work

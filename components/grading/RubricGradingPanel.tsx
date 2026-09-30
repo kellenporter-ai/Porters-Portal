@@ -230,7 +230,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
         {sub.flaggedAsAI && (
           <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
             <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" aria-hidden="true" />
-            <span className="text-[11px] text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
+            <span className="text-[11px] text-purple-600 dark:text-purple-300">AI-flagged. Saving a grade will clear the flag.</span>
           </div>
         )}
 
@@ -239,7 +239,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
           <div className="mb-3 p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg">
             <div className="flex items-center gap-2 mb-1.5">
               <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
-              <span className="text-[11px] font-bold text-amber-300">AI Suggested &mdash; Needs Review</span>
+              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-300">AI Suggested &mdash; Needs Review</span>
               <span className="text-[11.5px] text-amber-600 dark:text-amber-400/60 ml-auto">{sub.aiSuggestedGrade.model}</span>
             </div>
             <p className="text-[11.5px] text-amber-600 dark:text-amber-400/70 leading-relaxed">
@@ -259,9 +259,11 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
 
         {/* Returned notice */}
         {isReturnedAttempt && (
-          <div className="mx-3 mt-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
-            <Undo2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
-            <span className="text-[11px] text-amber-300">This attempt was returned. Grades shown are from the prior review.</span>
+          <div className="mx-3 mt-3 p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-2">
+            <Undo2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="text-[11px] text-blue-600 dark:text-blue-300 leading-relaxed">
+              This attempt has been returned &mdash; saving changes will update the student&rsquo;s grade and notify them.
+            </span>
           </div>
         )}
 
@@ -278,7 +280,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
               gradedBy: sub.rubricGrade?.gradedBy || '',
             }}
             aiSuggestedGrade={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? sub.aiSuggestedGrade : undefined}
-            onGradeChange={isReturnedAttempt ? undefined : onGradeChange}
+            onGradeChange={onGradeChange}
             onAcceptAllAI={sub.aiSuggestedGrade?.status === 'pending_review' && !sub.rubricGrade ? onAcceptAllAI : undefined}
             baselineGrades={showBaseline ? baselineGrade?.grades : undefined}
           />
@@ -305,7 +307,7 @@ const RubricGradingPanel: React.FC<RubricGradingPanelProps> = ({
       </div>
 
       {/* Teacher feedback + save bar */}
-      {!isReturnedAttempt && (
+      {(
         <>
           <div className="px-4 py-2 border-t border-[var(--border)]">
             <div className="flex items-center justify-between mb-1">

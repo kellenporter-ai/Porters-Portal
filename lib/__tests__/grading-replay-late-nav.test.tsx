@@ -153,6 +153,13 @@ describe('Late badge (Edit 3)', () => {
         onSelectStudent={() => {}}
         onSelectDraft={() => {}}
         onSelectNotStarted={() => {}}
+        selectedIds={new Set()}
+        isBulkReturning={false}
+        onToggleSelected={() => {}}
+        onSelectAllVisible={() => {}}
+        onClearSelection={() => {}}
+        onBulkReturn={() => {}}
+        onKeyboardNav={() => {}}
       />,
     );
   }

@@ -49,6 +49,12 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     setFeedbackDraft,
     isSavingRubric,
     isReturning,
+    isBulkReturning,
+    selectedIds,
+    toggleSelected,
+    clearSelection,
+    selectAllVisible,
+    handleBulkReturn,
     isDirty,
     currentUnifiedIndex,
     assessmentSearch,
@@ -307,6 +313,13 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
               onSelectStudent={(id) => { selectStudent(id); setMobileTab('response'); }}
               onSelectDraft={(id) => { selectDraftStudent(id); setMobileTab('response'); }}
               onSelectNotStarted={(id) => { selectNotStartedStudent(id); setMobileTab('response'); }}
+              selectedIds={selectedIds}
+              isBulkReturning={isBulkReturning}
+              onToggleSelected={toggleSelected}
+              onSelectAllVisible={selectAllVisible}
+              onClearSelection={clearSelection}
+              onBulkReturn={handleBulkReturn}
+              onKeyboardNav={navigateUnified}
             />
           </div>
 

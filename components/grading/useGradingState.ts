@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { User, Assignment, Submission, RubricSkillGrade, RubricGrade, DraftFeedbackMessage } from '../../types';
 import { dataService } from '../../services/dataService';
 import { calculateRubricPercentage } from '../../lib/rubricParser';
-import { callReturnAssessment, callClassroomPushGrades, auth } from '../../lib/firebase';
+import { callReturnAssessment, callBulkReturnAssessment, callClassroomPushGrades, auth } from '../../lib/firebase';
 import { getClassroomAccessToken } from '../../lib/classroomAuth';
 import { analyzeIntegrity, type IntegrityReport } from '../../lib/integrityAnalysis';
 import { reportError } from '../../lib/errorReporting';
@@ -81,6 +81,9 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
   const [feedbackDraft, setFeedbackDraft] = useState('');
   const [isSavingRubric, setIsSavingRubric] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
+  const [isBulkReturning, setIsBulkReturning] = useState(false);
+  // Checkbox selection for bulk return — separate from the open-detail selection.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [assessmentSearch, setAssessmentSearch] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
   const [assessmentSectionFilter, setAssessmentSectionFilter] = useState('');
@@ -616,6 +619,89 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     }
   }, [sub, selectedGroup, confirm, toast, rubricDraft, feedbackDraft, selectedAssessment]);
 
+  // ─── Bulk return selection ────────────────────────────────────────────────
+  const toggleSelected = useCallback((submissionId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(submissionId)) next.delete(submissionId);
+      else next.add(submissionId);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  // Selects every non-RETURNED submission id in the visible list; if all are
+  // already selected, deselects them (checkbox tri-state toggle).
+  const selectAllVisible = useCallback((submissionIds: string[]) => {
+    setSelectedIds(prev => {
+      const eligible = submissionIds.filter(id => {
+        const s = assessmentSubmissions.find(x => x.id === id);
+        return s && s.status !== 'RETURNED';
+      });
+      const allSelected = eligible.length > 0 && eligible.every(id => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) eligible.forEach(id => next.delete(id));
+      else eligible.forEach(id => next.add(id));
+      return next;
+    });
+  }, [assessmentSubmissions]);
+
+  // Drop ids whose submissions are no longer eligible (returned or removed).
+  useEffect(() => {
+    setSelectedIds(prev => {
+      const valid = new Set(
+        assessmentSubmissions.filter(s => s.status !== 'RETURNED').map(s => s.id)
+      );
+      const kept = new Set([...prev].filter(id => valid.has(id)));
+      return kept.size === prev.size ? prev : kept;
+    });
+  }, [assessmentSubmissions]);
+
+  const handleBulkReturn = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const ok = await confirm({
+      title: 'Return Assessments',
+      message: `Return ${ids.length} assessment${ids.length > 1 ? 's' : ''}? Students will be notified.`,
+      confirmLabel: 'Return to Students',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    setIsBulkReturning(true);
+    try {
+      const res = await callBulkReturnAssessment({ submissionIds: ids });
+      const data = (res?.data ?? {}) as {
+        returned?: string[];
+        skipped?: Array<{ id: string; reason: string }>;
+      };
+      const returned = data.returned ?? [];
+      const skipped = data.skipped ?? [];
+      if (returned.length > 0) {
+        const returnedSet = new Set(returned);
+        setAssessmentSubmissions(prev => prev.map(s => returnedSet.has(s.id) ? {
+          ...s,
+          status: 'RETURNED' as const,
+          returnedAt: new Date().toISOString(),
+          returnedBy: 'Admin',
+        } : s));
+      }
+      if (skipped.length > 0) {
+        toast.error(
+          `Returned ${returned.length}; skipped ${skipped.length}: ${skipped.map(s => s.reason).join(', ')}`
+        );
+      } else {
+        toast.success(`Returned ${returned.length} assessment${returned.length === 1 ? '' : 's'} to students`);
+      }
+      clearSelection();
+    } catch (err) {
+      reportError(err, { method: 'callBulkReturnAssessment' });
+      toast.error('Could not return these assessments. Try again.');
+    } finally {
+      setIsBulkReturning(false);
+    }
+  }, [selectedIds, confirm, toast, clearSelection]);
+
   const handleFlagAsAI = useCallback(async () => {
     if (!sub || !selectedAssessment) return;
     if (await confirm({
@@ -950,6 +1036,13 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
     setFeedbackDraft,
     isSavingRubric,
     isReturning,
+    isBulkReturning,
+    // Bulk return selection
+    selectedIds,
+    toggleSelected,
+    clearSelection,
+    selectAllVisible,
+    handleBulkReturn,
     isDirty,
     currentUnifiedIndex,
     mobileTab,

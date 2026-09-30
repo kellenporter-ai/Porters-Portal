@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { CheckCircle, Bot, Sparkles, AlertTriangle, Eye, EyeOff, CheckCircle2, Search } from 'lucide-react';
-import type { StudentGroup, UnifiedEntry } from './gradingHelpers';
+/**
+ * StudentListPanel — left column of the grading workspace.
+ * Lists student groups, drafts, and not-started students with selection,
+ * filtering, and keyboard navigation.
+ */
+import React, { useMemo, useState } from 'react';
+import {
+  ChevronUp, ChevronDown, CheckCircle2, Undo2, Flag,
+} from 'lucide-react';
 import type { User } from '../../types';
-import { getScoreColor, formatLastSeen } from './gradingHelpers';
-import { getUserSectionForClass } from '../../types';
+import type { StudentGroup, UnifiedEntry } from './gradingHelpers';
+import { getEffectiveScore, getScoreColor, formatLastSeen } from './gradingHelpers';
 
 interface StudentListPanelProps {
   assessmentId: string;
@@ -22,242 +28,319 @@ interface StudentListPanelProps {
   onSelectStudent: (userId: string) => void;
   onSelectDraft: (userId: string) => void;
   onSelectNotStarted: (userId: string) => void;
+  // Selection / bulk return
+  selectedIds: Set<string>;
+  isBulkReturning: boolean;
+  onToggleSelected: (submissionId: string) => void;
+  onSelectAllVisible: (submissionIds: string[]) => void;
+  onClearSelection: () => void;
+  onBulkReturn: () => void;
+  // Arrow-key navigation between visible submitted rows
+  onKeyboardNav: (dir: 1 | -1) => void;
 }
 
+type ChipKey = 'all' | 'submitted' | 'returned' | 'in_progress' | 'flagged';
+
+const CHIPS: Array<{ key: ChipKey; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'submitted', label: 'Submitted' },
+  { key: 'returned', label: 'Returned' },
+  { key: 'in_progress', label: 'In progress' },
+  { key: 'flagged', label: 'Flagged' },
+];
+
+const sortIcon = (key: string, sortKey: string, desc: boolean) =>
+  sortKey === key ? (desc ? <ChevronDown className="w-3 h-3" aria-hidden="true" /> : <ChevronUp className="w-3 h-3" aria-hidden="true" />) : null;
+
 const StudentListPanel: React.FC<StudentListPanelProps> = ({
-  assessmentClassType,
   studentGroups,
   unifiedList,
-  hasDraftStudents,
-  notStartedStudents,
   gradingStudentId,
   viewingDraftUserId,
   assessmentSortKey,
   assessmentSortDesc,
-  assessmentSectionFilter,
-  availableSections,
   onSort,
   onSelectStudent,
   onSelectDraft,
   onSelectNotStarted,
+  selectedIds,
+  isBulkReturning,
+  onToggleSelected,
+  onSelectAllVisible,
+  onClearSelection,
+  onBulkReturn,
+  onKeyboardNav,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [chipFilter, setChipFilter] = useState<ChipKey>('all');
 
-  const getUnifiedId = (entry: UnifiedEntry): string =>
-    entry.type === 'submitted' ? entry.group.userId : entry.student.id;
+  // Presentation-only filter over the grouped output.
+  const filteredGroups = useMemo(() => {
+    switch (chipFilter) {
+      case 'submitted':
+        return studentGroups.filter(g => !g.isInProgress && g.latest.status !== 'RETURNED' && g.latest.status !== 'FLAGGED');
+      case 'returned':
+        return studentGroups.filter(g => g.latest.status === 'RETURNED');
+      case 'in_progress':
+        return studentGroups.filter(g => g.isInProgress);
+      case 'flagged':
+        return studentGroups.filter(g => g.latest.status === 'FLAGGED' || !!g.latest.flaggedAsAI);
+      default:
+        return studentGroups;
+    }
+  }, [studentGroups, chipFilter]);
 
-  const filteredList = searchQuery.trim()
-    ? unifiedList.filter(entry => {
-        const name = entry.type === 'submitted' ? entry.group.userName : entry.student.name;
-        return name.toLowerCase().includes(searchQuery.trim().toLowerCase());
-      })
-    : unifiedList;
+  const visibleSubmissionIds = useMemo(
+    () => filteredGroups.map(g => g.latest.id),
+    [filteredGroups],
+  );
+  const eligibleIds = useMemo(
+    () => visibleSubmissionIds.filter(id => {
+      const g = filteredGroups.find(x => x.latest.id === id);
+      return g && g.latest.status !== 'RETURNED';
+    }),
+    [filteredGroups, visibleSubmissionIds],
+  );
+  const allVisibleSelected = eligibleIds.length > 0 && eligibleIds.every(id => selectedIds.has(id));
+  const someVisibleSelected = eligibleIds.some(id => selectedIds.has(id));
 
-  return (
-    <div className="w-full lg:w-[250px] lg:min-w-[250px] border-b lg:border-b-0 lg:border-r border-[var(--border)] flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-glass)]">
-        <h4 className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Students</h4>
-        <span className="text-xs text-[var(--text-muted)]">
-          {studentGroups.length} submitted
-          {hasDraftStudents.length > 0 && (
-            <span className="text-cyan-600 dark:text-cyan-400"> &middot; {hasDraftStudents.length} draft{hasDraftStudents.length !== 1 ? 's' : ''}</span>
+  // Show unified groups (submitted + draft + not-started) when unfiltered,
+  // the chip-filtered submitted groups otherwise.
+  const showUnified = chipFilter === 'all';
+  const submittedEntries: UnifiedEntry[] = showUnified
+    ? unifiedList
+    : filteredGroups.map(g => ({ type: 'submitted' as const, group: g }));
+
+  const countForChip = (key: ChipKey): number | null => {
+    switch (key) {
+      case 'submitted': return studentGroups.filter(g => !g.isInProgress && g.latest.status !== 'RETURNED' && g.latest.status !== 'FLAGGED').length;
+      case 'returned': return studentGroups.filter(g => g.latest.status === 'RETURNED').length;
+      case 'in_progress': return studentGroups.filter(g => g.isInProgress).length;
+      case 'flagged': return studentGroups.filter(g => g.latest.status === 'FLAGGED' || !!g.latest.flaggedAsAI).length;
+      default: return null;
+    }
+  };
+
+  const handleListKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); onKeyboardNav(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); onKeyboardNav(-1); }
+  };
+
+  const renderGroupRow = (group: StudentGroup) => {
+    const isSelected = gradingStudentId === group.userId;
+    const sub = group.latest;
+    const score = getEffectiveScore(group.best);
+    const isReturned = sub.status === 'RETURNED';
+    const eligible = !isReturned;
+    const isChecked = selectedIds.has(sub.id);
+
+    return (
+      <div
+        key={group.userId}
+        role="button"
+        tabIndex={0}
+        aria-current={isSelected ? 'true' : undefined}
+        onClick={() => onSelectStudent(group.userId)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelectStudent(group.userId); }
+        }}
+        className={`w-full text-left px-2.5 py-2 border-b border-[var(--border)] transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${
+          isSelected ? 'bg-purple-500/10 border-l-2 border-l-purple-500' : 'hover:bg-[var(--surface-glass)]'
+        }`}
+      >
+        {/* Line 1: name + score */}
+        <div className="flex items-center gap-2">
+          {eligible && (
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={() => onToggleSelected(sub.id)}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Select ${group.userName} for bulk return`}
+              className="shrink-0 w-4 h-4 accent-purple-600 cursor-pointer"
+            />
           )}
-          {notStartedStudents.length > 0 && (
-            <span className="text-orange-600 dark:text-orange-400"> &middot; {notStartedStudents.length} not started</span>
+          <span
+            className="flex-1 min-w-[60px] truncate text-sm font-medium text-[var(--text-primary)]"
+            title={group.userName}
+          >
+            {group.userName}
+          </span>
+          <span className={`text-sm font-bold tabular-nums shrink-0 ${getScoreColor(score)}`}>
+            {Math.round(score)}%
+          </span>
+        </div>
+        {/* Line 2: period/time + all status badges */}
+        <div className="flex flex-wrap justify-end items-center gap-1 mt-1">
+          {group.userSection && (
+            <span className="text-[10px] text-[var(--text-tertiary)] mr-auto">{group.userSection}</span>
           )}
-        </span>
-      </div>
-
-      {/* Search */}
-      <div className="px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-glass)]">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" aria-hidden="true" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search students..."
-            className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-lg py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500/50 transition"
-            aria-label="Search students"
-          />
+          <span className="text-[10px] text-[var(--text-tertiary)]">{formatLastSeen(sub.submittedAt)}</span>
+          {sub.submittedLate === true && (
+            <span className="text-[10px] font-bold bg-orange-500/20 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded shrink-0">Late</span>
+          )}
+          {sub.status === 'FLAGGED' && !sub.flaggedAsAI && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
+              <Flag className="w-2.5 h-2.5" aria-hidden="true" /> FLAGGED
+            </span>
+          )}
+          {sub.flaggedAsAI && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">
+              AI FLAG
+            </span>
+          )}
+          {isReturned && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
+              <Undo2 className="w-2.5 h-2.5" aria-hidden="true" /> RETURNED
+            </span>
+          )}
+          {!isReturned && !group.isInProgress && (
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">NEW</span>
+          )}
+          {group.attemptCount > 1 && (
+            <span className="text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--surface-glass)] px-1.5 py-0.5 rounded">×{group.attemptCount}</span>
+          )}
+          {group.hasAISuggestion && !group.hasRubricGrade && (
+            <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">AI</span>
+          )}
+          {group.hasRubricGrade && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
+              <CheckCircle2 className="w-2.5 h-2.5" aria-hidden="true" /> Graded
+            </span>
+          )}
+          {group.needsGrading && (
+            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">Needs grading</span>
+          )}
         </div>
       </div>
+    );
+  };
 
-      {/* Sort bar */}
-      <div className="flex items-center border-b border-[var(--border)] bg-[var(--surface-glass)]">
-        {([['name', 'Name'], ['score', 'Score'], ['submitted', 'Time'], ['attempt', '#']] as const).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => onSort(key)}
-            className={`flex-1 text-center py-1.5 min-h-[44px] text-[11.5px] font-bold uppercase tracking-wider transition hover:bg-[var(--surface-glass)] ${assessmentSortKey === key ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-muted)] hover:text-[var(--text-tertiary)]'}`}
-          >
-            {label}
-            {assessmentSortKey === key && (
-              <span className="ml-0.5">{assessmentSortDesc ? '\u25BE' : '\u25B4'}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Student list */}
-      <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0">
-        {filteredList.length === 0 && searchQuery.trim() && (
-          <div className="px-4 py-8 text-center">
-            <p className="text-xs text-[var(--text-muted)]">No students match "{searchQuery}"</p>
-          </div>
-        )}
-        {filteredList.map(entry => {
-          const entryId = getUnifiedId(entry);
-          const isSelected = entryId === gradingStudentId || entryId === viewingDraftUserId;
-
-          if (entry.type === 'submitted') {
-            const group = entry.group;
-            const bestPct = group.best.flaggedAsAI ? 0 : (group.best.rubricGrade?.overallPercentage ?? group.best.assessmentScore?.percentage ?? group.best.score ?? 0);
-            const bestGradedPct = group.bestGraded ? group.bestGraded.rubricGrade!.overallPercentage : null;
-            const displayPct = bestGradedPct != null ? bestGradedPct : bestPct;
-
-            return (
-              <div
-                key={entryId}
-                role="button"
-                tabIndex={0}
-                aria-label={`${group.userName}${group.hasRubricGrade ? ', graded' : ', ungraded'}${group.isInProgress ? ', in progress' : `, ${displayPct}%`}`}
-                onClick={() => onSelectStudent(group.userId)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectStudent(group.userId); } }}
-                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-[var(--border)] focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
-                  isSelected ? 'bg-purple-500/15 border-l-2 border-l-purple-500' : 'hover:bg-[var(--surface-glass)] border-l-2 border-l-transparent'
-                } ${group.latest.flaggedAsAI ? 'bg-purple-900/5' : ''}`}
-              >
-                <div className="shrink-0">
-                  {group.hasRubricGrade ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" aria-hidden="true" />
-                  ) : (
-                    <div className="w-3.5 h-3.5 rounded-full border border-[var(--border-strong)] bg-transparent" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-xs font-bold truncate ${isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
-                      {group.userName}
-                    </span>
-                    {group.latest.flaggedAsAI && <Bot className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" aria-hidden="true" />}
-                    {group.hasAISuggestion && !group.hasRubricGrade && (
-                      <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-label="AI suggested grade — needs review" />
-                    )}
-                    {group.latest.status === 'FLAGGED' && !group.latest.flaggedAsAI && (
-                      <span title={group.latest.feedback || "Server integrity flag"}>
-                        <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
-                      </span>
-                    )}
-                    {group.attemptCount > 1 && (
-                      <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label={`Resubmitted ${group.attemptCount} attempts`}>
-                        &times;{group.attemptCount}
-                      </span>
-                    )}
-                    {group.isInProgress && (
-                      <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0">IN PROGRESS</span>
-                    )}
-                    {group.latest.status === 'RETURNED' && (
-                      <span className="text-[11.5px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded shrink-0">RETURNED</span>
-                    )}
-                    {group.attemptCount > 1 && group.latest.submittedAt && (Date.now() - new Date(group.latest.submittedAt).getTime() < 24 * 60 * 60 * 1000) && (
-                      <span className="text-[11.5px] font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-1 py-0.5 rounded shrink-0 animate-pulse">NEW</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {group.userSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                      <span className="text-xs text-[var(--text-muted)]">{group.userSection}</span>
-                    )}
-                    {group.latest.submittedAt && !group.isInProgress && (
-                      <span className="text-xs text-[var(--text-muted)]">{formatLastSeen(group.latest.submittedAt)}</span>
-                    )}
-                    {group.latest.submittedLate === true && (
-                      <span className="text-[11.5px] font-bold bg-orange-500/20 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded shrink-0">Late</span>
-                    )}
-                  </div>
-                </div>
-                <span className={`text-[11px] font-bold tabular-nums shrink-0 ${group.isInProgress ? 'text-blue-600 dark:text-blue-400' : getScoreColor(displayPct)}`}>
-                  {group.isInProgress ? '\u2014' : `${displayPct}%`}
-                </span>
-                {/* Feedback read status badges */}
-                {group.hasRubricGrade && group.best.rubricGrade?.teacherFeedback && (
-                  <div className="ml-1" aria-label="Feedback read status">
-                    {group.best.feedbackReadAt ? (
-                      group.best.feedbackReviewedAt ? (
-                        <span className="text-[11.5px] font-bold bg-green-500/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback reviewed">
-                          <CheckCircle2 className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
-                          Reviewed
-                        </span>
-                      ) : (
-                        <span className="text-[11.5px] font-bold bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback read">
-                          <Eye className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
-                          Read
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-[11.5px] font-bold bg-[var(--text-muted)]/20 text-[var(--text-muted)] px-1.5 py-0.5 rounded shrink-0" aria-label="Feedback unread">
-                        <EyeOff className="w-2.5 h-2.5 inline mr-0.5" aria-hidden="true" />
-                        Unread
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          // Draft or not-started
-          const student = entry.student;
-          const isDraft = entry.type === 'draft';
-          const studentSection = getUserSectionForClass(student, assessmentClassType);
-
+  return (
+    <div className="relative w-full lg:w-[300px] shrink-0 flex flex-col border-r border-[var(--border)] bg-[var(--surface-glass)] min-h-0">
+      {/* Status filter chips */}
+      <div className="flex flex-wrap gap-1 px-2.5 py-2 border-b border-[var(--border)]" role="group" aria-label="Filter students by status">
+        {CHIPS.map(chip => {
+          const active = chipFilter === chip.key;
+          const count = countForChip(chip.key);
           return (
-            <div
-              key={entryId}
-              role="button"
-              tabIndex={0}
-              aria-label={`${student.name}, ${isDraft ? 'has draft' : 'not started'}`}
-              onClick={() => isDraft ? onSelectDraft(entryId) : onSelectNotStarted(entryId)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isDraft ? onSelectDraft(entryId) : onSelectNotStarted(entryId); } }}
-              className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer transition border-b border-[var(--border)] focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset focus-visible:outline-none ${
-                isSelected
-                  ? isDraft ? 'bg-cyan-500/15 border-l-2 border-l-cyan-500' : 'bg-orange-500/10 border-l-2 border-l-orange-500'
-                  : 'hover:bg-[var(--surface-glass)] border-l-2 border-l-transparent'
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => setChipFilter(chip.key)}
+              aria-pressed={active}
+              className={`text-[11px] font-semibold px-2 py-1 rounded-full transition ${
+                active
+                  ? 'bg-purple-600 text-white'
+                  : 'text-[var(--text-secondary)] bg-[var(--surface-glass)] hover:bg-[var(--surface-glass)] border border-[var(--border)]'
               }`}
             >
-              <div className="shrink-0">
-                {isDraft ? (
-                  <Eye className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400/60" aria-hidden="true" />
-                ) : (
-                  <div className="w-3.5 h-3.5 rounded-full border border-[var(--border)] bg-transparent opacity-30" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-xs font-bold truncate ${isSelected ? 'text-[var(--text-primary)]' : isDraft ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}`}>
-                    {student.name}
-                  </span>
-                  {isDraft ? (
-                    <span className="text-[11.5px] font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 rounded shrink-0">DRAFT</span>
-                  ) : (
-                    <span className="text-[11.5px] font-bold bg-orange-500/15 text-orange-600 dark:text-orange-400/70 px-1.5 py-0.5 rounded shrink-0">NOT STARTED</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  {studentSection && !assessmentSectionFilter && availableSections.length > 1 && (
-                    <span className="text-xs text-[var(--text-muted)]">{studentSection}</span>
-                  )}
-                  {isDraft && entry.type === 'draft' && entry.startedAt && (
-                    <span className="text-[11.5px] text-cyan-600 dark:text-cyan-400/50">started {formatLastSeen(entry.startedAt)}</span>
-                  )}
-                </div>
-              </div>
-              <span className="text-[11px] font-bold tabular-nums shrink-0 text-[var(--text-muted)]">&mdash;</span>
-            </div>
+              {chip.label}{count !== null && count > 0 ? ` (${count})` : ''}
+            </button>
           );
         })}
       </div>
+
+      {/* Column headers + select-all */}
+      <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-[var(--border)] text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">
+        <input
+          type="checkbox"
+          checked={allVisibleSelected}
+          ref={(el) => { if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected; }}
+          onChange={() => onSelectAllVisible(visibleSubmissionIds)}
+          disabled={eligibleIds.length === 0}
+          aria-label="Select all visible students for bulk return"
+          className="w-4 h-4 accent-purple-600 cursor-pointer disabled:opacity-40"
+        />
+        <button type="button" onClick={() => onSort('name')} className="flex-1 text-left min-w-[60px] hover:text-[var(--text-primary)] transition">
+          <span className="inline-flex items-center gap-0.5">Name {sortIcon('name', assessmentSortKey, assessmentSortDesc)}</span>
+        </button>
+        <button type="button" onClick={() => onSort('score')} className="hover:text-[var(--text-primary)] transition">
+          <span className="inline-flex items-center gap-0.5">Score {sortIcon('score', assessmentSortKey, assessmentSortDesc)}</span>
+        </button>
+      </div>
+
+      {/* Rows */}
+      <div
+        className="flex-1 overflow-y-auto custom-scrollbar min-h-0"
+        role="listbox"
+        aria-label="Students"
+        onKeyDown={handleListKeyDown}
+      >
+        {submittedEntries.map(entry => {
+          if (entry.type === 'submitted' && entry.group) return renderGroupRow(entry.group);
+          if (entry.type === 'draft') {
+            const student = entry.student;
+            const isSelected = viewingDraftUserId === student.id;
+            return (
+              <div
+                key={`draft-${student.id}`}
+                role="button"
+                tabIndex={0}
+                aria-current={isSelected ? 'true' : undefined}
+                onClick={() => onSelectDraft(student.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDraft(student.id); } }}
+                className={`w-full text-left px-2.5 py-2 border-b border-[var(--border)] transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${
+                  isSelected ? 'bg-purple-500/10 border-l-2 border-l-purple-500' : 'hover:bg-[var(--surface-glass)]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 min-w-[60px] truncate text-sm font-medium text-[var(--text-primary)]" title={student.name}>
+                    {student.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">In progress</span>
+                </div>
+              </div>
+            );
+          }
+          if (entry.type === 'not_started') {
+            const student = entry.student;
+            return (
+              <div
+                key={`ns-${student.id}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelectNotStarted(student.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectNotStarted(student.id); } }}
+                className="w-full text-left px-2.5 py-2 border-b border-[var(--border)] transition cursor-pointer hover:bg-[var(--surface-glass)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 min-w-[60px] truncate text-sm font-medium text-[var(--text-tertiary)]" title={student.name}>
+                    {student.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-[var(--text-tertiary)] bg-[var(--surface-glass)] px-1.5 py-0.5 rounded">Not started</span>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })}
+        {submittedEntries.length === 0 && (
+          <div className="px-3 py-6 text-center text-xs text-[var(--text-tertiary)]">No students match this filter.</div>
+        )}
+      </div>
+
+      {/* Floating bulk-action bar */}
+      {selectedIds.size > 0 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-lg px-3 py-2">
+          <button
+            type="button"
+            onClick={onBulkReturn}
+            disabled={isBulkReturning}
+            className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-2 min-h-[44px] rounded-lg transition disabled:opacity-50"
+          >
+            <Undo2 className="w-3.5 h-3.5" aria-hidden="true" />
+            {isBulkReturning ? 'Returning...' : `Return ${selectedIds.size} assessment${selectedIds.size === 1 ? '' : 's'}`}
+          </button>
+          <button
+            type="button"
+            onClick={onClearSelection}
+            disabled={isBulkReturning}
+            className="text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-2 min-h-[44px] rounded-lg transition disabled:opacity-50"
+          >
+            Clear
+          </button>
+        </div>
+      )}
     </div>
   );
 };
