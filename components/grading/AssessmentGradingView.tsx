@@ -120,8 +120,8 @@ const AssessmentGradingView: React.FC<AssessmentGradingViewProps> = ({ users, as
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
 
-  const hasSubs = unifiedList.length > 0;
-  const hasNoResults = selectedAssessmentId && allStudentGroups.length === 0 && studentGroups.length === 0 && notStartedStudents.length === 0;
+  const hasSubs = allStudentGroups.length > 0 || hasDraftStudents.length > 0 || notStartedStudents.length > 0;
+  const hasNoResults = selectedAssessmentId && hasSubs && unifiedList.length === 0;
 
   const handleJumpToPair = (pairIdx: number) => {
     if (!showIntegrityPanel) {
