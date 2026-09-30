@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Assignment, Submission, LessonBlock, RUBRIC_TIER_COLORS, RubricTierLabel } from '../types';
 import { X, RotateCcw, MessageSquare, FileText, Trophy, Check, XCircle, Clock, Shield, Send, LogOut, BookOpen, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastProvider';
 import { reportError } from '../lib/errorReporting';
 import { useT, useInterpolate } from '../lib/i18n';
+import { DrawingReplay, MathStepsReplay, BarChartReplay } from './responseReplay';
 
 interface AssessmentWorkspaceProps {
   // Mode
@@ -853,6 +854,29 @@ const INTERACTIVE_BLOCK_TYPES = new Set([
   'DATA_TABLE', 'BAR_CHART', 'DRAWING', 'MATH_RESPONSE',
 ]);
 
+/** Score pill colors — same thresholds as the student Feedback page. */
+const scorePillText = (pct: number): string =>
+  pct >= 80
+    ? 'text-emerald-700 dark:text-emerald-400'
+    : pct >= 60
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-red-600 dark:text-red-400';
+const scorePillBg = (pct: number): string =>
+  pct >= 80 ? 'bg-emerald-500/10' : pct >= 60 ? 'bg-amber-500/10' : 'bg-red-500/10';
+
+/** Resolve the display score for an attempt: rubric grade > raw score > pending. */
+const attemptScorePct = (s: Submission): number | null => {
+  if (s.rubricGrade?.overallPercentage != null) return s.rubricGrade.overallPercentage;
+  // assessmentScore is a Record-shaped object ({correct, total, percentage,
+  // perBlock}), not a raw number — read .percentage like assessmentResult.
+  const score = s.assessmentScore as unknown;
+  if (typeof score === 'object' && score !== null) {
+    const pct = (score as Record<string, unknown>).percentage;
+    if (typeof pct === 'number' && !Number.isNaN(pct)) return Math.round(pct);
+  }
+  return null;
+};
+
 const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   existingSubmission,
   lessonBlocks,
@@ -861,9 +885,71 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
   onReviewWork,
   contentUrl,
 }) => {
+  // Attempt history: fetch all assessment attempts for this assignment so the
+  // student can flip between them (e.g. latest graded RETURNED attempt while
+  // revising). Fetcher uses the existing userId+submittedAt index and filters
+  // client-side — no new Firestore index needed.
+  const [attempts, setAttempts] = useState<Submission[]>([]);
+  const [attemptsLoaded, setAttemptsLoaded] = useState(false);
+  const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
+  // Memoize the fetch trigger on the submission id + assignment id, so a new
+  // object identity for the same submission (e.g. parent re-render) doesn't
+  // re-fire the query. eslint exhaustive-deps is satisfied manually below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const attemptsFetchKey = useMemo(
+    () => `${existingSubmission?.id ?? ''}:${(existingSubmission as { assignmentId?: unknown } | null | undefined)?.assignmentId ?? ''}`,
+    [existingSubmission?.id, (existingSubmission as { assignmentId?: unknown } | null | undefined)?.assignmentId],
+  );
+  useEffect(() => {
+    const submission = existingSubmission;
+    const assignId = (submission as { assignmentId?: unknown } | null | undefined)?.assignmentId as string | undefined;
+    if (!submission?.userId || !assignId) {
+      setAttemptsLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    setAttemptsLoaded(false);
+    dataService
+      .getAssessmentAttempts(submission.userId, assignId)
+      .then((list) => {
+        if (cancelled) return;
+        // Fallback: if the query missed the latest attempt (eventual
+        // consistency), merge it in so the selector always covers it.
+        const hasLatest = list.some((s) => s.id === submission.id);
+        const merged = hasLatest || !submission.id ? list : [submission, ...list];
+        setAttempts(merged);
+        setSelectedAttemptId((prev) =>
+          prev && merged.some((s) => s.id === prev) ? prev : (submission.id ?? merged[0]?.id ?? null),
+        );
+        setAttemptsLoaded(true);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        reportError(error, { method: 'MyWorkPanel.loadAttempts', submissionId: submission.id });
+        setAttempts([submission]);
+        setSelectedAttemptId(submission.id ?? null);
+        setAttemptsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Re-run only when the submission id or assignment id actually changes,
+    // not on every new object identity of existingSubmission.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attemptsFetchKey]);
+
+  // The attempt whose responses are currently displayed. Defaults to the
+  // latest (existingSubmission); the selector overrides it. Notes stay bound
+  // to the latest submission only.
+  const selectedAttempt =
+    useMemo(
+      () => attempts.find((s) => s.id === selectedAttemptId) ?? null,
+      [attempts, selectedAttemptId],
+    ) ?? existingSubmission;
+
   // F5: defensive read-time filter — strip response tombstones ({__delete__: true,
   // blockId}) that may persist in older submissions, so they never render as answers.
-  const rawBlockResponses = existingSubmission?.blockResponses;
+  const rawBlockResponses = selectedAttempt?.blockResponses;
   const blockResponses = rawBlockResponses
     ? Object.fromEntries(
         Object.entries(rawBlockResponses).filter(
@@ -877,6 +963,9 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
       )
     : rawBlockResponses;
   const submissionId = existingSubmission?.id;
+  // Notes belong to the LATEST submission only. When the student views an
+  // older attempt, notes render read-only (below) and edits stay disabled.
+  const viewingOlderAttempt = !!selectedAttempt && !!existingSubmission && selectedAttempt.id !== existingSubmission.id;
 
   // Notes state
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -968,9 +1057,12 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
     );
   }
 
-  // Build ordered list of interactive blocks that have responses
+  // Build ordered list of ALL interactive blocks — even ones with no response
+  // in the selected attempt. Unanswered blocks render a muted "No answer
+  // submitted" state so students can distinguish "didn't answer" from
+  // "question didn't exist".
   const interactiveBlocks = lessonBlocks.filter(
-    (b) => INTERACTIVE_BLOCK_TYPES.has(b.type) && blockResponses[b.id] !== undefined,
+    (b) => INTERACTIVE_BLOCK_TYPES.has(b.type),
   );
 
   // Fallback: if lessonBlocks don't cover all response keys, include orphans at the end
@@ -1036,6 +1128,23 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
       );
     }
 
+    // Viewing an older attempt: notes are read-only (they belong to the
+    // latest submission). Render even when the note is empty so the student
+    // sees the notes area is read-only rather than silently missing.
+    if (viewingOlderAttempt) {
+      return (
+        <div className="mt-3 rounded-lg bg-[var(--surface-glass)] p-3 select-none" style={{ pointerEvents: 'none' }}>
+          <p className="text-[13px] font-medium text-[var(--text-muted)] mb-1">
+            {t('workspace.studyNotes')}
+          </p>
+          <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{noteValue}</p>
+          <p className="text-xs text-[var(--text-tertiary)] mt-1.5 italic">
+            {t('workspace.attemptNotesReadOnly')}
+          </p>
+        </div>
+      );
+    }
+
     // Normal: editable textarea
     return (
       <div className="mt-3 relative">
@@ -1045,6 +1154,7 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           onBlur={() => handleNoteBlur(blockId)}
           placeholder={t('workspace.addStudyNotes')}
           rows={2}
+          disabled={isRetaking}
           className="w-full text-sm rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] p-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-purple-500/40 resize-y"
         />
         {saveErrors[blockId] && !savedIndicators[blockId] && (
@@ -1061,8 +1171,32 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
     );
   };
 
-  const renderCard = (blockId: string, label: string, questionText: string | null) => {
+  // Rich replay render for block types whose saved response is a structured
+  // payload (drawing elements, math steps, bar chart data) rather than plain
+  // text. Returns null for all other block types, which keep formatResponse.
+  const renderRichReplay = (block: LessonBlock, response: unknown): React.ReactNode => {
+    if (block.type === 'DRAWING') {
+      const elements = (response as { elements?: Array<Record<string, unknown>> }).elements;
+      if (!Array.isArray(elements) || elements.length === 0) return null;
+      return <DrawingReplay elements={elements} canvasHeight={block.canvasHeight} blockId={block.id} />;
+    }
+    if (block.type === 'MATH_RESPONSE') {
+      const steps = (response as { steps?: Array<{ label: string; latex: string; input?: string }> }).steps;
+      if (!Array.isArray(steps) || steps.length === 0) return null;
+      return <MathStepsReplay steps={steps} />;
+    }
+    if (block.type === 'BAR_CHART') {
+      const chartData = response as { initial?: Array<{ value: number; labelHTML: string }>; delta?: Array<{ value: number; labelHTML: string }>; final?: Array<{ value: number; labelHTML: string }> };
+      if (!chartData.initial) return null;
+      return <BarChartReplay chartData={chartData} />;
+    }
+    return null;
+  };
+
+  const renderCard = (block: LessonBlock | string, label: string, questionText: string | null) => {
+    const blockId = typeof block === 'string' ? block : block.id;
     const response = blockResponses[blockId];
+    const richReplay = typeof block === 'string' ? null : renderRichReplay(block, response);
     return (
       <div key={blockId} className="rounded-xl border border-[var(--border)] bg-[var(--panel-bg)] p-4 space-y-2">
         <div className="flex items-center justify-between">
@@ -1074,11 +1208,19 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{questionText}</p>
         )}
 
-        <div className="rounded-lg bg-[var(--surface-glass)] px-3 py-2">
-          <p className="text-[15px] text-[var(--text-primary)] whitespace-pre-wrap break-words">
-            {formatResponse(response)}
-          </p>
-        </div>
+        {response === undefined ? (
+          <div className="rounded-lg bg-[var(--surface-glass)] px-3 py-2">
+            <p className="text-sm italic text-[var(--text-muted)]">{t('workspace.noAnswer')}</p>
+          </div>
+        ) : (
+          <div className="rounded-lg bg-[var(--surface-glass)] px-3 py-2">
+            {richReplay ?? (
+              <p className="text-[15px] text-[var(--text-primary)] whitespace-pre-wrap break-words">
+                {formatResponse(response)}
+              </p>
+            )}
+          </div>
+        )}
 
         {renderNoteSection(blockId)}
       </div>
@@ -1087,24 +1229,73 @@ const MyWorkPanel: React.FC<MyWorkPanelProps> = ({
 
   let questionIndex = 0;
 
+  const selectedScorePct = selectedAttempt ? attemptScorePct(selectedAttempt) : null;
+  const showAttemptSelector = attempts.length >= 2;
+
   return (
     <div className="max-w-6xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('workspace.myWork')}</h2>
-        <button
-          type="button"
-          onClick={onReviewWork}
-          className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-sm font-medium hover:bg-purple-500/30 transition-all"
-        >
-          Full Review
-        </button>
+
+        {/* Score pill for the viewed attempt — covers the resubmit case because
+            the default selection is the latest (RETURNED) attempt. */}
+        {selectedScorePct != null ? (
+          <span
+            data-testid="mywork-score-pill"
+            className={`text-sm font-bold px-2 py-0.5 rounded ${scorePillText(selectedScorePct)} ${scorePillBg(selectedScorePct)}`}
+          >
+            {selectedScorePct}%
+          </span>
+        ) : (
+          attemptsLoaded && (
+            <span className="inline-flex items-center gap-1 text-[13px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
+              {t('workspace.pendingReview')}
+            </span>
+          )
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
+          {showAttemptSelector && (
+            <label className="flex items-center gap-2">
+              <span className="text-sm text-[var(--text-secondary)]">
+                {t('workspace.attemptLabel')}
+              </span>
+              <select
+                aria-label={t('workspace.attemptSelectorLabel')}
+                value={selectedAttemptId ?? ''}
+                onChange={(e) => setSelectedAttemptId(e.target.value)}
+                className="min-h-[44px] px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/40"
+              >
+                {attempts.map((a) => {
+                  const pct = attemptScorePct(a);
+                  const attemptNo = a.attemptNumber ?? attempts.indexOf(a) + 1;
+                  return (
+                    <option key={a.id} value={a.id}>
+                      {interpolate(t('workspace.attemptOption'), {
+                        number: attemptNo,
+                        score: pct != null ? `${pct}%` : t('workspace.pendingReview'),
+                      })}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          )}
+          <button
+            type="button"
+            onClick={onReviewWork}
+            className="min-h-[44px] px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-sm font-medium hover:bg-purple-500/30 transition-all"
+          >
+            Full Review
+          </button>
+        </div>
       </div>
 
       {interactiveBlocks.map((block) => {
         questionIndex++;
         const label = block.title || interpolate(t('workspace.question'), { number: questionIndex });
         const questionText = block.content || null;
-        return renderCard(block.id, label, questionText);
+        return renderCard(block, label, questionText);
       })}
 
       {!!blockResponses['__htmlActivity'] && contentUrl && (

@@ -1351,6 +1351,53 @@ export const dataService = {
     }
   },
 
+  /**
+   * One-shot fetch of every assessment attempt for a student + assignment.
+   *
+   * Index constraint: a userId+assignmentId+isAssessment composite index does
+   * NOT exist, so we query userId== ORDER BY submittedAt DESC (index exists —
+   * firestore.indexes.json) and filter assignmentId/isAssessment client-side.
+   * Student submission volume is low, so this stays cheap. Firestore rules
+   * (firestore.rules:128) allow a student to read any submission whose
+   * resource.data.userId == request.auth.uid, so this query is permitted.
+   */
+  getAssessmentAttempts: async (userId: string, assignmentId: string): Promise<Submission[]> => {
+    try {
+      const q = query(
+        collection(db, 'submissions'),
+        where('userId', '==', userId),
+        orderBy('submittedAt', 'desc'),
+        // Bound the fetch (userId+submittedAt index supports orderBy+limit).
+        // 50 attempts per student far exceeds realistic volume.
+        limit(50),
+      );
+      const snap = await getDocs(q);
+      return snap.docs
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            userId: data.userId,
+            userName: data.userName,
+            assignmentId: data.assignmentId,
+            assignmentTitle: data.assignmentTitle,
+            submittedAt: data.submittedAt,
+            status: data.status,
+            isAssessment: data.isAssessment || false,
+            attemptNumber: data.attemptNumber,
+            assessmentScore: data.assessmentScore,
+            blockResponses: data.blockResponses,
+            rubricGrade: data.rubricGrade || undefined,
+            studentNotes: data.studentNotes || undefined,
+          } as Submission;
+        })
+        .filter((s) => s.assignmentId === assignmentId && s.isAssessment === true);
+    } catch (error) {
+      reportError(error, { method: 'getAssessmentAttempts', userId, assignmentId });
+      throw error;
+    }
+  },
+
   /** Save per-skill corrections when teacher modifies AI suggestions — used as few-shot examples */
   saveGradingCorrections: async (corrections: Omit<GradingCorrection, 'id'>[]) => {
     try {

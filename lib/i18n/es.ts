@@ -407,6 +407,7 @@ export const es: Dictionary = {
   'workspace.reviseResubmitPrompt': 'Revisa los comentarios de tu docente y luego corrige y reenvía tu evaluación.',
   'workspace.returnedBanner': 'Tu docente devolvió esta evaluación. Revisa los comentarios y haz clic en Repetir para entregar una versión corregida.',
   'workspace.noResponses': 'Aún no hay respuestas enviadas.',
+  'workspace.noAnswer': 'Sin respuesta enviada',
   'workspace.fullReview': 'Revisión Completa',
   'workspace.pendingReview': 'Revisión Pendiente',
   'workspace.correct': 'Correcto',
@@ -419,6 +420,10 @@ export const es: Dictionary = {
   'workspace.noteSaveFailedDefault': 'No se pudo guardar la nota de estudio — revisa tu conexión.',
   'workspace.noteLoadFailed': 'No se pudieron cargar tus notas guardadas — revisa tu conexión. Las notas que escribas ahora sí se guardarán.',
   'workspace.question': 'Pregunta {number}',
+  'workspace.attemptLabel': 'Intento',
+  'workspace.attemptSelectorLabel': 'Seleccionar intento',
+  'workspace.attemptOption': 'Intento {number} · {score}',
+  'workspace.attemptNotesReadOnly': 'Las notas se guardan en tu intento más reciente.',
 
   // ── Flux Shop (Phase 4c) ──
   'shop.title': 'Tienda Flux',
