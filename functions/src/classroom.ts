@@ -463,10 +463,22 @@ export const classroomPushGrades = onCall({ memory: "1GiB", timeoutSeconds: 300 
     throw new HttpsError("permission-denied", "Teacher record not found.");
   }
   const teacherData = teacherDoc.data()!;
+  const teacherEmail = (teacherData.email as string | undefined)?.toLowerCase() ?? "";
   const ownedCourses: string[] = teacherData.ownedCourses || [];
-  const teacherClasses: string[] = teacherData.teacherClasses || [];
   for (const entry of linkEntries) {
-    const isOwner = ownedCourses.includes(entry.courseId) || teacherClasses.includes(entry.courseId);
+    // Ownership resolution order:
+    // 1. Legacy/secondary: user doc `ownedCourses` array of GC course IDs.
+    // 2. Authoritative: this teacher performed the linking — ClassroomLinkEntry
+    //    `linkedBy` is their email (set by ClassroomLinkModal on link).
+    //    Checking `teacherClasses` here is WRONG: it holds Portal ClassType
+    //    strings (e.g. "AP Physics 1"), never Google course IDs, so the check
+    //    rejected every teacher (bug reported 2026-09-30).
+    const linkedBy = typeof (entry as { linkedBy?: unknown }).linkedBy === "string"
+      ? ((entry as unknown) as { linkedBy: string }).linkedBy.toLowerCase()
+      : "";
+    const isOwner =
+      ownedCourses.includes(entry.courseId) ||
+      (linkedBy !== "" && linkedBy === teacherEmail);
     if (!isOwner) {
       throw new HttpsError("permission-denied", `You do not own course ${entry.courseId}.`);
     }
