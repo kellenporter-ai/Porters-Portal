@@ -25,6 +25,21 @@ interface UseGradingStateParams {
 
 const TIER_PERCENTAGES = [0, 55, 65, 85, 100] as const;
 
+/**
+ * Extract a server-provided error message (e.g. Firebase HttpsError message or
+ * details) when present and non-empty; otherwise return the fallback text.
+ */
+function getServerErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object') {
+    const e = err as { message?: unknown; details?: unknown };
+    const message = typeof e.message === 'string' ? e.message : '';
+    if (message.trim().length > 0) return message;
+    const details = typeof e.details === 'string' ? e.details : '';
+    if (details.trim().length > 0) return details;
+  }
+  return fallback;
+}
+
 // localStorage helpers
 const STORAGE_KEY_PREFIX = 'feedback-draft-';
 const DRAFT_TTL_DAYS = 7;
@@ -613,7 +628,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
       toast.success(`Assessment returned to ${selectedGroup.userName}`);
     } catch (err) {
       reportError(err, { method: 'callReturnAssessment' });
-      toast.error('Could not return this assessment. Try again.');
+      toast.error(getServerErrorMessage(err, 'Could not return this assessment. Try again.'));
     } finally {
       setIsReturning(false);
     }
@@ -696,7 +711,7 @@ export function useGradingState({ users, assignments, submissions }: UseGradingS
       clearSelection();
     } catch (err) {
       reportError(err, { method: 'callBulkReturnAssessment' });
-      toast.error('Could not return these assessments. Try again.');
+      toast.error(getServerErrorMessage(err, 'Could not return these assessments. Try again.'));
     } finally {
       setIsBulkReturning(false);
     }
