@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scientists Circle Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F3EF; --ink:#1A1A18; --accent:#FF4D26; --muted:#6B6B63;
+  --card:#FFFFFF; --line:#D8D6CC;
+  --green:#2E9E5B; --amber:#E8A020;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+[hidden]{display:none !important;}
+html,body{height:100%;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif; font-size:1.05rem; line-height:1.45;
+}
+.lang-es{display:none;}
+html[lang="es"] .lang-en{display:none !important;}
+html[lang="es"] .lang-es{display:inline;}
+.app{max-width:1180px;margin:0 auto;padding:0 18px;min-height:100vh;display:flex;flex-direction:column;}
+
+/* header */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0 12px;flex-wrap:wrap;}
+.brand{font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(1.3rem,2.6vw,1.9rem);letter-spacing:.01em;line-height:1.1;}
+.brand .accent{color:var(--accent);}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.group-chip{font-family:'Archivo',sans-serif;font-weight:700;font-size:.95rem;background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:999px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.group-chip:empty{display:none;}
+.lang-toggle{display:flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--card);}
+.lang-btn{font-family:'Archivo',sans-serif;font-weight:700;font-size:.95rem;background:transparent;color:var(--ink);border:0;cursor:pointer;padding:8px 16px;min-height:44px;min-width:48px;}
+.lang-btn.active{background:var(--ink);color:var(--paper);}
+.icon-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:.95rem;
+  background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:999px;
+  cursor:pointer;padding:8px 18px;min-height:44px;min-width:44px;
+}
+.icon-btn:hover{background:rgba(26,26,24,.06);}
+.icon-btn.danger{color:var(--accent);border-color:var(--accent);}
+
+/* buttons */
+.btn{
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:1rem;
+  border-radius:10px;cursor:pointer;min-height:48px;min-width:44px;padding:10px 20px;
+  border:1.5px solid var(--ink);
+}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-outline{background:var(--card);color:var(--ink);}
+.btn-outline:hover{background:rgba(26,26,24,.06);}
+.btn-dark{background:var(--ink);border-color:var(--ink);color:var(--paper);}
+.btn-big{width:100%;font-size:1.15rem;min-height:56px;}
+.link-btn{background:none;border:0;cursor:pointer;color:var(--muted);font-family:'Inter',sans-serif;font-size:.98rem;text-decoration:underline;min-height:44px;padding:6px 8px;}
+.link-btn:hover{color:var(--accent);}
+
+/* shared layout */
+.screen{flex:1;padding-bottom:40px;}
+.kicker{font-family:'Archivo',sans-serif;font-weight:700;font-size:.9rem;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+.page-title{font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.08;margin-bottom:10px;}
+.muted{color:var(--muted);}
+.card{border:1.5px dashed var(--accent);border-radius:10px;background:var(--card);padding:18px;}
+.card-plain{border:1.5px dashed var(--muted);border-radius:10px;background:rgba(255,255,255,.55);padding:16px;}
+.field label{display:block;font-family:'Archivo',sans-serif;font-weight:700;font-size:1rem;margin-bottom:6px;}
+.field input,.field textarea,textarea.ta{
+  width:100%;font-family:'Inter',sans-serif;font-size:1.05rem;color:var(--ink);
+  background:#fff;border:1.5px solid rgba(26,26,24,.55);border-radius:10px;padding:12px 14px;
+}
+.field input:focus,textarea.ta:focus{outline:2.5px solid var(--accent);outline-offset:1px;border-color:var(--accent);}
+textarea.ta{resize:vertical;min-height:90px;}
+textarea.ta.tall{min-height:130px;}
+
+/* HOME */
+#home-screen{max-width:960px;width:100%;margin:0 auto;}
+.discuss-q{
+  font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(1.15rem,2.4vw,1.6rem);
+  line-height:1.3;border:2px dashed var(--accent);border-radius:10px;
+  padding:18px 22px;margin:14px 0 20px;background:var(--card);
+}
+.home-meta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:22px;}
+.home-meta .field{flex:1;min-width:200px;margin-bottom:0;}
+.roles-label{font-family:'Archivo',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+.role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.role-card{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;
+  background:var(--card);border:2px solid var(--ink);border-radius:12px;
+  padding:18px 16px;cursor:pointer;min-height:150px;
+  font-family:'Inter',sans-serif;
+}
+.role-card:hover{border-color:var(--accent);background:#FFF6F2;}
+.role-card .rc-icon{font-size:1.9rem;line-height:1;}
+.role-card .rc-name{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.25rem;}
+.role-card .rc-desc{font-size:.95rem;color:var(--muted);line-height:1.35;}
+
+/* role screens common */
+.role-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.role-title-row{display:flex;align-items:center;gap:12px;}
+.role-big-icon{font-size:2rem;}
+.round-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px;}
+.round-tab{
+  font-family:'Archivo',sans-serif;font-weight:700;font-size:1rem;
+  border:1.5px dashed var(--muted);border-radius:999px;background:var(--card);color:var(--muted);
+  padding:8px 18px;cursor:pointer;min-height:44px;
+}
+.round-tab.active{border:2px solid var(--accent);color:var(--accent);background:#FFF3EE;}
+.stack{display:flex;flex-direction:column;gap:16px;}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'Inter',sans-serif;font-size:.98rem;
+  border:1.5px solid var(--ink);border-radius:999px;background:var(--card);color:var(--ink);
+  padding:9px 16px;cursor:pointer;min-height:44px;text-align:left;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.on{border-color:var(--accent);background:#FFEDE6;color:var(--accent);font-weight:600;}
+.check-row{display:flex;align-items:flex-start;gap:10px;border:1.5px dashed var(--line);border-radius:10px;background:var(--card);padding:12px 14px;cursor:pointer;}
+.check-row input{width:22px;height:22px;margin-top:2px;accent-color:var(--accent);flex:0 0 auto;}
+.check-row .cr-label{font-size:1rem;line-height:1.35;}
+.save-note{font-size:.9rem;color:var(--green);font-weight:600;min-height:1.3em;}
+.count-pill{font-family:'Archivo',sans-serif;font-weight:700;font-size:1rem;border:1.5px dashed var(--muted);border-radius:999px;padding:8px 18px;background:var(--card);}
+
+/* FACILITATOR */
+.timer-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.timer-digits{
+  font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(4.5rem,14vw,8.5rem);
+  line-height:1;letter-spacing:.02em;font-variant-numeric:tabular-nums;
+  border:3px solid var(--ink);border-radius:16px;background:var(--card);
+  padding:10px 34px;min-width:340px;text-align:center;
+}
+.timer-digits.low{color:var(--accent);border-color:var(--accent);}
+.timer-controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.step-list{display:flex;flex-direction:column;gap:10px;}
+.step-item{display:flex;gap:14px;align-items:flex-start;border:1.5px dashed var(--line);border-radius:10px;background:var(--card);padding:14px 16px;}
+.step-item .step-num{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.7rem;color:var(--muted);line-height:1;min-width:38px;}
+.step-item.current{border:2.5px solid var(--accent);background:#FFF3EE;}
+.step-item.current .step-num{color:var(--accent);}
+.step-item.done{opacity:.55;}
+.step-item .step-text b{font-family:'Archivo',sans-serif;display:block;font-size:1.08rem;}
+.step-item .step-text span{font-size:.96rem;color:var(--muted);}
+.badge10{
+  font-family:'Archivo',sans-serif;font-weight:800;font-size:1.1rem;
+  background:var(--ink);color:var(--paper);border-radius:999px;padding:10px 22px;text-align:center;
+}
+.badge10.expired{background:var(--accent);}
+.starter-strip{display:flex;flex-wrap:wrap;gap:8px;}
+.starter-chip{border:1.5px dashed var(--muted);border-radius:999px;background:var(--card);padding:8px 16px;font-size:.95rem;min-height:44px;display:inline-flex;align-items:center;}
+
+/* EVIDENCE CHECKER */
+.claim-item{border:1.5px solid var(--line);border-left:6px solid var(--muted);border-radius:8px;background:var(--card);padding:12px 14px;}
+.claim-item.supported{border-left-color:var(--green);}
+.claim-item.needs{border-left-color:var(--amber);}
+.claim-item .claim-text{font-weight:600;margin-bottom:6px;}
+.claim-item .claim-tags{font-size:.9rem;color:var(--muted);}
+.claim-item .claim-tags b{color:var(--green);}
+.claim-item.needs .claim-tags b{color:var(--amber);}
+.empty-note{color:var(--muted);font-style:italic;}
+
+/* MAPPER */
+.timeline{display:flex;flex-direction:column;gap:0;margin-top:8px;}
+.tl-node{border:2px dashed var(--accent);border-radius:12px;background:var(--card);padding:16px 18px;}
+.tl-node .tl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.tl-node .tl-round{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.15rem;color:var(--accent);}
+.tl-node .tl-empty{color:var(--muted);font-style:italic;}
+.tl-arrow{display:flex;justify-content:center;padding:2px 0;color:var(--accent);font-size:1.6rem;line-height:1;font-weight:800;}
+.tl-changed{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;font-size:.95rem;color:var(--muted);}
+.tl-changed b{color:var(--ink);}
+
+/* PRESENT MODE */
+#present-mode{
+  position:fixed;inset:0;z-index:999;background:var(--paper);color:var(--ink);
+  overflow:auto;padding:5vh 6vw;display:none;flex-direction:column;
+}
+#present-mode.open{display:flex;}
+.pm-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:3vh;}
+.pm-title{font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(1.6rem,4vw,3rem);letter-spacing:.02em;}
+.pm-title .accent{color:var(--accent);}
+.pm-exit{font-family:'Archivo',sans-serif;font-weight:700;font-size:1.2rem;background:var(--ink);color:var(--paper);border:0;border-radius:999px;padding:14px 30px;cursor:pointer;min-height:56px;}
+.pm-timeline{display:flex;align-items:stretch;gap:2vw;flex:1;justify-content:center;}
+.pm-node{
+  flex:1;max-width:30%;border:3px dashed var(--accent);border-radius:18px;background:var(--card);
+  padding:3vh 2vw;display:flex;flex-direction:column;gap:1.6vh;min-height:44vh;
+}
+.pm-node .pm-round{font-family:'Archivo',sans-serif;font-weight:800;font-size:clamp(1.3rem,2.6vw,2.2rem);color:var(--accent);letter-spacing:.04em;}
+.pm-node .pm-label{font-family:'Archivo',sans-serif;font-weight:700;font-size:clamp(1rem,1.8vw,1.5rem);color:var(--muted);text-transform:uppercase;letter-spacing:.12em;}
+.pm-node .pm-text{font-size:clamp(1.15rem,2vw,1.8rem);line-height:1.35;font-weight:600;flex:1;white-space:pre-wrap;}
+.pm-node .pm-empty{color:var(--muted);font-style:italic;font-weight:400;}
+.pm-node .pm-changed{border-top:2px dashed var(--line);padding-top:1.4vh;}
+.pm-node .pm-changed .pm-label{font-size:clamp(.85rem,1.4vw,1.1rem);}
+.pm-node .pm-changed .pm-text{font-size:clamp(1rem,1.7vw,1.5rem);}
+.pm-arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:clamp(2.5rem,6vw,5rem);font-weight:800;align-self:center;}
+@media (max-width:900px){
+  .pm-timeline{flex-direction:column;align-items:stretch;}
+  .pm-node{max-width:100%;min-height:0;}
+  .pm-arrow{transform:rotate(90deg);padding:0;}
+}
+@media (max-height:700px){
+  .role-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+  .role-card{min-height:120px;padding:12px;}
+  .timer-digits{font-size:clamp(3.5rem,11vw,6rem);min-width:280px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand" id="brand"></div>
+    <div class="topbar-right">
+      <span class="group-chip" id="group-chip"></span>
+      <button class="icon-btn danger" id="btn-restart" type="button"><span class="lang-en">Start over</span><span class="lang-es">Empezar de nuevo</span></button>
+      <div class="lang-toggle" role="group" aria-label="Language / Idioma">
+        <button class="lang-btn active" id="lang-en" type="button">EN</button>
+        <button class="lang-btn" id="lang-es" type="button">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HOME -->
+  <section class="screen" id="home-screen">
+    <div class="kicker"><span class="lang-en">OpenSciEd P.1 · Lesson 3 · Reliable Grid</span><span class="lang-es">OpenSciEd P.1 · Lección 3 · Red confiable</span></div>
+    <h1 class="page-title"><span class="lang-en">Scientists Circle Toolkit</span><span class="lang-es">Kit del Círculo de Científicos</span></h1>
+    <p class="muted" style="margin-bottom:10px;"><span class="lang-en">Work in your group of 3 to 4. Pick your assigned role to open your tool.</span><span class="lang-es">Trabajen en su grupo de 3 a 4. Elige tu rol asignado para abrir tu herramienta.</span></p>
+    <div class="discuss-q">
+      <span class="lang-en">Could the Texas blackouts have been caused by a broken or short-circuited circuit, by supply and demand, or by both? Build the explanation together, using this week's evidence.</span>
+      <span class="lang-es">¿Los apagones de Texas pudieron ser causados por un circuito roto o en cortocircuito, por la oferta y la demanda, o por ambos? Construyan la explicación juntos, usando la evidencia de la semana.</span>
+    </div>
+    <div class="home-meta">
+      <div class="field">
+        <label for="group-input"><span class="lang-en">Group number or name (optional)</span><span class="lang-es">Número o nombre de grupo (opcional)</span></label>
+        <input id="group-input" type="text" maxlength="30" autocomplete="off">
+      </div>
+    </div>
+    <div class="roles-label"><span class="lang-en">Pick your role</span><span class="lang-es">Elige tu rol</span></div>
+    <div class="role-grid" id="role-grid"></div>
+  </section>
+
+  <!-- FACILITATOR -->
+  <section class="screen" id="facilitator-screen" hidden>
+    <div class="role-head">
+      <div class="role-title-row">
+        <span class="role-big-icon" aria-hidden="true">⏱️</span>
+        <div>
+          <div class="kicker"><span class="lang-en">Facilitator</span><span class="lang-es">Facilitador</span></div>
+          <h2 class="page-title" style="margin-bottom:0;"><span class="lang-en">Run the room</span><span class="lang-es">Dirige la discusión</span></h2>
+        </div>
+      </div>
+      <button class="icon-btn btn-change-role" type="button">↩ <span class="lang-en">Change role</span><span class="lang-es">Cambiar rol</span></button>
+    </div>
+    <div class="stack">
+      <div class="card timer-wrap">
+        <div class="row" style="justify-content:center;">
+          <button class="btn btn-outline" id="timer-minus" type="button" style="font-size:1.4rem;min-width:56px;">−</button>
+          <div style="text-align:center;">
+            <div class="timer-digits" id="timer-display">5:00</div>
+            <div class="muted" style="margin-top:8px;"><span class="lang-en">minutes for this step</span><span class="lang-es">minutos para este paso</span></div>
+          </div>
+          <button class="btn btn-outline" id="timer-plus" type="button" style="font-size:1.4rem;min-width:56px;">+</button>
+        </div>
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="timer-start-pause" type="button"><span class="lang-en">Start</span><span class="lang-es">Iniciar</span></button>
+          <button class="btn btn-outline" id="timer-reset" type="button"><span class="lang-en">Reset</span><span class="lang-es">Reiniciar</span></button>
+        </div>
+      </div>
+      <div class="badge10" id="badge10"><span id="badge10-label"><span class="lang-en">Teacher stays silent:</span><span class="lang-es">El maestro guarda silencio:</span></span> <span id="badge10-time">10:00</span></div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+          <div class="count-pill" id="round-pill">Round 1 / 3</div>
+          <button class="btn btn-outline" id="step-next" type="button"><span class="lang-en">Next step</span><span class="lang-es">Siguiente paso</span> →</button>
+        </div>
+        <div class="step-list" id="step-list"></div>
+      </div>
+      <div class="card-plain">
+        <div class="kicker" style="margin-bottom:10px;"><span class="lang-en">Sentence starters</span><span class="lang-es">Inicios de oración</span></div>
+        <div class="starter-strip" id="starter-strip"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPEAKER -->
+  <section class="screen" id="speaker-screen" hidden>
+    <div class="role-head">
+      <div class="role-title-row">
+        <span class="role-big-icon" aria-hidden="true">🗣️</span>
+        <div>
+          <div class="kicker"><span class="lang-en">Speaker</span><span class="lang-es">Orador</span></div>
+          <h2 class="page-title" style="margin-bottom:0;"><span class="lang-en">Build what you will say</span><span class="lang-es">Prepara lo que dirás</span></h2>
+        </div>
+      </div>
+      <button class="icon-btn btn-change-role" type="button">↩ <span class="lang-en">Change role</span><span class="lang-es">Cambiar rol</span></button>
+    </div>
+    <div class="round-tabs" id="speaker-tabs"></div>
+    <div class="stack">
+      <div class="field">
+        <label for="speaker-explain"><span class="lang-en">Our explanation is...</span><span class="lang-es">Nuestra explicación es...</span></label>
+        <textarea class="ta tall" id="speaker-explain"></textarea>
+      </div>
+      <div class="field">
+        <label for="speaker-because"><span class="lang-en">because...</span><span class="lang-es">porque...</span></label>
+        <textarea class="ta tall" id="speaker-because"></textarea>
+      </div>
+      <div class="card-plain">
+        <div class="kicker" style="margin-bottom:10px;"><span class="lang-en">Evidence you are using</span><span class="lang-es">Evidencia que estás usando</span></div>
+        <div class="stack" id="speaker-evidence"></div>
+      </div>
+      <div class="save-note" id="speaker-save-note"></div>
+    </div>
+  </section>
+
+  <!-- QUESTIONER -->
+  <section class="screen" id="questioner-screen" hidden>
+    <div class="role-head">
+      <div class="role-title-row">
+        <span class="role-big-icon" aria-hidden="true">❓</span>
+        <div>
+          <div class="kicker"><span class="lang-en">Questioner</span><span class="lang-es">Preguntador</span></div>
+          <h2 class="page-title" style="margin-bottom:0;"><span class="lang-en">Draft your clarifying question</span><span class="lang-es">Prepara tu pregunta aclaratoria</span></h2>
+        </div>
+      </div>
+      <button class="icon-btn btn-change-role" type="button">↩ <span class="lang-en">Change role</span><span class="lang-es">Cambiar rol</span></button>
+    </div>
+    <div class="round-tabs" id="questioner-tabs"></div>
+    <div class="stack">
+      <div class="card-plain">
+        <div class="kicker" style="margin-bottom:10px;"><span class="lang-en">Tap a stem to insert it</span><span class="lang-es">Toca un inicio para insertarlo</span></div>
+        <div class="starter-strip" id="questioner-stems"></div>
+      </div>
+      <div class="field">
+        <label for="questioner-draft"><span class="lang-en">Your question</span><span class="lang-es">Tu pregunta</span></label>
+        <textarea class="ta tall" id="questioner-draft"></textarea>
+      </div>
+      <div class="save-note" id="questioner-save-note"></div>
+    </div>
+  </section>
+
+  <!-- EVIDENCE CHECKER -->
+  <section class="screen" id="checker-screen" hidden>
+    <div class="role-head">
+      <div class="role-title-row">
+        <span class="role-big-icon" aria-hidden="true">🔍</span>
+        <div>
+          <div class="kicker"><span class="lang-en">Evidence checker</span><span class="lang-es">Verificador de evidencia</span></div>
+          <h2 class="page-title" style="margin-bottom:0;"><span class="lang-en">Check claims against evidence</span><span class="lang-es">Verifica afirmaciones con la evidencia</span></h2>
+        </div>
+      </div>
+      <button class="icon-btn btn-change-role" type="button">↩ <span class="lang-en">Change role</span><span class="lang-es">Cambiar rol</span></button>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <div class="field">
+          <label for="claim-text"><span class="lang-en">Claim you heard</span><span class="lang-es">Afirmación que escuchaste</span></label>
+          <textarea class="ta" id="claim-text" style="min-height:64px;"></textarea>
+        </div>
+        <div class="kicker" style="margin-bottom:8px;"><span class="lang-en">Which evidence does it match?</span><span class="lang-es">¿Con qué evidencia coincide?</span></div>
+        <div class="stack" id="checker-evidence" style="margin-bottom:12px;"></div>
+        <label class="check-row" style="border-color:var(--amber);">
+          <input type="checkbox" id="claim-none">
+          <span class="cr-label"><span class="lang-en"><b>No evidence yet.</b> This claim needs evidence.</span><span class="lang-es"><b>Sin evidencia todavía.</b> Esta afirmación necesita evidencia.</span></span>
+        </label>
+        <button class="btn btn-primary btn-big" id="claim-add" type="button" style="margin-top:12px;"><span class="lang-en">Add claim to log</span><span class="lang-es">Agregar afirmación al registro</span></button>
+        <div class="save-note" id="checker-save-note"></div>
+      </div>
+      <div class="row" style="justify-content:space-between;">
+        <div class="count-pill" id="claim-summary"></div>
+        <button class="link-btn" id="claim-clear" type="button"><span class="lang-en">Clear log</span><span class="lang-es">Borrar registro</span></button>
+      </div>
+      <div class="stack" id="claim-list"></div>
+    </div>
+  </section>
+
+  <!-- MAPPER -->
+  <section class="screen" id="mapper-screen" hidden>
+    <div class="role-head">
+      <div class="role-title-row">
+        <span class="role-big-icon" aria-hidden="true">🗺️</span>
+        <div>
+          <div class="kicker"><span class="lang-en">Mapper</span><span class="lang-es">Mapeador</span></div>
+          <h2 class="page-title" style="margin-bottom:0;"><span class="lang-en">Chart the class explanation</span><span class="lang-es">Registra la explicación de la clase</span></h2>
+        </div>
+      </div>
+      <button class="icon-btn btn-change-role" type="button">↩ <span class="lang-en">Change role</span><span class="lang-es">Cambiar rol</span></button>
+    </div>
+    <div class="stack">
+      <div class="row">
+        <button class="btn btn-dark" id="btn-present" type="button">⛶ <span class="lang-en">Present mode</span><span class="lang-es">Modo presentación</span></button>
+      </div>
+      <div class="stack" id="mapper-rounds"></div>
+      <div class="card-plain">
+        <div class="kicker" style="margin-bottom:12px;"><span class="lang-en">Class explanation timeline</span><span class="lang-es">Línea de tiempo de la explicación</span></div>
+        <div class="timeline" id="mapper-timeline"></div>
+      </div>
+      <div class="save-note" id="mapper-save-note"></div>
+    </div>
+  </section>
+</div>
+
+<!-- PRESENT MODE -->
+<div id="present-mode" aria-hidden="true">
+  <div class="pm-head">
+    <div class="pm-title"><span class="lang-en">Our class explanation</span><span class="lang-es">Nuestra explicación de la clase</span> <span class="accent">·</span> <span class="lang-en">OpenSciEd P.1 L3</span><span class="lang-es">OpenSciEd P.1 L3</span></div>
+    <button class="pm-exit" id="btn-present-exit" type="button">✕ <span class="lang-en">Exit</span><span class="lang-es">Salir</span></button>
+  </div>
+  <div class="pm-timeline" id="pm-timeline"></div>
+</div>
+
+<script>
+'use strict';
+/* ================= strings ================= */
+const STRINGS = {
+  en: {
+    brand: 'Scientists Circle',
+    brandAccent: 'Toolkit',
+    restartConfirm: 'Start over? This clears all saved work on this device.',
+    saved: 'Saved.',
+    groupLabel: 'Group',
+    round: 'Round', roundOf: 'of', round1: 'Round 1', round2: 'Round 2', round3: 'Round 3',
+    nextStep: 'Next step', start: 'Start', pause: 'Pause', reset: 'Reset',
+    minutesLabel: 'minutes for this step',
+    teacherSilent: 'Teacher stays silent:',
+    teacherSilentDone: 'Discussion time: the teacher can talk now.',
+    roles: {
+      facilitator: { name: 'Facilitator', desc: 'Run the room: timer, round steps, and keeping the circle moving.' },
+      speaker: { name: 'Speaker', desc: 'Build your group\u2019s explanation and point to the evidence behind it.' },
+      questioner: { name: 'Questioner', desc: 'Draft one clarifying question for the other group.' },
+      checker: { name: 'Evidence checker', desc: 'Track claims and check them against this week\u2019s evidence.' },
+      mapper: { name: 'Mapper', desc: 'Record how the class explanation changes each round.' }
+    },
+    steps: [
+      { title: 'Inner circle talks', text: 'One group sits in the middle and discusses the question out loud, using their models and evidence. Everyone else listens.' },
+      { title: 'Outer circle responds', text: 'Questioners ask one clarifying question; evidence checkers challenge any claim that does not match this week\u2019s evidence.' },
+      { title: 'Mappers update the chart', text: 'They record how the class explanation changed and read it aloud.' },
+      { title: 'Swap and repeat', text: 'Inner and outer circles trade places. Two to three rounds total.' }
+    ],
+    starters: ['Our explanation is... because...', 'The evidence for this is...', 'We changed our idea when...', 'A question we still have is...'],
+    explainLabel: 'Our explanation is...', becauseLabel: 'because...',
+    evidenceUsing: 'Evidence you are using',
+    yourQuestion: 'Your question',
+    stems: ['Can you explain what you mean by...?', 'How does your model show...?', 'What evidence shows that...?', 'What would happen if...?'],
+    claimHeard: 'Claim you heard',
+    whichEvidence: 'Which evidence does it match?',
+    noEvidence: 'No evidence yet.',
+    noEvidenceFull: 'No evidence yet. This claim needs evidence.',
+    addClaim: 'Add claim to log',
+    clearLog: 'Clear log',
+    clearLogConfirm: 'Clear the claims log for this round?',
+    supported: 'supported', needs: 'needs evidence',
+    noClaims: 'No claims checked yet this round.',
+    chartNow: 'Our class explanation is now...',
+    whatChanged: 'What changed this round?',
+    presentMode: 'Present mode',
+    exit: 'Exit',
+    classTimeline: 'Class explanation timeline',
+    roundEmpty: 'Nothing recorded yet.',
+    changedPrefix: 'Changed:',
+    evidenceSources: [
+      'Energy transfer models, Scenarios A to E',
+      'The 2003 Northeast blackout reading',
+      'Texas demand forecast graph: 2020 vs 2021',
+      'Texas production vs demand graph, Feb 15 2021'
+    ],
+    groupPh: 'Group number or name (optional)'
+  },
+  es: {
+    brand: 'Círculo de Científicos',
+    brandAccent: 'Kit de herramientas',
+    restartConfirm: '¿Empezar de nuevo? Esto borra todo el trabajo guardado en este dispositivo.',
+    saved: 'Guardado.',
+    groupLabel: 'Grupo',
+    round: 'Ronda', roundOf: 'de', round1: 'Ronda 1', round2: 'Ronda 2', round3: 'Ronda 3',
+    nextStep: 'Siguiente paso', start: 'Iniciar', pause: 'Pausar', reset: 'Reiniciar',
+    minutesLabel: 'minutos para este paso',
+    teacherSilent: 'El maestro guarda silencio:',
+    teacherSilentDone: 'Tiempo de discusión: el maestro ya puede hablar.',
+    roles: {
+      facilitator: { name: 'Facilitador', desc: 'Dirige la discusión: temporizador, pasos de la ronda y mantener el círculo en movimiento.' },
+      speaker: { name: 'Orador', desc: 'Prepara la explicación de tu grupo y señala la evidencia que la respalda.' },
+      questioner: { name: 'Preguntador', desc: 'Prepara una pregunta aclaratoria para el otro grupo.' },
+      checker: { name: 'Verificador de evidencia', desc: 'Registra las afirmaciones y las verifica con la evidencia de la semana.' },
+      mapper: { name: 'Mapeador', desc: 'Registra cómo cambia la explicación de la clase en cada ronda.' }
+    },
+    steps: [
+      { title: 'El círculo interno habla', text: 'Un grupo se sienta en el centro y discute la pregunta en voz alta, usando sus modelos y evidencia. Los demás escuchan.' },
+      { title: 'El círculo externo responde', text: 'Los que preguntan hacen una pregunta aclaratoria; los verificadores cuestionan cualquier afirmación que no coincida con la evidencia de la semana.' },
+      { title: 'Los mapeadores actualizan la tabla', text: 'Registran cómo cambió la explicación de la clase y la leen en voz alta.' },
+      { title: 'Intercambien y repitan', text: 'Los círculos interno y externo cambian de lugar. De dos a tres rondas en total.' }
+    ],
+    starters: ['Nuestra explicación es... porque...', 'La evidencia para esto es...', 'Cambiamos nuestra idea cuando...', 'Una pregunta que todavía tenemos es...'],
+    explainLabel: 'Nuestra explicación es...', becauseLabel: 'porque...',
+    evidenceUsing: 'Evidencia que estás usando',
+    yourQuestion: 'Tu pregunta',
+    stems: ['¿Puedes explicar qué quieres decir con...?', '¿Cómo muestra tu modelo...?', '¿Qué evidencia muestra que...?', '¿Qué pasaría si...?'],
+    claimHeard: 'Afirmación que escuchaste',
+    whichEvidence: '¿Con qué evidencia coincide?',
+    noEvidence: 'Sin evidencia todavía.',
+    noEvidenceFull: 'Sin evidencia todavía. Esta afirmación necesita evidencia.',
+    addClaim: 'Agregar afirmación al registro',
+    clearLog: 'Borrar registro',
+    clearLogConfirm: '¿Borrar el registro de afirmaciones de esta ronda?',
+    supported: 'respaldadas', needs: 'necesitan evidencia',
+    noClaims: 'Aún no hay afirmaciones verificadas en esta ronda.',
+    chartNow: 'Nuestra explicación de la clase ahora es...',
+    whatChanged: '¿Qué cambió en esta ronda?',
+    presentMode: 'Modo presentación',
+    exit: 'Salir',
+    classTimeline: 'Línea de tiempo de la explicación',
+    roundEmpty: 'Aún no hay nada registrado.',
+    changedPrefix: 'Cambió:',
+    evidenceSources: [
+      'Modelos de transferencia de energía, Escenarios A a E',
+      'La lectura sobre el apagón del Noreste de 2003',
+      'Gráfica de pronóstico de demanda de Texas: 2020 vs 2021',
+      'Gráfica de producción vs demanda de Texas, 15 de feb 2021'
+    ],
+    groupPh: 'Número o nombre de grupo (opcional)'
+  }
+};
+
+let lang = 'en';
+function t(key) {
+  const parts = key.split('.');
+  let val = STRINGS[lang];
+  for (const p of parts) { val = val && val[p]; }
+  return (typeof val === 'string') ? val : key;
+}
+function roundName(i) { return t('round' + (i + 1)); }
+
+/* ================= state ================= */
+const STORAGE_KEY = 'scientistsCircleToolkit.v1';
+const ROLES = ['facilitator', 'speaker', 'questioner', 'checker', 'mapper'];
+const ROLE_ICONS = { facilitator: '⏱️', speaker: '🗣️', questioner: '❓', checker: '🔍', mapper: '🗺️' };
+
+const defaultState = () => ({
+  role: null,
+  group: '',
+  speaker: [0, 1, 2].map(() => ({ explain: '', because: '', evidence: [false, false, false, false] })),
+  questioner: ['', '', ''],
+  claims: [[], [], []],
+  mapper: [0, 1, 2].map(() => ({ explanation: '', changed: '' })),
+  timer: { totalSec: 300, remainingSec: 300, running: false, lastTick: 0 },
+  teacher: { totalSec: 600, remainingSec: 600, running: false, lastTick: 0 },
+  stepIndex: 0
+});
+let state = defaultState();
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) { /* private mode */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    const d = defaultState();
+    state = Object.assign(d, data);
+    state.timer = Object.assign(d.timer, data.timer || {});
+    state.teacher = Object.assign(d.teacher, data.teacher || {});
+    if (!Array.isArray(state.speaker) || state.speaker.length !== 3) state.speaker = d.speaker;
+    if (!Array.isArray(state.questioner) || state.questioner.length !== 3) state.questioner = d.questioner;
+    if (!Array.isArray(state.claims) || state.claims.length !== 3) state.claims = d.claims;
+    if (!Array.isArray(state.mapper) || state.mapper.length !== 3) state.mapper = d.mapper;
+  } catch (err) { state = defaultState(); }
+}
+
+/* ================= dom helpers ================= */
+const $ = (sel) => document.querySelector(sel);
+function el(tag, className, text) {
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+let saveNoteTimer = null;
+function flashSaved(noteEl) {
+  if (!noteEl) return;
+  noteEl.textContent = t('saved');
+  clearTimeout(saveNoteTimer);
+  saveNoteTimer = setTimeout(() => { noteEl.textContent = ''; }, 1500);
+}
+function fmt(sec) {
+  sec = Math.max(0, Math.ceil(sec));
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+
+/* ================= language ================= */
+function applyLang() {
+  document.documentElement.lang = lang;
+  $('#lang-en').classList.toggle('active', lang === 'en');
+  $('#lang-es').classList.toggle('active', lang === 'es');
+  renderBrand(); renderGroupChip();
+  if (!$('#home-screen').hidden) renderHome();
+  if (!$('#facilitator-screen').hidden) renderFacilitator();
+  if (!$('#speaker-screen').hidden) renderSpeaker();
+  if (!$('#questioner-screen').hidden) renderQuestioner();
+  if (!$('#checker-screen').hidden) renderChecker();
+  if (!$('#mapper-screen').hidden) renderMapper();
+  if ($('#present-mode').classList.contains('open')) renderPresent();
+  updateTimerDisplays();
+}
+
+/* ================= navigation ================= */
+const SCREENS = { home: 'home-screen', facilitator: 'facilitator-screen', speaker: 'speaker-screen', questioner: 'questioner-screen', checker: 'checker-screen', mapper: 'mapper-screen' };
+function showRole(role) {
+  state.role = role; save();
+  Object.values(SCREENS).forEach(id => { $('#' + id).hidden = true; });
+  $('#' + SCREENS[role]).hidden = false;
+  applyLang();
+}
+function goHome() {
+  state.role = null; save();
+  Object.values(SCREENS).forEach(id => { $('#' + id).hidden = true; });
+  $('#home-screen').hidden = false;
+  renderHome(); renderGroupChip();
+}
+
+/* ================= header ================= */
+function renderBrand() {
+  const b = $('#brand'); b.textContent = '';
+  b.appendChild(document.createTextNode(t('brand') + ' '));
+  const a = el('span', 'accent', t('brandAccent'));
+  b.appendChild(a);
+}
+function renderGroupChip() {
+  const chip = $('#group-chip');
+  chip.textContent = state.group ? (t('groupLabel') + ' ' + state.group) : '';
+}
+
+/* ================= home ================= */
+function renderHome() {
+  const grid = $('#role-grid'); grid.textContent = '';
+  ROLES.forEach(role => {
+    const btn = el('button', 'role-card');
+    btn.type = 'button';
+    btn.appendChild(el('span', 'rc-icon', ROLE_ICONS[role]));
+    const name = el('span', 'rc-name'); name.dataset.en = STRINGS.en.roles[role].name; name.dataset.es = STRINGS.es.roles[role].name; name.className = 'rc-name'; name.textContent = STRINGS[lang].roles[role].name; btn.appendChild(name);
+    const desc = el('span', 'rc-desc'); desc.textContent = STRINGS[lang].roles[role].desc; btn.appendChild(desc);
+    btn.addEventListener('click', () => showRole(role));
+    grid.appendChild(btn);
+  });
+  const gi = $('#group-input');
+  if (gi.value !== state.group) gi.value = state.group;
+}
+
+/* ================= round tabs ================= */
+function buildRoundTabs(container, activeIdx, onPick) {
+  container.textContent = '';
+  for (let i = 0; i < 3; i++) {
+    const b = el('button', 'round-tab' + (i === activeIdx ? ' active' : ''), roundName(i));
+    b.type = 'button';
+    b.addEventListener('click', () => onPick(i));
+    container.appendChild(b);
+  }
+}
+
+/* ================= facilitators ================= */
+let speakerRound = 0, questionerRound = 0;
+
+function renderFacilitator() {
+  const list = $('#step-list'); list.textContent = '';
+  STRINGS[lang].steps.forEach((s, i) => {
+    const item = el('div', 'step-item' + (i === state.stepIndex ? ' current' : '') + (i < state.stepIndex ? ' done' : ''));
+    item.appendChild(el('div', 'step-num', String(i + 1)));
+    const txt = el('div', 'step-text');
+    txt.appendChild(el('b', '', s.title));
+    txt.appendChild(el('span', '', s.text));
+    item.appendChild(txt);
+    list.appendChild(item);
+  });
+  $('#round-pill').textContent = t('round') + ' ' + (Math.floor(state.stepIndex / 4) + 1) + ' / 3';
+  $('#timer-start-pause').textContent = state.timer.running ? t('pause') : t('start');
+  const strip = $('#starter-strip'); strip.textContent = '';
+  STRINGS[lang].starters.forEach(s => strip.appendChild(el('span', 'starter-chip', s)));
+  updateTimerDisplays();
+}
+
+function updateTimerDisplays() {
+  const td = $('#timer-display');
+  td.textContent = fmt(state.timer.remainingSec);
+  td.classList.toggle('low', state.timer.remainingSec <= 60 && state.timer.remainingSec > 0);
+  $('#timer-start-pause').textContent = state.timer.running ? t('pause') : t('start');
+  const b10 = $('#badge10'), b10t = $('#badge10-time'), b10l = $('#badge10-label');
+  b10t.textContent = fmt(state.teacher.remainingSec);
+  b10.classList.toggle('expired', state.teacher.remainingSec <= 0);
+  b10l.innerHTML = state.teacher.remainingSec <= 0
+    ? t('teacherSilentDone')
+    : '<span class="lang-en">Teacher stays silent:</span><span class="lang-es">El maestro guarda silencio:</span>';
+}
+
+let tickInterval = null;
+function tick() {
+  const now = Date.now();
+  let dirty = false;
+  if (state.timer.running) {
+    state.timer.remainingSec -= (now - state.timer.lastTick) / 1000;
+    state.timer.lastTick = now;
+    if (state.timer.remainingSec <= 0) { state.timer.remainingSec = 0; state.timer.running = false; }
+    dirty = true;
+  }
+  if (state.teacher.running) {
+    state.teacher.remainingSec -= (now - state.teacher.lastTick) / 1000;
+    state.teacher.lastTick = now;
+    if (state.teacher.remainingSec <= 0) { state.teacher.remainingSec = 0; state.teacher.running = false; }
+    dirty = true;
+  }
+  if (dirty) { updateTimerDisplays(); save(); }
+}
+function startTicker() {
+  if (tickInterval) clearInterval(tickInterval);
+  tickInterval = setInterval(tick, 250);
+}
+
+function bindFacilitator() {
+  $('#timer-minus').addEventListener('click', () => {
+    state.timer.totalSec = Math.max(60, state.timer.totalSec - 60);
+    if (!state.timer.running) state.timer.remainingSec = state.timer.totalSec;
+    save(); updateTimerDisplays();
+  });
+  $('#timer-plus').addEventListener('click', () => {
+    state.timer.totalSec = Math.min(60 * 60, state.timer.totalSec + 60);
+    if (!state.timer.running) state.timer.remainingSec = state.timer.totalSec;
+    save(); updateTimerDisplays();
+  });
+  $('#timer-start-pause').addEventListener('click', () => {
+    state.timer.running = !state.timer.running;
+    state.timer.lastTick = Date.now();
+    save(); updateTimerDisplays();
+  });
+  $('#timer-reset').addEventListener('click', () => {
+    state.timer.running = false; state.timer.remainingSec = state.timer.totalSec;
+    save(); updateTimerDisplays();
+  });
+  $('#step-next').addEventListener('click', () => {
+    state.stepIndex = (state.stepIndex + 1) % 12;
+    save(); renderFacilitator();
+  });
+  $('#badge10').addEventListener('click', () => {
+    if (state.teacher.remainingSec <= 0 && !state.teacher.running) {
+      state.teacher.remainingSec = state.teacher.totalSec;
+    }
+    state.teacher.running = !state.teacher.running;
+    state.teacher.lastTick = Date.now();
+    save(); updateTimerDisplays();
+  });
+}
+
+/* ================= speaker ================= */
+function renderSpeaker() {
+  buildRoundTabs($('#speaker-tabs'), speakerRound, i => { speakerRound = i; renderSpeaker(); });
+  const d = state.speaker[speakerRound];
+  $('#speaker-explain').value = d.explain;
+  $('#speaker-because').value = d.because;
+  const box = $('#speaker-evidence'); box.textContent = '';
+  STRINGS[lang].evidenceSources.forEach((src, i) => {
+    const lbl = el('label', 'check-row');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = d.evidence[i];
+    cb.addEventListener('change', () => { d.evidence[i] = cb.checked; save(); flashSaved($('#speaker-save-note')); });
+    lbl.appendChild(cb);
+    lbl.appendChild(el('span', 'cr-label', src));
+    box.appendChild(lbl);
+  });
+}
+function bindSpeaker() {
+  $('#speaker-explain').addEventListener('input', e => { state.speaker[speakerRound].explain = e.target.value; save(); flashSaved($('#speaker-save-note')); });
+  $('#speaker-because').addEventListener('input', e => { state.speaker[speakerRound].because = e.target.value; save(); flashSaved($('#speaker-save-note')); });
+}
+
+/* ================= questioner ================= */
+function renderQuestioner() {
+  buildRoundTabs($('#questioner-tabs'), questionerRound, i => { questionerRound = i; renderQuestioner(); });
+  $('#questioner-draft').value = state.questioner[questionerRound];
+  const strip = $('#questioner-stems'); strip.textContent = '';
+  STRINGS[lang].stems.forEach(s => {
+    const c = el('button', 'chip', s);
+    c.type = 'button';
+    c.addEventListener('click', () => {
+      const ta = $('#questioner-draft');
+      ta.value = (ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '') + s + ' ';
+      state.questioner[questionerRound] = ta.value; save();
+      ta.focus(); flashSaved($('#questioner-save-note'));
+    });
+    strip.appendChild(c);
+  });
+}
+function bindQuestioner() {
+  $('#questioner-draft').addEventListener('input', e => { state.questioner[questionerRound] = e.target.value; save(); flashSaved($('#questioner-save-note')); });
+}
+
+/* ================= evidence checker ================= */
+function renderChecker() {
+  const box = $('#checker-evidence'); box.textContent = '';
+  STRINGS[lang].evidenceSources.forEach((src, i) => {
+    const lbl = el('label', 'check-row');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.dataset.evIdx = i;
+    cb.addEventListener('change', () => {
+      if (cb.checked) $('#claim-none').checked = false;
+    });
+    lbl.appendChild(cb);
+    lbl.appendChild(el('span', 'cr-label', src));
+    box.appendChild(lbl);
+  });
+  const list = $('#claim-list'); list.textContent = '';
+  const claims = state.claims[checkerRound];
+  if (!claims.length) {
+    list.appendChild(el('p', 'empty-note', t('noClaims')));
+  } else {
+    claims.forEach(c => {
+      const item = el('div', 'claim-item' + (c.none ? ' needs' : ' supported'));
+      item.appendChild(el('div', 'claim-text', c.text));
+      const tags = el('div', 'claim-tags');
+      if (c.none) {
+        tags.appendChild(document.createTextNode('⚠ '));
+        tags.appendChild(el('b', '', t('noEvidence')));
+      } else {
+        const names = c.evidence.map(i => STRINGS[lang].evidenceSources[i]);
+        names.forEach((n, k) => {
+          if (k) tags.appendChild(document.createTextNode(' · '));
+          tags.appendChild(el('b', '', n));
+        });
+      }
+      item.appendChild(tags);
+      list.appendChild(item);
+    });
+  }
+  let sup = 0, need = 0;
+  state.claims.forEach(rc => rc.forEach(c => (c.none ? need++ : sup++)));
+  $('#claim-summary').textContent = sup + ' ' + t('supported') + ' · ' + need + ' ' + t('needs');
+}
+let checkerRound = 0;
+function bindChecker() {
+  $('#claim-none').addEventListener('change', e => {
+    if (e.target.checked) document.querySelectorAll('#checker-evidence input').forEach(cb => { cb.checked = false; });
+  });
+  $('#claim-add').addEventListener('click', () => {
+    const text = $('#claim-text').value.trim();
+    if (!text) return;
+    const evidence = [];
+    document.querySelectorAll('#checker-evidence input').forEach(cb => { if (cb.checked) evidence.push(Number(cb.dataset.evIdx)); });
+    const none = $('#claim-none').checked || evidence.length === 0;
+    state.claims[checkerRound].push({ text, evidence, none });
+    $('#claim-text').value = '';
+    document.querySelectorAll('#checker-evidence input').forEach(cb => { cb.checked = false; });
+    $('#claim-none').checked = false;
+    save(); renderChecker(); flashSaved($('#checker-save-note'));
+  });
+  $('#claim-clear').addEventListener('click', () => {
+    if (!state.claims[checkerRound].length) return;
+    if (!window.confirm(t('clearLogConfirm'))) return;
+    state.claims[checkerRound] = [];
+    save(); renderChecker();
+  });
+}
+
+/* ================= mapper ================= */
+function renderMapper() {
+  const rounds = $('#mapper-rounds'); rounds.textContent = '';
+  for (let i = 0; i < 3; i++) {
+    const d = state.mapper[i];
+    const card = el('div', 'card');
+    const h = el('div', 'kicker', roundName(i)); h.style.marginBottom = '10px'; card.appendChild(h);
+    const f1 = el('div', 'field');
+    f1.appendChild(el('label', '', t('chartNow')));
+    const ta1 = document.createElement('textarea'); ta1.className = 'ta tall'; ta1.value = d.explanation;
+    ta1.addEventListener('input', e => { d.explanation = e.target.value; save(); renderTimeline(); flashSaved($('#mapper-save-note')); });
+    f1.appendChild(ta1); card.appendChild(f1);
+    const f2 = el('div', 'field'); f2.style.marginTop = '10px';
+    f2.appendChild(el('label', '', t('whatChanged')));
+    const ta2 = document.createElement('textarea'); ta2.className = 'ta'; ta2.value = d.changed;
+    ta2.addEventListener('input', e => { d.changed = e.target.value; save(); renderTimeline(); flashSaved($('#mapper-save-note')); });
+    f2.appendChild(ta2); card.appendChild(f2);
+    rounds.appendChild(card);
+  }
+  renderTimeline();
+}
+function tlNode(roundIdx, forPresent) {
+  const d = state.mapper[roundIdx];
+  const node = el('div', forPresent ? 'pm-node' : 'tl-node');
+  const head = el('div', forPresent ? 'pm-round' : 'tl-head');
+  if (forPresent) {
+    head.textContent = roundName(roundIdx);
+    node.appendChild(head);
+    const lbl = el('div', 'pm-label', t('chartNow').replace(/\.\.\.$/, ''));
+    node.appendChild(lbl);
+  } else {
+    head.appendChild(el('span', 'tl-round', roundName(roundIdx)));
+    node.appendChild(head);
+  }
+  const txt = el('div', forPresent ? 'pm-text' : '', d.explanation || t('roundEmpty'));
+  if (!d.explanation) txt.classList.add(forPresent ? 'pm-empty' : 'tl-empty');
+  node.appendChild(txt);
+  if (d.changed) {
+    const ch = el('div', forPresent ? 'pm-changed' : 'tl-changed');
+    const chl = el('div', forPresent ? 'pm-label' : ''); chl.textContent = t('changedPrefix');
+    const cht = el('div', forPresent ? 'pm-text' : ''); cht.textContent = d.changed;
+    ch.appendChild(chl); ch.appendChild(cht);
+    node.appendChild(ch);
+  }
+  return node;
+}
+function renderTimeline() {
+  const tl = $('#mapper-timeline'); tl.textContent = '';
+  for (let i = 0; i < 3; i++) {
+    tl.appendChild(tlNode(i, false));
+    if (i < 2) tl.appendChild(el('div', 'tl-arrow', '↓'));
+  }
+}
+function renderPresent() {
+  const tl = $('#pm-timeline'); tl.textContent = '';
+  for (let i = 0; i < 3; i++) {
+    tl.appendChild(tlNode(i, true));
+    if (i < 2) tl.appendChild(el('div', 'pm-arrow', '→'));
+  }
+}
+function bindMapper() {
+  $('#btn-present').addEventListener('click', () => {
+    renderPresent();
+    $('#present-mode').classList.add('open');
+    $('#present-mode').setAttribute('aria-hidden', 'false');
+  });
+  $('#btn-present-exit').addEventListener('click', exitPresent);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('#present-mode').classList.contains('open')) exitPresent();
+  });
+}
+function exitPresent() {
+  $('#present-mode').classList.remove('open');
+  $('#present-mode').setAttribute('aria-hidden', 'true');
+}
+
+/* ================= global bindings & init ================= */
+function bindGlobal() {
+  $('#lang-en').addEventListener('click', () => { lang = 'en'; state.langPref = 'en'; save(); applyLang(); });
+  $('#lang-es').addEventListener('click', () => { lang = 'es'; state.langPref = 'es'; save(); applyLang(); });
+  document.querySelectorAll('.btn-change-role').forEach(b => b.addEventListener('click', goHome));
+  $('#btn-restart').addEventListener('click', () => {
+    if (!window.confirm(t('restartConfirm'))) return;
+    const keepLang = lang;
+    try { localStorage.removeItem(STORAGE_KEY); } catch (err) { /* ignore */ }
+    state = defaultState(); lang = keepLang;
+    speakerRound = 0; questionerRound = 0; checkerRound = 0;
+    exitPresent(); goHome(); updateTimerDisplays();
+  });
+  $('#group-input').addEventListener('input', e => {
+    state.group = e.target.value; save(); renderGroupChip();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && (state.timer.running || state.teacher.running)) save();
+  });
+}
+
+function init() {
+  load();
+  lang = state.langPref || 'en';
+  bindGlobal(); bindFacilitator(); bindSpeaker(); bindQuestioner(); bindChecker(); bindMapper();
+  renderHome();
+  startTicker();
+  // deep link: #role=mapper&lang=es
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const hashLang = hash.get('lang');
+  if (hashLang === 'en' || hashLang === 'es') lang = hashLang;
+  const hashRole = hash.get('role');
+  if (hashRole && ROLES.includes(hashRole)) {
+    showRole(hashRole);
+  } else if (state.role && ROLES.includes(state.role)) {
+    showRole(state.role);
+  } else {
+    goHome();
+  }
+  if (hash.get('present') === '1' && hashRole === 'mapper') {
+    renderPresent();
+    $('#present-mode').classList.add('open');
+    $('#present-mode').setAttribute('aria-hidden', 'false');
+  }
+  updateTimerDisplays();
+}
+init();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T00:44:58.742Z",
+  "generatedAt": "2026-10-02T01:14:04.327Z",
   "items": [
     {
       "path": "/ap1-kinematics-practice.html",
@@ -115,6 +115,11 @@
       "path": "/privacy.html",
       "fingerprint": "/privacy.html",
       "sizeBytes": 11142
+    },
+    {
+      "path": "/scientists-circle-toolkit.html",
+      "fingerprint": "/scientists-circle-toolkit.html",
+      "sizeBytes": 50593
     },
     {
       "path": "/texas-blackout-articles/",
