@@ -136,6 +136,10 @@
         "destination": "/ap1-kinematics-practice.html"
       },
       {
+        "source": "/ap1-forces-practice",
+        "destination": "/ap1-forces-practice.html"
+      },
+      {
         "source": "/linearization-practice",
         "destination": "/linearization-practice.html"
       },
@@ -146,6 +150,10 @@
       {
         "source": "/evidence-court",
         "destination": "/evidence-court.html"
+      },
+      {
+        "source": "/seven-s",
+        "destination": "/seven-s/index.html"
       },
       {
         "source": "/the-break-in",

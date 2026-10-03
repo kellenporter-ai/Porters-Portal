@@ -1,6 +1,11 @@
 {
-  "generatedAt": "2026-10-02T01:14:04.327Z",
+  "generatedAt": "2026-10-02T19:21:26.952Z",
   "items": [
+    {
+      "path": "/ap1-forces-practice.html",
+      "fingerprint": "/ap1-forces-practice.html",
+      "sizeBytes": 74282
+    },
     {
       "path": "/ap1-kinematics-practice.html",
       "fingerprint": "/ap1-kinematics-practice.html",
@@ -120,6 +125,11 @@
       "path": "/scientists-circle-toolkit.html",
       "fingerprint": "/scientists-circle-toolkit.html",
       "sizeBytes": 50593
+    },
+    {
+      "path": "/seven-s/",
+      "fingerprint": "/seven-s/",
+      "sizeBytes": 356432
     },
     {
       "path": "/texas-blackout-articles/",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T01:14:04.350Z",
+  "generatedAt": "2026-10-02T19:21:26.989Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/circuit-diagram-builder": "/circuit-diagram-builder.html",
@@ -11,15 +11,18 @@
     "/forensic-branches": "/forensic-branches/index.html",
     "/texas-grid-blackout": "/texas-grid-blackout.html",
     "/ap1-kinematics-practice": "/ap1-kinematics-practice.html",
+    "/ap1-forces-practice": "/ap1-forces-practice.html",
     "/linearization-practice": "/linearization-practice.html",
     "/guess-who": "/games/guess-who-evidence.html",
     "/evidence-court": "/evidence-court.html",
+    "/seven-s": "/seven-s/index.html",
     "/the-break-in": "/the-break-in/index.html"
   },
   "dirs": [
     "/forensic-branches",
     "/infrastructure-tagging",
     "/power-strip-reading",
+    "/seven-s",
     "/texas-blackout-articles",
     "/textbook/ch2-kinematics-1d",
     "/the-break-in",

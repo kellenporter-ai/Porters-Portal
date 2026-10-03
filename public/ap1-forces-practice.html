@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Physics 1 · Chapter 3.1-3.4 Practice</title>
+<style>
+:root{
+  --bg:#f4f6fb;
+  --surface:#ffffff;
+  --ink:#1e2433;
+  --ink-soft:#5a6375;
+  --line:#dbe1ee;
+  --accent:#3b5bdb;
+  --accent-soft:#e7ecfb;
+  --good:#1e9e5a;
+  --good-soft:#e3f6ec;
+  --bad:#d64545;
+  --bad-soft:#fdeaea;
+  --warn:#c97b12;
+  --shadow:0 2px 10px rgba(30,36,51,.08);
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.5;
+}
+.app{
+  max-width:860px;
+  margin:0 auto;
+  padding:14px 16px 40px;
+}
+/* ---------- Header ---------- */
+header.topbar{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+}
+header.topbar h1{
+  font-size:1.15rem;
+  font-weight:700;
+}
+header.topbar .sub{
+  font-size:.8rem;
+  color:var(--ink-soft);
+}
+.progress-outer{
+  flex:1 1 180px;
+  min-width:140px;
+  height:10px;
+  background:var(--line);
+  border-radius:99px;
+  overflow:hidden;
+}
+.progress-inner{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--accent),#7c9aff);
+  border-radius:99px;
+  transition:width .3s ease;
+}
+.progress-text{
+  font-size:.8rem;
+  color:var(--ink-soft);
+  white-space:nowrap;
+}
+/* ---------- Buttons ---------- */
+button{
+  font:inherit;
+  cursor:pointer;
+}
+.btn{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  padding:10px 18px;
+  font-weight:600;
+  font-size:.95rem;
+  transition:background .15s ease, transform .1s ease;
+}
+.btn:hover{background:#2f4bc0}
+.btn:active{transform:scale(.98)}
+.btn:disabled{background:#a9b6e6;cursor:not-allowed}
+.btn.secondary{
+  background:var(--surface);
+  color:var(--accent);
+  border:1.5px solid var(--accent);
+}
+.btn.secondary:hover{background:var(--accent-soft)}
+.btn.ghost{
+  background:transparent;
+  color:var(--ink-soft);
+  border:1.5px solid var(--line);
+}
+.btn.ghost:hover{border-color:var(--ink-soft)}
+/* ---------- Start / summary screens ---------- */
+.screen{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:26px;
+  margin-top:16px;
+}
+.screen h2{font-size:1.3rem;margin-bottom:10px}
+.screen p{color:var(--ink-soft);margin-bottom:10px;max-width:60ch}
+.screen ul{margin:0 0 16px 22px;color:var(--ink-soft)}
+.screen li{margin-bottom:4px}
+.tag-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.tag{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:.75rem;
+  font-weight:600;
+  padding:4px 10px;
+  border-radius:99px;
+}
+/* ---------- Question card ---------- */
+.qcard{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px 24px;
+  margin-top:16px;
+}
+.qmeta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+.section-badge{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  padding:3px 10px;
+  border-radius:99px;
+}
+.type-badge{
+  background:#eef1f8;
+  color:var(--ink-soft);
+  font-size:.72rem;
+  font-weight:600;
+  padding:3px 10px;
+  border-radius:99px;
+}
+.qnum{
+  margin-left:auto;
+  font-size:.78rem;
+  color:var(--ink-soft);
+}
+.qstem{
+  font-size:1.06rem;
+  font-weight:600;
+  line-height:1.45;
+  margin-bottom:12px;
+}
+.qdiagram{margin:6px 0 14px}
+.qdiagram svg{
+  display:block;
+  background:#fafbfe;
+  border:1px solid var(--line);
+  border-radius:10px;
+  max-width:100%;
+}
+.options{display:flex;flex-direction:column;gap:8px}
+.option{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:11px 14px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:#fbfcff;
+  text-align:left;
+  font-size:.96rem;
+  color:var(--ink);
+  transition:border-color .12s ease, background .12s ease;
+  width:100%;
+}
+.option:hover{border-color:var(--accent);background:var(--accent-soft)}
+.option .letter{
+  flex:0 0 24px;
+  height:24px;
+  border-radius:6px;
+  background:var(--line);
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.78rem;
+  font-weight:700;
+}
+.option.selected{border-color:var(--accent);background:var(--accent-soft)}
+.option.selected .letter{background:var(--accent);color:#fff}
+.option.correct{border-color:var(--good);background:var(--good-soft)}
+.option.correct .letter{background:var(--good);color:#fff}
+.option.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.option.wrong .letter{background:var(--bad);color:#fff}
+.option.locked{cursor:default}
+.option.locked:hover{border-color:var(--line);background:#fbfcff}
+.option.locked.selected:hover{border-color:var(--accent);background:var(--accent-soft)}
+.option.locked.correct:hover{border-color:var(--good);background:var(--good-soft)}
+.option.locked.wrong:hover{border-color:var(--bad);background:var(--bad-soft)}
+.option .ms-hint{
+  font-size:.7rem;
+  color:var(--ink-soft);
+  margin-left:auto;
+  white-space:nowrap;
+  padding-top:2px;
+}
+/* ---------- Feedback ---------- */
+.feedback{
+  margin-top:16px;
+  border-radius:10px;
+  padding:14px 16px;
+  display:none;
+  font-size:.94rem;
+  line-height:1.55;
+}
+.feedback.show{display:block}
+.feedback.good{background:var(--good-soft);border:1.5px solid var(--good)}
+.feedback.bad{background:var(--bad-soft);border:1.5px solid var(--bad)}
+.feedback .verdict{
+  font-weight:700;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.feedback.good .verdict{color:var(--good)}
+.feedback.bad .verdict{color:var(--bad)}
+.feedback .why strong{color:var(--ink)}
+.trap{
+  margin-top:8px;
+  background:rgba(201,123,18,.12);
+  border-left:3px solid var(--warn);
+  padding:8px 10px;
+  border-radius:6px;
+}
+.trap .trap-label{
+  font-weight:700;
+  color:var(--warn);
+  font-size:.85rem;
+}
+/* ---------- FRQ ---------- */
+.frq-box textarea{
+  width:100%;
+  min-height:120px;
+  font:inherit;
+  font-size:.96rem;
+  padding:12px 14px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:#fbfcff;
+  color:var(--ink);
+  resize:vertical;
+}
+.frq-box textarea:focus{outline:none;border-color:var(--accent)}
+.model-answer{
+  margin-top:14px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:14px 16px;
+  background:#fafbfe;
+  display:none;
+}
+.model-answer.show{display:block}
+.model-answer h4{font-size:.9rem;margin-bottom:6px;color:var(--ink)}
+.model-answer p{font-size:.93rem;color:var(--ink-soft);margin-bottom:8px}
+.rubric{
+  list-style:none;
+  margin-top:8px;
+}
+.rubric li{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:6px 0;
+  font-size:.9rem;
+  border-top:1px dashed var(--line);
+}
+.rubric li:first-child{border-top:none}
+.rubric input[type="checkbox"]{
+  width:18px;height:18px;margin-top:2px;flex:0 0 18px;accent-color:var(--accent);
+}
+.rubric .pts{
+  margin-left:auto;
+  font-weight:700;
+  color:var(--accent);
+  white-space:nowrap;
+}
+.self-score{
+  margin-top:12px;
+  font-size:.95rem;
+  font-weight:600;
+  display:none;
+}
+.self-score.show{display:block}
+/* ---------- Nav ---------- */
+.qnav{
+  display:flex;
+  gap:10px;
+  margin-top:18px;
+  align-items:center;
+}
+.qnav .spacer{flex:1}
+/* ---------- Summary ---------- */
+.score-hero{
+  text-align:center;
+  padding:10px 0 18px;
+}
+.score-hero .big{
+  font-size:2.6rem;
+  font-weight:800;
+  color:var(--accent);
+}
+.section-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:14px 0;
+  font-size:.92rem;
+}
+.section-table th,.section-table td{
+  text-align:left;
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+}
+.section-table th{color:var(--ink-soft);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.section-bar{
+  height:8px;background:var(--line);border-radius:99px;overflow:hidden;min-width:90px}
+.section-bar > div{height:100%;background:var(--accent);border-radius:99px}
+.missed-list button{
+  display:block;width:100%;text-align:left;
+  margin-bottom:8px;
+}
+/* helpers toggle */
+.helper-note{font-size:.78rem;color:var(--ink-soft);margin-top:14px}
+@media (max-width:640px){
+  .qcard{padding:16px}
+  header.topbar{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <h1>AP Physics 1 · Forces Practice</h1>
+      <div class="sub">Etkina Chapter 3.1 to 3.4 · Interactions, Force Diagrams, and Newton's First Law</div>
+    </div>
+    <div class="progress-outer"><div class="progress-inner" id="progressBar"></div></div>
+    <div class="progress-text" id="progressText">0 / 50</div>
+  </header>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <h2>Chapter 3 Practice: Interactions and Newton's First Law</h2>
+    <p>This set has 50 original problems covering the four sections below. Most are AP-style multiple choice. A handful of multiple-select items ask you to pick TWO answers. Ten are free-response: you write your reasoning, then compare with a model answer and score yourself with a 3-point rubric.</p>
+    <div class="tag-row">
+      <span class="tag">3.1 Interactions &amp; System Schemas</span>
+      <span class="tag">3.2 Adding &amp; Measuring Forces</span>
+      <span class="tag">3.3 Force and Motion</span>
+      <span class="tag">3.4 Inertial Reference Frames</span>
+    </div>
+    <ul>
+      <li>You get feedback right after each question, with an explanation of the physics.</li>
+      <li>There is no timer and no limit on attempts.</li>
+      <li>At the end you get a score breakdown by section so you know what to re-study.</li>
+      <li>Your work is not sent anywhere; this runs entirely in your browser.</li>
+    </ul>
+    <button class="btn" id="startBtn">Start practice</button>
+    <label class="helper-note" style="display:block;cursor:pointer">
+      <input type="checkbox" id="helpersToggle"> Show helper tools (section labels on summary and a jump menu). Default is off.
+    </label>
+  </div>
+
+  <!-- QUESTION SCREEN -->
+  <div id="questionScreen" style="display:none">
+    <div class="qcard" id="qcard"></div>
+    <div class="qnav">
+      <button class="btn ghost" id="quitBtn">End session</button>
+      <div class="spacer"></div>
+      <button class="btn" id="nextBtn" disabled>Next</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY SCREEN -->
+  <div class="screen" id="summaryScreen" style="display:none"></div>
+</div>
+
+<script>
+// ============================================================
+// QUESTION BANK
+// Each question:
+//   section: "3.1" | "3.2" | "3.3" | "3.4"
+//   type:    "mc" | "ms" (multiple select) | "frq"
+//   stem / svg (optional inline SVG string) / options / answer
+//   For mc: answer = index of correct option (after authoring).
+//   For ms: answer = array of two correct indices.
+//   For frq: modelAnswer (string), rubric = [3 strings].
+//   trap: optional "Trap alert" misconception callout in explanation.
+// NOTE: MC option positions are shuffled at load time (Fisher-Yates),
+// except options that contain sequencing keywords such as
+// "none of the above" or "both", which keep their authored order.
+// Teachers: edit this array freely. Do not change the app logic below.
+// ============================================================
+
+const QUESTIONS = [
+  // ==================== SECTION 3.1 ====================
+  {
+    id: "3.1-1", section: "3.1", type: "mc",
+    prompt: "A book rests motionless on a horizontal table. You draw a force diagram with the book as the system. How many forces belong on that diagram?",
+    choices: [
+      "None, because the book is not moving",
+      "One, because only Earth's gravity pulls on the book",
+      "Two, gravity downward and the table's upward push",
+      "Three, because a force of motion keeps the book at rest"
+    ],
+    answer: 2,
+    explanation: "Two forces act on the book: Earth's gravitational pull downward and the table's upward contact force. The book is motionless, so these two balance, but balanced forces are still forces and both belong on the diagram.",
+    trap: "Motionlessness does not mean force-free, and there is no separate force of motion. A force diagram lists every interaction acting on the system."
+  },
+  {
+    id: "3.1-2", section: "3.1", type: "mc",
+    prompt: "An elephant leans against a tree and the tree bends. What does the bending of the tree most directly show?",
+    choices: [
+      "That the elephant and the tree are interacting through a contact force",
+      "That the elephant must be more massive than the tree, since only the tree bends",
+      "That the wind is pushing the tree over at the same time the elephant leans on it",
+      "That the tree exerts no force back on the elephant while the elephant pushes on it"
+    ],
+    answer: 0,
+    explanation: "A visible deformation like bending is direct evidence that two objects are in contact and interacting: the elephant pushes on the tree and the tree is deformed. The bend shows that an interaction is happening, not which object is more massive."
+  },
+  {
+    id: "3.1-3", section: "3.1", type: "mc",
+    prompt: "Which force diagram (system schema) best represents the external forces on a book that rests motionless on a horizontal table?",
+    choices: [
+      "Upward arrow from the table on the book and downward arrow from Earth on the book, equal length",
+      "Upward arrow from the table on the book and downward arrow from the book on the table, equal length",
+      "Upward arrow from the table on the book, downward arrow from Earth on the book, and a horizontal arrow from the book's motion",
+      "Only a downward arrow from Earth on the book"
+    ],
+    answer: 0,
+    explanation: "Only external forces on the book are drawn: gravity from Earth and the normal force from the table. Because the book is motionless these have equal magnitudes. Forces the book exerts on other objects are not part of the book's diagram.",
+    trap: "Do not include a force in the direction of motion. There is no forward force on a book that simply sits at rest."
+  },
+  {
+    id: "3.1-4", section: "3.1", type: "mc",
+    prompt: "Two crates sit stacked on the floor: Crate A (3 kg) on top of Crate B (5 kg). If the system is Crate B only, which of these is an external force on the system?",
+    choices: [
+      "The force of Crate B on the floor",
+      "The force of Crate A on Crate B",
+      "The force of Crate B on Crate A",
+      "The force of the floor on Crate A"
+    ],
+    answer: 1,
+    explanation: "Crate A is outside the system (Crate B), so its weight pressing down on Crate B is an external force on Crate B. Forces the system exerts on other objects are not forces on the system."
+  },
+  {
+    id: "3.1-5", section: "3.1", type: "mc",
+    prompt: "A skydiver descends at constant velocity with an open parachute. How does the magnitude of the upward air resistance compare with the skydiver's weight?",
+    choices: [
+      "Air resistance is slightly less than the weight",
+      "Air resistance is equal to the weight",
+      "Air resistance is slightly more than the weight",
+      "Air resistance is zero once terminal velocity is reached"
+    ],
+    answer: 1,
+    explanation: "Constant velocity means zero net force, so the upward air resistance must exactly balance the downward weight. Trap alert: do not think moving means there must be a net force in the direction of motion."
+  },
+  {
+    id: "3.1-6", section: "3.1", type: "mc",
+    prompt: "A book rests motionless on a horizontal table. Which force diagram for the book is correct?",
+    choices: [
+      "A downward arrow for gravity and an upward arrow for the table's normal force, drawn equal in length from the book",
+      "A downward arrow for gravity only, because the table is not part of the book",
+      "A downward arrow for gravity and a shorter upward arrow for the normal force, because the book presses on the table",
+      "An upward arrow for the normal force only, because the table holds the book up"
+    ],
+    answer: 0,
+    explanation: "Two forces act on the book: Earth's downward gravitational pull and the table's upward contact (normal) force. The book is in equilibrium, so the arrows are equal in length. The normal force is not optional, and it is not shorter than gravity while the book rests at rest."
+  },
+  {
+    id: "3.1-7", section: "3.1", type: "mc",
+    prompt: "Two spring scales are hooked together and pulled apart horizontally. Scale 1 reads 25 N. What does scale 2 read?",
+    choices: [
+      "0 N, because the forces cancel",
+      "12.5 N",
+      "50 N",
+      "25 N"
+    ],
+    answer: 3,
+    explanation: "A spring scale reads the tension in the connection at its hook. With nothing else pulling on the scales, the tension in the link between them is a single value, so both dials must read the same 25 N. Each scale is pulled with 25 N at each of its ends."
+  },
+  {
+    id: "3.1-8", section: "3.1", type: "mc",
+    prompt: "A rope pulls a sled across level snow at constant velocity. The rope's pull is 50 N directed at 30 degrees above the horizontal. What is the magnitude of the horizontal component of the rope's pull?",
+    choices: [
+      "50 N",
+      "about 25 N",
+      "40 N",
+      "43 N"
+    ],
+    answer: 3,
+    explanation: "The horizontal component is F times cosine of the angle with the horizontal: 50 N x cos 30 degrees = about 43 N. The vertical component is 50 N x sin 30 degrees = 25 N. Because the sled moves at constant velocity, friction must be about 43 N opposite the motion."
+  },
+  {
+    id: "3.1-9", section: "3.1", type: "mc",
+    prompt: "A motionless sign hangs from two vertical ropes, one at each end. The sign weighs 30 N. What is the tension in each rope?",
+    choices: [
+      "30 N in each rope",
+      "0 N in each rope because the sign is not moving",
+      "60 N in each rope",
+      "15 N in each rope"
+    ],
+    answer: 3,
+    explanation: "The two tensions must add to 30 N upward to balance the weight, and by symmetry each rope carries half: 15 N. Each rope supports half the sign."
+  },
+  {
+    id: "3.1-10", section: "3.1", type: "mc",
+    prompt: "Which of these forces is NOT a contact force?",
+    choices: [
+      "The push of a hand on a door",
+      "The pull of a magnet on a paper clip",
+      "The friction of the floor on your shoes",
+      "The tension of a rope on a sled"
+    ],
+    answer: 1,
+    explanation: "Gravity, electric, and magnetic forces act at a distance. Push, friction, and tension all require touching. The magnet pulls the paper clip without touching it."
+  },
+  {
+    id: "3.1-11", section: "3.1", type: "mc",
+    prompt: "A student pushes a heavy wheeled trash bin along a level sidewalk at constant speed. If the student is chosen as the system, which objects belong in the surroundings and what interaction should appear in the system schema?",
+    choices: [
+      "The bin, the sidewalk, and Earth, each interacting with the student through contact or gravity",
+      "Only the bin; the student's interactions with the sidewalk and Earth do not belong in the schema",
+      "Only Earth; the gravitational interaction is the only force the student actually feels",
+      "The bin only, connected to the student by a single interaction arrow labeled net force"
+    ],
+    answer: 0,
+    explanation: "A system schema lists every object outside the chosen system that interacts with it. The bin pushes on the student, the sidewalk's friction acts on the student's shoes, and Earth pulls gravitationally on the student, so all three belong in the surroundings with their own interaction connections. Net force is a computed sum, not a separate interaction."
+  },
+  {
+    id: "3.1-12", section: "3.1", type: "frq",
+    prompt: "A book rests motionless on a horizontal table. In words or a sketch, draw a complete force diagram for the book as the system. For each force, name the type of force, the object that exerts it, and its direction. Then state how the arrow lengths must compare and why.",
+    modelAnswer: "Two forces act on the book. (1) Gravity: Earth pulls the book downward. (2) Normal force: the table pushes the book upward. The arrows are drawn from the book (the system), equal in length and opposite in direction, because the book moves at constant velocity (zero) and the sum of the forces must be zero, so the two forces balance.",
+    rubric: [
+      "Includes exactly two forces on the book: Earth's downward gravitational pull and the table's upward normal force",
+      "Names the correct source object for each force (Earth for gravity, the table for the normal force)",
+      "States that the arrows are equal in length because the book is at rest, so the forces balance to zero net force"
+    ],
+    trap: "Do not draw a third force. Only two forces act on the book; velocity is not a force and the table does not pull the book sideways."
+  },
+
+  // ==================== SECTION 3.2 ====================
+  {
+    id: "3.2-1", section: "3.2", type: "mc",
+    prompt: "A person stands on a bathroom scale inside a stationary elevator, and the scale reads 600 N. The elevator then moves upward at constant velocity. While it moves at this steady speed, the scale reads",
+    choices: [
+      "exactly 600 N, because only acceleration changes the reading, not velocity",
+      "more than 600 N, because the upward motion adds to the push of the floor on the person",
+      "less than 600 N, because the elevator already got going, so the scale no longer feels the full weight",
+      "zero, because the elevator is no longer at rest, so the person is essentially weightless inside"
+    ],
+    answer: 0,
+    explanation: "Constant velocity means the forces balance, so the floor still pushes up with 600 N and the scale still reads 600 N. A scale reading changes only when the velocity changes, that is, when the elevator accelerates. Trap alert: upward motion does not make the reading grow; only upward acceleration does."
+  },
+  {
+    id: "3.2-2", section: "3.2", type: "mc",
+    prompt: "A delivery person pushes a box across the floor, straightening a crooked path: a 40 N push aimed east plus a 30 N push from a co-worker aimed north, both applied at the same instant. The magnitude of the single push that would have the same effect is",
+    choices: [
+      "70 N, because two pushes applied at the same instant always add as ordinary numbers",
+      "50 N, from adding the two pushes as perpendicular vectors",
+      "10 N, the difference of the two pushes, since they partially work against each other",
+      "35 N, the average of the two pushes, since the two workers share the effort equally"
+    ],
+    answer: 1,
+    explanation: "Perpendicular vectors add with the Pythagorean rule: the square root of 40 squared plus 30 squared is the square root of 2500, or 50 N. Forces are vectors, so direction matters and they do not simply add as numbers unless they point the same way."
+  },
+  {
+    id: "3.2-3", section: "3.2", type: "mc",
+    prompt: "A 60 kg person stands on a scale in an elevator that moves downward at constant velocity. What does the scale read? Use g = 10 m/s^2.",
+    choices: [
+      "0 N",
+      "480 N",
+      "600 N",
+      "660 N"
+    ],
+    answer: 2,
+    explanation: "Constant velocity means zero acceleration, so the net force is zero and the normal force equals the weight: 60 kg x 10 m/s^2 = 600 N. The direction of motion does not matter at all; only acceleration changes the reading."
+  },
+  {
+    id: "3.2-4", section: "3.2", type: "mc",
+    prompt: "A roller coaster car goes over a circular hill at constant speed. At the very top of the hill, how does the magnitude of the normal force from the seat on a rider compare with the rider's weight?",
+    choices: [
+      "Equal to the weight",
+      "Greater than the weight",
+      "Less than the weight",
+      "Cannot be determined without knowing the speed"
+    ],
+    answer: 2,
+    explanation: "At the top, both gravity and the normal force point down (toward the center of the circle), and together they supply the centripetal force: mg + N = mv^2/r. Since v is nonzero, N = mv^2/r minus mg, which is less than mg. The faster the car goes, the smaller the seat's push."
+  },
+  {
+    id: "3.2-5", section: "3.2", type: "mc",
+    prompt: "The roller coaster car then passes through the bottom of a circular dip at constant speed. At the very bottom, the normal force from the seat on the rider is",
+    choices: [
+      "greater than the weight",
+      "equal to the weight",
+      "less than the weight",
+      "zero, because at the bottom the rider briefly feels weightless"
+    ],
+    answer: 0,
+    explanation: "At the bottom the normal force points up while gravity points down. The net force must point up toward the center: N minus mg = mv^2/r, so N = mg + mv^2/r, which is larger than the weight. You feel heaviest at the bottom of the dip."
+  },
+  {
+    id: "3.2-6", section: "3.2", type: "mc",
+    prompt: "A person stands motionless on a bathroom scale that reads 700 N, then suddenly rises up on tiptoe, accelerating upward. While the person accelerates upward, the scale reads",
+    choices: [
+      "more than 700 N, because the floor pushes up harder than the weight during the upward acceleration",
+      "exactly 700 N, because the person's weight has not changed, and a scale can only ever read the weight",
+      "less than 700 N, because rising up means the floor does not need to push as hard on the person",
+      "zero, because the person briefly leaves the floor, so the scale has nothing to push against"
+    ],
+    answer: 0,
+    explanation: "To accelerate upward, the upward forces on the person must exceed the downward ones, so the floor's push grows above the weight and the scale reads more than 700 N. The scale reads that push, which is why you feel heavier while speeding up in any upward direction."
+  },
+  {
+    id: "3.2-7", section: "3.2", type: "mc",
+    prompt: "A 0.5 kg ball hangs motionless from a vertical cable. What is the tension in the cable? Use g = 10 m/s^2.",
+    choices: [
+      "0 N",
+      "2.5 N",
+      "10 N",
+      "5 N"
+    ],
+    answer: 3,
+    explanation: "The ball is in equilibrium, so tension equals weight: 0.5 kg x 10 m/s^2 = 5 N upward. The tension is not zero just because the ball is motionless; forces are present even without motion."
+  },
+  {
+    id: "3.2-8", section: "3.2", type: "mc",
+    prompt: "Three teams pull on a knot in a rope: Team A pulls west with 40 N, Team B pulls east with 40 N, and Team C pulls south with 30 N. What is the magnitude of the net force on the knot?",
+    choices: [
+      "110 N, the sum of all three team pulls",
+      "50 N, from combining all three pulls as vectors",
+      "30 N, since the east and west pulls cancel",
+      "none of the above"
+    ],
+    answer: 3,
+    explanation: "The 40 N east and 40 N west forces cancel, leaving only the 30 N south pull, so the net force is 30 N. Option D is correct because 30 N is the answer and none of the other choices state it. Trap alert: forces only add as numbers when they point the same way; add them as vectors first."
+  },
+  {
+    id: "3.2-9", section: "3.2", type: "mc",
+    prompt: "A climber hangs motionless from a rope, and the rope at the harness reads 600 N. While the climber hangs at rest, the tension in the rope directly above the harness is",
+    choices: [
+      "600 N, because a rope in equilibrium carries the same tension throughout its length",
+      "1200 N, because the harness below and the anchor above each supply 600 N to the same rope",
+      "300 N, because the climber's weight splits between the harness and the anchor",
+      "0 N, because the climber is not moving, and a motionless rope carries no tension"
+    ],
+    answer: 0,
+    explanation: "A flexible rope at rest transmits one tension value along its whole length, so every cross-section of the rope pulls with 600 N. The dial at the harness reads that tension. Trap alert: the anchor's pull and the climber's pull act on different pieces of the rope; the rope itself carries a single 600 N tension."
+  },
+  {
+    id: "3.2-10", section: "3.2", type: "mc",
+    prompt: "Your hands are tied together with a thin string and you push outward against the string as hard as you can, yet the string does not break. A friend says: the two forces of your hands cancel, so the string feels no force. Which statement is correct?",
+    choices: [
+      "Your friend is right; two equal pushes in opposite directions always cancel, so the string feels nothing",
+      "The string breaks only if you push harder with one hand than the other, since the stronger push would overwhelm the string",
+      "The string feels no force because your hands are not moving, and without motion there is no interaction",
+      "Each hand feels a force from the string and the string feels both pushes; acting on different objects, they do not cancel"
+    ],
+    answer: 3,
+    explanation: "Your two hands are different objects, so the inward forces on them do not cancel each other. The string experiences the outward pushes of both hands and is under tension. Whether the string breaks depends on that tension, not on whether net force on your whole body is zero."
+  },
+  {
+    id: "3.2-11", section: "3.2", type: "frq",
+    prompt: "Two tugboats pull on a barge that remains motionless in the harbor. Tugboat A pulls east with a force of 4000 N, and tugboat B pulls west with a force of 4000 N. (a) State the magnitude and direction of the net force on the barge. (b) Explain, in terms of vector addition of forces, why the barge does not move. (c) The captain of tugboat B radios that her 4000 N pull cancels the other tugboat's 4000 N pull. Correct the captain's wording by stating which single force the two pulls add up to on the barge.",
+    modelAnswer: "(a) The net force on the barge is zero; there is no direction because there is no net push at all. (b) The two pulls are vectors pointing opposite ways, and equal-length opposite vectors add to zero, so the sum of the forces is zero and the barge's velocity does not change. (c) The two 4000 N pulls are added as vectors to give one combined force of zero on the barge; each pull still acts on the barge as its own real force, and neither tugboat's pull disappears just because the sum is zero.",
+    rubric: [
+      "States the net force on the barge is zero",
+      "Explains that the two equal, opposite force vectors add to zero, so the barge's motion does not change",
+      "Clarifies that the net force is the vector sum of both pulls acting on the barge, not the disappearance of either pull"
+    ],
+    trap: "Zero net force is a sum, not an absence of forces. Both 4000 N pulls are fully present and act on the barge the whole time."
+  },
+  {
+    id: "3.2-12", section: "3.2", type: "frq",
+    prompt: "A ball hangs motionless from a vertical cable and then the cable is cut. (a) While the ball hangs at rest, describe the sum of the forces on the ball and explain what that implies about its velocity. (b) Immediately after the cut, name every force acting on the ball and describe its subsequent motion. (c) A student says: while it falls, the ball keeps moving because no forces act on it. Correct the student using the idea of a single unbalanced force and the direction of the velocity change.",
+    modelAnswer: "(a) The upward cable tension and the downward gravitational pull are the only forces, and they balance each other, so the sum of the forces is zero; with zero net force the ball's velocity stays constant, and here that constant value is rest. (b) After the cut only Earth's downward gravitational pull acts on the ball (free fall). The unbalanced downward force makes the ball speed up as it falls, its velocity growing in the downward direction. (c) The student is wrong: gravity, a single unbalanced downward force, acts on the ball the whole time. That force does not create motion from nothing; it changes the velocity the ball already had, increasing the downward speed.",
+    rubric: [
+      "States the hanging ball's forces sum to zero and that zero net force keeps the velocity constant (here, at rest)",
+      "Names gravity as the only force after the cut and describes the ball speeding up downward in free fall",
+      "Corrects the student: gravity acts during the fall and changes the existing velocity rather than creating motion"
+    ],
+    trap: "Free fall is not force-free fall. Zero net force keeps velocity constant; one unbalanced force changes velocity."
+  },
+
+  // ==================== SECTION 3.3 ====================
+  {
+    id: "3.3-1", section: "3.3", type: "mc",
+    prompt: "A ball is tossed straight up and is still moving upward after it has left your hand. While it moves upward through the air, the net force on the ball is",
+    choices: [
+      "upward and decreasing",
+      "zero, because it already has upward motion",
+      "upward first, then downward after it passes the peak",
+      "downward and constant"
+    ],
+    answer: 3,
+    explanation: "After the hand releases it, only gravity acts (ignoring air resistance), and gravity points down with constant magnitude mg the whole trip, up and down. The ball keeps rising only because it starts with upward velocity. Trap alert: net force is not the direction of motion."
+  },
+  {
+    id: "3.3-2", section: "3.3", type: "mc",
+    prompt: "A falling ball is caught by your hand and slows down while still moving downward. During the slowing, the direction of the net force on the ball is",
+    choices: [
+      "downward, because the ball is still moving downward",
+      "upward, because the ball is slowing down",
+      "zero, because the ball is almost stopped",
+      "downward first, then upward"
+    ],
+    answer: 1,
+    explanation: "Acceleration always points the same way as the net force, and slowing down while moving down means the acceleration points up. Your hand pushes up on the ball harder than gravity pulls down. Trap alert: the direction of the net force matches the direction of the velocity change, not the direction of motion."
+  },
+  {
+    id: "3.3-3", section: "3.3", type: "mc",
+    prompt: "At the very top of its flight, a ball tossed straight up has",
+    choices: [
+      "zero velocity and zero acceleration",
+      "upward velocity and zero acceleration",
+      "zero acceleration because its velocity is zero",
+      "zero velocity and acceleration of g downward"
+    ],
+    answer: 3,
+    explanation: "At the peak the velocity passes through zero for an instant, but gravity has not changed, so the acceleration is still g downward. Zero velocity does not mean zero acceleration."
+  },
+  {
+    id: "3.3-4", section: "3.3", type: "mc",
+    prompt: "A hockey puck slides across frictionless ice in a straight line at constant speed. The net force on the puck is",
+    choices: [
+      "equal to the puck's weight",
+      "forward, in the direction of motion",
+      "backward, because the puck is slowly stopping",
+      "zero, because friction is absent"
+    ],
+    answer: 3,
+    explanation: "With no friction and a level surface, the only forces are gravity and the normal force, which cancel. Zero net force is exactly why the puck keeps its constant velocity. No forward force is needed to keep it moving."
+  },
+  {
+    id: "3.3-5", section: "3.3", type: "mc",
+    prompt: "A person pushes a heavy crate across the floor at constant velocity. How does the magnitude of the person's push compare with the kinetic friction on the crate?",
+    choices: [
+      "The push is greater than friction, because the crate is moving",
+      "The push is zero once the crate is moving",
+      "The push is less than friction, because the crate is heavy",
+      "The push equals friction in magnitude"
+    ],
+    answer: 3,
+    explanation: "Constant velocity means zero net force, so the horizontal forces balance: push equals kinetic friction. The crate moves because you already gave it velocity, not because the push exceeds friction."
+  },
+  {
+    id: "3.3-6", section: "3.3", type: "mc",
+    prompt: "The same crate now accelerates across the floor. While it speeds up in the direction of the push, how do the push and kinetic friction compare?",
+    choices: [
+      "The push equals friction",
+      "The push is greater than friction",
+      "The push is less than friction",
+      "The friction is zero while the crate speeds up"
+    ],
+    answer: 1,
+    explanation: "A net force in the direction of motion is required to speed up, so the push must exceed kinetic friction. The excess (push minus friction) is what produces the acceleration."
+  },
+  {
+    id: "3.3-7", section: "3.3", type: "mc",
+    prompt: "A block sits on a flat, stationary table, and nothing pushes it. Which force diagram correctly shows the forces on the block?",
+    choices: [
+      "A downward arrow for gravity and an upward arrow for the normal force, equal length",
+      "A downward arrow for gravity and a downward arrow for the normal force, since both point toward the table",
+      "Only a downward arrow for gravity, because a resting object has no other interactions",
+      "Only an upward arrow, because the table holds the block up"
+    ],
+    answer: 0,
+    explanation: "Two forces act on the block: Earth's gravity down and the table's normal force up. The block does not accelerate, so the arrows must be equal in length. The normal force is not something extra on top of gravity; it balances it here."
+  },
+  {
+    id: "3.3-8", section: "3.3", type: "mc",
+    prompt: "A box is pushed across the floor at constant velocity. Which force diagram correctly shows the horizontal forces on the box?",
+    choices: [
+      "One arrow forward for the push, and no other horizontal arrows",
+      "One arrow backward for friction, and no other horizontal arrows",
+      "A forward arrow for the push and a backward arrow for friction, equal length",
+      "A forward arrow for the push, a backward arrow for friction, and a forward arrow for the motion"
+    ],
+    answer: 2,
+    explanation: "Constant velocity means the horizontal forces balance, so the push and friction arrows balance each other. There is no separate force of motion; velocity is not a force."
+  },
+  {
+    id: "3.3-9", section: "3.3", type: "mc",
+    prompt: "A couch is pushed across a level floor at constant velocity. How do the horizontal forces on the couch compare?",
+    choices: [
+      "The sum of the horizontal forces is zero, so the push and the floor's friction balance each other",
+      "The push must be greater than friction, because the couch keeps moving forward across the floor",
+      "The push must be less than friction, because the couch moves slowly rather than speeding up",
+      "No horizontal forces act on the couch once it is moving, since motion can sustain itself"
+    ],
+    answer: 0,
+    explanation: "Constant velocity means the velocity is not changing, so the sum of the forces must be zero. The only horizontal forces are the person's push and the floor's kinetic friction, and they must balance each other. Motion does not require a winning push; it only required a net push back when the couch started."
+  },
+  {
+    id: "3.3-10", section: "3.3", type: "mc",
+    prompt: "A sled accelerates down a snowy hill. While it speeds up, the component of gravity along the hill must be",
+    choices: [
+      "zero, because the normal force cancels gravity",
+      "equal to the total weight of the sled",
+      "greater than the friction force on the sled",
+      "less than the friction force on the sled"
+    ],
+    answer: 2,
+    explanation: "The normal force cancels only the component of gravity perpendicular to the hill. Along the hill, the downhill gravity component must exceed friction for the sled to accelerate downhill."
+  },
+  {
+    id: "3.3-11", section: "3.3", type: "mc",
+    prompt: "An airplane flies straight and level at constant velocity. The engines' forward thrust is 8000 N. What is the magnitude of the total air resistance on the plane?",
+    choices: [
+      "equal to the plane's weight",
+      "0 N",
+      "greater than 8000 N",
+      "8000 N"
+    ],
+    answer: 3,
+    explanation: "Constant velocity means zero net force, so air resistance must exactly balance the 8000 N thrust. Trap alert: do not confuse horizontal forces with the vertical lift-versus-weight balance; each axis balances separately."
+  },
+  {
+    id: "3.3-12", section: "3.3", type: "ms",
+    prompt: "A box sits at rest on a rough horizontal floor. No one pushes it. Select TWO answers: which forces act on the box?",
+    choices: [
+      "Gravity pulling the box down",
+      "The normal force from the floor pushing up",
+      "Static friction pushing the box backward",
+      "A forward force in the direction the box might move"
+    ],
+    answer: [0, 1],
+    explanation: "Only two forces act: gravity down and the normal force up. Friction requires an applied force to resist, and there is no motion or tendency caused by a push, so friction is zero. There is never a separate force of motion.",
+    trap: "Students often add friction, a push, or a force of motion to a resting box. A force diagram lists only actual interactions, and rest with no push means only gravity and the normal force."
+  },
+  {
+    id: "3.3-13", section: "3.3", type: "ms",
+    prompt: "A ball is tossed straight up, leaves the hand, and is tracked all the way back down. Ignore air resistance. Select TWO answers: which statements are true about the ball's motion?",
+    choices: [
+      "On the way up, the ball slows down",
+      "At the top, the acceleration is zero",
+      "On the way down, the ball speeds up",
+      "The net force on the ball changes direction when the ball reaches the top"
+    ],
+    answer: [0, 2],
+    explanation: "Gravity acts downward the entire trip. On the way up the downward acceleration opposes the upward velocity, so the ball slows; on the way down it acts with the velocity, so the ball speeds up. At the top the acceleration is still g downward, and the net force never changes direction.",
+    trap: "The motion reverses, but the force does not. If the net force pointed up at the top, the ball would accelerate upward and hover there."
+  },
+  {
+    id: "3.3-14", section: "3.3", type: "frq",
+    prompt: "A ball is tossed straight up, has left the hand, and is moving upward. Ignore air resistance. (a) Describe the force diagram for the ball at this instant: list every force, its direction, and its agent (the object causing it). (b) Your classmate says: while the ball moves up, the net force must point up, because the ball is moving up. Correct your classmate using the idea of velocity versus net force.",
+    modelAnswer: "(a) Only one force acts: Earth's gravitational pull on the ball, magnitude mg, pointing straight down. There is no upward force, because the hand is no longer touching the ball. (b) The classmate is confusing velocity with net force. The ball's velocity points up, but the net force (gravity) points down, which is why the ball is slowing down. The net force determines how the velocity changes, not the velocity itself.",
+    rubric: [
+      "Lists only gravity (mg, downward, agent is Earth) and notes no upward force after release",
+      "States that velocity points up while net force points down",
+      "Explains that net force determines the change in velocity, which is why the ball slows"
+    ],
+    trap: "Once the hand lets go, there is no upward force. The upward motion is leftover velocity, not a leftover force."
+  },
+
+  // ==================== SECTION 3.4 ====================
+  {
+    id: "3.4-1", section: "3.4", type: "mc",
+    prompt: "A car is parked on a street that is not tilted. A ball hangs straight down from a string attached to the car's ceiling. The car now accelerates forward. In the car's reference frame, the string swings so the ball",
+    choices: [
+      "hangs straight down, because gravity still points down",
+      "tilts backward, opposite the direction the car accelerates",
+      "tilts forward, in the direction the car accelerates",
+      "moves in a circle around the string as the car picks up speed"
+    ],
+    answer: 1,
+    explanation: "In the car's non-inertial frame a fictitious force appears to push objects backward, opposite the acceleration, so the ball hangs tilted back. In the ground frame the ball simply tends to keep its state of motion while the car accelerates forward beneath it.",
+    trap: "The backward tilt is not caused by a real backward force; it is the appearance of inertia in an accelerating frame."
+  },
+  {
+    id: "3.4-2", section: "3.4", type: "mc",
+    prompt: "A mug sits on a car's dashboard. When the car suddenly accelerates forward, a passenger inside the car sees the mug slide backward. From the ground (an inertial frame), the best explanation is that",
+    choices: [
+      "a real backward force acts on the mug from the dashboard whenever the car speeds up, shoving it toward the back of the passenger compartment",
+      "the mug keeps its original motion while the dashboard accelerates forward beneath it, and friction is too weak to drag it along",
+      "the mug's weight pulls it toward the back of the accelerating car, dragging it off the dashboard",
+      "the air inside the car rushes toward the back when the car speeds up, pushing the mug along with it"
+    ],
+    answer: 1,
+    explanation: "In the inertial ground frame there is no backward force. The mug simply continues at its previous velocity (inertia) while the car speeds up forward; only friction acts on the mug, and if it is insufficient the mug slides relative to the dashboard.",
+    trap: "Passengers in an accelerating vehicle invent forces in the direction opposite the acceleration to explain what they see. In an inertial frame, only real forces from interactions exist."
+  },
+  {
+    id: "3.4-3", section: "3.4", type: "mc",
+    prompt: "A passenger in a smoothly moving, non-accelerating train flips a coin straight up. The coin lands back in the passenger's hand. Which statement explains this best?",
+    choices: [
+      "The coin shares the train's forward velocity, so it keeps pace with the hand while it rises and falls",
+      "The air inside the train moves along with the train and pushes the coin forward while it is in the air between toss and catch",
+      "A forward force from the toss keeps acting on the coin the whole time it is in the air",
+      "The coin should land behind the hand because the train moves forward while the coin is in the air"
+    ],
+    answer: 0,
+    explanation: "The coin already has the train's horizontal velocity, and with no horizontal force it keeps that velocity (Newton's first law). The train and passenger also move at that same velocity, so the coin rejoins the hand. No forward force is needed."
+  },
+  {
+    id: "3.4-4", section: "3.4", type: "mc",
+    prompt: "Which of these observers is in an inertial reference frame?",
+    choices: [
+      "A person standing on a rotating merry-go-round",
+      "A person in a car that is turning a corner at constant speed",
+      "A person in a car that is speeding up",
+      "A person standing at rest on the ground"
+    ],
+    answer: 3,
+    explanation: "An inertial frame is one that is not accelerating. The ground observer is not accelerating, while the merry-go-round rider, the speeding-up driver, and the turning driver all accelerate (centripetal acceleration counts). Fictitious forces appear only in non-inertial frames.",
+    trap: "Constant speed does not guarantee an inertial frame. Turning at constant speed is still accelerated motion because the direction of velocity changes."
+  },
+  {
+    id: "3.4-5", section: "3.4", type: "mc",
+    prompt: "An astronaut floats freely inside an orbiting space station and feels weightless. Which statement is correct?",
+    choices: [
+      "There is no gravity in orbit this far above the surface of Earth, so nothing pulls on the astronaut or on the station",
+      "Gravity pulls on the astronaut almost as strongly as on Earth's surface, but the astronaut and station are in free fall together",
+      "The station's floor pushes up on the astronaut with a normal force equal to the astronaut's weight",
+      "The centrifugal force from the station's orbit cancels the gravitational force on the astronaut exactly, leaving zero net force"
+    ],
+    answer: 1,
+    explanation: "Orbit is free fall. Gravity provides the centripetal acceleration, and the astronaut and station fall together, so there is no relative motion and no normal force. Weightlessness is the absence of a supporting force, not the absence of gravity.",
+    trap: "Do not say gravity is zero in orbit or that forces cancel. A single force, gravity, is what keeps the station and astronaut in orbit."
+  },
+  {
+    id: "3.4-6", section: "3.4", type: "mc",
+    prompt: "A rotating space station is designed to create artificial gravity for astronauts walking on its inner rim. Which statement describes the origin of the apparent weight?",
+    choices: [
+      "The station's rotation flings the astronauts outward with a real centrifugal force, and that outward pull is what they feel as weight under their feet",
+      "The rim pushes inward on the astronaut to keep them moving in a circle, and the astronaut's inertia makes that inward push feel like a floor",
+      "The station creates real gravity by spinning, the way a spinning planet would generate its own pull",
+      "The astronauts are in free fall along with the station, so they cannot have any apparent weight at all"
+    ],
+    answer: 1,
+    explanation: "In the inertial frame, the rim pushes the astronaut inward to supply the centripetal force, and the astronaut's inertia carries them outward against that rim, so standing on the rim feels like standing on a floor. In the rotating frame this appears as a centrifugal force, but it is fictitious.",
+    trap: "Centrifugal force is not a real force in an inertial frame. The real, inward push is the centripetal force from the rim."
+  },
+  {
+    id: "3.4-7", section: "3.4", type: "mc",
+    prompt: "You are a passenger in a car that rounds a flat curve to the left at constant speed. You feel as if you are being pushed to the right, toward the outside of the curve. Which statement is correct from the ground's inertial frame?",
+    choices: [
+      "A real centrifugal force pushes you outward toward the door whenever the car rounds a curve at speed, and that is the push you feel",
+      "The seat and door push you toward the center of the curve, and your inertia makes that inward push feel like being pressed outward",
+      "No horizontal forces act on you while the car turns, so your body simply stays put relative to the seat",
+      "Your weight pulls you toward the outside of the curve because the car tilts as it turns"
+    ],
+    answer: 1,
+    explanation: "To move in a circle you need a net force toward the center, which the seat and door provide by pushing you left. The sensation of being thrown outward is inertia: your body tends to continue straight while the car turns. In the car's rotating frame a fictitious centrifugal force appears, but it is not a real force.",
+    trap: "Labeling the outward push as a real force is the classic error. Always ask whether the force is caused by a real interaction in an inertial frame."
+  },
+  {
+    id: "3.4-8", section: "3.4", type: "mc",
+    prompt: "A rider on a rotating merry-go-round throws a ball straight toward the center of the ride. In the rider's rotating frame, the ball appears to curve. This curving is best explained by",
+    choices: [
+      "a real sideways force acts on the ball once it leaves the rider's hand, steadily pushing it away from its straight path toward the center",
+      "the Coriolis effect: the rotating frame turns beneath the ball, so its path looks curved to the rider; in an inertial frame the ball flies straight",
+      "gravity pulling the ball sideways as it crosses the ride",
+      "air resistance curving the ball as it moves across the ride"
+    ],
+    answer: 1,
+    explanation: "In an inertial frame the ball travels in a straight line at constant velocity once thrown. The curved appearance in the rotating frame is the Coriolis effect, a fictitious sideways force that appears only in rotating frames. No real sideways force acts on the ball.",
+    trap: "Fictitious forces like the Coriolis force are frame-dependent bookkeeping, not caused by any real interaction."
+  },
+  {
+    id: "3.4-9", section: "3.4", type: "ms",
+    prompt: "A bus brakes suddenly while moving forward, and standing passengers lurch forward. Select TWO answers: which statements correctly explain what happens from an inertial (ground) reference frame?",
+    choices: [
+      "No real force pushes the passengers forward",
+      "The passengers' bodies tend to keep moving forward at the bus's original speed, while the bus slows under them",
+      "A real forward force from the bus acts on the passengers and throws them toward the windshield",
+      "The passengers accelerate forward because their inertia pushes them toward the front of the bus when it slows"
+    ],
+    answer: [0, 1],
+    explanation: "In an inertial frame, forces come only from real interactions. There is no forward force; the passengers simply continue their forward motion by inertia while friction at their feet slows them with the bus. Their upper bodies keep moving until a force (from a seat or strap) slows them.",
+    trap: "Inertia is the tendency to keep moving; it is not a force and cannot push anything."
+  },
+  {
+    id: "3.4-10", section: "3.4", type: "ms",
+    prompt: "Which of these observers are in non-inertial (accelerating) reference frames? Select TWO answers.",
+    choices: [
+      "A skydiver in free fall before opening the parachute",
+      "A passenger in a car moving in a straight line at steady speed on a highway",
+      "A rider on a rotating Ferris wheel",
+      "A person sitting still at a desk"
+    ],
+    answer: [0, 2],
+    explanation: "Free fall is accelerated motion (acceleration g downward), and circular motion at any speed is accelerated because velocity direction changes. Both observers need fictitious forces to explain their frames. The highway passenger and the person at the desk are in inertial frames (ignoring Earth's slow rotation).",
+    trap: "Steady speed in a straight line is not acceleration, but any turning or change in speed is, even if the speedometer reads constant."
+  },
+  {
+    id: "3.4-11", section: "3.4", type: "frq",
+    prompt: "Two students on a bus that suddenly accelerates forward see a hanging strap swing backward. Student A says: a backward force pushed the strap, and that force is real because we can see the effect. Student B says: the strap only appears to swing backward because the bus accelerated forward under it; in the ground frame no backward force exists. Use reference frames to evaluate both claims and state which is correct.",
+    modelAnswer: "Student B is correct. In the bus's accelerating (non-inertial) frame, a fictitious backward force is a useful bookkeeping device to explain the strap's tilt, so A's observation is explained, but that force is not caused by any real interaction. In the ground's inertial frame the strap simply tends to stay at rest by inertia while the bus accelerates forward around it, so no real backward force exists. Real forces appear in every inertial frame; fictitious forces appear only in accelerating frames.",
+    rubric: [
+      "States that the backward force is fictitious and exists only in the bus's non-inertial frame",
+      "Explains the ground-frame view: the strap keeps its state of motion while the bus accelerates forward",
+      "Uses the criterion that real forces come from interactions and appear in all inertial frames, while fictitious forces appear only in accelerating frames"
+    ],
+    trap: "Seeing an effect does not prove a real force caused it. Check whether the force survives when you switch to an inertial frame."
+  },
+  {
+    id: "3.4-12", section: "3.4", type: "frq",
+    prompt: "An orbiting astronaut floats freely inside a space station and feels weightless. A student concludes: gravity must be zero up there, because the astronaut has no weight. Write a correction that (a) states the real magnitude situation for gravity in low Earth orbit compared with the surface, (b) explains why the astronaut has no apparent weight, and (c) identifies what supplies the centripetal force that keeps the station in orbit.",
+    modelAnswer: "(a) Gravity in low Earth orbit is only slightly weaker than on the surface, roughly 90 percent as strong, so it is far from zero. (b) The astronaut and station are both in free fall, accelerating toward Earth at the same rate g, so there is no relative motion and no normal force from the floor; apparent weight is the normal force, and it is zero. (c) Gravity itself supplies the centripetal force that keeps the station (and astronaut) in circular orbit.",
+    rubric: [
+      "States that gravity in orbit is almost as strong as on the surface (only slightly reduced)",
+      "Explains weightlessness as free fall: astronaut and station accelerate together, so the normal force is zero",
+      "Identifies gravity as the centripetal force keeping the station in orbit"
+    ],
+    trap: "Weightlessness means weightless-feeling, not gravity-free. Orbit is falling around the Earth, not being beyond gravity's reach."
+  }
+];
+
+// ============================================================
+// SVG DIAGRAM LIBRARY
+// Keyed by the "svg" field on questions. Pure inline SVG strings.
+// ============================================================
+
+
+
+// ============================================================
+// APP LOGIC
+// ============================================================
+
+const LETTERS = ["A","B","C","D","E","F"];
+
+// Preserve authored order if an option contains sequencing keywords.
+function optionsNeedOrderPreserved(options){
+  const kws = ["none of the above","both ","all of the above","neither","a and b","b and c","options a","the first","the second"];
+  return options.some(o => kws.some(k => o.toLowerCase().includes(k)));
+}
+
+function fisherYates(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Build the runtime question list: shuffle question order, shuffle MC options.
+function buildRuntimeQuestions(){
+  return fisherYates(QUESTIONS.map((q, qi) => {
+    const stem = q.stem ?? q.prompt;
+    const options = q.options ?? q.choices;
+    const rt = { section:q.section, type:q.type, stem:stem, svg:q.svg || null,
+                 explanation:q.explanation, trap:q.trap || null, qi:qi };
+    if(q.type === "mc"){
+      let order;
+      if(optionsNeedOrderPreserved(options)){
+        order = options.map((_, i) => i);
+      } else {
+        order = fisherYates(options.map((_, i) => i));
+      }
+      rt.options = order.map(i => options[i]);
+      rt.answer = order.indexOf(q.answer);
+    } else if(q.type === "ms"){
+      let order = options.map((_, i) => i);
+      if(!optionsNeedOrderPreserved(options)) order = fisherYates(order);
+      rt.options = order.map(i => options[i]);
+      rt.answer = q.answer.map(a => order.indexOf(a)).sort((x,y)=>x-y);
+    } else { // frq
+      rt.modelAnswer = q.modelAnswer;
+      rt.rubric = q.rubric;
+    }
+    return rt;
+  }));
+}
+
+const state = {
+  qs: [],
+  idx: 0,
+  answers: [],       // per question: {status:"correct"|"incorrect"|"self", selected:[], frqText:"", rubric:[bool,bool,bool]}
+  helpers: false,
+  reviewMode: false
+};
+
+const el = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+// Proctor Bridge: listen for Portal context, report completion if embedded.
+window.addEventListener("message", (e) => {
+  if(e.data && e.data.type === "PORTAL_CONTEXT"){
+    // Optional context; activity works fully standalone if not embedded.
+    document.body.dataset.portalTheme = e.data.theme || "";
+  }
+});
+function reportComplete(){
+  try{
+    const total = state.answers.length;
+    const correct = state.answers.filter(a => a && a.status === "correct").length;
+    const frqEarned = state.answers.filter(a => a && a.status === "self")
+      .reduce((s,a) => s + (a.rubric ? a.rubric.filter(Boolean).length : 0), 0);
+    const frqMax = state.answers.filter(a => a && a.status === "self").length * 3;
+    const score = Math.round(((correct + frqEarned) / (total + frqMax)) * 100);
+    if(window.parent && window.parent !== window){
+      window.parent.postMessage({ type:"ACTIVITY_COMPLETE", score:score, data:{ correct:correct, total:total } }, "*");
+    }
+  }catch(err){ /* standalone mode */ }
+}
+
+function updateProgress(){
+  const done = state.answers.filter(a => a && a.status).length;
+  el("progressBar").style.width = (done / state.qs.length * 100) + "%";
+  el("progressText").textContent = done + " / " + state.qs.length;
+}
+
+// ---------- Rendering ----------
+function renderQuestion(){
+  const q = state.qs[state.idx];
+  const card = el("qcard");
+  const typeLabel = q.type === "mc" ? "Multiple choice"
+                  : q.type === "ms" ? "Select TWO"
+                  : "Free response";
+  let html = `<div class="qmeta">
+      <span class="section-badge">Section ${q.section}</span>
+      <span class="type-badge">${typeLabel}</span>
+      <span class="qnum">Question ${state.idx + 1} of ${state.qs.length}</span>
+    </div>
+    <div class="qstem">${esc(q.stem)}</div>`;
+
+  const existing = state.answers[state.idx];
+
+  if(q.type === "mc"){
+    html += `<div class="options">` + q.options.map((opt, i) => {
+      let cls = "option";
+      let lock = "";
+      if(existing && existing.status){
+        cls += " locked";
+        if(i === q.answer) cls += " correct";
+        else if(existing.selected.includes(i)) cls += " wrong";
+        lock = "disabled";
+      }
+      return `<button class="${cls}" data-i="${i}" ${lock}>
+          <span class="letter">${LETTERS[i]}</span>
+          <span>${esc(opt)}</span>
+        </button>`;
+    }).join("") + `</div>`;
+  } else if(q.type === "ms"){
+    html += `<div class="options">` + q.options.map((opt, i) => {
+      let cls = "option";
+      let lock = "";
+      if(existing && existing.status){
+        cls += " locked";
+        if(q.answer.includes(i)) cls += " correct";
+        else if(existing.selected.includes(i)) cls += " wrong";
+        lock = "disabled";
+      }
+      return `<button class="${cls}" data-i="${i}" ${lock}>
+          <span class="letter">${LETTERS[i]}</span>
+          <span>${esc(opt)}</span>
+          <span class="ms-hint">tap to select</span>
+        </button>`;
+    }).join("") + `</div>`;
+    if(!(existing && existing.status)){
+      html += `<div style="margin-top:12px"><button class="btn" id="submitMsBtn" disabled>Check answer</button></div>`;
+    }
+  } else { // frq
+    const taVal = existing && existing.frqText ? esc(existing.frqText) : "";
+    html += `<div class="frq-box">
+        <textarea id="frqText" placeholder="Write your reasoning here. Show the forces you identify and your reasoning steps.">${taVal}</textarea>
+      </div>`;
+    if(!(existing && existing.status)){
+      html += `<div style="margin-top:12px"><button class="btn" id="revealModelBtn">Compare with model answer</button></div>`;
+    }
+    html += `<div class="model-answer" id="modelAnswer">
+        <h4>Model answer</h4>
+        <p>${esc(q.modelAnswer)}</p>
+        <h4>Self-check rubric (3 points)</h4>
+        <ul class="rubric">` + q.rubric.map((r, i) =>
+          `<li><input type="checkbox" class="rubric-box" data-i="${i}" ${existing && existing.rubric && existing.rubric[i] ? "checked" : ""}>
+              <span>${esc(r)}</span><span class="pts">1 pt</span></li>`
+        ).join("") + `</ul>
+        <div class="self-score" id="selfScore"></div>
+      </div>`;
+  }
+
+  // Feedback panel
+  html += `<div class="feedback" id="feedback"></div>`;
+
+  card.innerHTML = html;
+  attachHandlers(q, existing);
+  // Revisit state: restore revealed feedback / model answer
+  if(existing && existing.status && q.type !== "frq"){
+    showFeedback(q, existing.status === "correct");
+  }
+  if(existing && existing.status === "self"){
+    const model = el("modelAnswer");
+    if(model) model.classList.add("show");
+    const pts = existing.rubric ? existing.rubric.filter(Boolean).length : 0;
+    const ss = el("selfScore");
+    if(ss){ ss.classList.add("show"); ss.textContent = "Self-check score: " + pts + " / 3"; }
+  }
+  updateProgress();
+  el("nextBtn").disabled = !(existing && existing.status);
+}
+
+function showFeedback(q, good){
+  const fb = el("feedback");
+  if(!fb) return;
+  const verdict = good ? "Correct." : (q.type === "ms" ? "Not quite." : "Incorrect.");
+  let html = `<div class="verdict">${verdict}</div><div class="why"><strong>Why:</strong> ${esc(q.explanation)}</div>`;
+  if(q.trap){
+    html += `<div class="trap"><span class="trap-label">Trap alert:</span> ${esc(q.trap)}</div>`;
+  }
+  fb.className = "feedback show " + (good ? "good" : "bad");
+  fb.innerHTML = html;
+}
+
+function attachHandlers(q, existing){
+  if(q.type === "mc"){
+    const btns = el("qcard").querySelectorAll(".option");
+    btns.forEach(b => b.addEventListener("click", () => {
+      if(state.answers[state.idx] && state.answers[state.idx].status) return;
+      const i = Number(b.dataset.i);
+      const good = i === q.answer;
+      state.answers[state.idx] = { status: good ? "correct" : "incorrect", selected:[i] };
+      btns.forEach(x => {
+        x.classList.add("locked");
+        x.disabled = true;
+        const xi = Number(x.dataset.i);
+        if(xi === q.answer) x.classList.add("correct");
+        else if(xi === i) x.classList.add("wrong");
+      });
+      showFeedback(q, good);
+      el("nextBtn").disabled = false;
+      updateProgress();
+    }));
+  } else if(q.type === "ms"){
+    const selected = new Set();
+    const btns = el("qcard").querySelectorAll(".option");
+    const submitBtn = el("submitMsBtn");
+    btns.forEach(b => b.addEventListener("click", () => {
+      if(state.answers[state.idx] && state.answers[state.idx].status) return;
+      const i = Number(b.dataset.i);
+      if(selected.has(i)){ selected.delete(i); b.classList.remove("selected"); }
+      else if(selected.size < 2){ selected.add(i); b.classList.add("selected"); }
+      submitBtn.disabled = selected.size !== 2;
+    }));
+    if(submitBtn){
+      submitBtn.addEventListener("click", () => {
+        const sel = Array.from(selected).sort((a,b)=>a-b);
+        const good = sel.length === q.answer.length && sel.every((v,i) => v === q.answer[i]);
+        state.answers[state.idx] = { status: good ? "correct" : "incorrect", selected:sel };
+        btns.forEach(x => {
+          x.classList.add("locked");
+          x.disabled = true;
+          const xi = Number(x.dataset.i);
+          if(q.answer.includes(xi)) x.classList.add("correct");
+          else if(sel.includes(xi)) x.classList.add("wrong");
+        });
+        submitBtn.style.display = "none";
+        showFeedback(q, good);
+        el("nextBtn").disabled = false;
+        updateProgress();
+      });
+    }
+  } else { // frq
+    const ta = el("frqText");
+    const revealBtn = el("revealModelBtn");
+    const model = el("modelAnswer");
+    if(ta){
+      ta.addEventListener("input", () => {
+        if(!state.answers[state.idx]) state.answers[state.idx] = { status:null, selected:[], rubric:[false,false,false] };
+        state.answers[state.idx].frqText = ta.value;
+      });
+    }
+    if(revealBtn){
+      revealBtn.addEventListener("click", () => {
+        model.classList.add("show");
+        revealBtn.style.display = "none";
+        state.answers[state.idx] = state.answers[state.idx] || { status:null, selected:[], rubric:[false,false,false] };
+      });
+    }
+    model.querySelectorAll(".rubric-box").forEach(cb => {
+      cb.addEventListener("change", () => {
+        const a = state.answers[state.idx] = state.answers[state.idx] || { status:null, selected:[], rubric:[false,false,false] };
+        a.rubric[Number(cb.dataset.i)] = cb.checked;
+        const pts = a.rubric.filter(Boolean).length;
+        const ss = el("selfScore");
+        ss.classList.add("show");
+        ss.textContent = "Self-check score: " + pts + " / 3";
+        a.status = "self";
+        el("nextBtn").disabled = false;
+        updateProgress();
+      });
+    });
+  }
+}
+
+// ---------- Summary ----------
+function renderSummary(){
+  const sections = ["3.1","3.2","3.3","3.4"];
+  const secNames = {
+    "3.1":"Interactions, system choice, and force diagrams",
+    "3.2":"Adding and measuring forces",
+    "3.3":"Force and motion",
+    "3.4":"Inertial reference frames"
+  };
+  const perSec = {};
+  sections.forEach(s => perSec[s] = { total:0, mc:0, frq:0, mcEarn:0, frqEarn:0 });
+  state.qs.forEach((q, i) => {
+    const a = state.answers[i] || {};
+    const p = perSec[q.section];
+    p.total++;
+    if(q.type === "frq"){
+      p.frq++;
+      p.frqEarn += a.rubric ? a.rubric.filter(Boolean).length : 0;
+    } else {
+      p.mc++;
+      if(a.status === "correct") p.mcEarn++;
+    }
+  });
+  const totalEarn = sections.reduce((s,sec) => s + perSec[sec].mcEarn + perSec[sec].frqEarn, 0);
+  const totalMax = state.qs.reduce((s,q) => s + (q.type === "frq" ? 3 : 1), 0);
+  const pct = Math.round(totalEarn / totalMax * 100);
+
+  let html = `<h2>Session summary</h2>
+    <div class="score-hero">
+      <div class="big">${pct}%</div>
+      <div style="color:var(--ink-soft)">${totalEarn} of ${totalMax} points (free response graded by you, 3 pts each)</div>
+    </div>`;
+
+  if(state.helpers){
+    html += `<table class="section-table"><tr><th>Section</th><th>Multiple choice</th><th>Free response</th><th>Progress</th></tr>`;
+    sections.forEach(sec => {
+      const p = perSec[sec];
+      const denom = p.mc + p.frq * 3;
+      const earn = p.mcEarn + p.frqEarn;
+      const barPct = denom ? Math.round(earn / denom * 100) : 0;
+      html += `<tr><td><strong>${sec}</strong> ${esc(secNames[sec])}</td>
+        <td>${p.mcEarn} / ${p.mc}</td>
+        <td>${p.frqEarn} / ${p.frq * 3}</td>
+        <td><div class="section-bar"><div style="width:${barPct}%"></div></div></td></tr>`;
+    });
+    html += `</table>`;
+  } else {
+    // Student-friendly version without section jargon
+    html += `<p>Here is how you did. Review the topics where you missed questions, then try again.</p>`;
+    sections.forEach(sec => {
+      const p = perSec[sec];
+      const denom = p.mc + p.frq * 3;
+      const earn = p.mcEarn + p.frqEarn;
+      const barPct = denom ? Math.round(earn / denom * 100) : 0;
+      html += `<div style="margin:10px 0">
+          <div style="display:flex;justify-content:space-between;font-size:.92rem">
+            <strong>${sec} ${esc(secNames[sec])}</strong><span>${earn} / ${denom}</span>
+          </div>
+          <div class="section-bar" style="margin-top:4px"><div style="width:${barPct}%"></div></div>
+        </div>`;
+    });
+  }
+
+  const missed = state.qs.map((q,i) => ({q,i})).filter(o => {
+    const a = state.answers[o.i];
+    return a && a.status === "incorrect";
+  });
+  html += `<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">`;
+  if(missed.length){
+    html += `<button class="btn secondary" id="reviewMissedBtn">Review ${missed.length} missed question${missed.length>1?"s":""}</button>`;
+  }
+  html += `<button class="btn" id="restartBtn">Start over (reshuffled)</button></div>`;
+
+  if(state.helpers){
+    html += `<div style="margin-top:18px"><strong>Helper: jump to any question</strong><div class="missed-list" style="margin-top:8px">`;
+    state.qs.forEach((q,i) => {
+      const a = state.answers[i];
+      const mark = a && a.status === "correct" ? "ok" : (a && a.status ? "missed" : "open");
+      html += `<button class="btn ghost" data-jump="${i}">Q${i+1} · ${q.section} · ${mark}</button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  el("summaryScreen").innerHTML = html;
+  el("questionScreen").style.display = "none";
+  el("summaryScreen").style.display = "block";
+
+  el("restartBtn").addEventListener("click", startSession);
+  const rmb = el("reviewMissedBtn");
+  if(rmb){
+    rmb.addEventListener("click", () => {
+      state.reviewMode = true;
+      state.reviewList = missed.map(o => o.i);
+      state.reviewPos = 0;
+      showReviewQuestion();
+    });
+  }
+  el("summaryScreen").querySelectorAll("[data-jump]").forEach(b => {
+    b.addEventListener("click", () => {
+      state.idx = Number(b.dataset.jump);
+      el("summaryScreen").style.display = "none";
+      el("questionScreen").style.display = "block";
+      renderQuestion();
+    });
+  });
+  reportComplete();
+}
+
+function showReviewQuestion(){
+  if(state.reviewPos >= state.reviewList.length){
+    state.reviewMode = false;
+    renderSummary();
+    return;
+  }
+  state.idx = state.reviewList[state.reviewPos];
+  el("summaryScreen").style.display = "none";
+  el("questionScreen").style.display = "block";
+  renderQuestion();
+}
+
+// ---------- Navigation ----------
+el("nextBtn").addEventListener("click", () => {
+  if(state.reviewMode){
+    state.reviewPos++;
+    showReviewQuestion();
+    return;
+  }
+  if(state.idx < state.qs.length - 1){
+    state.idx++;
+    renderQuestion();
+  } else {
+    renderSummary();
+  }
+});
+el("quitBtn").addEventListener("click", () => { renderSummary(); });
+
+function startSession(){
+  state.qs = buildRuntimeQuestions();
+  state.idx = 0;
+  state.answers = new Array(state.qs.length).fill(null);
+  state.reviewMode = false;
+  el("startScreen").style.display = "none";
+  el("summaryScreen").style.display = "none";
+  el("questionScreen").style.display = "block";
+  renderQuestion();
+}
+
+el("startBtn").addEventListener("click", startSession);
+el("helpersToggle").addEventListener("change", (e) => { state.helpers = e.target.checked; });
+</script>
+</body>
+</html>
