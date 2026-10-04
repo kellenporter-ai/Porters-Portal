@@ -132,6 +132,14 @@
         "destination": "/texas-grid-blackout.html"
       },
       {
+        "source": "/l4-blackout-detective",
+        "destination": "/l4-blackout-detective.html"
+      },
+      {
+        "source": "/l4-decisions-matrix",
+        "destination": "/l4-decisions-matrix.html"
+      },
+      {
         "source": "/ap1-kinematics-practice",
         "destination": "/ap1-kinematics-practice.html"
       },
