@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decisions Matrix — OpenSciEd P.1 Lesson 4</title>
+<style>
+  :root{
+    --bg:#0b0b1c; --bg2:#12122a; --panel:rgba(255,255,255,.05); --border:rgba(255,255,255,.14);
+    --text:#ece8f6; --muted:#8f8aae; --amber:#ffb75e; --amber-deep:#f59e0b;
+    --purple:#8b5cf6; --green:#22d486; --red:#e8504a; --ice:#7ab8ff;
+    --head:'Arial Narrow','Bebas Neue',sans-serif; --body:'Inter',system-ui,sans-serif;
+    --radius:14px;
+    --star:#3a3a5e; --star-on:#ffb75e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--body); color:var(--text);
+    background:radial-gradient(1200px 700px at 80% -10%, rgba(139,92,246,.18), transparent 60%),
+               radial-gradient(900px 600px at 10% 110%, rgba(255,183,94,.10), transparent 55%),
+               linear-gradient(160deg, var(--bg), var(--bg2));
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  button, input, textarea{font-family:var(--body); font-size:14px; color:var(--text)}
+  button:focus-visible, input:focus-visible, textarea:focus-visible{outline:2px solid var(--ice); outline-offset:2px}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+    padding:10px 20px; border-bottom:1px solid var(--border);
+    background:rgba(11,11,28,.7); backdrop-filter:blur(8px);
+    position:sticky; top:0; z-index:50;
+  }
+  .brand{display:flex; align-items:center; gap:10px; min-width:0}
+  .brand .titles{min-width:0}
+  .brand h1{font-family:var(--head); font-size:18px; letter-spacing:1.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.5px}
+  .topright{display:flex; align-items:center; gap:10px}
+  #save-status{font-size:11px; color:var(--muted); min-width:60px; text-align:right}
+  .lang-toggle{display:flex; border:1px solid var(--border); border-radius:999px; overflow:hidden; background:var(--panel)}
+  .lang-toggle button{appearance:none;border:0;background:transparent;color:var(--muted);font-weight:600;min-width:52px;min-height:44px;padding:0 16px;cursor:pointer}
+  .lang-toggle button[aria-pressed="true"]{background:var(--purple);color:#fff}
+
+  main{flex:1; width:100%; max-width:1400px; margin:0 auto; padding:14px 16px 30px; display:flex; flex-direction:column; gap:14px}
+  .cols{display:flex; gap:14px; align-items:flex-start}
+  .matrix-col{flex:1.55; min-width:0}
+  .result-col{flex:1; min-width:300px; position:sticky; top:66px}
+  @media (max-width:960px){
+    .cols{flex-direction:column}
+    .result-col{position:static; width:100%}
+  }
+
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; backdrop-filter:blur(8px)}
+  .card h2{font-family:var(--head); font-size:16px; letter-spacing:1.5px; color:var(--amber); margin-bottom:10px}
+  .hint{font-size:12px; color:var(--muted); line-height:1.5; margin-top:8px}
+
+  .table-wrap{overflow-x:auto}
+  table.matrix{border-collapse:collapse; width:100%; min-width:560px}
+  table.matrix th, table.matrix td{border:1px solid var(--border); padding:6px; text-align:center; vertical-align:middle}
+  table.matrix thead th{background:rgba(139,92,246,.12); font-size:12px}
+  .src-name{font-weight:600; font-size:13px; white-space:nowrap; text-align:left !important; padding-left:10px !important}
+  .crit-head{display:flex; flex-direction:column; gap:6px; align-items:center; min-width:120px}
+  .crit-name-input{
+    width:100%; background:rgba(255,255,255,.06); border:1px dashed var(--border);
+    border-radius:8px; padding:6px 8px; text-align:center; font-size:12px; font-weight:600;
+  }
+  .crit-name-input::placeholder{color:var(--muted); font-weight:400}
+  .crit-locked{
+    font-size:12px; font-weight:600; padding:6px 4px; color:var(--amber);
+    display:flex; flex-direction:column; gap:2px; align-items:center;
+  }
+  .crit-locked .lockbadge{font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
+  .crit-remove{
+    align-self:flex-end; background:transparent; border:none; color:var(--muted);
+    cursor:pointer; font-size:15px; line-height:1; min-width:32px; min-height:32px; border-radius:8px;
+  }
+  .crit-remove:hover{color:var(--red); background:rgba(232,80,74,.1)}
+  .weight-ctl{display:flex; flex-direction:column; gap:2px; align-items:center; width:100%}
+  .weight-ctl input[type=range]{width:100%; accent-color:var(--purple); cursor:pointer}
+  .weight-lbl{font-size:11px; color:var(--muted); font-weight:600}
+
+  .stars{display:flex; gap:2px; justify-content:center}
+  .star{background:transparent;border:none;cursor:pointer;font-size:19px;line-height:1;color:var(--star);padding:4px 2px;min-width:28px;min-height:32px;transition:transform .1s}
+  .star:hover{transform:scale(1.2)}
+  .star.lit{color:var(--star-on); text-shadow:0 0 6px rgba(255,183,94,.5)}
+  .cell-val{font-size:10px; color:var(--muted); display:block; margin-top:1px}
+
+  .add-crit{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; align-items:center}
+  .add-crit input{
+    flex:1; min-width:200px; background:rgba(255,255,255,.06); border:1px solid var(--border);
+    border-radius:999px; padding:10px 16px; min-height:44px;
+  }
+  .btn{
+    min-height:44px; padding:10px 22px; border-radius:12px; border:1px solid var(--border);
+    background:rgba(255,255,255,.05); color:var(--text); font-weight:700; cursor:pointer;
+    letter-spacing:.4px;
+  }
+  .btn:hover:not(:disabled){border-color:var(--purple)}
+  .btn.primary{background:linear-gradient(135deg, var(--purple), #6d28d9); color:#fff; border:none}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+  .chip{
+    border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--ice);
+    border-radius:999px; min-height:44px; padding:8px 16px; font-size:13px; cursor:pointer;
+  }
+  .chip:hover:not(:disabled){border-color:var(--ice); background:rgba(122,184,255,.08)}
+  .chip:disabled{opacity:.35; cursor:not-allowed}
+
+  .rank-row{display:flex; align-items:center; gap:10px; margin-bottom:10px; transition:background .4s}
+  .rank-row.leader{background:rgba(255,183,94,.08); border-radius:10px; padding:4px 6px}
+  .rank-row .rk{width:26px; font-family:var(--head); font-size:18px; color:var(--muted); text-align:right}
+  .rank-row.first .rk{color:var(--amber); font-size:22px}
+  .rank-row .nm{width:110px; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .rank-row .bar-wrap{flex:1; height:22px; background:rgba(255,255,255,.05); border-radius:6px; overflow:hidden; position:relative}
+  .rank-row .bar{
+    height:100%; border-radius:6px;
+    background:linear-gradient(90deg, var(--purple), var(--ice));
+    transition:width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .rank-row.first .bar{background:linear-gradient(90deg, var(--amber-deep), var(--amber))}
+  .rank-row .sc{width:56px; font-size:12px; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+  .empty-msg{color:var(--muted); font-size:13px; padding:8px 0}
+
+  #flip-banner{
+    display:none; align-items:center; gap:8px; margin-top:12px; padding:10px 14px;
+    background:rgba(255,183,94,.14); border:1px solid var(--amber-deep); border-radius:12px;
+    color:var(--amber); font-weight:700; font-size:14px;
+  }
+  #flip-banner.show{display:flex; animation:pop .5s ease}
+  @keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  .badge{
+    display:none; margin-top:12px; padding:10px 14px; border-radius:12px;
+    background:rgba(34,212,134,.12); border:1px solid var(--green); color:var(--green);
+    font-weight:700; font-size:14px;
+  }
+  .badge.show{display:block}
+
+  textarea#refl{
+    width:100%; min-height:110px; resize:vertical; background:rgba(255,255,255,.06);
+    border:1px solid var(--border); border-radius:12px; padding:12px 14px; line-height:1.5;
+  }
+  .refl-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap}
+  .char-note{font-size:12px; color:var(--muted)}
+
+  #print-area{display:none}
+  @media print{
+    body{background:#fff; color:#000}
+    header, main{display:none !important}
+    #print-area{display:block; color:#000; font-family:Georgia, serif; padding:12px}
+    #print-area h1{font-size:20px; margin-bottom:2px}
+    #print-area .pmeta{font-size:12px; color:#444; margin-bottom:14px}
+    #print-area h2{font-size:15px; margin:14px 0 6px; border-bottom:1px solid #999; padding-bottom:3px}
+    #print-area table{border-collapse:collapse; width:100%; font-size:11px; margin-bottom:8px}
+    #print-area th, #print-area td{border:1px solid #888; padding:4px 6px; text-align:center}
+    #print-area th{background:#eee}
+    #print-area td.lft{text-align:left}
+    #print-area ol{padding-left:22px; font-size:12px}
+    #print-area .prefl{white-space:pre-wrap; font-size:12px; border:1px solid #888; padding:8px; border-radius:4px; margin-top:4px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="titles">
+      <h1 id="h-title">Decisions Matrix</h1>
+      <div class="sub" id="h-sub"></div>
+    </div>
+  </div>
+  <div class="topright">
+    <span id="save-status"></span>
+    <button class="btn" id="print-btn" style="min-height:44px">Print / Export</button>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button id="lang-en" aria-pressed="true">EN</button>
+      <button id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="cols">
+    <section class="card matrix-col">
+      <h2 id="matrix-title"></h2>
+      <div class="table-wrap">
+        <table class="matrix" id="matrix-table" aria-label="Decisions matrix"></table>
+      </div>
+      <div class="add-crit">
+        <input id="new-crit" type="text" maxlength="60">
+        <button class="btn primary" id="add-crit-btn"></button>
+      </div>
+      <div class="chips" id="crit-chips"></div>
+      <div class="hint" id="matrix-hint"></div>
+    </section>
+
+    <aside class="result-col">
+      <div class="card">
+        <h2 id="rank-title"></h2>
+        <div id="ranking"></div>
+        <div id="flip-banner"></div>
+        <div class="badge" id="done-badge"></div>
+        <div class="hint" id="rank-hint"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card" id="reflection-card">
+    <h2 id="refl-title"></h2>
+    <p id="refl-prompt" style="font-size:14px;line-height:1.55;margin-bottom:10px"></p>
+    <textarea id="refl"></textarea>
+    <div class="refl-foot">
+      <span class="char-note" id="char-note"></span>
+      <button class="btn primary" id="submit-btn"></button>
+    </div>
+  </section>
+</main>
+
+<div id="print-area" aria-hidden="true"></div>
+
+<script src="portalBridge.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ============================== i18n ============================== */
+const STR = {
+  en: {
+    title:'Decisions Matrix',
+    sub:'OpenSciEd Physics P.1 · Lesson 4 · Which energy source should we choose?',
+    matrixTitle:'Your Criteria & Ratings',
+    rankTitle:'Live Ranking',
+    reflTitle:'Final Reflection',
+    reflPrompt:'Which criterion changed the outcome the most when you adjusted its weight? What does that tell you about decisions like this?',
+    placeholder:'Type a criterion, e.g. "High efficiency"',
+    addBtn:'Add criterion',
+    addBtnFull:'Maximum reached',
+    locked:'High reliability',
+    lockedBadge:'established in class',
+    importance:{1:'Low', 2:'Medium', 3:'High'},
+    weightLabel:'importance',
+    chips:{
+      efficiency:'High efficiency', dispatchability:'High dispatchability',
+      output:'High power output', cost:'Low cost', environment:'Low environmental impact'
+    },
+    maxCrit:'You can add up to 4 more criteria.',
+    matrixHint:'Tap stars to rate each energy source (1 to 5). Drag the sliders to set how important each criterion is. The ranking updates live.',
+    rankHint:'Rate and re-weight to see how the leader changes. When the top source flips, that is the lesson: criteria you cannot easily quantify decide the outcome.',
+    flip:'Your leader changed!',
+    flipNow:'is now #1',
+    empty:'Add ratings to see the ranking.',
+    reflectionSaved:'Reflection submitted. You can keep editing your matrix.',
+    charNote:'Minimum 20 characters',
+    submit:'Submit reflection',
+    printBtn:'Print / Export',
+    untitled:'Criterion',
+    removeCrit:'Remove criterion',
+    print:{
+      title:'Decisions Matrix: Summary', criteria:'Criteria & Ratings',
+      ranking:'Weighted Ranking', reflection:'Reflection', generated:'Generated'
+    }
+  },
+  es: {
+    title:'Matriz de decisiones',
+    sub:'OpenSciEd Física P.1 · Lección 4 · ¿Qué fuente de energía debemos elegir?',
+    matrixTitle:'Tus criterios y calificaciones',
+    rankTitle:'Clasificación en vivo',
+    reflTitle:'Reflexión final',
+    reflPrompt:'¿Qué criterio cambió más el resultado cuando ajustaste su importancia? ¿Qué te dice esto sobre decisiones como esta?',
+    placeholder:'Escribe un criterio, p. ej. "Alta eficiencia"',
+    addBtn:'Agregar criterio',
+    addBtnFull:'Máximo alcanzado',
+    locked:'Alta confiabilidad',
+    lockedBadge:'establecido en clase',
+    importance:{1:'Baja', 2:'Media', 3:'Alta'},
+    weightLabel:'importancia',
+    chips:{
+      efficiency:'Alta eficiencia', dispatchability:'Alta disponibilidad',
+      output:'Alto rendimiento de potencia', cost:'Bajo costo', environment:'Bajo impacto ambiental'
+    },
+    maxCrit:'Puedes agregar hasta 4 criterios más.',
+    matrixHint:'Toca las estrellas para calificar cada fuente (1 a 5). Mueve los controles para fijar la importancia de cada criterio. La clasificación se actualiza en vivo.',
+    rankHint:'Califica y ajusta la importancia para ver cómo cambia el líder. Cuando la primera fuente cambia, ahí está la lección: los criterios que no se pueden medir fácilmente deciden el resultado.',
+    flip:'¡Cambió tu fuente líder!',
+    flipNow:'ahora es la número 1',
+    empty:'Agrega calificaciones para ver la clasificación.',
+    reflectionSaved:'Reflexión enviada. Puedes seguir editando tu matriz.',
+    charNote:'Mínimo 20 caracteres',
+    submit:'Enviar reflexión',
+    printBtn:'Imprimir / Exportar',
+    untitled:'Criterio',
+    removeCrit:'Quitar criterio',
+    print:{
+      title:'Matriz de decisiones: Resumen', criteria:'Criterios y calificaciones',
+      ranking:'Clasificación ponderada', reflection:'Reflexión', generated:'Generado'
+    }
+  }
+};
+
+const LABELS_FALLBACK = {
+  en:{wind:'Wind',naturalGas:'Natural gas',coal:'Coal',nuclear:'Nuclear',solar:'Solar',hydro:'Hydro',other:'Other'},
+  es:{wind:'Eólica',naturalGas:'Gas natural',coal:'Carbón',nuclear:'Nuclear',solar:'Solar',hydro:'Hidroeléctrica',other:'Otros'}
+};
+const SOURCES = ['wind','naturalGas','coal','nuclear','solar','hydro'];
+const MAX_CRIT = 4;
+const MIN_REFL = 20;
+const LS_KEY = 'l4dm.v1';
+const LS_LANG = 'l4dm.lang';
+
+/* ============================== state ============================== */
+const params = new URLSearchParams(location.search);
+const standalone = params.get('standalone') === '1';
+let lang = 'en';
+try { lang = localStorage.getItem(LS_LANG) || 'en'; } catch(e){}
+if (lang !== 'es') lang = 'en';
+
+let labels = LABELS_FALLBACK;
+let state = null;
+let prevLeader = null;
+let flipTimer = null;
+
+function defaultState(){
+  return {
+    criteria:[{ id:'c1', name:'', locked:true, weight:2, kind:'reliability' }],
+    ratings: defaultRatings(),
+    reflection:'',
+    completed:false,
+    completedAt:null
+  };
+}
+function defaultRatings(){
+  return { c1:{ wind:4, naturalGas:5, coal:4, nuclear:5, solar:2, hydro:4 } };
+}
+
+function loadLocal(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.criteria)) return s; }
+  } catch(e){}
+  return null;
+}
+function saveLocal(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+/* ============================== helpers ============================== */
+const $ = id => document.getElementById(id);
+const t = () => STR[lang];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const critName = c => c.locked ? t().locked : (c.name || t().untitled);
+
+function persist(){
+  saveLocal();
+  if (!standalone && window.PortalBridge) PortalBridge.save({ state: state });
+}
+
+function weightedScore(src){
+  let sum = 0, wsum = 0;
+  for (const c of state.criteria){
+    const r = (state.ratings[c.id] || {})[src];
+    if (!r) continue;
+    sum += r * c.weight; wsum += c.weight;
+  }
+  return wsum ? sum / wsum : 0;
+}
+function rankedSources(){
+  return SOURCES
+    .map(s => ({ src:s, score: weightedScore(s) }))
+    .sort((a,b) => b.score - a.score || a.src.localeCompare(b.src));
+}
+function currentLeader(){
+  const rk = rankedSources().filter(r => r.score > 0);
+  return rk.length ? rk[0].src : null;
+}
+
+/* ============================== rendering ============================== */
+function applyStaticText(){
+  const s = t();
+  document.documentElement.lang = lang;
+  document.title = s.title + ' — OpenSciEd P.1 L4';
+  $('h-title').textContent = s.title;
+  $('h-sub').textContent = s.sub;
+  $('matrix-title').textContent = s.matrixTitle;
+  $('rank-title').textContent = s.rankTitle;
+  $('refl-title').textContent = s.reflTitle;
+  $('refl-prompt').textContent = s.reflPrompt;
+  $('new-crit').placeholder = s.placeholder;
+  $('matrix-hint').textContent = s.matrixHint;
+  $('rank-hint').textContent = s.rankHint;
+  $('print-btn').textContent = s.printBtn;
+  $('submit-btn').textContent = s.submit;
+  $('char-note').textContent = s.charNote;
+  $('lang-en').setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+  $('lang-es').setAttribute('aria-pressed', lang === 'es' ? 'true' : 'false');
+}
+
+function renderChips(){
+  const s = t();
+  const kinds = ['efficiency','dispatchability','output','cost','environment'];
+  const used = new Set(state.criteria.map(c => c.kind));
+  const box = $('crit-chips');
+  box.innerHTML = '';
+  const full = state.criteria.length >= 1 + MAX_CRIT;
+  for (const k of kinds){
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = s.chips[k];
+    b.disabled = full || used.has(k);
+    b.addEventListener('click', () => addCriterion(k));
+    box.appendChild(b);
+  }
+  const note = document.createElement('span');
+  note.className = 'hint';
+  note.style.marginTop = '0';
+  note.textContent = s.maxCrit;
+  box.appendChild(note);
+  $('add-crit-btn').textContent = full ? s.addBtnFull : s.addBtn;
+  $('add-crit-btn').disabled = full;
+  $('new-crit').disabled = full;
+}
+
+function weightSlider(c, i){
+  return '<div class="weight-ctl"><input type="range" min="1" max="3" step="1" value="' + c.weight + '" data-ci="' + i + '" aria-label="' + esc(t().weightLabel) + '">' +
+    '<span class="weight-lbl">' + esc(t().importance[c.weight]) + ' ' + esc(t().weightLabel) + '</span></div>';
+}
+
+function renderMatrix(){
+  const s = t();
+  const tbl = $('matrix-table');
+  let html = '<thead><tr><th class="src-name" style="min-width:100px"></th>';
+  state.criteria.forEach((c, i) => {
+    if (c.locked){
+      html += '<th><div class="crit-head"><div class="crit-locked"><span>' + esc(s.locked) +
+        '</span><span class="lockbadge">' + esc(s.lockedBadge) + '</span></div>' +
+        weightSlider(c, i) + '</div></th>';
+    } else {
+      html += '<th><div class="crit-head">' +
+        '<input class="crit-name-input" data-ci="' + i + '" maxlength="60" value="' + esc(c.name) + '" placeholder="' + esc(s.placeholder) + '" aria-label="' + esc(s.untitled) + '">' +
+        '<button class="crit-remove" data-ci="' + i + '" title="' + esc(s.removeCrit) + '" aria-label="' + esc(s.removeCrit) + '">&times;</button>' +
+        weightSlider(c, i) + '</div></th>';
+    }
+  });
+  html += '</tr></thead><tbody>';
+  for (const src of SOURCES){
+    html += '<tr><td class="src-name">' + esc(labels[lang][src] || src) + '</td>';
+    state.criteria.forEach(c => {
+      const val = (state.ratings[c.id] || {})[src] || 0;
+      html += '<td><div class="stars" role="radiogroup" aria-label="' + esc(critName(c)) + ': ' + esc(labels[lang][src] || src) + '">';
+      for (let n = 1; n <= 5; n++){
+        html += '<button class="star' + (n <= val ? ' lit' : '') + '" data-c="' + c.id + '" data-s="' + src + '" data-n="' + n + '" role="radio" aria-checked="' + (n === val) + '" aria-label="' + n + '">★</button>';
+      }
+      html += '</div><span class="cell-val">' + (val || '–') + '</span></td>';
+    });
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  tbl.innerHTML = html;
+
+  tbl.querySelectorAll('.star').forEach(btn => {
+    btn.addEventListener('click', () => setRating(btn.dataset.c, btn.dataset.s, parseInt(btn.dataset.n, 10)));
+  });
+  tbl.querySelectorAll('.crit-name-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      state.criteria[parseInt(inp.dataset.ci, 10)].name = inp.value;
+      schedulePersist();
+    });
+  });
+  tbl.querySelectorAll('.crit-remove').forEach(btn => {
+    btn.addEventListener('click', () => removeCriterion(parseInt(btn.dataset.ci, 10)));
+  });
+  tbl.querySelectorAll('input[type=range]').forEach(r => {
+    r.addEventListener('input', () => {
+      const c = state.criteria[parseInt(r.dataset.ci, 10)];
+      c.weight = parseInt(r.value, 10);
+      r.closest('.weight-ctl').querySelector('.weight-lbl').textContent = t().importance[c.weight] + ' ' + t().weightLabel;
+      updateRanking();
+      schedulePersist();
+    });
+  });
+}
+
+function updateRanking(){
+  const s = t();
+  const rk = rankedSources();
+  const hasAny = rk.some(r => r.score > 0);
+  const box = $('ranking');
+  if (!hasAny){
+    box.innerHTML = '<div class="empty-msg">' + esc(s.empty) + '</div>';
+  } else {
+    box.innerHTML = rk.map((r, i) =>
+      '<div class="rank-row' + (i === 0 ? ' first leader' : '') + '" data-src="' + r.src + '">' +
+      '<span class="rk">' + (i + 1) + '</span>' +
+      '<span class="nm">' + esc(labels[lang][r.src] || r.src) + '</span>' +
+      '<span class="bar-wrap"><span class="bar" style="width:' + Math.min(100, (r.score / 5) * 100) + '%"></span></span>' +
+      '<span class="sc">' + r.score.toFixed(1) + '</span></div>'
+    ).join('');
+  }
+  const leader = currentLeader();
+  if (prevLeader !== null && leader !== null && leader !== prevLeader) showFlip(leader);
+  if (leader !== null) prevLeader = leader;
+  $('done-badge').classList.toggle('show', !!state.completed);
+  if (state.completed) $('done-badge').textContent = s.reflectionSaved;
+}
+
+function showFlip(newLeader){
+  const s = t();
+  const b = $('flip-banner');
+  b.innerHTML = '⚡ ' + esc(s.flip) + ' <strong>' + esc(labels[lang][newLeader] || newLeader) + '</strong> ' + esc(s.flipNow);
+  b.classList.remove('show');
+  void b.offsetWidth;
+  b.classList.add('show');
+  clearTimeout(flipTimer);
+  flipTimer = setTimeout(() => b.classList.remove('show'), 4000);
+}
+
+function renderReflection(){
+  if ($('refl').value !== state.reflection) $('refl').value = state.reflection;
+}
+
+function renderAll(){
+  applyStaticText();
+  renderChips();
+  renderMatrix();
+  updateRanking();
+  renderReflection();
+}
+
+/* ============================== interactions ============================== */
+let persistTimer = null;
+function schedulePersist(){
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(persist, 600);
+}
+
+function setRating(critId, src, n){
+  if (!state.ratings[critId]) state.ratings[critId] = {};
+  state.ratings[critId][src] = (state.ratings[critId][src] === n) ? 0 : n;
+  renderMatrix();
+  updateRanking();
+  schedulePersist();
+}
+
+function addCriterion(kind){
+  if (state.criteria.length >= 1 + MAX_CRIT) return;
+  let name = '';
+  if (kind && t().chips[kind]) name = t().chips[kind];
+  if (!kind){
+    name = $('new-crit').value.trim();
+    if (!name) return;
+    $('new-crit').value = '';
+  }
+  state.criteria.push({ id:'c' + Date.now().toString(36), name:name, locked:false, weight:2, kind: kind || 'custom' });
+  renderChips();
+  renderMatrix();
+  updateRanking();
+  persist();
+}
+
+function removeCriterion(i){
+  const c = state.criteria[i];
+  if (!c || c.locked) return;
+  delete state.ratings[c.id];
+  state.criteria.splice(i, 1);
+  renderChips();
+  renderMatrix();
+  updateRanking();
+  persist();
+}
+
+function setLang(l){
+  lang = (l === 'es') ? 'es' : 'en';
+  try { localStorage.setItem(LS_LANG, lang); } catch(e){}
+  renderAll();
+}
+
+/* ============================== reflection submit ============================== */
+function submitReflection(){
+  const val = $('refl').value.trim();
+  if (val.length < MIN_REFL){
+    $('refl').focus();
+    $('char-note').style.color = 'var(--red)';
+    return;
+  }
+  $('char-note').style.color = '';
+  state.reflection = $('refl').value;
+  state.completed = true;
+  state.completedAt = new Date().toISOString();
+  persist();
+  if (!standalone && window.PortalBridge && PortalBridge.connected){
+    PortalBridge.complete(100, 1, 1);
+  }
+  updateRanking();
+}
+
+/* ============================== print ============================== */
+function buildPrint(){
+  const s = t();
+  const rk = rankedSources();
+  let h = '<h1>' + esc(s.print.title) + '</h1>' +
+    '<div class="pmeta">' + esc(s.print.generated) + ': ' + new Date().toLocaleString(lang === 'es' ? 'es' : 'en') + '</div>';
+  h += '<h2>' + esc(s.print.criteria) + '</h2><table><thead><tr><th></th>';
+  for (const c of state.criteria){
+    h += '<th>' + esc(critName(c)) + '<br><small>' + esc(s.importance[c.weight]) + ' ' + esc(s.weightLabel) + '</small></th>';
+  }
+  h += '</tr></thead><tbody>';
+  for (const src of SOURCES){
+    h += '<tr><td class="lft"><b>' + esc(labels[lang][src] || src) + '</b></td>';
+    for (const c of state.criteria){
+      const v = (state.ratings[c.id] || {})[src] || 0;
+      h += '<td>' + (v ? '★'.repeat(v) + ' (' + v + ')' : '–') + '</td>';
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  h += '<h2>' + esc(s.print.ranking) + '</h2><ol>';
+  for (const r of rk){
+    h += '<li><b>' + esc(labels[lang][r.src] || r.src) + '</b>: ' + r.score.toFixed(1) + ' / 5</li>';
+  }
+  h += '</ol>';
+  h += '<h2>' + esc(s.print.reflection) + '</h2><div class="prefl">' + esc(state.reflection || '—') + '</div>';
+  $('print-area').innerHTML = h;
+}
+
+/* ============================== data fetch ============================== */
+function fetchLabels(){
+  return fetch('data/l4-texas-energy.json')
+    .then(r => { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+    .then(d => { if (d && d.labels && d.labels.en && d.labels.es) labels = d.labels; })
+    .catch(() => { labels = LABELS_FALLBACK; });
+}
+
+/* ============================== bridge ============================== */
+function mergeSaved(sv){
+  if (!sv || typeof sv !== 'object') return;
+  if (Array.isArray(sv.criteria) && sv.criteria.length >= 1) state.criteria = sv.criteria.slice(0, 1 + MAX_CRIT);
+  if (sv.ratings && typeof sv.ratings === 'object') state.ratings = sv.ratings;
+  if (typeof sv.reflection === 'string') state.reflection = sv.reflection;
+  state.completed = !!sv.completed;
+  state.completedAt = sv.completedAt || null;
+}
+
+function initBridge(){
+  if (standalone || !window.PortalBridge) return;
+  PortalBridge.init({
+    onLoad: function(savedState, completionInfo){
+      if (savedState && savedState.state) mergeSaved(savedState.state);
+      if (completionInfo && completionInfo.completed && !state.completed) state.completed = true;
+      saveLocal();
+      renderAll();
+    },
+    onReset: function(){
+      state = defaultState();
+      prevLeader = null;
+      saveLocal();
+      renderAll();
+    }
+  });
+}
+
+/* ============================== boot ============================== */
+function boot(){
+  state = loadLocal() || defaultState();
+  fetchLabels().then(() => {
+    renderAll();
+    prevLeader = currentLeader();
+    initBridge();
+  });
+}
+
+$('lang-en').addEventListener('click', () => setLang('en'));
+$('lang-es').addEventListener('click', () => setLang('es'));
+$('add-crit-btn').addEventListener('click', () => addCriterion(null));
+$('new-crit').addEventListener('keydown', e => { if (e.key === 'Enter') addCriterion(null); });
+$('refl').addEventListener('input', () => {
+  state.reflection = $('refl').value;
+  if ($('char-note').style.color) $('char-note').style.color = '';
+  schedulePersist();
+});
+$('submit-btn').addEventListener('click', submitReflection);
+$('print-btn').addEventListener('click', () => { buildPrint(); window.print(); });
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>

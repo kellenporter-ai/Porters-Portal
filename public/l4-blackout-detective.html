@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackout Detective - OpenSciEd P.1 Lesson 4</title>
+<style>
+:root{
+  --bg:#0b0b1c; --bg2:#12122a; --panel:rgba(255,255,255,.05); --border:rgba(255,255,255,.14);
+  --text:#ece8f6; --muted:#8f8aae; --amber:#ffb75e; --amber-deep:#f59e0b;
+  --purple:#8b5cf6; --green:#22d486; --red:#e8504a; --ice:#7ab8ff; --heat:#ff8c42;
+  --head:'Bebas Neue','Arial Narrow',sans-serif; --body:'Inter',Arial,sans-serif;
+  /* Source palette (OpenSciEd handout) */
+  --c-wind:#3fa34d; --c-gas:#d2a24c; --c-coal:#8a5a3b; --c-nuclear:#a41623;
+  --c-solar:#f4d35e; --c-hydro:#7ab8ff; --c-other:#9b8fb0;
+  --c-total:#ece8f6; --c-demand:#ff5c8a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(1400px 800px at 50% -12%,#1d1d42 0%,var(--bg) 58%);
+  color:var(--text);font-family:var(--body);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer}
+/* ---------- Header ---------- */
+.hdr{display:flex;align-items:center;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border);flex:0 0 auto;flex-wrap:wrap}
+.hdr .badge{font-family:var(--head);font-size:13px;letter-spacing:2px;color:#1a1206;background:var(--amber);border-radius:6px;padding:2px 10px}
+.hdr .title{font-family:var(--head);font-size:26px;letter-spacing:2px;line-height:1}
+.hdr .title small{display:block;font-family:var(--body);font-size:11px;letter-spacing:1px;color:var(--muted);font-weight:600}
+.hdr .spacer{flex:1}
+.lang-toggle{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.lang-toggle button{background:transparent;color:var(--muted);border:none;padding:6px 14px;font-family:var(--head);font-size:15px;letter-spacing:1.5px}
+.lang-toggle button.on{background:var(--purple);color:#fff}
+#save-status{font-size:11px;color:var(--muted);min-width:70px;text-align:right}
+/* ---------- Layout ---------- */
+.main{display:flex;flex:1;min-height:0}
+.stage{flex:1;display:flex;flex-direction:column;min-width:0;padding:10px 14px;gap:8px}
+/* ---------- Controls ---------- */
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:0 0 auto}
+.seg{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{background:transparent;color:var(--muted);border:none;padding:7px 16px;font-family:var(--head);font-size:16px;letter-spacing:1.2px}
+.seg button.on{background:var(--purple);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:5px 12px;color:var(--text);font-size:12px;font-weight:600;transition:opacity .15s;min-height:30px}
+.chip .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.chip.off{opacity:.35}
+.chip:focus-visible,.seg button:focus-visible,.lang-toggle button:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+/* ---------- Chart ---------- */
+.chart-wrap{flex:1;min-height:0;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:14px;backdrop-filter:blur(8px);overflow:hidden}
+.chart-wrap svg{display:block;width:100%;height:100%}
+.chart-wrap.loading,.chart-wrap.error{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loadmsg{font-family:var(--head);font-size:20px;letter-spacing:2px;color:var(--muted)}
+.errmsg{font-family:var(--head);font-size:22px;letter-spacing:1.5px;color:var(--red);max-width:520px;text-align:center}
+.errdetail{font-size:12px;color:var(--muted);max-width:520px;text-align:center}
+.retry{margin-top:6px;font-family:var(--head);font-size:16px;letter-spacing:1.5px;background:var(--purple);color:#fff;border:none;border-radius:10px;padding:8px 24px}
+/* crosshair + inspector */
+.crosshair line{stroke:rgba(255,255,255,.35);stroke-dasharray:4 4;pointer-events:none}
+.inspector{position:absolute;top:8px;left:8px;background:rgba(11,11,28,.92);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:11px;pointer-events:auto;max-width:250px;backdrop-filter:blur(6px)}
+.inspector .ts{font-family:var(--head);font-size:14px;letter-spacing:1px;color:var(--amber);margin-bottom:4px}
+.inspector .row{display:flex;align-items:center;gap:6px;justify-content:space-between;padding:1px 0}
+.inspector .row .lbl{display:flex;align-items:center;gap:5px;color:var(--text)}
+.inspector .row .val{color:var(--muted);font-variant-numeric:tabular-nums}
+.inspector .pinbtn{margin-top:6px;width:100%;background:var(--amber);color:#1a1206;border:none;border-radius:8px;font-family:var(--head);font-size:14px;letter-spacing:1.5px;padding:6px 0;min-height:30px}
+.temp-lbl{font-size:9px;fill:var(--ice);font-family:var(--body)}
+.axis-lbl{font-size:10px;fill:var(--muted);font-family:var(--body)}
+.gridline{stroke:rgba(255,255,255,.07);stroke-width:1}
+.blackout-band{fill:rgba(232,80,74,.10)}
+.blackout-lbl{font-family:var(--head);font-size:13px;letter-spacing:2px;fill:var(--red)}
+.tempmarker{fill:var(--ice)}
+/* ---------- Case board ---------- */
+.caseboard{width:320px;flex:0 0 auto;border-left:1px solid var(--border);background:rgba(11,11,28,.55);backdrop-filter:blur(8px);display:flex;flex-direction:column;min-height:0}
+.cb-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.cb-head h2{font-family:var(--head);font-size:20px;letter-spacing:2px;color:var(--amber)}
+.cb-head .cnt{margin-left:auto;font-family:var(--head);font-size:16px;color:var(--muted)}
+.cb-body{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:12px}
+.mission{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--panel)}
+.mission.done{border-color:rgba(34,212,134,.5)}
+.mission h3{font-family:var(--head);font-size:16px;letter-spacing:1.2px;display:flex;align-items:center;gap:8px}
+.mission h3 .mnum{width:20px;height:20px;border-radius:50%;background:var(--purple);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto}
+.mission.done h3 .mnum{background:var(--green)}
+.mission p{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.pins{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.pin{display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:8px;padding:6px 8px;font-size:11px}
+.pin .ptext{flex:1;line-height:1.35}
+.pin .pdel{background:none;border:none;color:var(--muted);font-size:14px;padding:0 2px;line-height:1}
+.pin .pdel:hover{color:var(--red)}
+.verdict-area textarea{width:100%;min-height:90px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--body);font-size:12px;padding:8px;resize:vertical}
+.verdict-area .vbtn{margin-top:6px;width:100%;background:var(--green);color:#04180d;border:none;border-radius:8px;font-family:var(--head);font-size:15px;letter-spacing:1.5px;padding:7px 0;min-height:34px}
+.verdict-area .vbtn:disabled{background:var(--panel);color:var(--muted);border:1px solid var(--border)}
+.scorecard{text-align:center;border:1px solid rgba(34,212,134,.4);border-radius:12px;padding:10px;background:rgba(34,212,134,.06)}
+.scorecard .big{font-family:var(--head);font-size:34px;color:var(--green);letter-spacing:2px}
+.scorecard .sub{font-size:11px;color:var(--muted)}
+.cb-toggle{display:none}
+.cb-close{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;width:28px;height:28px;font-size:13px}
+/* ---------- Narrow / Chromebook 1280 ---------- */
+@media (max-width:1280px){
+  .caseboard{position:fixed;top:0;right:0;bottom:0;z-index:40;transform:translateX(100%);transition:transform .25s ease;box-shadow:-8px 0 30px rgba(0,0,0,.5)}
+  .caseboard.open{transform:translateX(0)}
+  .cb-toggle{display:inline-flex;align-items:center;gap:6px;background:var(--amber);color:#1a1206;border:none;border-radius:10px;font-family:var(--head);font-size:15px;letter-spacing:1.5px;padding:6px 14px}
+  .hdr .title{font-size:22px}
+}
+@media (max-width:900px){
+  .chip{font-size:10px;padding:4px 9px}
+  .inspector{max-width:200px;font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <span class="badge">L4</span>
+  <div class="title"><span data-i18n="appTitle">BLACKOUT DETECTIVE</span>
+    <small data-i18n="appSub">What made Texas energy sources unreliable in February 2021?</small>
+  </div>
+  <div class="spacer"></div>
+  <span id="save-status"></span>
+  <button class="cb-toggle" id="cb-toggle" data-i18n="caseBoard">CASE BOARD</button>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button id="lang-en" class="on">EN</button>
+    <button id="lang-es">ES</button>
+  </div>
+</header>
+
+<div class="main">
+  <section class="stage">
+    <div class="controls">
+      <div class="seg" id="year-seg">
+        <button data-year="2020" id="y2020">FEB 2020</button>
+        <button data-year="2021" class="on" id="y2021">FEB 2021</button>
+      </div>
+      <div class="seg" id="view-seg">
+        <button data-view="line" class="on" id="vline" data-i18n="viewLine">LINE</button>
+        <button data-view="stacked" id="vstack" data-i18n="viewStacked">STACKED</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="chart-wrap loading" id="chartwrap">
+      <div class="spinner"></div>
+      <div class="loadmsg" id="loadmsg">Loading EIA grid data…</div>
+    </div>
+  </section>
+
+  <aside class="caseboard" id="caseboard">
+    <div class="cb-head">
+      <h2 data-i18n="caseBoard">CASE BOARD</h2>
+      <span class="cnt" id="pin-count">0</span>
+      <button class="cb-close" id="cb-close" style="display:none">✕</button>
+    </div>
+    <div class="cb-body" id="cb-body"></div>
+  </aside>
+</div>
+
+<script src="portalBridge.js"></script>
+<script>
+'use strict';
+/* ============================================================
+   BLACKOUT DETECTIVE - L4 supply-graph explorer
+   ============================================================ */
+const STANDALONE = new URLSearchParams(location.search).get('standalone') === '1' || !window.PortalBridge;
+const HAS_BRIDGE = !STANDALONE && !!window.PortalBridge;
+
+const IMAGES = {}; // no generated images required
+
+const SOURCES = ['wind','naturalGas','coal','nuclear','solar','hydro','other'];
+const SRC_HEX = {
+  wind:'#3fa34d', naturalGas:'#d2a24c', coal:'#8a5a3b', nuclear:'#a41623',
+  solar:'#f4d35e', hydro:'#7ab8ff', other:'#9b8fb0', total:'#ece8f6', demand:'#ff5c8a'
+};
+
+/* ---------- i18n ---------- */
+const STR = {
+  en:{
+    appTitle:'BLACKOUT DETECTIVE', appSub:'What made Texas energy sources unreliable in February 2021?',
+    caseBoard:'CASE BOARD', viewLine:'LINE', viewStacked:'STACKED', pinIt:'PIN THIS',
+    loading:'Loading EIA grid data…', loadError:'Could not load grid data',
+    loadErrorHint:'Check your connection, then try again. Your detective work is saved.',
+    retry:'RETRY',
+    missions:[
+      {t:'Establish the baseline', d:'Switch to Feb 2020. Explore the graph, then pin one observation about a normal day. What does the grid usually look like?'},
+      {t:'Find the drop', d:'Switch to Feb 2021. Somewhere around Feb 14–18, total generation falls away from demand. Pin the moment the drop happens.'},
+      {t:'Name your suspects', d:'Which sources dropped, and which surged? Pin evidence for at least 2 different energy sources.'},
+      {t:'Clear a suspect', d:'Some sources stayed steady through the storm. Pin evidence showing a source that held stable.'},
+      {t:'Verdict', d:'Final question: which sources contributed to the February 2021 crisis? Cite your pinned evidence. There is no single right answer - build your case.'}
+    ],
+    verdictPlaceholder:'Write your verdict here. Cite the evidence you pinned…',
+    submitVerdict:'SUBMIT VERDICT', submitted:'Verdict submitted. Case closed!',
+    needPins:'Pin evidence on the graph first: hover or drag on the chart, then press PIN THIS.',
+    completeTitle:'CASE COMPLETE', completeSub:'You finished all 5 detective missions.',
+    blackout:'GRID CRISIS', tempSuffix:'°F',
+    downFrom:'down from', upFrom:'up from',
+    mw:'MW',
+    of5:'of 5 missions'
+  },
+  es:{
+    appTitle:'DETECTIVE DEL APAGÓN', appSub:'¿Qué hizo que las fuentes de energía de Texas fueran poco confiables en febrero de 2021?',
+    caseBoard:'TABLERO DEL CASO', viewLine:'LÍNEAS', viewStacked:'APILADO', pinIt:'FIJAR ESTO',
+    loading:'Cargando datos de la red eléctrica (EIA)…', loadError:'No se pudieron cargar los datos',
+    loadErrorHint:'Revisa tu conexión e inténtalo de nuevo. Tu trabajo de detective está guardado.',
+    retry:'REINTENTAR',
+    missions:[
+      {t:'Establece la línea base', d:'Cambia a feb. de 2020. Explora la gráfica y fija una observación sobre un día normal. ¿Cómo se ve normalmente la red?'},
+      {t:'Encuentra la caída', d:'Cambia a feb. de 2021. En algún momento entre el 14 y el 18 de feb., la generación total se aleja de la demanda. Fija el momento en que ocurre la caída.'},
+      {t:'Nombra tus sospechosos', d:'¿Qué fuentes cayeron y cuáles aumentaron? Fija evidencia de al menos 2 fuentes de energía diferentes.'},
+      {t:'Descarta un sospechoso', d:'Algunas fuentes se mantuvieron estables durante la tormenta. Fija evidencia de una fuente que se mantuvo estable.'},
+      {t:'Veredicto', d:'Pregunta final: ¿qué fuentes contribuyeron a la crisis de febrero de 2021? Cita la evidencia que fijaste. No hay una única respuesta correcta: construye tu caso.'}
+    ],
+    verdictPlaceholder:'Escribe tu veredicto aquí. Cita la evidencia que fijaste…',
+    submitVerdict:'ENTREGAR VEREDICTO', submitted:'Veredicto entregado. ¡Caso cerrado!',
+    needPins:'Primero fija evidencia en la gráfica: pasa el cursor o arrastra sobre la gráfica y pulsa FIJAR ESTO.',
+    completeTitle:'CASO COMPLETO', completeSub:'Completaste las 5 misiones de detective.',
+    blackout:'CRISIS DE LA RED', tempSuffix:'°F',
+    downFrom:'menos que', upFrom:'más que',
+    mw:'MW',
+    of5:'de 5 misiones'
+  }
+};
+
+const state = {
+  lang: localStorage.getItem('l4bd_lang') || 'en',
+  year: '2021',
+  view: 'line',
+  visible: {wind:true, naturalGas:true, coal:true, nuclear:true, solar:true, hydro:false, other:false, total:true, demand:true},
+  pins: [],           // {id, year, ts, source, value, caption}
+  missionsDone: [false,false,false,false,false],
+  verdict: '',
+  verdictSubmitted: false,
+  completed: false
+};
+
+let DATA = null, LABELS = null;
+let hoverIdx = null;
+let animToken = 0;
+
+const $ = s => document.querySelector(s);
+const fmtMW = v => Math.round(v).toLocaleString('en-US');
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function t(key){ return STR[state.lang][key]; }
+function L(source){ return (LABELS && LABELS[state.lang] && LABELS[state.lang][source]) || source; }
+
+/* ============================================================
+   Persistence
+   ============================================================ */
+function persist(){
+  const payload = { state: JSON.parse(JSON.stringify(state)), currentQuestion: 0 };
+  if (HAS_BRIDGE) PortalBridge.save(payload);
+  try { localStorage.setItem('l4bd_fallback', JSON.stringify(payload.state)); } catch(e){}
+}
+function restore(savedState){
+  if (savedState && savedState.state) savedState = savedState.state;
+  if (!savedState) {
+    try { const fb = localStorage.getItem('l4bd_fallback'); if (fb) savedState = JSON.parse(fb); } catch(e){}
+  }
+  if (savedState && typeof savedState === 'object') {
+    Object.assign(state, {
+      lang: savedState.lang || state.lang,
+      year: savedState.year || state.year,
+      view: savedState.view || state.view,
+      pins: Array.isArray(savedState.pins) ? savedState.pins : [],
+      missionsDone: Array.isArray(savedState.missionsDone) ? savedState.missionsDone : [false,false,false,false,false],
+      verdict: savedState.verdict || '',
+      verdictSubmitted: !!savedState.verdictSubmitted,
+      completed: !!savedState.completed
+    });
+    if (savedState.visible) Object.assign(state.visible, savedState.visible);
+  }
+  localStorage.setItem('l4bd_lang', state.lang);
+}
+
+/* ============================================================
+   Data loading
+   ============================================================ */
+async function loadData(){
+  const wrap = $('#chartwrap');
+  wrap.className = 'chart-wrap loading';
+  wrap.innerHTML = '<div class="spinner"></div><div class="loadmsg">' + esc(t('loading')) + '</div>';
+  try {
+    const res = await fetch('data/l4-texas-energy.json', {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DATA = await res.json();
+    LABELS = DATA.labels;
+    wrap.className = 'chart-wrap';
+    wrap.innerHTML = '';
+    buildChart();
+    renderChips();
+    renderCaseBoard();
+    applyLang();
+  } catch(err) {
+    wrap.className = 'chart-wrap error';
+    wrap.innerHTML = '<div class="errmsg">' + esc(t('loadError')) + '</div>' +
+      '<div class="errdetail">' + esc(t('loadErrorHint')) + '</div>' +
+      '<button class="retry" id="retry-btn">' + esc(t('retry')) + '</button>';
+    $('#retry-btn').addEventListener('click', loadData);
+  }
+}
+/* ============================================================
+   Chart construction (SVG)
+   ============================================================ */
+const PAD = {top: 30, right: 20, bottom: 46, left: 64};
+let W = 900, H = 480;
+let svg;
+
+function seriesOf(year){ return DATA.series[year]; }
+
+function yMaxGlobal(){
+  let m = 0;
+  for (const y of ['2020','2021']) {
+    for (const p of DATA.series[y]) {
+      if (p.demand > m) m = p.demand;
+      if (p.total > m) m = p.total;
+    }
+  }
+  return Math.ceil(m / 10000) * 10000; // shared across years
+}
+
+function buildChart(){
+  const wrap = $('#chartwrap');
+  W = Math.max(600, wrap.clientWidth);
+  H = Math.max(300, wrap.clientHeight);
+  const NS = 'http://www.w3.org/2000/svg';
+  svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  wrap.appendChild(svg);
+  renderPlot(false);
+  const getIdx = ev => {
+    const rect = svg.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const frac = (cx - PAD.left) / (W - PAD.left - PAD.right);
+    const n = seriesOf(state.year).length;
+    return Math.max(0, Math.min(n - 1, Math.round(frac * (n - 1))));
+  };
+  svg.addEventListener('mousemove', ev => { hoverIdx = getIdx(ev); updateCrosshair(); });
+  svg.addEventListener('touchstart', ev => { hoverIdx = getIdx(ev); updateCrosshair(); }, {passive:true});
+  svg.addEventListener('touchmove', ev => { hoverIdx = getIdx(ev); updateCrosshair(); }, {passive:true});
+  svg.addEventListener('mouseleave', () => { hoverIdx = null; updateCrosshair(); });
+  window.addEventListener('resize', () => {
+    const w2 = Math.max(600, wrap.clientWidth), h2 = Math.max(300, wrap.clientHeight);
+    if (w2 !== W || h2 !== H) { W = w2; H = h2; svg.setAttribute('viewBox', `0 0 ${W} ${H}`); renderPlot(false); }
+  });
+}
+
+function xIdx(i, n){ return PAD.left + (i / (n - 1)) * (W - PAD.left - PAD.right); }
+function yVal(v, maxV){ return PAD.top + (1 - v / maxV) * (H - PAD.top - PAD.bottom); }
+
+function renderPlot(animate){
+  if (!svg || !DATA) return;
+  const token = ++animToken;
+  svg.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+  const data = seriesOf(state.year);
+  const n = data.length;
+  const maxV = yMaxGlobal();
+  const plotG = document.createElementNS(NS, 'g');
+  svg.appendChild(plotG);
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || plotG).appendChild(e);
+    return e;
+  };
+
+  // Gridlines + y labels (shared scale)
+  for (let gv = 0; gv <= maxV; gv += 10000) {
+    const y = yVal(gv, maxV);
+    el('line', {x1:PAD.left, x2:W-PAD.right, y1:y, y2:y, 'class':'gridline'});
+    const tx = el('text', {x:PAD.left-8, y:y+3, 'text-anchor':'end', 'class':'axis-lbl'});
+    tx.textContent = gv >= 1000 ? (gv/1000) + 'k' : String(gv);
+  }
+  const ycap = el('text', {x:14, y:PAD.top-12, 'class':'axis-lbl'});
+  ycap.textContent = t('mw');
+
+  // x axis: day ticks
+  const tickEvery = Math.ceil(n / 14);
+  for (let i = 0; i < n; i += tickEvery) {
+    const d = new Date(data[i].t);
+    const tx = el('text', {x:xIdx(i,n), y:H-PAD.bottom+18, 'text-anchor':'middle', 'class':'axis-lbl'});
+    tx.textContent = (d.getMonth()+1) + '/' + d.getDate();
+  }
+
+  // Blackout shading (2021 only): Feb 14–18
+  if (state.year === '2021') {
+    const i0 = data.findIndex(p => p.t >= '2021-02-14T00:00');
+    const i1 = data.findIndex(p => p.t >= '2021-02-19T00:00');
+    if (i0 >= 0) {
+      const xa = xIdx(i0, n);
+      const xb = xIdx(i1 > 0 ? i1 : n - 1, n);
+      el('rect', {x:xa, width:Math.max(2, xb-xa), y:PAD.top, height:H-PAD.top-PAD.bottom, 'class':'blackout-band'});
+      const bl = el('text', {x:(xa+xb)/2, y:PAD.top+16, 'text-anchor':'middle', 'class':'blackout-lbl'});
+      bl.textContent = t('blackout');
+    }
+  }
+
+  // Temperature markers on timeline
+  const temps = DATA.temperatureMarkers[state.year] || [];
+  const yBase = H - PAD.bottom + 34;
+  temps.forEach(tm => {
+    const i = data.findIndex(p => p.t.slice(0,10) === tm.date);
+    if (i < 0) return;
+    el('circle', {cx:xIdx(i,n), cy:yBase, r:4, 'class':'tempmarker'});
+    const tl = el('text', {x:xIdx(i,n), y:yBase+14, 'text-anchor':'middle', 'class':'temp-lbl'});
+    tl.textContent = tm.f + t('tempSuffix');
+  });
+
+  // ---- Series ----
+  const mkPath = key => {
+    let d = '';
+    for (let i = 0; i < n; i++) {
+      d += (i ? 'L' : 'M') + xIdx(i,n).toFixed(1) + ' ' + yVal(data[i][key] || 0, maxV).toFixed(1);
+    }
+    return d;
+  };
+  const drawLine = (key, color, width, dash) => {
+    const p = el('path', {d:mkPath(key), fill:'none', stroke:color, 'stroke-width':width, 'data-key':key});
+    if (dash) p.setAttribute('stroke-dasharray', dash);
+    if (animate) {
+      if (!dash) {
+        const len = p.getTotalLength();
+        p.style.strokeDasharray = len;
+        p.style.strokeDashoffset = len;
+        p.getBoundingClientRect();
+        p.style.transition = 'stroke-dashoffset .6s ease';
+        p.style.strokeDashoffset = '0';
+        setTimeout(() => { if (token === animToken) { p.style.transition=''; p.style.strokeDasharray = 'none'; } }, 700);
+      } else {
+        p.style.transition = 'opacity .6s ease'; p.style.opacity = '0';
+        p.getBoundingClientRect(); p.style.opacity = '1';
+        setTimeout(() => { if (token === animToken) p.style.transition=''; }, 700);
+      }
+    }
+  };
+
+  if (state.view === 'stacked') {
+    const tops = new Array(n).fill(0);
+    const areas = [];
+    SOURCES.forEach(s => {
+      if (!state.visible[s]) return;
+      const pts = [];
+      for (let i = 0; i < n; i++) {
+        const lo = tops[i]; tops[i] += data[i][s] || 0;
+        pts.push([xIdx(i,n), yVal(tops[i], maxV), yVal(lo, maxV)]);
+      }
+      areas.push({key:s, pts});
+    });
+    areas.forEach((a, ai) => {
+      let d = 'M' + a.pts[0][0] + ' ' + a.pts[0][1];
+      for (let i = 1; i < n; i++) d += 'L' + a.pts[i][0].toFixed(1) + ' ' + a.pts[i][1].toFixed(1);
+      for (let i = n - 1; i >= 0; i--) d += 'L' + a.pts[i][0].toFixed(1) + ' ' + a.pts[i][2].toFixed(1);
+      d += 'Z';
+      const p = el('path', {d:d, fill:SRC_HEX[a.key], 'fill-opacity':'0.75', stroke:SRC_HEX[a.key], 'stroke-width':1, 'data-key':a.key});
+      if (animate) {
+        p.style.opacity = '0';
+        p.getBoundingClientRect();
+        p.style.transition = 'opacity .5s ease ' + (ai * 0.05) + 's';
+        p.style.opacity = '1';
+        setTimeout(() => { if (token === animToken) p.style.transition=''; }, 750 + ai * 50);
+      }
+    });
+    if (state.visible.total) drawLine('total', SRC_HEX.total, 2);
+  } else {
+    SOURCES.filter(s => state.visible[s]).forEach(s => drawLine(s, SRC_HEX[s], 2));
+    if (state.visible.total) drawLine('total', SRC_HEX.total, 2.5);
+  }
+  if (state.year === '2021' && state.visible.demand) drawLine('demand', SRC_HEX.demand, 2, '6 4');
+
+  // Crosshair group
+  const ch = el('g', {'class':'crosshair', id:'crosshairG', style:'display:none'});
+  el('line', {id:'chLine', x1:0, x2:0, y1:PAD.top, y2:H-PAD.bottom}, ch);
+
+  // Inspector
+  let insp = document.getElementById('inspectorBox');
+  if (insp) insp.remove();
+  insp = document.createElement('div');
+  insp.id = 'inspectorBox';
+  insp.className = 'inspector';
+  insp.style.display = 'none';
+  $('#chartwrap').appendChild(insp);
+}
+
+function updateCrosshair(){
+  if (!svg || !DATA) return;
+  const ch = document.getElementById('crosshairG');
+  const insp = document.getElementById('inspectorBox');
+  if (hoverIdx === null) {
+    ch.style.display = 'none'; insp.style.display = 'none'; return;
+  }
+  const data = seriesOf(state.year);
+  const n = data.length;
+  const maxV = yMaxGlobal();
+  const p = data[hoverIdx];
+  const x = xIdx(hoverIdx, n);
+  ch.style.display = '';
+  const ln = document.getElementById('chLine');
+  ln.setAttribute('x1', x); ln.setAttribute('x2', x);
+
+  const d = new Date(p.t);
+  const tsTxt = (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+    String(d.getHours()).padStart(2,'0') + ':00';
+  let rows = '';
+  const addRow = (key, color, dash) => {
+    const v = p[key];
+    if (v === undefined || v === null) return;
+    rows += '<div class="row"><span class="lbl"><span style="width:10px;height:10px;border-radius:50%;background:' +
+      color + ';display:inline-block' + (dash ? ';opacity:.7' : '') + '"></span>' + esc(L(key)) +
+      '</span><span class="val">' + fmtMW(v) + '</span></div>';
+  };
+  SOURCES.forEach(s => { if (state.visible[s]) addRow(s, SRC_HEX[s]); });
+  if (state.visible.total) addRow('total', SRC_HEX.total);
+  if (state.year === '2021' && state.visible.demand) addRow('demand', SRC_HEX.demand, true);
+  insp.innerHTML = '<div class="ts">' + esc(tsTxt) + '</div>' + rows +
+    '<button class="pinbtn" id="pin-btn">' + esc(t('pinIt')) + '</button>';
+  insp.style.display = '';
+  // Keep inspector inside the wrap
+  const wrapW = $('#chartwrap').clientWidth;
+  insp.style.left = Math.min(x + 14, wrapW - insp.offsetWidth - 8) + 'px';
+  insp.style.top = '8px';
+  document.getElementById('pin-btn').addEventListener('click', () => pinAt(hoverIdx));
+}
+/* ============================================================
+   Pins + caption generation + missions
+   ============================================================ */
+function hourLabel(ts){
+  const d = new Date(ts);
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':00';
+}
+
+function findBaselineValue(source, ts){
+  // Compare against the same hour-of-month in Feb 2020 (index-aligned: both series start Feb 1 00:00)
+  if (!DATA || !DATA.series['2020']) return null;
+  const idx = seriesOf(state.year).findIndex(p => p.t === ts);
+  if (idx < 0 || idx >= DATA.series['2020'].length) return null;
+  return DATA.series['2020'][idx][source];
+}
+
+function pinAt(idx){
+  if (idx === null || !DATA) return;
+  const p = seriesOf(state.year)[idx];
+  // Pin the source that the student is most likely inspecting:
+  // choose the visible source (excluding total/demand) with the largest value at this hour.
+  let bestKey = null, bestV = -1;
+  SOURCES.forEach(s => {
+    if (!state.visible[s]) return;
+    const v = p[s] || 0;
+    if (v > bestV) { bestV = v; bestKey = s; }
+  });
+  if (!bestKey) bestKey = 'total';
+  const value = p[bestKey] || 0;
+  const base = findBaselineValue(bestKey, p.t);
+  let baseTs = null;
+  if (base !== null && state.year === '2021') {
+    const baseIdx = seriesOf('2021').findIndex(q => q.t === p.t);
+    baseTs = baseIdx >= 0 ? DATA.series['2020'][baseIdx].t : null;
+  }
+  state.pins.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    year: state.year, ts: p.t, source: bestKey, value: value,
+    baseValue: base, baseTs: baseTs
+  });
+  evaluateMissions();
+  persist();
+  renderCaseBoard();
+}
+
+function pinCaption(pin){
+  // Captions are rebuilt at render time so language switches localize them.
+  if (pin.caption && pin.baseValue === undefined) return pin.caption; // legacy pins
+  let cap = L(pin.source) + ' ' + hourLabel(pin.ts) + ': ' + fmtMW(pin.value) + ' ' + t('mw');
+  if (pin.year === '2021' && pin.baseValue !== null && pin.baseValue !== undefined) {
+    const diff = pin.value - pin.baseValue;
+    const rel = diff <= 0 ? t('downFrom') : t('upFrom');
+    cap += ' - ' + rel + ' ' + fmtMW(Math.abs(diff)) + ' ' + t('mw') + ' (' +
+      hourLabel(pin.baseTs || pin.ts) + ', ' + (state.lang==='es'?'feb. 2020':'Feb 2020') + ')';
+  }
+  return cap;
+}
+
+function deletePin(id){
+  state.pins = state.pins.filter(p => p.id !== id);
+  evaluateMissions();
+  persist();
+  renderCaseBoard();
+}
+
+function evaluateMissions(){
+  const m = state.missionsDone;
+  if (!m[0]) m[0] = state.pins.some(p => p.year === '2020');
+  if (!m[1]) m[1] = state.pins.some(p => p.year === '2021' &&
+    p.ts >= '2021-02-14T00:00' && p.ts < '2021-02-19T00:00');
+  if (!m[2]) {
+    const set = new Set(state.pins.map(p => p.source));
+    m[2] = set.size >= 2;
+  }
+  if (!m[3]) {
+    // "Stable" = the pinned source's 2021 value stayed within +/-15% of its Feb 2020 same-hour value
+    m[3] = state.pins.some(p => {
+      if (p.year !== '2021') return false;
+      const base = findBaselineValue(p.source, p.ts);
+      if (base === null || base === 0) return false;
+      return Math.abs(p.value - base) / base <= 0.15;
+    });
+  }
+  // Mission 5 (verdict) is set by submitVerdict()
+}
+
+function submitVerdict(){
+  state.missionsDone[4] = true;
+  state.verdictSubmitted = true;
+  state.completed = true;
+  persist();
+  renderCaseBoard();
+  const score = state.missionsDone.filter(Boolean).length;
+  if (HAS_BRIDGE) PortalBridge.complete(score, 5, score);
+}
+
+/* ============================================================
+   Rendering: chips, case board, language
+   ============================================================ */
+function renderChips(){
+  const box = $('#chips');
+  box.innerHTML = '';
+  [...SOURCES, 'total', 'demand'].forEach(key => {
+    if (key === 'demand') {
+      if (state.year !== '2021') return; // demand overlay only exists for 2021
+    }
+    const b = document.createElement('button');
+    b.className = 'chip' + (state.visible[key] ? '' : ' off');
+    b.dataset.key = key;
+    b.innerHTML = '<span class="dot" style="background:' + SRC_HEX[key] + '"></span>' + esc(L(key));
+    b.addEventListener('click', () => {
+      state.visible[key] = !state.visible[key];
+      renderChips();
+      renderPlot(true);
+      persist();
+    });
+    box.appendChild(b);
+  });
+}
+
+function renderCaseBoard(){
+  const body = $('#cb-body');
+  const missions = t('missions');
+  let html = '';
+  state.missionsDone.forEach((done, i) => {
+    html += '<div class="mission' + (done ? ' done' : '') + '" id="mission-' + i + '">' +
+      '<h3><span class="mnum">' + (done ? '✓' : (i+1)) + '</span>' + esc(missions[i].t) + '</h3>' +
+      '<p>' + esc(missions[i].d) + '</p>';
+    const relPins = state.pins.filter((p, pi) => {
+      if (i === 0) return p.year === '2020';
+      if (i === 1) return p.year === '2021' && p.ts >= '2021-02-14T00:00' && p.ts < '2021-02-19T00:00';
+      return false;
+    });
+    if (i <= 1 && relPins.length) {
+      html += '<div class="pins">' + relPins.map(p =>
+        '<div class="pin"><span class="ptext">' + esc(pinCaption(p)) + '</span>' +
+        '<button class="pdel" data-pin="' + p.id + '" aria-label="delete">✕</button></div>'
+      ).join('') + '</div>';
+    }
+    if (i === 4) {
+      const disabled = state.pins.length === 0 ? ' disabled' : '';
+      html += '<div class="verdict-area"><textarea id="verdict-text" placeholder="' +
+        esc(t('verdictPlaceholder')) + '"' + disabled + '>' + esc(state.verdict) + '</textarea>' +
+        (state.verdictSubmitted
+          ? '<div class="scorecard"><div class="big">' + esc(t('completeTitle')) + '</div><div class="sub">' + esc(t('completeSub')) + '</div></div>'
+          : '<button class="vbtn" id="verdict-btn"' + disabled + '>' + esc(t('submitVerdict')) + '</button>') +
+        '</div>';
+    }
+    html += '</div>';
+  });
+  const score = state.missionsDone.filter(Boolean).length;
+  html += '<div class="mission" style="text-align:center"><h3 style="justify-content:center">' +
+    score + ' / 5 - ' + esc(t('of5')) + '</h3></div>';
+  body.innerHTML = html;
+  $('#pin-count').textContent = state.pins.length;
+  body.querySelectorAll('.pdel').forEach(b =>
+    b.addEventListener('click', () => deletePin(b.dataset.pin)));
+  const vbtn = document.getElementById('verdict-btn');
+  if (vbtn) vbtn.addEventListener('click', submitVerdict);
+  const vtext = document.getElementById('verdict-text');
+  if (vtext) vtext.addEventListener('input', () => { state.verdict = vtext.value; persist(); });
+}
+
+function applyLang(){
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll('[data-i18n]').forEach(elm => {
+    const k = elm.dataset.i18n;
+    if (STR[state.lang][k]) elm.textContent = STR[state.lang][k];
+  });
+  document.getElementById('y2020').textContent = state.lang === 'es' ? 'FEB 2020' : 'FEB 2020';
+  document.getElementById('y2021').textContent = state.lang === 'es' ? 'FEB 2021' : 'FEB 2021';
+  document.getElementById('lang-en').classList.toggle('on', state.lang === 'en');
+  document.getElementById('lang-es').classList.toggle('on', state.lang === 'es');
+  renderChips();
+  renderCaseBoard();
+  if (DATA) renderPlot(false);
+}
+
+/* ============================================================
+   Controls wiring + boot
+   ============================================================ */
+document.getElementById('lang-en').addEventListener('click', () => {
+  state.lang = 'en'; localStorage.setItem('l4bd_lang','en'); persist(); applyLang();
+});
+document.getElementById('lang-es').addEventListener('click', () => {
+  state.lang = 'es'; localStorage.setItem('l4bd_lang','es'); persist(); applyLang();
+});
+document.querySelectorAll('#year-seg button').forEach(b => b.addEventListener('click', () => {
+  if (state.year === b.dataset.year) return;
+  state.year = b.dataset.year;
+  document.querySelectorAll('#year-seg button').forEach(x => x.classList.toggle('on', x === b));
+  hoverIdx = null;
+  renderChips();
+  renderPlot(true);
+  persist();
+}));
+document.querySelectorAll('#view-seg button').forEach(b => b.addEventListener('click', () => {
+  if (state.view === b.dataset.view) return;
+  state.view = b.dataset.view;
+  document.querySelectorAll('#view-seg button').forEach(x => x.classList.toggle('on', x === b));
+  renderPlot(true);
+  persist();
+}));
+// Case board drawer (narrow screens)
+const cb = document.getElementById('caseboard');
+document.getElementById('cb-toggle').addEventListener('click', () => {
+  cb.classList.add('open');
+  document.getElementById('cb-close').style.display = '';
+});
+document.getElementById('cb-close').addEventListener('click', () => cb.classList.remove('open'));
+
+function boot(){
+  if (HAS_BRIDGE) {
+    PortalBridge.init({
+      onLoad: (savedState, completionInfo) => {
+        restore(savedState);
+        if (completionInfo && completionInfo.completed) state.completed = true;
+        applyLang();
+        loadData();
+      },
+      onReset: () => {
+        // Replay: keep pins? Spec says reset to fresh state.
+        state.pins = []; state.missionsDone = [false,false,false,false,false];
+        state.verdict = ''; state.verdictSubmitted = false; state.completed = false;
+        try { localStorage.removeItem('l4bd_fallback'); } catch(e){}
+        applyLang(); renderCaseBoard();
+      }
+    });
+  } else {
+    restore(null);
+    applyLang();
+    loadData();
+  }
+}
+window.addEventListener('load', boot);
+</script>
+</body>
+</html>
