@@ -58,7 +58,7 @@
         ]
       },
       {
-        "regex": "^/(undergrounding-reading|power-strip-reading|texas-blackout-articles)/?$",
+        "regex": "^/[^.]*$",
         "headers": [
           {
             "key": "Cache-Control",
