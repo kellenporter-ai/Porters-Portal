@@ -1,3 +1,10 @@
+// ⚠️ REWRITE RULE: A bundled activity registered with a clean `url` (no
+// `.html` suffix) MUST have a matching "source": "<url>" rewrite in
+// `firebase.json` hosting.rewrites, or library Preview will serve the SPA
+// index.html and redirect to the homepage. The EA regression-gate check
+// `library-rewrite-parity` (tools/regression-gate.py) enforces this — run it
+// before re-seeding or adding any new clean-url activity.
+//
 // One-off admin script: register the two OpenSciEd P.1 Lesson 4 bundled
 // activities in the Hosted Content Library:
 //   1. L4 Blackout Detective (interactive EIA hourly-generation data explorer)
