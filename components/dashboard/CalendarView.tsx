@@ -3,7 +3,7 @@ import { Assignment, Submission } from '../../types';
 import { useT } from '../../lib/i18n';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle, LayoutGrid, List, Building2 } from 'lucide-react';
 import {
-  DISTRICT_EVENTS_2025_2026,
+  DISTRICT_EVENTS_2026_2027,
   getDistrictEventsForDate,
   toLocalDateStr,
   CATEGORY_META,
@@ -147,7 +147,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ assignments, submissions, a
     const cutoff = new Date(today);
     cutoff.setDate(cutoff.getDate() + 30);
     const cutoffStr = toLocalDateStr(cutoff);
-    return DISTRICT_EVENTS_2025_2026
+    return DISTRICT_EVENTS_2026_2027
       .filter(e => e.startDate >= todayStr && e.startDate <= cutoffStr)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 5);

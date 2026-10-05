@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useT } from '../../lib/i18n';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import {
-  DISTRICT_EVENTS_2025_2026,
+  DISTRICT_EVENTS_2026_2027,
   getDistrictEventsForDate,
   toLocalDateStr,
   CATEGORY_META,
@@ -44,7 +44,7 @@ const DistrictCalendarTab: React.FC = () => {
 
   // Visible events after applying category filters
   const visibleEvents = useMemo(
-    () => DISTRICT_EVENTS_2025_2026.filter(e => !hiddenCategories.has(e.category)),
+    () => DISTRICT_EVENTS_2026_2027.filter(e => !hiddenCategories.has(e.category)),
     [hiddenCategories],
   );
 
@@ -131,7 +131,7 @@ const DistrictCalendarTab: React.FC = () => {
           </div>
           <div>
             <h2 className="text-lg font-bold text-[var(--text-primary)]">District Calendar</h2>
-            <p className="text-xs text-[var(--text-muted)]">2025–2026 school year</p>
+            <p className="text-xs text-[var(--text-muted)]">2026–2027 school year</p>
           </div>
         </div>
       </div>
@@ -351,7 +351,7 @@ const DistrictCalendarTab: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
                 <div className="text-2xl font-black text-[var(--text-primary)]">
-                  {DISTRICT_EVENTS_2025_2026.length}
+                  {DISTRICT_EVENTS_2026_2027.length}
                 </div>
                 <div className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-wide">Total Events</div>
               </div>
