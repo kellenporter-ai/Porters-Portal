@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T19:21:26.952Z",
+  "generatedAt": "2026-10-05T11:57:37.782Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -72,9 +72,24 @@
       "sizeBytes": 1441302
     },
     {
+      "path": "/grid-reference.html",
+      "fingerprint": "/grid-reference.html",
+      "sizeBytes": 293885
+    },
+    {
       "path": "/infrastructure-tagging/",
       "fingerprint": "/infrastructure-tagging/",
       "sizeBytes": 5057778
+    },
+    {
+      "path": "/l4-blackout-detective.html",
+      "fingerprint": "/l4-blackout-detective.html",
+      "sizeBytes": 36285
+    },
+    {
+      "path": "/l4-decisions-matrix.html",
+      "fingerprint": "/l4-decisions-matrix.html",
+      "sizeBytes": 28863
     },
     {
       "path": "/linearization-practice.html",

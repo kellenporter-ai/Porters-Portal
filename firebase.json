@@ -168,6 +168,10 @@
         "destination": "/the-break-in/index.html"
       },
       {
+        "source": "/grid-reference",
+        "destination": "/grid-reference.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
