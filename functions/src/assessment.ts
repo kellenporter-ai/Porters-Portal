@@ -35,6 +35,14 @@ export const XP_AWARDED_FIELD = "xpAwarded" as const;
 // garbage, not a lock.
 export const SESSION_EXPIRY_GRACE_MS = 5 * 60 * 1000;
 
+// Idle staleness bound: a used:false session whose last activity
+// (lastHeartbeatAt, else startedAt) is older than this is treated as stale
+// even when expiresAt is still in the future. A live session whose client
+// tab died mid-attempt would otherwise block teacher returns for up to the
+// full maxDuration (~4h) plus grace. Sessions with neither timestamp fall
+// back to the expiry-only check (see partitionSessionsByStaleness).
+export const MAX_SESSION_IDLE_MS = 30 * 60 * 1000;
+
 /** Accepts a Firestore Timestamp, Date, epoch-ms number, or ISO string. */
 export function sessionExpiryMillis(expiresAt: unknown): number | null {
   if (expiresAt === undefined || expiresAt === null) return null;
@@ -57,27 +65,46 @@ export function sessionExpiryMillis(expiresAt: unknown): number | null {
 
 /**
  * True when a session is past expiresAt + grace — i.e. permanently dead.
- * Sessions with NO expiresAt never expire (fail-open, same as the rest of
- * the codebase: heartbeat and submitAssessment treat missing expiresAt as
- * non-expiring).
+ * Fail CLOSED on missing expiresAt: a used:false session with no/invalid
+ * expiresAt is treated as expired/stale so it can be claimed and stops
+ * blocking teacher returns forever. Valid future/past timestamps behave as
+ * before.
  */
 export function isSessionEffectivelyExpired(expiresAt: unknown, nowMillis: number): boolean {
   const exp = sessionExpiryMillis(expiresAt);
-  if (exp === null) return false;
+  if (exp === null) return true;
   return nowMillis > exp + SESSION_EXPIRY_GRACE_MS;
+}
+
+/**
+ * True when a used:false, unexpired session has been idle past
+ * MAX_SESSION_IDLE_MS. Idle = lastHeartbeatAt if present, else startedAt.
+ * Sessions with neither timestamp return false — the expiry-only check
+ * decides (fail conservative, don't mass-claim legacy docs).
+ */
+export function isSessionIdleStale(session: {
+  lastHeartbeatAt?: unknown;
+  startedAt?: unknown;
+}, nowMillis: number): boolean {
+  const last = sessionExpiryMillis(session.lastHeartbeatAt) ?? sessionExpiryMillis(session.startedAt);
+  if (last === null) return false;
+  return nowMillis > last + MAX_SESSION_IDLE_MS;
 }
 
 export interface SessionLike {
   id: string;
   used?: unknown;
   expiresAt?: unknown;
+  lastHeartbeatAt?: unknown;
+  startedAt?: unknown;
   tokenSignature?: unknown;
 }
 
 export interface SessionPartition {
   /** Still-valid, unused sessions — these legitimately block return/submit. */
   active: SessionLike[];
-  /** used:false but past expiresAt + grace — garbage, safe to claim/ignore. */
+  /** used:false but dead (expired past grace, missing expiresAt, or idle
+   * past MAX_SESSION_IDLE_MS) — garbage, safe to claim/ignore. */
   stale: SessionLike[];
 }
 
@@ -92,8 +119,11 @@ export function partitionSessionsByStaleness(
   const active: SessionLike[] = [];
   const stale: SessionLike[] = [];
   for (const s of sessions) {
-    if (isSessionEffectivelyExpired(s.expiresAt, nowMillis)) stale.push(s);
-    else active.push(s);
+    if (isSessionEffectivelyExpired(s.expiresAt, nowMillis) || isSessionIdleStale(s, nowMillis)) {
+      stale.push(s);
+    } else {
+      active.push(s);
+    }
   }
   return { active, stale };
 }
@@ -1221,12 +1251,13 @@ export const submitOnBehalf = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
     if (behalfTokenSignature && sData.tokenSignature !== behalfTokenSignature) {
       throw new HttpsError("permission-denied", "Invalid session signature for submit on behalf.");
     }
-    // Check expiration. Expired sessions (past expiresAt + grace) are cleared
-    // so an admin can always force a path forward — the draft is saved, and
-    // the student can start a fresh session whose work is restored.
+    // Check expiration. Expired sessions (past expiresAt + grace, missing
+    // expiresAt, or idle past MAX_SESSION_IDLE_MS) are cleared so an admin
+    // can always force a path forward — the draft is saved, and the student
+    // can start a fresh session whose work is restored.
     const now = Date.now();
     const expiresAt = sData.expiresAt?.toMillis ? sData.expiresAt.toMillis() : Number(sData.expiresAt);
-    if (expiresAt && now > expiresAt + SESSION_EXPIRY_GRACE_MS) {
+    if (isSessionEffectivelyExpired(expiresAt, now) || isSessionIdleStale(sData, now)) {
       await db.collection("assessment_sessions").doc(sessionDoc.id).update(claimStaleSessionUpdate(now));
       throw new HttpsError("deadline-exceeded", "Assessment session has expired. The student's draft answers are still saved — they can refresh to start a new attempt and their work will be restored.");
     }

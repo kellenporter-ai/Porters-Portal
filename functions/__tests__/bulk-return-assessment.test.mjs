@@ -127,6 +127,37 @@ describe('returnOneSubmission — skip cases', () => {
     expect(result).toEqual({ ok: false, reason: 'Student has an active assessment session' });
   });
 
+  it('returns { ok: false } when an unexpired session has a fresh heartbeat (idle bound)', async () => {
+    const { db } = makeDb({
+      submissions: { s1: assessmentSub() },
+      sessions: [{ id: 'sess-1', data: { userId: 'student-1', assignmentId: 'asg-1', used: false, expiresAt: ts(NOW + 60 * 60_000), lastHeartbeatAt: ts(NOW - 10_000) } }],
+    });
+    const result = await returnOneSubmission(db, 's1', ADMIN_UID);
+    expect(result).toEqual({ ok: false, reason: 'Student has an active assessment session' });
+  });
+
+  it('proceeds when an unexpired session is idle past MAX_SESSION_IDLE_MS (it gets claimed)', async () => {
+    const { db, writes } = makeDb({
+      submissions: { s1: assessmentSub() },
+      sessions: [{ id: 'idle-1', data: { userId: 'student-1', assignmentId: 'asg-1', used: false, expiresAt: ts(NOW + 60 * 60_000), lastHeartbeatAt: ts(NOW - 31 * 60_000) } }],
+      assignments: { 'asg-1': { classType: 'CSI' } },
+    });
+    const result = await returnOneSubmission(db, 's1', ADMIN_UID);
+    expect(result).toEqual({ ok: true });
+    expect(writes).toContainEqual({ type: 'update', path: 'assessment_sessions/idle-1', data: { used: true, usedAt: expect.any(Number) } });
+  });
+
+  it('proceeds when a session has no expiresAt (fail-closed stale claim)', async () => {
+    const { db, writes } = makeDb({
+      submissions: { s1: assessmentSub() },
+      sessions: [{ id: 'noexp-1', data: { userId: 'student-1', assignmentId: 'asg-1', used: false } }],
+      assignments: { 'asg-1': { classType: 'CSI' } },
+    });
+    const result = await returnOneSubmission(db, 's1', ADMIN_UID);
+    expect(result).toEqual({ ok: true });
+    expect(writes).toContainEqual({ type: 'update', path: 'assessment_sessions/noexp-1', data: { used: true, usedAt: expect.any(Number) } });
+  });
+
   it('proceeds when only expired-past-grace sessions exist (they get claimed)', async () => {
     const { db, writes } = makeDb({
       submissions: { s1: assessmentSub() },
