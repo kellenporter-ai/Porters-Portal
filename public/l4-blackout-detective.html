@@ -64,6 +64,12 @@ button{font-family:inherit;cursor:pointer}
 .inspector .row .lbl{display:flex;align-items:center;gap:5px;color:var(--text)}
 .inspector .row .val{color:var(--muted);font-variant-numeric:tabular-nums}
 .inspector .pinbtn{margin-top:6px;width:100%;background:var(--amber);color:#1a1206;border:none;border-radius:8px;font-family:var(--head);font-size:14px;letter-spacing:1.5px;padding:6px 0;min-height:30px}
+.pinbar{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:none;align-items:center;gap:8px;background:rgba(11,11,28,.94);border:1px solid var(--border);border-radius:10px;padding:6px 8px;backdrop-filter:blur(6px);z-index:5}
+.pinbar.show{display:flex}
+.pinbar .pinfo{font-size:11px;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pinbar .pinbtn{position:static;transform:none;margin:0;width:auto;background:var(--amber);color:#1a1206;border:none;border-radius:8px;font-family:var(--head);font-size:14px;letter-spacing:1.5px;padding:6px 14px;min-height:30px}
+.pinbar .pbtn{background:var(--panel);border:1px solid var(--border);color:var(--muted);border-radius:8px;font-size:12px;width:28px;height:28px;line-height:1}
+.pinbar .pbtn:hover{color:var(--text)}
 .temp-lbl{font-size:9px;fill:var(--ice);font-family:var(--body)}
 .axis-lbl{font-size:10px;fill:var(--muted);font-family:var(--body)}
 .gridline{stroke:rgba(255,255,255,.07);stroke-width:1}
@@ -187,7 +193,7 @@ const STR = {
     ],
     verdictPlaceholder:'Write your verdict here. Cite the evidence you pinned…',
     submitVerdict:'SUBMIT VERDICT', submitted:'Verdict submitted. Case closed!',
-    needPins:'Pin evidence on the graph first: hover or drag on the chart, then press PIN THIS.',
+    needPins:'Pin evidence on the graph first: click a point on the chart to freeze it, then press PIN THIS.',
     completeTitle:'CASE COMPLETE', completeSub:'You finished all 5 detective missions.',
     blackout:'GRID CRISIS', tempSuffix:'°F',
     downFrom:'down from', upFrom:'up from',
@@ -209,7 +215,7 @@ const STR = {
     ],
     verdictPlaceholder:'Escribe tu veredicto aquí. Cita la evidencia que fijaste…',
     submitVerdict:'ENTREGAR VEREDICTO', submitted:'Veredicto entregado. ¡Caso cerrado!',
-    needPins:'Primero fija evidencia en la gráfica: pasa el cursor o arrastra sobre la gráfica y pulsa FIJAR ESTO.',
+    needPins:'Primero fija evidencia en la gráfica: haz clic en un punto para congelarlo y pulsa FIJAR ESTO.',
     completeTitle:'CASO COMPLETO', completeSub:'Completaste las 5 misiones de detective.',
     blackout:'CRISIS DE LA RED', tempSuffix:'°F',
     downFrom:'menos que', upFrom:'más que',
@@ -232,6 +238,7 @@ const state = {
 
 let DATA = null, LABELS = null;
 let hoverIdx = null;
+let frozenIdx = null;   // click-to-freeze selection; the pin control anchors here
 let animToken = 0;
 
 const $ = s => document.querySelector(s);
@@ -308,8 +315,11 @@ function yMaxGlobal(){
   let m = 0;
   for (const y of ['2020','2021']) {
     for (const p of DATA.series[y]) {
-      if (p.demand > m) m = p.demand;
-      if (p.total > m) m = p.total;
+      if (state.visible.demand && p.demand > m) m = p.demand;
+      if (state.visible.total && p.total > m) m = p.total;
+      for (const s of SOURCES) {
+        if (state.visible[s] && p[s] > m) m = p[s];
+      }
     }
   }
   return Math.ceil(m / 10000) * 10000; // shared across years
@@ -335,7 +345,13 @@ function buildChart(){
   svg.addEventListener('mousemove', ev => { hoverIdx = getIdx(ev); updateCrosshair(); });
   svg.addEventListener('touchstart', ev => { hoverIdx = getIdx(ev); updateCrosshair(); }, {passive:true});
   svg.addEventListener('touchmove', ev => { hoverIdx = getIdx(ev); updateCrosshair(); }, {passive:true});
+  svg.addEventListener('click', ev => {
+    if (ev.target && (ev.target.id === 'pin-btn' || (ev.target.closest && ev.target.closest('.pinbar')))) return;
+    frozenIdx = getIdx(ev);
+    updateCrosshair();
+  });
   svg.addEventListener('mouseleave', () => { hoverIdx = null; updateCrosshair(); });
+  window.addEventListener('blur', () => { if (frozenIdx !== null) { frozenIdx = null; updateCrosshair(); } });
   window.addEventListener('resize', () => {
     const w2 = Math.max(600, wrap.clientWidth), h2 = Math.max(300, wrap.clientHeight);
     if (w2 !== W || h2 !== H) { W = w2; H = h2; svg.setAttribute('viewBox', `0 0 ${W} ${H}`); renderPlot(false); }
@@ -463,13 +479,13 @@ function renderPlot(animate){
     SOURCES.filter(s => state.visible[s]).forEach(s => drawLine(s, SRC_HEX[s], 2));
     if (state.visible.total) drawLine('total', SRC_HEX.total, 2.5);
   }
-  if (state.year === '2021' && state.visible.demand) drawLine('demand', SRC_HEX.demand, 2, '6 4');
+  if (state.visible.demand) drawLine('demand', SRC_HEX.demand, 2, '6 4');
 
   // Crosshair group
   const ch = el('g', {'class':'crosshair', id:'crosshairG', style:'display:none'});
   el('line', {id:'chLine', x1:0, x2:0, y1:PAD.top, y2:H-PAD.bottom}, ch);
 
-  // Inspector
+  // Inspector (readout only; the pinned-in-place pin control lives in the pinbar)
   let insp = document.getElementById('inspectorBox');
   if (insp) insp.remove();
   insp = document.createElement('div');
@@ -477,20 +493,33 @@ function renderPlot(animate){
   insp.className = 'inspector';
   insp.style.display = 'none';
   $('#chartwrap').appendChild(insp);
+  // Anchored pin control
+  let bar = document.getElementById('pinbar');
+  if (bar) bar.remove();
+  bar = document.createElement('div');
+  bar.id = 'pinbar';
+  bar.className = 'pinbar';
+  $('#chartwrap').appendChild(bar);
 }
 
 function updateCrosshair(){
   if (!svg || !DATA) return;
   const ch = document.getElementById('crosshairG');
   const insp = document.getElementById('inspectorBox');
-  if (hoverIdx === null) {
-    ch.style.display = 'none'; insp.style.display = 'none'; return;
-  }
+  const bar = document.getElementById('pinbar');
   const data = seriesOf(state.year);
   const n = data.length;
   const maxV = yMaxGlobal();
-  const p = data[hoverIdx];
-  const x = xIdx(hoverIdx, n);
+
+  // Frozen (clicked) selection wins; live hover only shows while no freeze is active
+  const idx = frozenIdx !== null ? frozenIdx : hoverIdx;
+  if (idx === null) {
+    ch.style.display = 'none'; insp.style.display = 'none';
+    bar.classList.remove('show'); bar.innerHTML = '';
+    return;
+  }
+  const p = data[idx];
+  const x = xIdx(idx, n);
   ch.style.display = '';
   const ln = document.getElementById('chLine');
   ln.setAttribute('x1', x); ln.setAttribute('x2', x);
@@ -508,15 +537,21 @@ function updateCrosshair(){
   };
   SOURCES.forEach(s => { if (state.visible[s]) addRow(s, SRC_HEX[s]); });
   if (state.visible.total) addRow('total', SRC_HEX.total);
-  if (state.year === '2021' && state.visible.demand) addRow('demand', SRC_HEX.demand, true);
-  insp.innerHTML = '<div class="ts">' + esc(tsTxt) + '</div>' + rows +
-    '<button class="pinbtn" id="pin-btn">' + esc(t('pinIt')) + '</button>';
+  if (state.visible.demand) addRow('demand', SRC_HEX.demand, true);
+  insp.innerHTML = '<div class="ts">' + esc(tsTxt) + '</div>' + rows;
   insp.style.display = '';
-  // Keep inspector inside the wrap
   const wrapW = $('#chartwrap').clientWidth;
   insp.style.left = Math.min(x + 14, wrapW - insp.offsetWidth - 8) + 'px';
   insp.style.top = '8px';
-  document.getElementById('pin-btn').addEventListener('click', () => pinAt(hoverIdx));
+
+  // Anchored pin control: same DOM position for every point, so it never escapes the cursor
+  bar.innerHTML = '<span class="pinfo">' + esc(tsTxt) + '</span>' +
+    '<button class="pinbtn" id="pin-btn">' + esc(t('pinIt')) + '</button>' +
+    (frozenIdx !== null ? '<button class="pbtn" id="pin-x" title="Unpin selection">✕</button>' : '');
+  bar.classList.add('show');
+  document.getElementById('pin-btn').addEventListener('click', () => pinAt(idx));
+  const px = document.getElementById('pin-x');
+  if (px) px.addEventListener('click', () => { frozenIdx = null; updateCrosshair(); });
 }
 /* ============================================================
    Pins + caption generation + missions
@@ -621,9 +656,6 @@ function renderChips(){
   const box = $('#chips');
   box.innerHTML = '';
   [...SOURCES, 'total', 'demand'].forEach(key => {
-    if (key === 'demand') {
-      if (state.year !== '2021') return; // demand overlay only exists for 2021
-    }
     const b = document.createElement('button');
     b.className = 'chip' + (state.visible[key] ? '' : ' off');
     b.dataset.key = key;
@@ -709,7 +741,7 @@ document.querySelectorAll('#year-seg button').forEach(b => b.addEventListener('c
   if (state.year === b.dataset.year) return;
   state.year = b.dataset.year;
   document.querySelectorAll('#year-seg button').forEach(x => x.classList.toggle('on', x === b));
-  hoverIdx = null;
+  hoverIdx = null; frozenIdx = null;
   renderChips();
   renderPlot(true);
   persist();
