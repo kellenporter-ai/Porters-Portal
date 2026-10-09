@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T11:54:51.405Z",
+  "generatedAt": "2026-10-09T13:37:54.882Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -10,6 +10,11 @@
       "path": "/ap1-kinematics-practice.html",
       "fingerprint": "/ap1-kinematics-practice.html",
       "sizeBytes": 111294
+    },
+    {
+      "path": "/ap1-newtons-second-law-practice.html",
+      "fingerprint": "/ap1-newtons-second-law-practice.html",
+      "sizeBytes": 169778
     },
     {
       "path": "/circuit-diagram-builder.html",

@@ -81,6 +81,17 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/textbook/ch2-kinematics-1d/',
   },
   {
+    title: 'Newton\'s Second Law Practice (Ch 3.5–3.7)',
+    description: '20 free-response problems from College Physics (Etkina) Chapter 3 end-of-chapter problems 16-35: Newton\'s second law, the gravitational force law, and one-dimensional applications. Students write out their reasoning, reveal a worked model answer, and self-score with a 3-point rubric.',
+    url: '/ap1-newtons-second-law-practice',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'AP Physics 1',
+    tags: ['forces', 'newtons-second-law', 'practice', 'free-response'],
+    suggestedCategory: 'Practice',
+    sourceFingerprint: '/ap1-newtons-second-law-practice.html',
+  },
+  {
     title: 'Privacy Policy',
     description: 'Porter\'s Portal privacy policy.',
     url: '/privacy',

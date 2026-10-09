@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T11:54:51.444Z",
+  "generatedAt": "2026-10-09T13:37:54.921Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/circuit-diagram-builder": "/circuit-diagram-builder.html",
@@ -14,6 +14,7 @@
     "/l4-decisions-matrix": "/l4-decisions-matrix.html",
     "/ap1-kinematics-practice": "/ap1-kinematics-practice.html",
     "/ap1-forces-practice": "/ap1-forces-practice.html",
+    "/ap1-newtons-second-law-practice": "/ap1-newtons-second-law-practice.html",
     "/linearization-practice": "/linearization-practice.html",
     "/guess-who": "/games/guess-who-evidence.html",
     "/evidence-court": "/evidence-court.html",

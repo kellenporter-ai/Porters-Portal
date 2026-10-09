@@ -148,6 +148,10 @@
         "destination": "/ap1-forces-practice.html"
       },
       {
+        "source": "/ap1-newtons-second-law-practice",
+        "destination": "/ap1-newtons-second-law-practice.html"
+      },
+      {
         "source": "/linearization-practice",
         "destination": "/linearization-practice.html"
       },

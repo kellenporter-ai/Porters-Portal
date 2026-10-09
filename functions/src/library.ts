@@ -57,6 +57,8 @@ const CLEAN_URL_REWRITES = new Set([
   "/forensic-branches",
   "/texas-grid-blackout",
   "/ap1-kinematics-practice",
+  "/ap1-forces-practice",
+  "/ap1-newtons-second-law-practice",
   "/linearization-practice",
   "/guess-who",
 ]);
