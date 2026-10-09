@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crime Scene Sketch Rubric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --focus: #FF4D26;
+    --t0-c: #dc2626; --t0-b: #fee2e2;
+    --t1-c: #d97706; --t1-b: #fef3c7;
+    --t2-c: #ca8a04; --t2-b: #fef9c3;
+    --t3-c: #059669; --t3-b: #d1fae5;
+    --t4-c: #2563eb; --t4-b: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, .brand h1, .rubric-grid .row-q, .rubric-grid th.colhead,
+  .detail-q, .card-doc h1, .score-chip, .ladder-chip, .nav-btn, .backlink,
+  .lang-toggle button, .print-btn, .ladder-summary h2, .eyebrow,
+  .detail-qnum, .connector, .page-ref-line, .card-footer, .card-ladder .cl strong {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 28px 32px 80px; }
+  a { color: var(--accent); }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 40px;
+  }
+  .brand h1 {
+    font-size: clamp(26px, 3vw, 38px); font-weight: 800; margin: 0;
+    letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .brand h1 .accent { color: var(--accent); }
+  .brand .sub {
+    color: var(--ink-soft); font-size: 15px; margin-top: 8px; max-width: 52ch;
+  }
+  .lang-toggle {
+    display: inline-flex; align-items: center; border: var(--dash);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 16px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .lang-toggle button + button { border-left: var(--dash); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent); background: rgba(255, 77, 38, 0.06);
+  }
+
+  button { font-family: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  body.mode-card header.top { display: none; }
+
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 10px;
+  }
+
+  .panel {
+    background: transparent; border: var(--dash);
+    padding: 28px; margin-bottom: 32px;
+  }
+  .overview { border: 0; padding: 0 0 8px; margin-bottom: 40px; }
+  .overview p:last-child { margin: 0; font-size: 17px; max-width: 62ch; }
+
+  .grid-panel { padding: 22px; overflow-x: auto; margin-bottom: 48px; }
+  table.rubric-grid {
+    width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed;
+  }
+  .rubric-grid th.corner { width: 18%; }
+  .rubric-grid th.colhead {
+    padding: 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    text-align: center; line-height: 1.25; border: 0;
+  }
+  .rubric-grid th.rowhead {
+    text-align: left; vertical-align: top; padding: 10px 10px 10px 2px; font-weight: 400;
+  }
+  .rubric-grid .row-q {
+    display: block; font-weight: 700; font-size: 15px; line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .rubric-grid .row-gist {
+    display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 6px; line-height: 1.4;
+  }
+  .rubric-grid td.cell { padding: 0; vertical-align: top; }
+  .grid-cell {
+    position: relative; display: block; width: 100%; min-height: 104px;
+    text-align: left; cursor: pointer; text-decoration: none;
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13.5px; line-height: 1.42;
+    background: var(--tb); color: var(--ink);
+    border: var(--dash); border-top: 3px solid var(--tc);
+    padding: 12px 12px 26px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .grid-cell:hover {
+    transform: translateY(-3px);
+    border: 1px solid var(--tc); border-top: 3px solid var(--tc);
+  }
+  .grid-cell .gist { display: block; }
+  .grid-cell .page-ref {
+    position: absolute; bottom: 6px; right: 10px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-soft);
+    font-family: 'Archivo', 'Inter', sans-serif;
+  }
+
+  .ladder-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 24px; }
+  .ladder-chip {
+    flex: 1 1 130px; min-width: 120px; text-align: center;
+    border: var(--dash); padding: 12px 10px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+  }
+  .ladder-chip small { display: block; font-weight: 600; opacity: 0.75; font-size: 11px; }
+
+  .ladder-summary { border: 0; padding: 0; margin: 0 0 32px; }
+  .ladder-summary h2 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;
+  }
+  .ladder-row {
+    display: flex; gap: 16px; align-items: baseline; padding: 14px 4px;
+    border-bottom: var(--dash);
+  }
+  .ladder-row:first-of-type { border-top: var(--dash); }
+  .ladder-row .score-chip { flex: 0 0 auto; }
+  .ladder-row p { margin: 0; font-size: 15px; }
+
+  .dl-footer {
+    display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap;
+    padding: 14px 4px; margin: 0 0 32px;
+    border-top: var(--dash); border-bottom: var(--dash);
+  }
+  .dl-footer .eyebrow { flex: 0 0 auto; }
+  .dl-links { display: flex; gap: 22px; flex-wrap: wrap; }
+  .dl-links a {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .dl-links a:hover { color: var(--accent); }
+
+  .score-chip {
+    display: inline-block; font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+    color: var(--tc); background: var(--tb);
+    padding: 6px 16px; white-space: nowrap;
+  }
+
+  .backlink {
+    display: inline-block; margin: 0 0 28px; color: var(--ink-soft);
+    text-decoration: none; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: var(--dash); padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .backlink:hover { color: var(--accent); border-color: var(--accent); }
+  .detail-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 20px; }
+  .detail-head .score-chip {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.01em; padding: 10px 24px;
+  }
+  .detail-score {
+    font-weight: 800; font-size: 20px; color: var(--ink-faint); letter-spacing: -0.01em;
+  }
+  .detail-q {
+    font-size: clamp(28px, 3.6vw, 44px); font-weight: 800; margin: 0 0 10px;
+    letter-spacing: -0.03em; line-height: 1.05; max-width: 22ch;
+  }
+  .detail-qnum {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--accent); margin: 0 0 12px;
+  }
+  .detail-skill {
+    color: var(--ink-soft); font-size: 16px; margin: 0 0 24px;
+    padding-bottom: 16px; border-bottom: var(--dash); max-width: 62ch;
+  }
+  .tier {
+    border: var(--dash); border-left: 4px solid var(--tc);
+    background: transparent; margin-bottom: 12px; overflow: hidden;
+  }
+  .tier-body { padding: 22px 26px 24px 28px; }
+  .tier-line { margin: 0 0 6px; max-width: 68ch; }
+  .connector {
+    display: block; width: fit-content; margin: 14px auto;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--tc); background: transparent;
+    border: 1px dashed var(--tc); padding: 4px 16px;
+  }
+  .examples-label { font-weight: 700; margin: 18px 0 8px; letter-spacing: -0.01em; }
+  .examples {
+    margin: 0; padding: 16px 20px 16px 36px; border: var(--dash);
+    background: rgba(26, 26, 26, 0.02);
+  }
+  .examples li { margin-bottom: 6px; }
+  .examples li:last-child { margin-bottom: 0; }
+  .explainer h2 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 15pt;
+    margin: 0 0 6px;
+  }
+  .explainer-framing { margin: 0 0 10px; color: var(--ink-soft); }
+  .explainer ol { margin: 0; padding-left: 22px; }
+  .explainer li { margin: 0 0 8px; line-height: 1.45; }
+  .explainer-compact { margin: 2px 0 6px; }
+
+  .page-ref-line {
+    color: var(--ink-soft);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 16px 0 0;
+  }
+
+  .tier-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+  .nav-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; border: var(--dash);
+    padding: 11px 20px; color: var(--ink-soft); text-decoration: none;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.3s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
+  .nav-btn.primary { color: var(--ink); border-color: var(--ink-faint); }
+  .nav-btn.primary:hover { color: var(--accent); border-color: var(--accent); }
+  .nav-btn.disabled { opacity: 0.35; pointer-events: none; }
+  .tier-nav .spacer { flex: 1; }
+
+  .card-doc { background: transparent; border: var(--dash); padding: 24px 26px; }
+  .card-doc h1 {
+    font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .card-sub { color: var(--ink-soft); font-size: 13px; margin: 6px 0 16px; }
+  .card-footer {
+    color: var(--ink-soft);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    margin: 14px 0 0;
+  }
+  .card-ladder { display: flex; gap: 8px; margin-top: 14px; }
+  .card-ladder .cl {
+    flex: 1; border: var(--dash); padding: 8px 9px; font-size: 11px; line-height: 1.35;
+  }
+  .card-ladder .cl strong { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+  .print-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; color: var(--ink-soft); border: var(--dash);
+    padding: 11px 22px; margin-bottom: 16px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .print-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  .print-doc { display: none; }
+  .q-inner .q-text {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px;
+  }
+  .skill {
+    color: var(--ink-soft); font-size: 14px; margin: 0 0 18px;
+    padding-bottom: 12px; border-bottom: var(--dash);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 18px 48px; }
+    header.top { margin-bottom: 24px; }
+    .grid-panel { padding: 12px; }
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    body.mode-card { font-size: 7.6pt; }
+    .wrap { max-width: none; padding: 0; }
+    header.top .lang-toggle, .no-print, .screen-view { display: none !important; }
+    .print-doc { display: block; }
+    .panel, .q-card, .q-inner, .tier, .card-doc { border: 1px solid #999; }
+    .tier { break-inside: avoid; }
+    .question-block { break-before: page; }
+    .question-block.first { break-before: auto; }
+    .explainer-wrap { break-after: page; }
+    .question-block.collapsed .q-inner, .tier-detail.collapsed { display: block !important; }
+    .grid-panel { overflow: visible; }
+    .grid-cell { min-height: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  @media print {
+    body.mode-card .print-btn { display: none !important; }
+    body.mode-card .card-doc { border: 0; padding: 0; }
+    body.mode-card .grid-panel { border: 0; padding: 0; margin: 0; }
+    body.mode-card .rubric-grid { border-spacing: 3px; }
+    body.mode-card .rubric-grid th.corner { width: 16%; }
+    body.mode-card .rubric-grid th.colhead {
+      font-size: 6.6pt; padding: 3px 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .rubric-grid th.rowhead { padding: 2px 4px 2px 0; }
+    body.mode-card .rubric-grid .row-q { font-size: 6.8pt; }
+    body.mode-card .rubric-grid .row-gist { font-size: 6.1pt; margin-top: 1px; }
+    body.mode-card .grid-cell {
+      font-size: 6.2pt; line-height: 1.25; min-height: 0;
+      padding: 4px 4px 11px; border-left-width: 2px; border-top-width: 2px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .grid-cell .gist { font-size: 6.2pt; line-height: 1.25; }
+    body.mode-card .grid-cell .page-ref { font-size: 5.4pt; bottom: 2px; right: 4px; }
+    body.mode-card .card-doc h1 { font-size: 13pt; }
+    body.mode-card .card-sub { font-size: 7.5pt; margin: 1px 0 6px; }
+    body.mode-card .card-ladder .cl { font-size: 5.6pt; padding: 3px 4px; }
+    body.mode-card .card-ladder .cl strong { font-size: 5.8pt; }
+    body.mode-card .card-footer { font-size: 6pt; margin: 5px 0 0; }
+    body.mode-card .explainer-compact { font-size: 6.4pt; margin: 1px 0 4px; line-height: 1.3; }
+  }
+
+  @page { margin: 0.4in; }
+  @page landscape-page { size: letter landscape; margin: 0.4in; }
+  body.mode-card { page: landscape-page; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 id="page-title">Crime Scene Sketch Rubric</h1>
+      <div class="sub" id="page-sub"></div>
+    </div>
+    <div class="lang-toggle no-print" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<script>
+"use strict";
+/* ============================== DATA ============================== */
+
+var STR = {
+  en: {
+    pageTitle: "Crime Scene Sketch Rubric",
+    pageSub: "How your crime scene sketch is graded",
+    overviewLabel: "Overview",
+    overview: "You will sketch the mock crime scene set up in the classroom. You get measuring tape, pencil, paper, a ruler, and tape with paper markers. Your sketch is graded on three skills. Each skill is scored on the 0/55/65/85/100 ladder. The goal is Developing or better on every skill.",
+    questionLabel: "Skill",
+    skillLabel: "Skill statement",
+    ladderLabel: "Tier ladder",
+    connectors: { "-BECAUSE-": "-BECAUSE-", "-BUT-": "-BUT-", "-AND-": "-AND-", "-OR-": "-OR-" },
+    examplesLabel: "What a sketch at this level looks like:",
+    backToGrid: "Back to all tiers",
+    prevTier: "Previous tier",
+    nextTier: "Next tier",
+    pageRefLine: "Details on p. {n} of the rubric PDF",
+    gridHint: "Click any box to see full details for that level.",
+    cardTitle: "Crime Scene Sketch Rubric",
+    cardSubtitle: "How your crime scene sketch is graded",
+    cardFooter: "See the rubric PDF for full details and examples in each box",
+    printCard: "Print",
+    downloadsLabel: "Downloads",
+    dlFullEn: "Full rubric (EN)",
+    dlFullEs: "Full rubric (ES)",
+    dlCardEn: "Quick card (EN)",
+    dlCardEs: "Quick card (ES)"
+  },
+  es: {
+    pageTitle: "Rúbrica del Dibujo de la Escena del Crimen",
+    pageSub: "Cómo se califica tu dibujo de la escena del crimen",
+    overviewLabel: "Descripción general",
+    overview: "Vas a dibujar la escena del crimen simulada que está montada en el salón de clases. Recibes cinta métrica, lápiz, papel, una regla y cinta con marcadores de papel. Tu dibujo se califica en tres habilidades. Cada habilidad se puntúa en la escalera 0/55/65/85/100. La meta es En desarrollo o mejor en cada habilidad.",
+    questionLabel: "Habilidad",
+    skillLabel: "Declaración de la habilidad",
+    ladderLabel: "Escalera de niveles",
+    connectors: { "-BECAUSE-": "-PORQUE-", "-BUT-": "-PERO-", "-AND-": "-Y-", "-OR-": "-O-" },
+    examplesLabel: "Cómo se ve un dibujo en este nivel:",
+    backToGrid: "Volver a todos los niveles",
+    prevTier: "Nivel anterior",
+    nextTier: "Nivel siguiente",
+    pageRefLine: "Detalles en la pág. {n} del PDF de la rúbrica",
+    gridHint: "Haz clic en cualquier casilla para ver los detalles completos de ese nivel.",
+    cardTitle: "Rúbrica del dibujo de la escena del crimen",
+    cardSubtitle: "Cómo se califica tu dibujo de la escena del crimen",
+    cardFooter: "Consulta la rúbrica en PDF para detalles y ejemplos en cada casilla",
+    printCard: "Imprimir",
+    downloadsLabel: "Descargas",
+    dlFullEn: "Rúbrica completa (EN)",
+    dlFullEs: "Rúbrica completa (ES)",
+    dlCardEn: "Tarjeta rápida (EN)",
+    dlCardEs: "Tarjeta rápida (ES)"
+  }
+};
+
+var GISTS = {
+  en: {
+    skillGists: [
+      "Include every important part of a crime scene sketch",
+      "Make the sketch true to the scale of the room",
+      "Locate both evidence items using fixed reference points"
+    ],
+    cells: {
+      q1: ["No sketch submitted.", "Sketch exists but most components are absent.", "Several components present, but important ones missing.", "Nearly all components present, minor gaps or sloppy execution.", "All components present, clear, and correctly used."],
+      q2: ["No sketch submitted.", "No measurements, sizes guessed, proportions clearly wrong.", "Some measurements taken but applied inconsistently.", "Measured and roughly proportional, small distortions.", "Consistent scale, measurements from fixed points, all proportional."],
+      q3: ["Evidence not on sketch or no attempt.", "Evidence drawn by eyeball only, or fewer than 2 items.", "Both items shown with measurements, but from movable or wrong points.", "Both items located from non-movable reference points, minor imprecision.", "Both items precisely triangulated, positions reproducible."]
+    }
+  },
+  es: {
+    skillGists: [
+      "Incluye cada parte importante del dibujo de la escena",
+      "Haz que el dibujo respete la escala del salón",
+      "Ubica ambas evidencias usando puntos de referencia fijos"
+    ],
+    cells: {
+      q1: ["No se entregó dibujo.", "El dibujo existe pero le faltan la mayoría de las partes.", "Hay varias partes, pero faltan las más importantes.", "Casi todas las partes están presentes, con detalles menores o descuido.", "Todas las partes están presentes, claras y bien usadas."],
+      q2: ["No se entregó dibujo.", "Sin medidas, tamaños adivinados, proporciones claramente equivocadas.", "Algunas medidas tomadas pero usadas de forma irregular.", "Medido y aproximadamente proporcional, con distorsiones pequeñas.", "Escala constante, medidas desde puntos fijos, todo proporcional."],
+      q3: ["La evidencia no está en el dibujo o no hay intento.", "La evidencia se ubica solo a ojo, o hay menos de 2 objetos.", "Ambos objetos tienen medidas, pero desde puntos móviles o equivocados.", "Ambos ubicados desde puntos fijos, con imprecisión menor.", "Ambos triangulados con precisión, posiciones reproducibles."]
+    }
+  }
+};
+
+var TIERS = [
+  { key: "t0", score: "0%" },
+  { key: "t1", score: "55%" },
+  { key: "t2", score: "65%" },
+  { key: "t3", score: "85%" },
+  { key: "t4", score: "100%" }
+];
+
+var EXPLAINER = {
+  en: {
+    heading: "How your sketch grade is decided",
+    framing: "Your crime scene sketch is graded on three skills. Here is how your grade works.",
+    points: [
+      { lead: "Each skill is graded on the 0/55/65/85/100 ladder.",
+        text: "Every skill starts at Missing (0%). A genuine attempt earns at least Emerging (55%). Partial work earns Approaching (65%). Solid work earns Developing (85%). Complete, precise work earns Refining (100%)." },
+      { lead: "Your overall grade is the average of your three skill scores.",
+        text: "Example: you earn Refining (100%) on components, Developing (85%) on scale, and Approaching (65%) on locating evidence. Your overall sketch grade is 83%. Every skill counts, so a strong skill helps pull up a weaker one." },
+      { lead: "All materials are provided in class.",
+        text: "You get measuring tape, pencil, printer-size paper, a ruler, and tape with paper markers. Work at your own pace; careful measurements matter more than speed." },
+      { lead: "The goal is Developing or better on every skill.",
+        text: "Developing (85%) means your sketch would let another investigator understand the scene without asking you a single question. Refining (100%) means your evidence positions are reproducible by anyone using your sketch alone." }
+    ],
+    compact: "Three skills, each on the 0/55/65/85/100 ladder. Your overall grade is the average of the three. Goal: Developing or better on every skill."
+  },
+  es: {
+    heading: "Cómo se decide tu calificación del dibujo",
+    framing: "Tu dibujo de la escena del crimen se califica en tres habilidades. Así funciona tu calificación.",
+    points: [
+      { lead: "Cada habilidad se califica en la escalera 0/55/65/85/100.",
+        text: "Cada habilidad comienza en Ausente (0%). Un intento genuino gana al menos Emergente (55%). Trabajo parcial gana Progresando (65%). Trabajo sólido gana En desarrollo (85%). Trabajo completo y preciso gana Refinando (100%)." },
+      { lead: "Tu calificación general es el promedio de tus tres puntajes de habilidad.",
+        text: "Ejemplo: ganas Refinando (100%) en componentes, En desarrollo (85%) en escala y Progresando (65%) en ubicar evidencias. Tu calificación general del dibujo es 83%. Cada habilidad cuenta, así que una habilidad fuerte ayuda a subir una más débil." },
+      { lead: "Todos los materiales se proveen en clase.",
+        text: "Recibes cinta métrica, lápiz, papel tamaño carta, una regla y cinta con marcadores de papel. Trabaja a tu propio ritmo; las medidas cuidadosas importan más que la velocidad." },
+      { lead: "La meta es En desarrollo o mejor en cada habilidad.",
+        text: "En desarrollo (85%) significa que tu dibujo permitiría a otro investigador entender la escena sin hacerte ninguna pregunta. Refinando (100%) significa que cualquiera puede reproducir las posiciones de tus evidencias usando solo tu dibujo." }
+    ],
+    compact: "Tres habilidades, cada una en la escalera 0/55/65/85/100. Tu calificación general es el promedio de las tres. Meta: En desarrollo o mejor en cada habilidad."
+  }
+};
+
+function explainerHTML(compact) {
+  var E = EXPLAINER[state.lang];
+  if (compact) return '<p class="explainer-compact">' + esc(E.compact) + "</p>";
+  var h = '<div class="panel explainer"><h2>' + esc(E.heading) + "</h2>" +
+    '<p class="explainer-framing">' + esc(E.framing) + "</p><ol>";
+  for (var i = 0; i < E.points.length; i++) {
+    h += "<li><strong>" + esc(E.points[i].lead) + "</strong> " + esc(E.points[i].text) + "</li>";
+  }
+  return h + "</ol></div>";
+}
+
+var PDF_PAGES = { en: {}, es: {} };
+
+var DATA = {
+  en: {
+    questions: [
+      {
+        q: "Skill 1: Crime scene sketch components",
+        skill: "I am able to include all important components of a sketch when sketching a crime scene.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: No sketch was submitted, or the drawing is an unlabeled doodle with no crime scene components."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: A sketch exists",
+            "-BUT-", "most important components are absent",
+            "-OR-", "the drawing is a rough outline with no labels, no header information, and no legend."
+          ], examples: [
+            "A rectangle with a few lines inside, no words, no title block, no arrows."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: Several components are present",
+            "-BUT-", "important ones are still missing, such as no legend, no header information, or no north arrow",
+            "-OR-", "labels are so sparse or unclear that the sketch cannot stand on its own."
+          ], examples: [
+            "The sketch has a title block with the date and the sketcher's name, but no legend and no north arrow.",
+            "Evidence is marked with letters, but the legend does not say what each letter means."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: Nearly all components are present",
+            "-BECAUSE-", "the sketch includes header information, a legend, a north arrow, and labels for the room, door, and window",
+            "-BUT-", "one or two components are missing, unclear, or sloppy in execution."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: All components are present, clear, and correctly used",
+            "-BECAUSE-", "the sketch includes complete header information, a full legend, a north arrow, a room label with overall dimensions, and door and window positions",
+            "-AND-", "every label is neat, readable, and matched to the legend."
+          ] }
+        }
+      },
+      {
+        q: "Skill 2: Scale of the room",
+        skill: "I am able to create a sketch that is true to the scale of the room and things within the room.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: No sketch was submitted."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: A sketch exists",
+            "-BUT-", "no measurements were taken at all",
+            "-AND-", "sizes were guessed, so proportions are clearly wrong."
+          ], examples: [
+            "The teacher desk is drawn smaller than a chair, and no numbers appear anywhere on the sketch."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: Some measurements were taken",
+            "-BUT-", "they were applied inconsistently, so some objects are to scale and others are not",
+            "-OR-", "proportions are noticeably off even where numbers are written down."
+          ], examples: [
+            "One wall is labeled 4 meters, but the objects along that wall are drawn at random sizes.",
+            "Measurements are written in the margins but never connected to any object on the sketch."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: The sketch was measured and is roughly proportional throughout",
+            "-BECAUSE-", "the room and the objects within it match their real sizes in a consistent way",
+            "-BUT-", "one or two small distortions remain."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: The sketch keeps a consistent scale from start to finish",
+            "-BECAUSE-", "measurements were taken from fixed points in the room",
+            "-AND-", "the room and the objects within it are proportional to each other, so the sketch could be used to re-create the scene."
+          ] }
+        }
+      },
+      {
+        q: "Skill 3: Locating trace evidence",
+        skill: "I am able to accurately locate two pieces of trace evidence on the sketch by using non-movable objects as points of reference.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: The evidence items are not on the sketch, or there is no attempt to locate them."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: Evidence items are drawn on the sketch",
+            "-BUT-", "their positions were eyeballed with no reference to fixed points",
+            "-OR-", "fewer than two items are shown."
+          ], examples: [
+            "One marker is drawn near the middle of the room with no measurements at all.",
+            "Two items are drawn, but both are guesses with no numbers attached."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: Both evidence items are shown with measurements",
+            "-BUT-", "the measurements come from movable or wrong reference points, such as a chair that can be pushed",
+            "-OR-", "only one measurement per item is given, so the position is not pinned down."
+          ], examples: [
+            "Both evidence markers are measured, but only from the nearest table leg, which can be moved.",
+            "Each item has a single distance from one wall, so it could slide anywhere along that wall."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: Both evidence items are located with measurements from non-movable reference points, such as walls, a door frame, or fixed furniture",
+            "-BECAUSE-", "each item has enough measurements to pin its position",
+            "-BUT-", "there is minor imprecision in the numbers",
+            "-AND-", "both items are keyed in the legend."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: Both evidence items are precisely triangulated from non-movable reference points",
+            "-BECAUSE-", "each position is pinned by measurements from more than one fixed point",
+            "-AND-", "both items are keyed in the legend",
+            "-AND-", "another investigator could walk in, use the sketch alone, and place the markers in the exact same spots."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Missing · 0%", text: "Nothing was submitted." },
+      { chip: "Emerging · 55%", text: "Something was submitted, but the skill is just starting." },
+      { chip: "Approaching · 65%", text: "The skill is partly there, with important pieces missing." },
+      { chip: "Developing · 85%", text: "The skill is mostly there, with a small gap left." },
+      { chip: "Refining · 100%", text: "The skill is clearly there, and practice keeps it strong." }
+    ]
+  },
+  es: {
+    questions: [
+      {
+        q: "Habilidad 1: Partes del dibujo de la escena",
+        skill: "Soy capaz de incluir todas las partes importantes de un dibujo al dibujar una escena del crimen.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: "Ausente (Missing)", lines: ["Ausente: No se entregó ningún dibujo, o el dibujo es un garabato sin etiquetas y sin partes de la escena del crimen."] },
+          t1: { chip: "Emergente 55%", title: "Emergente (Emerging)", lines: [
+            "Emergente: Hay un dibujo",
+            "-PERO-", "faltan la mayoría de las partes importantes",
+            "-O-", "el dibujo es un contorno vago sin etiquetas, sin datos de encabezado y sin leyenda."
+          ], examples: [
+            "Un rectángulo con unas líneas dentro, sin palabras, sin cuadro de datos, sin flechas."
+          ] },
+          t2: { chip: "Progresando 65%", title: "Progresando (Approaching)", lines: [
+            "Progresando: Hay varias partes presentes",
+            "-PERO-", "aún faltan las más importantes, como la leyenda, los datos de encabezado o la flecha norte",
+            "-O-", "las etiquetas son tan escasas o confusas que el dibujo no se sostiene por sí solo."
+          ], examples: [
+            "El dibujo tiene un cuadro de datos con la fecha y el nombre del dibujante, pero no tiene leyenda ni flecha norte.",
+            "La evidencia está marcada con letras, pero la leyenda no dice qué significa cada letra."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: "En desarrollo (Developing)", lines: [
+            "En desarrollo: Casi todas las partes están presentes",
+            "-PORQUE-", "el dibujo incluye datos de encabezado, una leyenda, una flecha norte y etiquetas para el salón, la puerta y la ventana",
+            "-PERO-", "una o dos partes faltan, son confusas o están descuidadas."
+          ] },
+          t4: { chip: "Refinando 100%", title: "Refinando (Refining)", lines: [
+            "Refinando: Todas las partes están presentes, claras y bien usadas",
+            "-PORQUE-", "el dibujo incluye datos de encabezado completos, una leyenda completa, una flecha norte, una etiqueta del salón con las dimensiones totales y las posiciones de la puerta y la ventana",
+            "-Y-", "cada etiqueta es ordenada, legible y coincide con la leyenda."
+          ] }
+        }
+      },
+      {
+        q: "Habilidad 2: Escala del salón",
+        skill: "Soy capaz de crear un dibujo que respete la escala del salón y de las cosas dentro del salón.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No se entregó ningún dibujo."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay un dibujo",
+            "-PERO-", "no se tomó ninguna medida",
+            "-Y-", "los tamaños se adivinaron, así que las proporciones están claramente equivocadas."
+          ], examples: [
+            "El escritorio del maestro está dibujado más pequeño que una silla, y no aparece ningún número en el dibujo."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Se tomaron algunas medidas",
+            "-PERO-", "se aplicaron de forma irregular, así que algunos objetos están a escala y otros no",
+            "-O-", "las proporciones se notan equivocadas aun donde sí hay números escritos."
+          ], examples: [
+            "Una pared dice 4 metros, pero los objetos a lo largo de esa pared están dibujados de tamaños al azar.",
+            "Las medidas están escritas en los márgenes pero nunca conectadas con ningún objeto del dibujo."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: El dibujo fue medido y es aproximadamente proporcional de principio a fin",
+            "-PORQUE-", "el salón y los objetos dentro de él coinciden con sus tamaños reales de manera constante",
+            "-PERO-", "quedan una o dos distorsiones pequeñas."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: El dibujo mantiene una escala constante de principio a fin",
+            "-PORQUE-", "las medidas se tomaron desde puntos fijos del salón",
+            "-Y-", "el salón y los objetos dentro de él son proporcionales entre sí, así que el dibujo podría usarse para recrear la escena."
+          ] }
+        }
+      },
+      {
+        q: "Habilidad 3: Ubicar la evidencia de rastro",
+        skill: "Soy capaz de ubicar con precisión dos piezas de evidencia de rastro en el dibujo usando objetos que no se mueven como puntos de referencia.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: Las evidencias no están en el dibujo, o no hay intento de ubicarlas."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Las evidencias están dibujadas en el dibujo",
+            "-PERO-", "sus posiciones se estimaron a ojo, sin referencia a puntos fijos",
+            "-O-", "se muestran menos de dos objetos."
+          ], examples: [
+            "Un marcador está dibujado cerca del centro del salón, sin ninguna medida.",
+            "Hay dos objetos dibujados, pero ambos son suposiciones sin números."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Ambas evidencias aparecen con medidas",
+            "-PERO-", "las medidas vienen de puntos de referencia móviles o equivocados, como una silla que se puede mover",
+            "-O-", "hay solo una medida por objeto, así que la posición no queda fijada."
+          ], examples: [
+            "Ambos marcadores de evidencia tienen medidas, pero solo desde la pata de la mesa más cercana, que se puede mover.",
+            "Cada objeto tiene una sola distancia desde una pared, así que podría deslizarse a lo largo de esa pared."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: Ambas evidencias están ubicadas con medidas desde puntos de referencia que no se mueven, como paredes, un marco de puerta o muebles fijos",
+            "-PORQUE-", "cada objeto tiene medidas suficientes para fijar su posición",
+            "-PERO-", "hay una imprecisión menor en los números",
+            "-Y-", "ambos objetos están en la leyenda."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: Ambas evidencias están trianguladas con precisión desde puntos de referencia que no se mueven",
+            "-PORQUE-", "cada posición queda fijada con medidas desde más de un punto fijo",
+            "-Y-", "ambos objetos están en la leyenda",
+            "-Y-", "otro investigador podría entrar, usar solo el dibujo y colocar los marcadores exactamente en los mismos lugares."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Ausente · 0%", text: "No se entregó nada." },
+      { chip: "Emergente · 55%", text: "Se entregó algo, pero la habilidad apenas está comenzando." },
+      { chip: "Progresando · 65%", text: "La habilidad está a medias, con partes importantes que faltan." },
+      { chip: "En desarrollo · 85%", text: "La habilidad está casi completa, con un pequeño hueco restante." },
+      { chip: "Refinando · 100%", text: "La habilidad está claramente presente, y la práctica la mantiene fuerte." }
+    ]
+  }
+};
+
+/* ============================== LOGIC ============================== */
+
+var LANG_KEY = "cssr-lang";
+var state = { lang: "en" };
+try {
+  var saved = localStorage.getItem(LANG_KEY);
+  if (saved === "en" || saved === "es") state.lang = saved;
+} catch (e) {}
+var urlLang = /[?&]lang=(es|en)/.exec(location.search);
+if (urlLang) state.lang = urlLang[1];
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function tierVarsCSS(tierIdx) {
+  return "color:var(--" + TIERS[tierIdx].key + "-c);background:var(--" + TIERS[tierIdx].key + "-b)";
+}
+
+function pageRefNum(qIdx, tierIdx) {
+  var map = PDF_PAGES[state.lang];
+  if (!map) return null;
+  var v = map["q" + (qIdx + 1) + "-t" + tierIdx];
+  return (typeof v === "number") ? v : null;
+}
+
+function pageRefHTML(qIdx, tierIdx) {
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n === null) return "";
+  return '<span class="page-ref">p. ' + n + "</span>";
+}
+
+function printTierHTML(qIdx, tierIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var S = STR[state.lang];
+  var h = '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)">' +
+    '<div class="tier-body">' +
+    '<p class="tier-line"><span class="score-chip">' + esc(tier.chip) + "</span></p>";
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  h += "</div></div>";
+  return h;
+}
+
+function printQuestionBlockHTML(qIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var S = STR[state.lang];
+  var h = '<section class="question-block' + (qIdx === 0 ? " first" : "") + '">';
+  h += '<div class="q-inner">' +
+    '<p class="q-text">' + esc(S.questionLabel + " " + (qIdx + 1) + ": " + q.q) + "</p>" +
+    '<p class="skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  for (var j = 0; j < TIERS.length; j++) h += printTierHTML(qIdx, j);
+  h += "</div></section>";
+  return h;
+}
+
+function ladderSummaryHTML() {
+  var S = STR[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<div class="panel ladder-summary"><h2>' + esc(S.ladderLabel) + "</h2>";
+  for (var i = 0; i < L.length; i++) {
+    h += '<div class="ladder-row">' +
+      '<span class="score-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(L[i].chip) + "</span>" +
+      "<p>" + esc(L[i].text) + "</p></div>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function ladderStripHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="ladder-strip" role="group" aria-label="' + esc(S.ladderLabel) + '">';
+  for (var i = 0; i < TIERS.length; i++) {
+    h += '<span class="ladder-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(DATA[state.lang].ladder[i].chip) + "</span>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function landingHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += explainerHTML(false);
+  h += '<div class="panel grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' +
+      esc(DATA[state.lang].ladder[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < 3; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><a class="grid-cell" href="#/q' + (q + 1) + "/t" + c + '" role="link" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</a></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += downloadsFooterHTML();
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function downloadsFooterHTML() {
+  return "";
+}
+
+function detailHTML(qIdx, tierIdx) {
+  var S = STR[state.lang];
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var flat = qIdx * 5 + tierIdx;
+  var prevFlat = flat - 1, nextFlat = flat + 1;
+  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= 14;
+
+  var h = '<a class="backlink no-print" href="#/">&larr; ' + esc(S.backToGrid) + "</a>";
+  h += '<p class="detail-qnum">' + esc(S.questionLabel + " " + (qIdx + 1)) + "</p>" +
+    '<h2 class="detail-q">' + esc(q.q) + "</h2>" +
+    '<p class="detail-skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  h += '<div class="detail-head">' +
+    '<span class="score-chip" style="' + tierVarsCSS(tierIdx) + '">' + esc(tier.chip) + "</span>" +
+    '<span class="detail-score">' + esc(TIERS[tierIdx].score) + "</span></div>";
+
+  h += '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)"><div class="tier-body">';
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n !== null) {
+    h += '<p class="page-ref-line">' + esc(S.pageRefLine.replace("{n}", String(n))) + "</p>";
+  }
+  h += "</div></div>";
+
+  h += '<nav class="tier-nav no-print" aria-label="' + esc(S.backToGrid) + '">';
+  if (hasPrev) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(prevFlat / 5) + 1) + "/t" + (prevFlat % 5) + '">&larr; ' + esc(S.prevTier) + "</a>";
+  } else {
+    h += '<span class="nav-btn disabled">&larr; ' + esc(S.prevTier) + "</span>";
+  }
+  h += '<span class="spacer"></span>';
+  h += '<a class="nav-btn primary" href="#/">' + esc(S.backToGrid) + "</a>";
+  h += '<span class="spacer"></span>';
+  if (hasNext) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(nextFlat / 5) + 1) + "/t" + (nextFlat % 5) + '">' + esc(S.nextTier) + " &rarr;</a>";
+  } else {
+    h += '<span class="nav-btn disabled">' + esc(S.nextTier) + " &rarr;</span>";
+  }
+  h += "</nav>";
+  return h;
+}
+
+function cardHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<button type="button" class="print-btn no-print" onclick="window.print()">' + esc(S.printCard) + "</button>";
+  h += '<div class="card-doc"><h1>' + esc(S.cardTitle) + "</h1>" +
+    '<p class="card-sub">' + esc(S.cardSubtitle) + "</p>";
+  h += explainerHTML(true);
+  h += '<div class="grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' + esc(L[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < 3; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><div class="grid-cell" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</div></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += '<div class="card-ladder">';
+  for (var k = 0; k < L.length; k++) {
+    h += '<div class="cl" style="' + tierVarsCSS(k) + '"><strong>' + esc(L[k].chip) + "</strong>" + esc(L[k].text) + "</div>";
+  }
+  h += "</div>";
+  h += '<p class="card-footer">' + esc(S.cardFooter) + "</p>";
+  h += "</div>";
+  return h;
+}
+
+function printDocumentHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += '<div class="explainer-wrap">' + explainerHTML(false) + "</div>";
+  for (var q = 0; q < 3; q++) h += printQuestionBlockHTML(q);
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function isCardView() {
+  return /[?&]view=card/.test(location.search);
+}
+
+function parseHash() {
+  var m = /^#\/q([1-3])\/t([0-4])$/.exec(location.hash || "");
+  if (!m) return null;
+  return { q: parseInt(m[1], 10) - 1, t: parseInt(m[2], 10) };
+}
+
+function render() {
+  var S = STR[state.lang];
+  var card = isCardView();
+  document.body.classList.toggle("mode-card", card);
+  document.documentElement.lang = state.lang;
+  document.title = S.pageTitle;
+  var titleWords = S.pageTitle.split(" ");
+  titleWords[titleWords.length - 1] = '<span class="accent">' + esc(titleWords[titleWords.length - 1]) + "</span>";
+  document.getElementById("page-title").innerHTML = titleWords.join(" ");
+  document.getElementById("page-sub").textContent = S.pageSub;
+  document.getElementById("lang-en").setAttribute("aria-pressed", state.lang === "en");
+  document.getElementById("lang-es").setAttribute("aria-pressed", state.lang === "es");
+
+  var h;
+  if (card) {
+    h = cardHTML();
+  } else {
+    var route = parseHash();
+    if (route) {
+      h = '<div class="screen-view">' + detailHTML(route.q, route.t) + "</div>";
+    } else {
+      if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+        try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      }
+      h = '<div class="screen-view">' + landingHTML() + "</div>";
+    }
+    h += '<div class="print-doc" aria-hidden="true">' + printDocumentHTML() + "</div>";
+  }
+  document.getElementById("app").innerHTML = h;
+  window.scrollTo(0, 0);
+}
+
+function setLang(lang) {
+  state.lang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  render();
+}
+
+document.getElementById("lang-en").addEventListener("click", function () { setLang("en"); });
+document.getElementById("lang-es").addEventListener("click", function () { setLang("es"); });
+window.addEventListener("hashchange", render);
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Break-In: Evidence Types Rubric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --focus: #FF4D26;
+    --t0-c: #dc2626; --t0-b: #fee2e2;
+    --t1-c: #d97706; --t1-b: #fef3c7;
+    --t2-c: #ca8a04; --t2-b: #fef9c3;
+    --t3-c: #059669; --t3-b: #d1fae5;
+    --t4-c: #2563eb; --t4-b: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, .brand h1, .rubric-grid .row-q, .rubric-grid th.colhead,
+  .detail-q, .card-doc h1, .score-chip, .ladder-chip, .nav-btn, .backlink,
+  .lang-toggle button, .print-btn, .ladder-summary h2, .eyebrow,
+  .detail-qnum, .connector, .page-ref-line, .card-footer, .card-ladder .cl strong {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 28px 32px 80px; }
+  a { color: var(--accent); }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 40px;
+  }
+  .brand h1 {
+    font-size: clamp(26px, 3vw, 38px); font-weight: 800; margin: 0;
+    letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .brand h1 .accent { color: var(--accent); }
+  .brand .sub {
+    color: var(--ink-soft); font-size: 15px; margin-top: 8px; max-width: 52ch;
+  }
+  .lang-toggle {
+    display: inline-flex; align-items: center; border: var(--dash);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 16px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .lang-toggle button + button { border-left: var(--dash); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent); background: rgba(255, 77, 38, 0.06);
+  }
+
+  button { font-family: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  body.mode-card header.top { display: none; }
+
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 10px;
+  }
+
+  .panel {
+    background: transparent; border: var(--dash);
+    padding: 28px; margin-bottom: 32px;
+  }
+  .overview { border: 0; padding: 0 0 8px; margin-bottom: 40px; }
+  .overview p:last-child { margin: 0; font-size: 17px; max-width: 62ch; }
+
+  .grid-panel { padding: 22px; overflow-x: auto; margin-bottom: 48px; }
+  table.rubric-grid {
+    width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed;
+  }
+  .rubric-grid th.corner { width: 18%; }
+  .rubric-grid th.colhead {
+    padding: 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    text-align: center; line-height: 1.25; border: 0;
+  }
+  .rubric-grid th.rowhead {
+    text-align: left; vertical-align: top; padding: 10px 10px 10px 2px; font-weight: 400;
+  }
+  .rubric-grid .row-q {
+    display: block; font-weight: 700; font-size: 15px; line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .rubric-grid .row-gist {
+    display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 6px; line-height: 1.4;
+  }
+  .rubric-grid td.cell { padding: 0; vertical-align: top; }
+  .grid-cell {
+    position: relative; display: block; width: 100%; min-height: 104px;
+    text-align: left; cursor: pointer; text-decoration: none;
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13.5px; line-height: 1.42;
+    background: var(--tb); color: var(--ink);
+    border: var(--dash); border-top: 3px solid var(--tc);
+    padding: 12px 12px 26px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .grid-cell:hover {
+    transform: translateY(-3px);
+    border: 1px solid var(--tc); border-top: 3px solid var(--tc);
+  }
+  .grid-cell .gist { display: block; }
+  .grid-cell .page-ref {
+    position: absolute; bottom: 6px; right: 10px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-soft);
+    font-family: 'Archivo', 'Inter', sans-serif;
+  }
+
+  .ladder-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 24px; }
+  .ladder-chip {
+    flex: 1 1 130px; min-width: 120px; text-align: center;
+    border: var(--dash); padding: 12px 10px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+  }
+  .ladder-chip small { display: block; font-weight: 600; opacity: 0.75; font-size: 11px; }
+
+  .ladder-summary { border: 0; padding: 0; margin: 0 0 32px; }
+  .ladder-summary h2 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;
+  }
+  .ladder-row {
+    display: flex; gap: 16px; align-items: baseline; padding: 14px 4px;
+    border-bottom: var(--dash);
+  }
+  .ladder-row:first-of-type { border-top: var(--dash); }
+  .ladder-row .score-chip { flex: 0 0 auto; }
+  .ladder-row p { margin: 0; font-size: 15px; }
+
+  .dl-footer {
+    display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap;
+    padding: 14px 4px; margin: 0 0 32px;
+    border-top: var(--dash); border-bottom: var(--dash);
+  }
+  .dl-footer .eyebrow { flex: 0 0 auto; }
+  .dl-links { display: flex; gap: 22px; flex-wrap: wrap; }
+  .dl-links a {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .dl-links a:hover { color: var(--accent); }
+
+  .score-chip {
+    display: inline-block; font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+    color: var(--tc); background: var(--tb);
+    padding: 6px 16px; white-space: nowrap;
+  }
+
+  .backlink {
+    display: inline-block; margin: 0 0 28px; color: var(--ink-soft);
+    text-decoration: none; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: var(--dash); padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .backlink:hover { color: var(--accent); border-color: var(--accent); }
+  .detail-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 20px; }
+  .detail-head .score-chip {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.01em; padding: 10px 24px;
+  }
+  .detail-score {
+    font-weight: 800; font-size: 20px; color: var(--ink-faint); letter-spacing: -0.01em;
+  }
+  .detail-q {
+    font-size: clamp(28px, 3.6vw, 44px); font-weight: 800; margin: 0 0 10px;
+    letter-spacing: -0.03em; line-height: 1.05; max-width: 22ch;
+  }
+  .detail-qnum {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--accent); margin: 0 0 12px;
+  }
+  .detail-skill {
+    color: var(--ink-soft); font-size: 16px; margin: 0 0 24px;
+    padding-bottom: 16px; border-bottom: var(--dash); max-width: 62ch;
+  }
+  .tier {
+    border: var(--dash); border-left: 4px solid var(--tc);
+    background: transparent; margin-bottom: 12px; overflow: hidden;
+  }
+  .tier-body { padding: 22px 26px 24px 28px; }
+  .tier-line { margin: 0 0 6px; max-width: 68ch; }
+  .connector {
+    display: block; width: fit-content; margin: 14px auto;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--tc); background: transparent;
+    border: 1px dashed var(--tc); padding: 4px 16px;
+  }
+  .examples-label { font-weight: 700; margin: 18px 0 8px; letter-spacing: -0.01em; }
+  .examples {
+    margin: 0; padding: 16px 20px 16px 36px; border: var(--dash);
+    background: rgba(26, 26, 26, 0.02);
+  }
+  .examples li { margin-bottom: 6px; }
+  .examples li:last-child { margin-bottom: 0; }
+  .explainer h2 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 15pt;
+    margin: 0 0 6px;
+  }
+  .explainer-framing { margin: 0 0 10px; color: var(--ink-soft); }
+  .explainer ol { margin: 0; padding-left: 22px; }
+  .explainer li { margin: 0 0 8px; line-height: 1.45; }
+  .explainer-compact { margin: 2px 0 6px; }
+
+  .page-ref-line {
+    color: var(--ink-soft);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 16px 0 0;
+  }
+
+  .tier-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+  .nav-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; border: var(--dash);
+    padding: 11px 20px; color: var(--ink-soft); text-decoration: none;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.3s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
+  .nav-btn.primary { color: var(--ink); border-color: var(--ink-faint); }
+  .nav-btn.primary:hover { color: var(--accent); border-color: var(--accent); }
+  .nav-btn.disabled { opacity: 0.35; pointer-events: none; }
+  .tier-nav .spacer { flex: 1; }
+
+  .card-doc { background: transparent; border: var(--dash); padding: 24px 26px; }
+  .card-doc h1 {
+    font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .card-sub { color: var(--ink-soft); font-size: 13px; margin: 6px 0 16px; }
+  .card-footer {
+    color: var(--ink-soft);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    margin: 14px 0 0;
+  }
+  .card-ladder { display: flex; gap: 8px; margin-top: 14px; }
+  .card-ladder .cl {
+    flex: 1; border: var(--dash); padding: 8px 9px; font-size: 11px; line-height: 1.35;
+  }
+  .card-ladder .cl strong { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+  .print-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; color: var(--ink-soft); border: var(--dash);
+    padding: 11px 22px; margin-bottom: 16px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .print-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  .print-doc { display: none; }
+  .q-inner .q-text {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px;
+  }
+  .skill {
+    color: var(--ink-soft); font-size: 14px; margin: 0 0 18px;
+    padding-bottom: 12px; border-bottom: var(--dash);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 18px 48px; }
+    header.top { margin-bottom: 24px; }
+    .grid-panel { padding: 12px; }
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    body.mode-card { font-size: 7.6pt; }
+    .wrap { max-width: none; padding: 0; }
+    header.top .lang-toggle, .no-print, .screen-view { display: none !important; }
+    .print-doc { display: block; }
+    .panel, .q-card, .q-inner, .tier, .card-doc { border: 1px solid #999; }
+    .tier { break-inside: avoid; }
+    .question-block { break-before: page; }
+    .question-block.first { break-before: auto; }
+    .explainer-wrap { break-after: page; }
+    .question-block.collapsed .q-inner, .tier-detail.collapsed { display: block !important; }
+    .grid-panel { overflow: visible; }
+    .grid-cell { min-height: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  @media print {
+    body.mode-card .print-btn { display: none !important; }
+    body.mode-card .card-doc { border: 0; padding: 0; }
+    body.mode-card .grid-panel { border: 0; padding: 0; margin: 0; }
+    body.mode-card .rubric-grid { border-spacing: 3px; }
+    body.mode-card .rubric-grid th.corner { width: 16%; }
+    body.mode-card .rubric-grid th.colhead {
+      font-size: 6.6pt; padding: 3px 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .rubric-grid th.rowhead { padding: 2px 4px 2px 0; }
+    body.mode-card .rubric-grid .row-q { font-size: 6.8pt; }
+    body.mode-card .rubric-grid .row-gist { font-size: 6.1pt; margin-top: 1px; }
+    body.mode-card .grid-cell {
+      font-size: 6.2pt; line-height: 1.25; min-height: 0;
+      padding: 4px 4px 11px; border-left-width: 2px; border-top-width: 2px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .grid-cell .gist { font-size: 6.2pt; line-height: 1.25; }
+    body.mode-card .grid-cell .page-ref { font-size: 5.4pt; bottom: 2px; right: 4px; }
+    body.mode-card .card-doc h1 { font-size: 13pt; }
+    body.mode-card .card-sub { font-size: 7.5pt; margin: 1px 0 6px; }
+    body.mode-card .card-ladder .cl { font-size: 5.6pt; padding: 3px 4px; }
+    body.mode-card .card-ladder .cl strong { font-size: 5.8pt; }
+    body.mode-card .card-footer { font-size: 6pt; margin: 5px 0 0; }
+    body.mode-card .explainer-compact { font-size: 6.4pt; margin: 1px 0 4px; line-height: 1.3; }
+  }
+
+  @page { margin: 0.4in; }
+  @page landscape-page { size: letter landscape; margin: 0.4in; }
+  body.mode-card { page: landscape-page; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 id="page-title">The Break-In: Evidence Types Rubric</h1>
+      <div class="sub" id="page-sub"></div>
+    </div>
+    <div class="lang-toggle no-print" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<script>
+"use strict";
+/* ============================== DATA ============================== */
+
+var STR = {
+  "en": {
+    "pageTitle": "The Break-In: Evidence Types Rubric",
+    "pageSub": "How your four evidence-type answers are graded",
+    "overviewLabel": "Overview",
+    "overview": "Read The Break-In, then give one plausible example of each evidence type: individual circumstantial, class circumstantial, individual direct, and class direct. Each response is worth 10 points and is graded on the 0/55/65/85/100 ladder. Resubmission is allowed. The goal is Developing or better on every skill.",
+    "questionLabel": "Question",
+    "skillLabel": "Skill statement",
+    "ladderLabel": "Tier ladder",
+    "connectors": {
+      "-BECAUSE-": "-BECAUSE-",
+      "-BUT-": "-BUT-",
+      "-AND-": "-AND-",
+      "-OR-": "-OR-"
+    },
+    "examplesLabel": "For example:",
+    "backToGrid": "Back to all tiers",
+    "prevTier": "Previous tier",
+    "nextTier": "Next tier",
+    "pageRefLine": "Details on p. {n} of the rubric PDF",
+    "gridHint": "Click any box to see full details for that level.",
+    "cardTitle": "The Break-In: Evidence Types Rubric",
+    "cardSubtitle": "How your four evidence-type answers are graded",
+    "cardFooter": "See the rubric PDF for full details and examples in each box",
+    "printCard": "Print",
+    "downloadsLabel": "Downloads",
+    "dlFullEn": "Full rubric (EN)",
+    "dlFullEs": "Full rubric (ES)",
+    "dlCardEn": "Quick card (EN)",
+    "dlCardEs": "Quick card (ES)"
+  },
+  "es": {
+    "pageTitle": "El Entrón: Rúbrica de Tipos de Evidencia",
+    "pageSub": "Cómo se califican tus cuatro respuestas sobre tipos de evidencia",
+    "overviewLabel": "Descripción general",
+    "overview": "Lee El Entrón y luego da un ejemplo plausible de cada tipo de evidencia: circunstancial individual, circunstancial de clase, directa individual y directa de clase. Cada respuesta vale 10 puntos y se califica en la escalera 0/55/65/85/100. Se permite reenviar. La meta es En desarrollo o mejor en cada habilidad.",
+    "questionLabel": "Pregunta",
+    "skillLabel": "Declaración de la habilidad",
+    "ladderLabel": "Escalera de niveles",
+    "connectors": {
+      "-BECAUSE-": "-PORQUE-",
+      "-BUT-": "-PERO-",
+      "-AND-": "-Y-",
+      "-OR-": "-O-"
+    },
+    "examplesLabel": "Por ejemplo:",
+    "backToGrid": "Volver a todos los niveles",
+    "prevTier": "Nivel anterior",
+    "nextTier": "Nivel siguiente",
+    "pageRefLine": "Detalles en la pág. {n} del PDF de la rúbrica",
+    "gridHint": "Haz clic en cualquier casilla para ver los detalles completos de ese nivel.",
+    "cardTitle": "El Entrón: Rúbrica de Tipos de Evidencia",
+    "cardSubtitle": "Cómo se califican tus cuatro respuestas sobre tipos de evidencia",
+    "cardFooter": "Consulta la rúbrica en PDF para detalles y ejemplos en cada casilla",
+    "printCard": "Imprimir",
+    "downloadsLabel": "Descargas",
+    "dlFullEn": "Rúbrica completa (EN)",
+    "dlFullEs": "Rúbrica completa (ES)",
+    "dlCardEn": "Tarjeta rápida (EN)",
+    "dlCardEs": "Tarjeta rápida (ES)"
+  }
+};
+
+var GISTS = {
+  "en": {
+    "skillGists": [
+      "Individual circumstantial evidence",
+      "Class circumstantial evidence",
+      "Individual direct evidence",
+      "Class direct evidence"
+    ],
+    "cells": {
+      "q1": [
+        "No example and no explanation.",
+        "An attempt, but the example does not fit or is not explained.",
+        "A mostly fitting example with an incomplete or partly inaccurate explanation.",
+        "A fitting example with a solid explanation that is vague or misses a key feature.",
+        "A specific, plausible example with a clear and accurate explanation."
+      ],
+      "q2": [
+        "No example and no explanation.",
+        "An attempt, but the example does not fit or is not explained.",
+        "A mostly fitting example with an incomplete or partly inaccurate explanation.",
+        "A fitting example with a solid explanation that is vague or misses a key feature.",
+        "A specific, plausible example with a clear and accurate explanation."
+      ],
+      "q3": [
+        "No example and no explanation.",
+        "An attempt, but the example does not fit or is not explained.",
+        "A mostly fitting example with an incomplete or partly inaccurate explanation.",
+        "A fitting example with a solid explanation that is vague or misses a key feature.",
+        "A specific, plausible example with a clear and accurate explanation."
+      ],
+      "q4": [
+        "No example and no explanation.",
+        "An attempt, but the example does not fit or is not explained.",
+        "A mostly fitting example with an incomplete or partly inaccurate explanation.",
+        "A fitting example with a solid explanation that is vague or misses a key feature.",
+        "A specific, plausible example with a clear and accurate explanation."
+      ]
+    }
+  },
+  "es": {
+    "skillGists": [
+      "Evidencia circunstancial individual",
+      "Evidencia circunstancial de clase",
+      "Evidencia directa individual",
+      "Evidencia directa de clase"
+    ],
+    "cells": {
+      "q1": [
+        "Sin ejemplo y sin explicación.",
+        "Un intento, pero el ejemplo no encaja o no tiene explicación.",
+        "Un ejemplo que casi encaja con una explicación incompleta o en parte incorrecta.",
+        "Un ejemplo que encaja con una explicación sólida, aunque vaga o con una característica clave faltante.",
+        "Un ejemplo específico y plausible con una explicación clara y precisa."
+      ],
+      "q2": [
+        "Sin ejemplo y sin explicación.",
+        "Un intento, pero el ejemplo no encaja o no tiene explicación.",
+        "Un ejemplo que casi encaja con una explicación incompleta o en parte incorrecta.",
+        "Un ejemplo que encaja con una explicación sólida, aunque vaga o con una característica clave faltante.",
+        "Un ejemplo específico y plausible con una explicación clara y precisa."
+      ],
+      "q3": [
+        "Sin ejemplo y sin explicación.",
+        "Un intento, pero el ejemplo no encaja o no tiene explicación.",
+        "Un ejemplo que casi encaja con una explicación incompleta o en parte incorrecta.",
+        "Un ejemplo que encaja con una explicación sólida, aunque vaga o con una característica clave faltante.",
+        "Un ejemplo específico y plausible con una explicación clara y precisa."
+      ],
+      "q4": [
+        "Sin ejemplo y sin explicación.",
+        "Un intento, pero el ejemplo no encaja o no tiene explicación.",
+        "Un ejemplo que casi encaja con una explicación incompleta o en parte incorrecta.",
+        "Un ejemplo que encaja con una explicación sólida, aunque vaga o con una característica clave faltante.",
+        "Un ejemplo específico y plausible con una explicación clara y precisa."
+      ]
+    }
+  }
+};
+
+var TIERS = [
+  { key: "t0", score: "0%" },
+  { key: "t1", score: "55%" },
+  { key: "t2", score: "65%" },
+  { key: "t3", score: "85%" },
+  { key: "t4", score: "100%" }
+];
+
+var EXPLAINER = {
+  "en": {
+    "heading": "How your grade works",
+    "framing": "This assessment has four questions. Each question is graded on its own skill, so a strong answer on one question does not cover a weak answer on another.",
+    "points": [
+      {
+        "lead": "Each response is graded on its own skill.",
+        "text": ""
+      },
+      {
+        "lead": "Each response is worth 10 points.",
+        "text": "Your tier turns those 10 points into a score."
+      },
+      {
+        "lead": "Tier percents are 0%, 55%, 65%, 85%, or 100% of the 10 points.",
+        "text": ""
+      },
+      {
+        "lead": "Resubmission is allowed after feedback.",
+        "text": "You can improve your answers after feedback."
+      },
+      {
+        "lead": "Aim for Developing or better on every skill.",
+        "text": ""
+      }
+    ],
+    "compact": "Short version: give a plausible example for each evidence type, explain why it fits, and revise if you need to reach Developing or better."
+  },
+  "es": {
+    "heading": "Cómo funciona tu calificación",
+    "framing": "Esta evaluación tiene cuatro preguntas. Cada pregunta se califica con su propia habilidad, así que una respuesta fuerte en una pregunta no cubre una respuesta débil en otra.",
+    "points": [
+      {
+        "lead": "Cada respuesta se califica con su propia habilidad.",
+        "text": ""
+      },
+      {
+        "lead": "Cada respuesta vale 10 puntos.",
+        "text": "Tu nivel convierte esos 10 puntos en una puntuación."
+      },
+      {
+        "lead": "Los porcentajes de nivel son 0%, 55%, 65%, 85% o 100% de los 10 puntos.",
+        "text": ""
+      },
+      {
+        "lead": "Se permite reenviar después de recibir comentarios.",
+        "text": "Puedes mejorar tus respuestas después de recibir comentarios."
+      },
+      {
+        "lead": "Apunta a En desarrollo o mejor en cada habilidad.",
+        "text": ""
+      }
+    ],
+    "compact": "En corto: da un ejemplo plausible para cada tipo de evidencia, explica por qué encaja, y vuelve a enviarlo si necesitas llegar a En desarrollo o mejor."
+  }
+};
+
+function explainerHTML(compact) {
+  var E = EXPLAINER[state.lang];
+  if (compact) return '<p class="explainer-compact">' + esc(E.compact) + "</p>";
+  var h = '<div class="panel explainer"><h2>' + esc(E.heading) + "</h2>" +
+    '<p class="explainer-framing">' + esc(E.framing) + "</p><ol>";
+  for (var i = 0; i < E.points.length; i++) {
+    h += "<li><strong>" + esc(E.points[i].lead) + "</strong> " + esc(E.points[i].text) + "</li>";
+  }
+  return h + "</ol></div>";
+}
+
+var PDF_PAGES = { en: {}, es: {} };
+
+var DATA = {
+  "en": {
+    "questions": [
+      {
+        "q": "Individual Circumstantial Evidence",
+        "skill": "I am able to give a plausible example of individual circumstantial evidence from The Break-In and explain why it fits this evidence type.",
+        "tiers": {
+          "t0": {
+            "chip": "Missing 0%",
+            "title": null,
+            "lines": [
+              "Missing: There is no attempt to give an example of individual circumstantial evidence.",
+              "Missing: There is no explanation of how the example fits this evidence type."
+            ]
+          },
+          "t1": {
+            "chip": "Emerging 55%",
+            "title": null,
+            "lines": [
+              "Emerging: There is an attempt at individual circumstantial evidence, but the example given is not plausible for The Break-In.",
+              "Emerging: The example does not actually fit individual circumstantial evidence, or it is given with no explanation."
+            ],
+            "examples": [
+              "\"The green jacket is individual circumstantial evidence.\"",
+              "\"A shoe print in the kitchen proves exactly who was there.\""
+            ]
+          },
+          "t2": {
+            "chip": "Approaching 65%",
+            "title": null,
+            "lines": [
+              "Approaching: A mostly fitting example of individual circumstantial evidence is given.",
+              "Approaching: The explanation of why it fits is incomplete or partly inaccurate."
+            ],
+            "examples": [
+              "\"His humming in the alley is individual circumstantial evidence because it is about sound.\"",
+              "\"A fingerprint on the register is individual circumstantial evidence because it is unique, but it does not really show the crime.\""
+            ]
+          },
+          "t3": {
+            "chip": "Developing 85%",
+            "title": null,
+            "lines": [
+              "Developing: A fitting example of individual circumstantial evidence is given.",
+              "Developing: The explanation of why it fits is solid, but it is vague or misses a key feature of the type."
+            ]
+          },
+          "t4": {
+            "chip": "Refining 100%",
+            "title": null,
+            "lines": [
+              "Refining: A specific, plausible example from The Break-In is given.",
+              "Refining: The explanation is clear and accurate about why it fits individual circumstantial evidence."
+            ]
+          }
+        }
+      },
+      {
+        "q": "Class Circumstantial Evidence",
+        "skill": "I am able to give a plausible example of class circumstantial evidence from The Break-In and explain why it fits this evidence type.",
+        "tiers": {
+          "t0": {
+            "chip": "Missing 0%",
+            "title": null,
+            "lines": [
+              "Missing: There is no attempt to give an example of class circumstantial evidence.",
+              "Missing: There is no explanation of how the example fits this evidence type."
+            ]
+          },
+          "t1": {
+            "chip": "Emerging 55%",
+            "title": null,
+            "lines": [
+              "Emerging: There is an attempt at class circumstantial evidence, but the example given is not plausible for The Break-In.",
+              "Emerging: The example does not actually fit class circumstantial evidence, or it is given with no explanation."
+            ],
+            "examples": [
+              "\"The register is class circumstantial evidence.\"",
+              "\"His green jacket proves he is the only person who could do it.\""
+            ]
+          },
+          "t2": {
+            "chip": "Approaching 65%",
+            "title": null,
+            "lines": [
+              "Approaching: A mostly fitting example of class circumstantial evidence is given.",
+              "Approaching: The explanation of why it fits is incomplete or partly inaccurate."
+            ],
+            "examples": [
+              "\"The dog walker is class circumstantial evidence because he saw something.\"",
+              "\"A shoe print in flour is class circumstantial evidence because it is a print, but it does not point to a type of person.\""
+            ]
+          },
+          "t3": {
+            "chip": "Developing 85%",
+            "title": null,
+            "lines": [
+              "Developing: A fitting example of class circumstantial evidence is given.",
+              "Developing: The explanation of why it fits is solid, but it is vague or misses a key feature of the type."
+            ]
+          },
+          "t4": {
+            "chip": "Refining 100%",
+            "title": null,
+            "lines": [
+              "Refining: A specific, plausible example from The Break-In is given.",
+              "Refining: The explanation is clear and accurate about why it fits class circumstantial evidence."
+            ]
+          }
+        }
+      },
+      {
+        "q": "Individual Direct Evidence",
+        "skill": "I am able to give a plausible example of individual direct evidence from The Break-In and explain why it fits this evidence type.",
+        "tiers": {
+          "t0": {
+            "chip": "Missing 0%",
+            "title": null,
+            "lines": [
+              "Missing: There is no attempt to give an example of individual direct evidence.",
+              "Missing: There is no explanation of how the example fits this evidence type."
+            ]
+          },
+          "t1": {
+            "chip": "Emerging 55%",
+            "title": null,
+            "lines": [
+              "Emerging: There is an attempt at individual direct evidence, but the example given is not plausible for The Break-In.",
+              "Emerging: The example does not actually fit individual direct evidence, or it is given with no explanation."
+            ],
+            "examples": [
+              "\"The safe is individual direct evidence.\"",
+              "\"The dog walker heard someone humming, so that proves everything.\""
+            ]
+          },
+          "t2": {
+            "chip": "Approaching 65%",
+            "title": null,
+            "lines": [
+              "Approaching: A mostly fitting example of individual direct evidence is given.",
+              "Approaching: The explanation of why it fits is incomplete or partly inaccurate."
+            ],
+            "examples": [
+              "\"A camera recording of the break-in would be individual direct evidence because it is a recording.\"",
+              "\"If the dog walker saw J leave with the money, that is direct evidence, but it does not identify him by itself.\""
+            ]
+          },
+          "t3": {
+            "chip": "Developing 85%",
+            "title": null,
+            "lines": [
+              "Developing: A fitting example of individual direct evidence is given.",
+              "Developing: The explanation of why it fits is solid, but it is vague or misses a key feature of the type."
+            ]
+          },
+          "t4": {
+            "chip": "Refining 100%",
+            "title": null,
+            "lines": [
+              "Refining: A specific, plausible example from The Break-In is given.",
+              "Refining: The explanation is clear and accurate about why it fits individual direct evidence."
+            ]
+          }
+        }
+      },
+      {
+        "q": "Class Direct Evidence",
+        "skill": "I am able to give a plausible example of class direct evidence from The Break-In and explain why it fits this evidence type.",
+        "tiers": {
+          "t0": {
+            "chip": "Missing 0%",
+            "title": null,
+            "lines": [
+              "Missing: There is no attempt to give an example of class direct evidence.",
+              "Missing: There is no explanation of how the example fits this evidence type."
+            ]
+          },
+          "t1": {
+            "chip": "Emerging 55%",
+            "title": null,
+            "lines": [
+              "Emerging: There is an attempt at class direct evidence, but the example given is not plausible for The Break-In.",
+              "Emerging: The example does not actually fit class direct evidence, or it is given with no explanation."
+            ],
+            "examples": [
+              "\"The back door lock is class direct evidence.\"",
+              "\"The flour on the floor shows exactly who did it.\""
+            ]
+          },
+          "t2": {
+            "chip": "Approaching 65%",
+            "title": null,
+            "lines": [
+              "Approaching: A mostly fitting example of class direct evidence is given.",
+              "Approaching: The explanation of why it fits is incomplete or partly inaccurate."
+            ],
+            "examples": [
+              "\"A witness saying a tall person in a red cap came in is class direct evidence because someone saw it.\"",
+              "\"If a camera showed a person in a green jacket, that is class direct evidence, but it does not explain what class means.\""
+            ]
+          },
+          "t3": {
+            "chip": "Developing 85%",
+            "title": null,
+            "lines": [
+              "Developing: A fitting example of class direct evidence is given.",
+              "Developing: The explanation of why it fits is solid, but it is vague or misses a key feature of the type."
+            ]
+          },
+          "t4": {
+            "chip": "Refining 100%",
+            "title": null,
+            "lines": [
+              "Refining: A specific, plausible example from The Break-In is given.",
+              "Refining: The explanation is clear and accurate about why it fits class direct evidence."
+            ]
+          }
+        }
+      }
+    ],
+    "ladder": [
+      { "chip": "Missing · 0%", "text": "No example and no explanation."
+      },
+      { "chip": "Emerging · 55%", "text": "An attempt, but the example does not fit or is not explained."
+      },
+      { "chip": "Approaching · 65%", "text": "A mostly fitting example with an incomplete or partly inaccurate explanation."
+      },
+      { "chip": "Developing · 85%", "text": "A fitting example with a solid explanation that is vague or misses a key feature."
+      },
+      { "chip": "Refining · 100%", "text": "A specific, plausible example with a clear and accurate explanation."
+      }
+    ]
+  },
+  "es": {
+    "questions": [
+      {
+        "q": "Evidencia Circunstancial Individual",
+        "skill": "Puedo dar un ejemplo plausible de evidencia circunstancial individual de El Entrón y explicar por qué encaja con este tipo de evidencia.",
+        "tiers": {
+          "t0": {
+            "chip": "Ausente 0%",
+            "title": "Ausente (Missing)",
+            "lines": [
+              "Ausente: No hay intento de dar un ejemplo de evidencia circunstancial individual.",
+              "Ausente: No hay explicación de cómo encaja el ejemplo con este tipo de evidencia."
+            ]
+          },
+          "t1": {
+            "chip": "Emergente 55%",
+            "title": "Emergente (Emerging)",
+            "lines": [
+              "Emergente: Hay un intento de evidencia circunstancial individual, pero el ejemplo dado no es plausible para El Entrón.",
+              "Emergente: El ejemplo no encaja realmente con evidencia circunstancial individual, o se da sin explicación."
+            ],
+            "examples": [
+              "\"La chaqueta verde es evidencia circunstancial individual.\"",
+              "\"Una huella de zapato en la cocina prueba exactamente quién estuvo ahí.\""
+            ]
+          },
+          "t2": {
+            "chip": "Progresando 65%",
+            "title": "Progresando (Approaching)",
+            "lines": [
+              "Progresando: Se da un ejemplo que casi encaja con evidencia circunstancial individual.",
+              "Progresando: La explicación de por qué encaja está incompleta o es en parte incorrecta."
+            ],
+            "examples": [
+              "\"Su tarareo en el callejón es evidencia circunstancial individual porque es sobre sonido.\"",
+              "\"Una huella dactilar en la registradora es evidencia circunstancial individual porque es única, pero no muestra realmente el crimen.\""
+            ]
+          },
+          "t3": {
+            "chip": "En desarrollo 85%",
+            "title": "En desarrollo (Developing)",
+            "lines": [
+              "En desarrollo: Se da un ejemplo que encaja con evidencia circunstancial individual.",
+              "En desarrollo: La explicación de por qué encaja es sólida, pero es vaga o le falta una característica clave del tipo."
+            ]
+          },
+          "t4": {
+            "chip": "Refinando 100%",
+            "title": "Refinando (Refining)",
+            "lines": [
+              "Refinando: Se da un ejemplo específico y plausible de El Entrón.",
+              "Refinando: La explicación es clara y precisa sobre por qué encaja con evidencia circunstancial individual."
+            ]
+          }
+        }
+      },
+      {
+        "q": "Evidencia Circunstancial de Clase",
+        "skill": "Puedo dar un ejemplo plausible de evidencia circunstancial de clase de El Entrón y explicar por qué encaja con este tipo de evidencia.",
+        "tiers": {
+          "t0": {
+            "chip": "Ausente 0%",
+            "title": "Ausente (Missing)",
+            "lines": [
+              "Ausente: No hay intento de dar un ejemplo de evidencia circunstancial de clase.",
+              "Ausente: No hay explicación de cómo encaja el ejemplo con este tipo de evidencia."
+            ]
+          },
+          "t1": {
+            "chip": "Emergente 55%",
+            "title": "Emergente (Emerging)",
+            "lines": [
+              "Emergente: Hay un intento de evidencia circunstancial de clase, pero el ejemplo dado no es plausible para El Entrón.",
+              "Emergente: El ejemplo no encaja realmente con evidencia circunstancial de clase, o se da sin explicación."
+            ],
+            "examples": [
+              "\"La registradora es evidencia circunstancial de clase.\"",
+              "\"Su chaqueta verde prueba que él es la única persona que pudo hacerlo.\""
+            ]
+          },
+          "t2": {
+            "chip": "Progresando 65%",
+            "title": "Progresando (Approaching)",
+            "lines": [
+              "Progresando: Se da un ejemplo que casi encaja con evidencia circunstancial de clase.",
+              "Progresando: La explicación de por qué encaja está incompleta o es en parte incorrecta."
+            ],
+            "examples": [
+              "\"La persona que paseaba al perro es evidencia circunstancial de clase porque vio algo.\"",
+              "\"Una huella de zapato en harina es evidencia circunstancial de clase porque es una huella, pero no señala un tipo de persona.\""
+            ]
+          },
+          "t3": {
+            "chip": "En desarrollo 85%",
+            "title": "En desarrollo (Developing)",
+            "lines": [
+              "En desarrollo: Se da un ejemplo que encaja con evidencia circunstancial de clase.",
+              "En desarrollo: La explicación de por qué encaja es sólida, pero es vaga o le falta una característica clave del tipo."
+            ]
+          },
+          "t4": {
+            "chip": "Refinando 100%",
+            "title": "Refinando (Refining)",
+            "lines": [
+              "Refinando: Se da un ejemplo específico y plausible de El Entrón.",
+              "Refinando: La explicación es clara y precisa sobre por qué encaja con evidencia circunstancial de clase."
+            ]
+          }
+        }
+      },
+      {
+        "q": "Evidencia Directa Individual",
+        "skill": "Puedo dar un ejemplo plausible de evidencia directa individual de El Entrón y explicar por qué encaja con este tipo de evidencia.",
+        "tiers": {
+          "t0": {
+            "chip": "Ausente 0%",
+            "title": "Ausente (Missing)",
+            "lines": [
+              "Ausente: No hay intento de dar un ejemplo de evidencia directa individual.",
+              "Ausente: No hay explicación de cómo encaja el ejemplo con este tipo de evidencia."
+            ]
+          },
+          "t1": {
+            "chip": "Emergente 55%",
+            "title": "Emergente (Emerging)",
+            "lines": [
+              "Emergente: Hay un intento de evidencia directa individual, pero el ejemplo dado no es plausible para El Entrón.",
+              "Emergente: El ejemplo no encaja realmente con evidencia directa individual, o se da sin explicación."
+            ],
+            "examples": [
+              "\"La caja fuerte es evidencia directa individual.\"",
+              "\"La persona que paseaba al perro escuchó a alguien tararear, así que eso lo prueba todo.\""
+            ]
+          },
+          "t2": {
+            "chip": "Progresando 65%",
+            "title": "Progresando (Approaching)",
+            "lines": [
+              "Progresando: Se da un ejemplo que casi encaja con evidencia directa individual.",
+              "Progresando: La explicación de por qué encaja está incompleta o es en parte incorrecta."
+            ],
+            "examples": [
+              "\"Una grabación de cámara del entrón sería evidencia directa individual porque es una grabación.\"",
+              "\"Si la persona que paseaba al perro vio a J salir con el dinero, eso es evidencia directa, pero no lo identifica por sí solo.\""
+            ]
+          },
+          "t3": {
+            "chip": "En desarrollo 85%",
+            "title": "En desarrollo (Developing)",
+            "lines": [
+              "En desarrollo: Se da un ejemplo que encaja con evidencia directa individual.",
+              "En desarrollo: La explicación de por qué encaja es sólida, pero es vaga o le falta una característica clave del tipo."
+            ]
+          },
+          "t4": {
+            "chip": "Refinando 100%",
+            "title": "Refinando (Refining)",
+            "lines": [
+              "Refinando: Se da un ejemplo específico y plausible de El Entrón.",
+              "Refinando: La explicación es clara y precisa sobre por qué encaja con evidencia directa individual."
+            ]
+          }
+        }
+      },
+      {
+        "q": "Evidencia Directa de Clase",
+        "skill": "Puedo dar un ejemplo plausible de evidencia directa de clase de El Entrón y explicar por qué encaja con este tipo de evidencia.",
+        "tiers": {
+          "t0": {
+            "chip": "Ausente 0%",
+            "title": "Ausente (Missing)",
+            "lines": [
+              "Ausente: No hay intento de dar un ejemplo de evidencia directa de clase.",
+              "Ausente: No hay explicación de cómo encaja el ejemplo con este tipo de evidencia."
+            ]
+          },
+          "t1": {
+            "chip": "Emergente 55%",
+            "title": "Emergente (Emerging)",
+            "lines": [
+              "Emergente: Hay un intento de evidencia directa de clase, pero el ejemplo dado no es plausible para El Entrón.",
+              "Emergente: El ejemplo no encaja realmente con evidencia directa de clase, o se da sin explicación."
+            ],
+            "examples": [
+              "\"La cerradura de la puerta de atrás es evidencia directa de clase.\"",
+              "\"La harina en el piso muestra exactamente quién lo hizo.\""
+            ]
+          },
+          "t2": {
+            "chip": "Progresando 65%",
+            "title": "Progresando (Approaching)",
+            "lines": [
+              "Progresando: Se da un ejemplo que casi encaja con evidencia directa de clase.",
+              "Progresando: La explicación de por qué encaja está incompleta o es en parte incorrecta."
+            ],
+            "examples": [
+              "\"Un testigo diciendo que entró una persona alta con gorra roja es evidencia directa de clase porque alguien lo vio.\"",
+              "\"Si una cámara mostraba a una persona con chaqueta verde, eso es evidencia directa de clase, pero no explica qué significa clase.\""
+            ]
+          },
+          "t3": {
+            "chip": "En desarrollo 85%",
+            "title": "En desarrollo (Developing)",
+            "lines": [
+              "En desarrollo: Se da un ejemplo que encaja con evidencia directa de clase.",
+              "En desarrollo: La explicación de por qué encaja es sólida, pero es vaga o le falta una característica clave del tipo."
+            ]
+          },
+          "t4": {
+            "chip": "Refinando 100%",
+            "title": "Refinando (Refining)",
+            "lines": [
+              "Refinando: Se da un ejemplo específico y plausible de El Entrón.",
+              "Refinando: La explicación es clara y precisa sobre por qué encaja con evidencia directa de clase."
+            ]
+          }
+        }
+      }
+    ],
+    "ladder": [
+      { "chip": "Ausente · 0%", "text": "Sin ejemplo y sin explicación."
+      },
+      { "chip": "Emergente · 55%", "text": "Un intento, pero el ejemplo no encaja o no tiene explicación."
+      },
+      { "chip": "Progresando · 65%", "text": "Un ejemplo que casi encaja con una explicación incompleta o en parte incorrecta."
+      },
+      { "chip": "En desarrollo · 85%", "text": "Un ejemplo que encaja con una explicación sólida, aunque vaga o con una característica clave faltante."
+      },
+      { "chip": "Refinando · 100%", "text": "Un ejemplo específico y plausible con una explicación clara y precisa."
+      }
+    ]
+  }
+};
+
+/* ============================== LOGIC ============================== */
+
+var LANG_KEY = "break-in-rubric-lang";
+var state = { lang: "en" };
+try {
+  var saved = localStorage.getItem(LANG_KEY);
+  if (saved === "en" || saved === "es") state.lang = saved;
+} catch (e) {}
+var urlLang = /[?&]lang=(es|en)/.exec(location.search);
+if (urlLang) state.lang = urlLang[1];
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function tierVarsCSS(tierIdx) {
+  return "color:var(--" + TIERS[tierIdx].key + "-c);background:var(--" + TIERS[tierIdx].key + "-b)";
+}
+
+function pageRefNum(qIdx, tierIdx) {
+  var map = PDF_PAGES[state.lang];
+  if (!map) return null;
+  var v = map["q" + (qIdx + 1) + "-t" + tierIdx];
+  return (typeof v === "number") ? v : null;
+}
+
+function pageRefHTML(qIdx, tierIdx) {
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n === null) return "";
+  return '<span class="page-ref">p. ' + n + "</span>";
+}
+
+function printTierHTML(qIdx, tierIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var S = STR[state.lang];
+  var h = '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)">' +
+    '<div class="tier-body">' +
+    '<p class="tier-line"><span class="score-chip">' + esc(tier.chip) + "</span></p>";
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  h += "</div></div>";
+  return h;
+}
+
+function printQuestionBlockHTML(qIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var S = STR[state.lang];
+  var h = '<section class="question-block' + (qIdx === 0 ? " first" : "") + '">';
+  h += '<div class="q-inner">' +
+    '<p class="q-text">' + esc(S.questionLabel + " " + (qIdx + 1) + ": " + q.q) + "</p>" +
+    '<p class="skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  for (var j = 0; j < TIERS.length; j++) h += printTierHTML(qIdx, j);
+  h += "</div></section>";
+  return h;
+}
+
+function ladderSummaryHTML() {
+  var S = STR[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<div class="panel ladder-summary"><h2>' + esc(S.ladderLabel) + "</h2>";
+  for (var i = 0; i < L.length; i++) {
+    h += '<div class="ladder-row">' +
+      '<span class="score-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(L[i].chip) + "</span>" +
+      "<p>" + esc(L[i].text) + "</p></div>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function ladderStripHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="ladder-strip" role="group" aria-label="' + esc(S.ladderLabel) + '">';
+  for (var i = 0; i < TIERS.length; i++) {
+    h += '<span class="ladder-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(DATA[state.lang].ladder[i].chip) + "</span>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function landingHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += explainerHTML(false);
+  h += '<div class="panel grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' +
+      esc(DATA[state.lang].ladder[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < 3; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><a class="grid-cell" href="#/q' + (q + 1) + "/t" + c + '" role="link" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</a></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += downloadsFooterHTML();
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function downloadsFooterHTML() {
+  return "";
+}
+
+function detailHTML(qIdx, tierIdx) {
+  var S = STR[state.lang];
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var flat = qIdx * 5 + tierIdx;
+  var prevFlat = flat - 1, nextFlat = flat + 1;
+  var maxFlat = DATA[state.lang].questions.length * TIERS.length - 1;
+  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= maxFlat;
+
+  var h = '<a class="backlink no-print" href="#/">&larr; ' + esc(S.backToGrid) + "</a>";
+  h += '<p class="detail-qnum">' + esc(S.questionLabel + " " + (qIdx + 1)) + "</p>" +
+    '<h2 class="detail-q">' + esc(q.q) + "</h2>" +
+    '<p class="detail-skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  h += '<div class="detail-head">' +
+    '<span class="score-chip" style="' + tierVarsCSS(tierIdx) + '">' + esc(tier.chip) + "</span>" +
+    '<span class="detail-score">' + esc(TIERS[tierIdx].score) + "</span></div>";
+
+  h += '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)"><div class="tier-body">';
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n !== null) {
+    h += '<p class="page-ref-line">' + esc(S.pageRefLine.replace("{n}", String(n))) + "</p>";
+  }
+  h += "</div></div>";
+
+  h += '<nav class="tier-nav no-print" aria-label="' + esc(S.backToGrid) + '">';
+  if (hasPrev) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(prevFlat / 5) + 1) + "/t" + (prevFlat % 5) + '">&larr; ' + esc(S.prevTier) + "</a>";
+  } else {
+    h += '<span class="nav-btn disabled">&larr; ' + esc(S.prevTier) + "</span>";
+  }
+  h += '<span class="spacer"></span>';
+  h += '<a class="nav-btn primary" href="#/">' + esc(S.backToGrid) + "</a>";
+  h += '<span class="spacer"></span>';
+  if (hasNext) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(nextFlat / 5) + 1) + "/t" + (nextFlat % 5) + '">' + esc(S.nextTier) + " &rarr;</a>";
+  } else {
+    h += '<span class="nav-btn disabled">' + esc(S.nextTier) + " &rarr;</span>";
+  }
+  h += "</nav>";
+  return h;
+}
+
+function cardHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<button type="button" class="print-btn no-print" onclick="window.print()">' + esc(S.printCard) + "</button>";
+  h += '<div class="card-doc"><h1>' + esc(S.cardTitle) + "</h1>" +
+    '<p class="card-sub">' + esc(S.cardSubtitle) + "</p>";
+  h += explainerHTML(true);
+  h += '<div class="grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' + esc(L[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < 3; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><div class="grid-cell" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</div></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += '<div class="card-ladder">';
+  for (var k = 0; k < L.length; k++) {
+    h += '<div class="cl" style="' + tierVarsCSS(k) + '"><strong>' + esc(L[k].chip) + "</strong>" + esc(L[k].text) + "</div>";
+  }
+  h += "</div>";
+  h += '<p class="card-footer">' + esc(S.cardFooter) + "</p>";
+  h += "</div>";
+  return h;
+}
+
+function printDocumentHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += '<div class="explainer-wrap">' + explainerHTML(false) + "</div>";
+  for (var q = 0; q < 3; q++) h += printQuestionBlockHTML(q);
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function isCardView() {
+  return /[?&]view=card/.test(location.search);
+}
+
+function parseHash() {
+  var m = /^#\/q([1-3])\/t([0-4])$/.exec(location.hash || "");
+  if (!m) return null;
+  return { q: parseInt(m[1], 10) - 1, t: parseInt(m[2], 10) };
+}
+
+function render() {
+  var S = STR[state.lang];
+  var card = isCardView();
+  document.body.classList.toggle("mode-card", card);
+  document.documentElement.lang = state.lang;
+  document.title = S.pageTitle;
+  var titleWords = S.pageTitle.split(" ");
+  titleWords[titleWords.length - 1] = '<span class="accent">' + esc(titleWords[titleWords.length - 1]) + "</span>";
+  document.getElementById("page-title").innerHTML = titleWords.join(" ");
+  document.getElementById("page-sub").textContent = S.pageSub;
+  document.getElementById("lang-en").setAttribute("aria-pressed", state.lang === "en");
+  document.getElementById("lang-es").setAttribute("aria-pressed", state.lang === "es");
+
+  var h;
+  if (card) {
+    h = cardHTML();
+  } else {
+    var route = parseHash();
+    if (route) {
+      h = '<div class="screen-view">' + detailHTML(route.q, route.t) + "</div>";
+    } else {
+      if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+        try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      }
+      h = '<div class="screen-view">' + landingHTML() + "</div>";
+    }
+    h += '<div class="print-doc" aria-hidden="true">' + printDocumentHTML() + "</div>";
+  }
+  document.getElementById("app").innerHTML = h;
+  window.scrollTo(0, 0);
+}
+
+function setLang(lang) {
+  state.lang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  render();
+}
+
+document.getElementById("lang-en").addEventListener("click", function () { setLang("en"); });
+document.getElementById("lang-es").addEventListener("click", function () { setLang("es"); });
+window.addEventListener("hashchange", render);
+
+render();
+</script>
+</body>
+</html>

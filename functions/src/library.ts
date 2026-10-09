@@ -61,6 +61,14 @@ const CLEAN_URL_REWRITES = new Set([
   "/ap1-newtons-second-law-practice",
   "/linearization-practice",
   "/guess-who",
+  "/energy-sources",
+  "/openscied-hub",
+  "/l4-blackout-detective",
+  "/l4-decisions-matrix",
+  "/evidence-court",
+  "/seven-s",
+  "/the-break-in",
+  "/grid-reference",
 ]);
 
 /**

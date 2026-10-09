@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenSciEd Resource Hub</title>
+<style>
+:root {
+  --paper: #FAF9F6;
+  --ink: #1A1A1A;
+  --ink-soft: #55524C;
+  --ink-faint: #8A867E;
+  --hairline: #D8D4CC;
+  --accent: #FF4D26;
+  --max: 1080px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 28px; }
+
+/* Header */
+.site-head { border-bottom: 1px dashed var(--hairline); padding: 48px 0 32px; }
+.kicker {
+  font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-faint); margin: 0 0 10px;
+}
+.site-title { font-size: 34px; line-height: 1.15; margin: 0 0 6px; font-weight: 700; letter-spacing: -0.01em; }
+.site-subtitle { font-size: 18px; color: var(--ink-soft); margin: 0 0 18px; }
+.site-intro { max-width: 62ch; color: var(--ink-soft); margin: 0 0 16px; }
+.site-meta { font-size: 13px; color: var(--ink-faint); display: flex; gap: 18px; flex-wrap: wrap; }
+.site-meta strong { color: var(--ink-soft); font-weight: 600; }
+
+/* Filter bar */
+.filter-bar {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--paper);
+  border-bottom: 1px dashed var(--hairline);
+  padding: 12px 0;
+}
+.filter-inner { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-label { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-right: 4px; }
+.filter-btn {
+  font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--hairline); background: transparent; color: var(--ink-soft);
+  cursor: pointer;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.filter-btn.active { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.filter-toggle {
+  font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 999px;
+  border: 1px dashed var(--hairline); background: transparent; color: var(--ink-faint);
+  cursor: pointer; margin-left: auto;
+}
+.filter-toggle.on { border-style: solid; border-color: var(--ink); color: var(--ink); }
+.filter-empty { display: none; padding: 48px 0; text-align: center; color: var(--ink-faint); }
+.filter-empty.show { display: block; }
+
+/* Units */
+.unit { padding: 40px 0 8px; }
+.unit-head {
+  display: flex; gap: 28px; align-items: baseline;
+  border-bottom: 1px dashed var(--hairline); padding-bottom: 20px; margin-bottom: 8px;
+}
+.unit-code { font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; min-width: 120px; }
+.unit-level { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 4px; }
+.unit-name { font-size: 24px; line-height: 1.2; margin: 0 0 8px; font-weight: 700; letter-spacing: -0.01em; }
+.unit-summary { color: var(--ink-soft); margin: 0; max-width: 68ch; }
+
+/* Lessons */
+.lesson { padding: 24px 0 8px; }
+.lesson-head { font-size: 15px; margin: 0 0 14px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.lesson-label { font-weight: 700; }
+.lesson-label::after { content: " \00B7"; color: var(--ink-faint); margin-left: 10px; }
+.lesson-topic { color: var(--ink-soft); font-weight: 400; }
+
+/* Cards */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 980px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .unit-head { flex-direction: column; gap: 8px; } .unit-code { font-size: 44px; } }
+.card {
+  border: 1px solid var(--hairline); border-radius: 6px;
+  padding: 14px 16px 12px; background: #fff;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.card.hidden { display: none; }
+.card-top { display: flex; gap: 6px; align-items: center; }
+.badge {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px; border: 1px solid var(--ink-faint); color: var(--ink-soft);
+}
+.badge-reading    { border-style: solid; }
+.badge-simulation { border-style: dashed; }
+.badge-interactive { border-style: dotted; }
+.badge-reference  { border-style: double; border-width: 3px; padding: 0 7px; }
+.badge-assessment { border-style: solid; border-radius: 999px; }
+.pill {
+  font-size: 11px; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--hairline); color: var(--ink-faint);
+}
+.card-title { font-size: 16px; line-height: 1.3; margin: 2px 0 0; font-weight: 700; }
+.card-title a { color: var(--ink); text-decoration: none; border-bottom: 1px dashed var(--hairline); }
+.card-title a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.card-url {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11.5px; color: var(--ink-faint); margin: 0; word-break: break-all;
+}
+.card-blurb { font-size: 14px; color: var(--ink-soft); margin: 0; }
+.card-note { font-size: 12.5px; font-style: italic; color: var(--ink-faint); margin: auto 0 0; padding-top: 6px; border-top: 1px dashed var(--hairline); }
+
+/* Footer */
+.site-foot { border-top: 1px dashed var(--hairline); margin-top: 48px; padding: 28px 0 40px; color: var(--ink-faint); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.site-foot a { color: var(--ink-soft); text-decoration: none; border-bottom: 1px dashed var(--hairline); }
+.site-foot a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+</style>
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap">
+    <p class="kicker">Teacher resource directory</p>
+    <h1 class="site-title">OpenSciEd Resource Hub</h1>
+    <p class="site-subtitle">Teacher-built classroom resources, organized by unit and lesson</p>
+    <p class="site-intro">Interactive readings, simulations, and reference sites built for OpenSciEd classrooms. Everything is public, free, and works on Chromebooks. Click any card to open the resource. Built by a teacher using OpenSciEd in a real classroom; shared for colleagues teaching these units for the first time.</p>
+    <div class="site-meta">
+      <span>Last updated: <strong>2026-10-09</strong></span>
+      <span><strong>8</strong> resources across 1 unit</span>
+    </div>
+  </div>
+</header>
+
+<nav class="filter-bar" aria-label="Filter resources">
+  <div class="wrap filter-inner">
+    <span class="filter-label">Filter</span>
+<button class="filter-btn active" data-type="all" type="button">All</button>
+<button class="filter-btn" data-type="Reading" type="button">Reading</button>
+<button class="filter-btn" data-type="Simulation" type="button">Simulation</button>
+<button class="filter-btn" data-type="Interactive" type="button">Interactive</button>
+<button class="filter-btn" data-type="Reference" type="button">Reference</button>
+    <button class="filter-toggle" id="bilingual-toggle" type="button" aria-pressed="false">EN/ES only</button>
+  </div>
+</nav>
+
+<main class="wrap">
+<section class="unit">
+<header class="unit-head">
+<div class="unit-code">P.1</div>
+<div class="unit-meta">
+<p class="unit-level">Physics</p>
+<h2 class="unit-name">Electricity, Light, and the Texas Blackout</h2>
+<p class="unit-summary">Why did the Texas power grid fail in February 2021? Students trace energy through sources, power plants, and the grid.</p>
+</div>
+</header>
+<section class="lesson">
+<h3 class="lesson-head"><span class="lesson-label">Lesson 1</span><span class="lesson-topic">The Texas blackout (eliciting)</span></h3>
+<div class="grid">
+<article class="card" data-type="Reading" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-reading">Reading</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/texas-blackout-articles" target="_blank" rel="noopener">Texas Blackout Article Collection</a></h4>
+<p class="card-url">porters-portal.web.app/texas-blackout-articles</p>
+<p class="card-blurb">Six short bilingual articles about the 2021 Texas blackout, written at student reading level. Drives the anchoring phenomenon discussion.</p>
+<p class="card-note">Jigsaw-ready: assign different articles to different groups.</p>
+</article>
+<article class="card" data-type="Simulation">
+<div class="card-top">
+<span class="badge badge-simulation">Simulation</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/texas-grid-blackout" target="_blank" rel="noopener">Texas Grid Blackout Simulation</a></h4>
+<p class="card-url">porters-portal.web.app/texas-grid-blackout</p>
+<p class="card-blurb">Students balance electricity supply and demand on a model of the Texas grid during the February 2021 freeze, and watch what happens when demand outruns supply.</p>
+</article>
+</div>
+</section>
+<section class="lesson">
+<h3 class="lesson-head"><span class="lesson-label">Lesson 2</span><span class="lesson-topic">Power strip safety and circuits</span></h3>
+<div class="grid">
+<article class="card" data-type="Reading" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-reading">Reading</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/power-strip-reading/" target="_blank" rel="noopener">Power Strip Safety Reading</a></h4>
+<p class="card-url">porters-portal.web.app/power-strip-reading</p>
+<p class="card-blurb">Five-section bilingual reading: complete circuits, circuit breakers, insulation, ground wires, and light bulbs. Pairs with the power strip dissection investigation.</p>
+<p class="card-note">Sections can be assigned independently.</p>
+</article>
+</div>
+</section>
+<section class="lesson">
+<h3 class="lesson-head"><span class="lesson-label">Lesson 3</span><span class="lesson-topic">Undergrounding power lines</span></h3>
+<div class="grid">
+<article class="card" data-type="Reading" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-reading">Reading</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/undergrounding-reading/" target="_blank" rel="noopener">Undergrounding Power Lines Reading</a></h4>
+<p class="card-url">porters-portal.web.app/undergrounding-reading</p>
+<p class="card-blurb">Three-section bilingual reading on the 2003 Ohio blackout, why above-ground lines fail, and the engineering tradeoffs of burying power lines.</p>
+</article>
+</div>
+</section>
+<section class="lesson">
+<h3 class="lesson-head"><span class="lesson-label">Lesson 4</span><span class="lesson-topic">Energy sources and reliability</span></h3>
+<div class="grid">
+<article class="card" data-type="Reference" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-reference">Reference</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/energy-sources" target="_blank" rel="noopener">Energy Sources Reference</a></h4>
+<p class="card-url">porters-portal.web.app/energy-sources</p>
+<p class="card-blurb">Digital version of the 8 energy source cards (coal, biomass, natural gas, solar, nuclear, hydro, wind, geothermal). Full card text, quick facts, power plant diagrams, and a sortable comparison table.</p>
+<p class="card-note">Use when printed cards are unavailable, or for review and absent students.</p>
+</article>
+<article class="card" data-type="Interactive" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-interactive">Interactive</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/l4-blackout-detective" target="_blank" rel="noopener">L4 Blackout Detective — Case Board</a></h4>
+<p class="card-url">porters-portal.web.app/l4-blackout-detective</p>
+<p class="card-blurb">Students pin evidence to a case board and figure out which energy source&#x27;s failure cascaded into the blackout. Data-analysis driven.</p>
+</article>
+<article class="card" data-type="Interactive" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-interactive">Interactive</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/l4-decisions-matrix" target="_blank" rel="noopener">L4 Decisions Matrix</a></h4>
+<p class="card-url">porters-portal.web.app/l4-decisions-matrix</p>
+<p class="card-blurb">Groups rank the energy sources by criteria they choose (reliability, renewability, output), then defend their ranking. Works fully offline once loaded.</p>
+<p class="card-note">Ranking recomputes locally per group; no login or network needed during class.</p>
+</article>
+<article class="card" data-type="Reference" data-bilingual="1">
+<div class="card-top">
+<span class="badge badge-reference">Reference</span>
+<span class="pill">EN/ES</span>
+</div>
+<h4 class="card-title"><a href="https://porters-portal.web.app/grid-reference.html" target="_blank" rel="noopener">Grid Reference — Key Concepts &amp; Texas 2021</a></h4>
+<p class="card-url">porters-portal.web.app/grid-reference.html</p>
+<p class="card-blurb">One-page bilingual reference covering the key vocabulary and concepts of the unit (grid, demand, supply, capacity factor) anchored to the Texas 2021 timeline.</p>
+</article>
+</div>
+</section>
+</section>
+  <p class="filter-empty" id="filter-empty">No resources match this filter.</p>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;width:100%;">
+    <span>Built by Mr. Porter &middot; Porter&rsquo;s Portal</span>
+    <span>To suggest an addition, talk to Mr. Porter.</span>
+  </div>
+</footer>
+
+<script>
+
+(function () {
+  "use strict";
+  var activeType = "all";
+  var bilingualOnly = false;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll(".filter-btn"));
+  var toggle = document.getElementById("bilingual-toggle");
+  var empty = document.getElementById("filter-empty");
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+
+  function apply() {
+    var shown = 0;
+    cards.forEach(function (card) {
+      var typeOK = activeType === "all" || card.getAttribute("data-type") === activeType;
+      var langOK = !bilingualOnly || card.getAttribute("data-bilingual") === "1";
+      var visible = typeOK && langOK;
+      card.classList.toggle("hidden", !visible);
+      if (visible) { shown += 1; }
+    });
+    empty.classList.toggle("show", shown === 0);
+  }
+
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      activeType = btn.getAttribute("data-type");
+      buttons.forEach(function (b) { b.classList.toggle("active", b === btn); });
+      apply();
+    });
+  });
+
+  toggle.addEventListener("click", function () {
+    bilingualOnly = !bilingualOnly;
+    toggle.classList.toggle("on", bilingualOnly);
+    apply();
+  });
+
+  apply();
+})();
+
+</script>
+</body>
+</html>

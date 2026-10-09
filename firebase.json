@@ -100,6 +100,14 @@
         "destination": "/privacy.html"
       },
       {
+        "source": "/energy-sources",
+        "destination": "/energy-sources.html"
+      },
+      {
+        "source": "/openscied-hub",
+        "destination": "/openscied-hub.html"
+      },
+      {
         "source": "/circuit-diagram-builder",
         "destination": "/circuit-diagram-builder.html"
       },

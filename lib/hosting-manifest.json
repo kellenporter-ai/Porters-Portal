@@ -1,7 +1,9 @@
 {
-  "generatedAt": "2026-10-09T13:37:54.921Z",
+  "generatedAt": "2026-10-09T16:08:47.554Z",
   "rewrites": {
     "/privacy": "/privacy.html",
+    "/energy-sources": "/energy-sources.html",
+    "/openscied-hub": "/openscied-hub.html",
     "/circuit-diagram-builder": "/circuit-diagram-builder.html",
     "/electroscope-charge-assessment": "/electroscope-charge-assessment.html",
     "/tools/bar-chart": "/tools/bar-chart.html",

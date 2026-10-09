@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T13:37:54.882Z",
+  "generatedAt": "2026-10-09T16:08:47.519Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -17,14 +17,29 @@
       "sizeBytes": 169778
     },
     {
+      "path": "/break-in-evidence-rubric.html",
+      "fingerprint": "/break-in-evidence-rubric.html",
+      "sizeBytes": 57219
+    },
+    {
       "path": "/circuit-diagram-builder.html",
       "fingerprint": "/circuit-diagram-builder.html",
       "sizeBytes": 44432
     },
     {
+      "path": "/crime-scene-sketch-rubric.html",
+      "fingerprint": "/crime-scene-sketch-rubric.html",
+      "sizeBytes": 49391
+    },
+    {
       "path": "/electroscope-charge-assessment.html",
       "fingerprint": "/electroscope-charge-assessment.html",
       "sizeBytes": 362647
+    },
+    {
+      "path": "/energy-sources.html",
+      "fingerprint": "/energy-sources.html",
+      "sizeBytes": 2773078
     },
     {
       "path": "/evidence-court.html",
@@ -100,6 +115,11 @@
       "path": "/linearization-practice.html",
       "fingerprint": "/linearization-practice.html",
       "sizeBytes": 48530
+    },
+    {
+      "path": "/openscied-hub.html",
+      "fingerprint": "/openscied-hub.html",
+      "sizeBytes": 15061
     },
     {
       "path": "/power-strip-model-rubric.html",
