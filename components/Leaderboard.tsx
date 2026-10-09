@@ -246,6 +246,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ user }) => {
             <PlayerInspectModal
                 userId={inspectUserId}
                 classType={selectedClass}
+                viewerRole={user.role}
                 onClose={handleCloseInspect}
             />
         )}

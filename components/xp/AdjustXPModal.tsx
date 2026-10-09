@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { User } from '../../types';
+import { User, getUserSectionForClass, getSectionsForClass } from '../../types';
 import { useClassConfig } from '../../lib/AppDataContext';
-import { Search, ChevronDown, Filter, Users } from 'lucide-react';
+import { useT, useInterpolate } from '../../lib/i18n';
+import { Search, ChevronDown, Filter, Users, Layers } from 'lucide-react';
 import Modal from '../Modal';
 import { useToast } from '../ToastProvider';
 
@@ -17,6 +18,8 @@ const QUICK_AMOUNTS = [+10, +50, +100, -10, -50, -100];
 
 const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, allStudents }) => {
     const toast = useToast();
+    const t = useT();
+    const interpolate = useInterpolate();
     const { classConfigs } = useClassConfig();
     const mountedRef = useRef(true);
     useEffect(() => () => { mountedRef.current = false; }, []);
@@ -25,17 +28,46 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
     const [bulkMode, setBulkMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [bulkSearch, setBulkSearch] = useState('');
-    const [bulkFilterClass, setBulkFilterClass] = useState('All Classes');
+    const [bulkFilterClass, setBulkFilterClass] = useState(() => {
+        try { return sessionStorage.getItem('xp-bulk-filter-class') || 'All Classes'; } catch { return 'All Classes'; }
+    });
+    const [bulkFilterSection, setBulkFilterSection] = useState(() => {
+        try { return sessionStorage.getItem('xp-bulk-filter-section') || 'All Sections'; } catch { return 'All Sections'; }
+    });
     const [applying, setApplying] = useState(false);
+
+    // Persist bulk filters for the session so reopening the modal keeps the last filter
+    useEffect(() => {
+        try { sessionStorage.setItem('xp-bulk-filter-class', bulkFilterClass); } catch { /* storage unavailable */ }
+    }, [bulkFilterClass]);
+    useEffect(() => {
+        try { sessionStorage.setItem('xp-bulk-filter-section', bulkFilterSection); } catch { /* storage unavailable */ }
+    }, [bulkFilterSection]);
+
+    const sectionOptions = useMemo(() => {
+        if (!allStudents || bulkFilterClass === 'All Classes') return [];
+        return getSectionsForClass(allStudents, bulkFilterClass);
+    }, [allStudents, bulkFilterClass]);
 
     const filteredStudents = useMemo(() => {
         if (!allStudents) return [];
         return allStudents.filter(s => {
             const matchesSearch = !bulkSearch || s.name.toLowerCase().includes(bulkSearch.toLowerCase());
             const matchesClass = bulkFilterClass === 'All Classes' || s.classType === bulkFilterClass || s.enrolledClasses?.includes(bulkFilterClass);
-            return matchesSearch && matchesClass;
+            const matchesSection = bulkFilterSection === 'All Sections' || getUserSectionForClass(s, bulkFilterClass) === bulkFilterSection;
+            return matchesSearch && matchesClass && matchesSection;
         });
-    }, [allStudents, bulkSearch, bulkFilterClass]);
+    }, [allStudents, bulkSearch, bulkFilterClass, bulkFilterSection]);
+
+    const handleClassFilterChange = (cls: string) => {
+        setBulkFilterClass(cls);
+        setBulkFilterSection('All Sections');
+    };
+
+    const handleResetFilters = () => {
+        setBulkFilterClass('All Classes');
+        setBulkFilterSection('All Sections');
+    };
 
     const toggleStudent = (id: string) => {
         setSelectedIds(prev => {
@@ -67,7 +99,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
         const failures = results.filter(r => r.status === 'rejected');
         if (!mountedRef.current) return;
         if (failures.length > 0) {
-            toast.error(`${failures.length} of ${targets.length} adjustments failed.`);
+            toast.error(interpolate('xp.bulk.applyFailed', { failed: failures.length, total: targets.length }));
         }
         setApplying(false);
         setSelectedIds(new Set());
@@ -79,7 +111,7 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
     if (bulkMode && !allStudents) return null;
 
     return (
-        <Modal isOpen={!!user || bulkMode} onClose={() => { setBulkMode(false); onClose(); }} title={bulkMode ? "Bulk XP Adjustment" : "Manual XP Adjustment"} maxWidth={bulkMode ? "max-w-2xl" : undefined}>
+        <Modal isOpen={!!user || bulkMode} onClose={() => { setBulkMode(false); onClose(); }} title={bulkMode ? t('xp.bulk.title') : t('xp.single.title')} maxWidth={bulkMode ? "max-w-2xl" : undefined}>
             <div className="space-y-6">
                 {/* Mode toggle */}
                 {allStudents && (
@@ -88,13 +120,13 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                             onClick={() => setBulkMode(false)}
                             className={`flex-1 py-2 rounded-xl text-xs font-bold transition border ${!bulkMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                         >
-                            Single Operative
+                            {t('xp.mode.single')}
                         </button>
                         <button
                             onClick={() => setBulkMode(true)}
                             className={`flex-1 py-2 rounded-xl text-xs font-bold transition border flex items-center justify-center gap-1.5 ${bulkMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-[var(--surface-glass)] border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'}`}
                         >
-                            <Users className="w-3.5 h-3.5" /> Bulk Award
+                            <Users className="w-3.5 h-3.5" /> {t('xp.mode.bulk')}
                         </button>
                     </div>
                 )}
@@ -119,8 +151,8 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
                                 <input
                                     type="text"
-                                    placeholder="Search students..."
-                                    aria-label="Search students"
+                                    placeholder={t('xp.bulk.searchPlaceholder')}
+                                    aria-label={t('xp.bulk.searchPlaceholder')}
                                     value={bulkSearch}
                                     onChange={e => setBulkSearch(e.target.value)}
                                     className="w-full bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50"
@@ -130,20 +162,40 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                                 <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-muted)]" />
                                 <select
                                     value={bulkFilterClass}
-                                    onChange={e => setBulkFilterClass(e.target.value)}
+                                    onChange={e => handleClassFilterChange(e.target.value)}
+                                    aria-label={t('xp.bulk.allClasses')}
                                     className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-8 text-sm text-[var(--text-primary)] font-bold appearance-none focus:outline-none focus:border-purple-500/50"
                                 >
-                                    <option>All Classes</option>
+                                    <option value="All Classes">{t('xp.bulk.allClasses')}</option>
                                     {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
+                            </div>
+                            <div className="relative">
+                                <Layers className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-muted)]" />
+                                <select
+                                    value={bulkFilterSection}
+                                    onChange={e => setBulkFilterSection(e.target.value)}
+                                    disabled={bulkFilterClass === 'All Classes'}
+                                    aria-label={t('xp.bulk.allSections')}
+                                    className="bg-[var(--panel-bg)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-8 text-sm text-[var(--text-primary)] font-bold appearance-none focus:outline-none focus:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="All Sections">{t('xp.bulk.allSections')}</option>
+                                    {sectionOptions.map(sec => <option key={sec} value={sec}>{sec}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
                             </div>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{selectedIds.size} selected</span>
-                            <div className="flex gap-2">
-                                <button onClick={selectAll} className="text-[11.5px] text-[var(--accent-text)] hover:text-purple-300 font-bold transition">Select All ({filteredStudents.length})</button>
-                                <button onClick={selectNone} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] font-bold transition">Clear</button>
+                            <span className="text-[11.5px] text-[var(--text-muted)] font-bold uppercase tracking-widest">{interpolate('xp.bulk.selectedCount', { count: selectedIds.size })}</span>
+                            <div className="flex gap-3 items-center">
+                                {(bulkFilterClass !== 'All Classes' || bulkFilterSection !== 'All Sections') && (
+                                    <button onClick={handleResetFilters} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] font-bold transition underline decoration-dotted underline-offset-2">
+                                        {t('xp.bulk.resetFilters')}
+                                    </button>
+                                )}
+                                <button onClick={selectAll} className="text-[11.5px] text-[var(--accent-text)] hover:text-purple-300 font-bold transition">{interpolate('xp.bulk.selectAll', { count: filteredStudents.length })}</button>
+                                <button onClick={selectNone} className="text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] font-bold transition">{t('xp.bulk.clear')}</button>
                             </div>
                         </div>
                         <div className="max-h-48 overflow-y-auto space-y-1 border border-[var(--border)] rounded-xl p-2 bg-[var(--panel-bg)]">
@@ -153,7 +205,15 @@ const AdjustXPModal: React.FC<AdjustXPModalProps> = ({ user, onClose, onAdjust, 
                                     <img src={s.avatarUrl} className="w-7 h-7 rounded-lg border border-[var(--border)]" alt={s.name} loading="lazy" />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-xs font-bold text-[var(--text-primary)] truncate">{s.name}</div>
-                                        <div className="text-[11.5px] text-[var(--text-muted)]">{s.classType} — {s.gamification?.xp || 0} XP</div>
+                                        <div className="text-[11.5px] text-[var(--text-muted)]">
+                                            {(() => {
+                                                const primaryClass = s.classType ?? '';
+                                                const sec = getUserSectionForClass(s, primaryClass);
+                                                return sec
+                                                    ? interpolate('xp.bulk.rowSubtitle', { className: primaryClass, section: sec, xp: s.gamification?.xp || 0 })
+                                                    : interpolate('xp.bulk.rowSubtitleNoSection', { className: primaryClass, xp: s.gamification?.xp || 0 });
+                                            })()}
+                                        </div>
                                     </div>
                                 </label>
                             ))}

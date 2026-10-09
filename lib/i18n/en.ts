@@ -870,6 +870,15 @@ export const en: Dictionary = {
   'leaderboard.rankingsAria': '{class} rankings',
   'leaderboard.rankAria': 'Rank {rank}: {name}, {xp} XP',
   'leaderboard.classXp': 'TOTAL XP',
+  'inspect.loading': 'Loading agent profile…',
+  'inspect.notFoundTitle': 'Agent not found',
+  'inspect.notFoundBody': 'This operative\'s profile is unavailable.',
+  'inspect.errorTitle': 'Unable to load profile',
+  'inspect.errorBody': 'Something went wrong while loading this operative\'s profile. Please try again.',
+  'inspect.timeoutBody': 'This is taking too long. Please check your connection and try again.',
+  'inspect.close': 'Close',
+  'inspect.retry': 'Try Again',
+  'inspect.viewOnly': 'View-only profile',
 
   // ── Notifications ──
   'notifications.title': 'Notifications',
@@ -1127,4 +1136,20 @@ export const en: Dictionary = {
   'public.syllabus.materials.item3': 'Whiteboard markers',
   'public.syllabus.materials.item4': 'Calculator (phone calculator works)',
   'public.syllabus.materials.item5': 'Charged Chromebook',
+
+  // ── Bulk XP Adjustment modal (bulk award tab) ──
+  'xp.bulk.allClasses': 'All Classes',
+  'xp.bulk.allSections': 'All Sections',
+  'xp.bulk.searchPlaceholder': 'Search students...',
+  'xp.bulk.resetFilters': 'Reset filters',
+  'xp.bulk.selectedCount': '{count} selected',
+  'xp.bulk.selectAll': 'Select All ({count})',
+  'xp.bulk.clear': 'Clear',
+  'xp.bulk.rowSubtitle': '{className} · {section} — {xp} XP',
+  'xp.bulk.rowSubtitleNoSection': '{className} — {xp} XP',
+  'xp.bulk.title': 'Bulk XP Adjustment',
+  'xp.single.title': 'Manual XP Adjustment',
+  'xp.mode.single': 'Single Operative',
+  'xp.mode.bulk': 'Bulk Award',
+  'xp.bulk.applyFailed': '{failed} of {total} adjustments failed.',
 };

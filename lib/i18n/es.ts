@@ -870,6 +870,15 @@ export const es: Dictionary = {
   'leaderboard.rankingsAria': 'Clasificación de {class}',
   'leaderboard.rankAria': 'Puesto {rank}: {name}, {xp} XP',
   'leaderboard.classXp': 'XP TOTAL',
+  'inspect.loading': 'Cargando perfil del agente…',
+  'inspect.notFoundTitle': 'Agente no encontrado',
+  'inspect.notFoundBody': 'El perfil de este operativo no está disponible.',
+  'inspect.errorTitle': 'No se pudo cargar el perfil',
+  'inspect.errorBody': 'Ocurrió un error al cargar el perfil de este operativo. Inténtalo de nuevo.',
+  'inspect.timeoutBody': 'Esto está tardando demasiado. Revisa tu conexión e inténtalo de nuevo.',
+  'inspect.close': 'Cerrar',
+  'inspect.retry': 'Reintentar',
+  'inspect.viewOnly': 'Perfil de solo lectura',
 
   // ── Notificaciones ──
   'notifications.title': 'Notificaciones',
@@ -1127,4 +1136,20 @@ export const es: Dictionary = {
   'public.syllabus.materials.item3': 'Marcadores de pizarra blanca',
   'public.syllabus.materials.item4': 'Calculadora (puede ser la del teléfono)',
   'public.syllabus.materials.item5': 'Chromebook cargado',
+
+  // ── Bulk XP Adjustment modal (bulk award tab) ──
+  'xp.bulk.allClasses': 'Todas las clases',
+  'xp.bulk.allSections': 'Todas las secciones',
+  'xp.bulk.searchPlaceholder': 'Buscar estudiantes...',
+  'xp.bulk.resetFilters': 'Restablecer filtros',
+  'xp.bulk.selectedCount': '{count} seleccionados',
+  'xp.bulk.selectAll': 'Seleccionar todos ({count})',
+  'xp.bulk.clear': 'Borrar',
+  'xp.bulk.rowSubtitle': '{className} · {section} — {xp} XP',
+  'xp.bulk.rowSubtitleNoSection': '{className} — {xp} XP',
+  'xp.bulk.title': 'Ajuste de XP en grupo',
+  'xp.single.title': 'Ajuste manual de XP',
+  'xp.mode.single': 'Agente individual',
+  'xp.mode.bulk': 'Premio en grupo',
+  'xp.bulk.applyFailed': '{failed} de {total} ajustes fallaron.',
 };

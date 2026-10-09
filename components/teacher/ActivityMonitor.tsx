@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { User, Assignment, Submission, StudentBucketProfile, TelemetryBucket, StudentAlert } from '../../types';
-import { Search, Star, MessageSquare, Eye, Download, Zap } from 'lucide-react';
+import { Search, MessageSquare, Eye, Download } from 'lucide-react';
 import { BUCKET_META } from '../../lib/telemetry';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,8 +22,6 @@ interface ActivityMonitorProps {
   alertsByStudent: Map<string, StudentAlert>;
   onViewProfile?: (student: User) => void;
   onMessage?: (student: User) => void;
-  /** Called when the user triggers the award flow. The parent opens BehaviorQuickAward; no per-student argument is needed because BehaviorQuickAward has its own search. */
-  onAward?: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -70,7 +68,6 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
   alertsByStudent,
   onViewProfile,
   onMessage,
-  onAward,
 }) => {
   const [search, setSearch] = useState('');
   const [bucketFilter, setBucketFilter] = useState<TelemetryBucket | ''>('');
@@ -176,7 +173,7 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
 
   return (
     <div className="bg-[var(--surface-glass)] backdrop-blur-md border border-[var(--border)] rounded-3xl p-6">
-      {/* Compact header row: title + search + bucket filter + online only + quick award */}
+      {/* Compact header row: title + search + bucket filter + online only */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <h3 className="text-base font-bold text-[var(--text-primary)] shrink-0 mr-1">Activity Monitor</h3>
         <div className="relative flex-1 min-w-[160px]">
@@ -212,13 +209,6 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
         >
           Online Only
         </button>
-        <button
-          onClick={() => onAward?.()}
-          className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition shrink-0 ml-auto"
-          aria-label="Open Quick Award"
-        >
-          <Star className="w-3.5 h-3.5" aria-hidden="true" /> Quick Award
-        </button>
       </div>
 
       {/* Batch action bar */}
@@ -231,12 +221,6 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-glass-heavy)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg text-xs font-bold transition hover:opacity-80"
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export CSV
-          </button>
-          <button
-            onClick={() => onAward?.()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/80 hover:bg-amber-500 border border-amber-500/30 text-white rounded-lg text-xs font-bold transition"
-          >
-            <Zap className="w-3.5 h-3.5" aria-hidden="true" /> Bulk XP
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
@@ -403,14 +387,6 @@ const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                       role="cell"
                       onClick={e => e.stopPropagation()}
                     >
-                      <button
-                        onClick={() => onAward?.()}
-                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-amber-400 hover:bg-amber-400/10 transition"
-                        aria-label={`Award ${student.name}`}
-                        title="Award XP"
-                      >
-                        <Star className="w-4 h-4" />
-                      </button>
                       <button
                         onClick={() => onMessage?.(student)}
                         className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-400 hover:bg-purple-400/10 transition"

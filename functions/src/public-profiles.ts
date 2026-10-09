@@ -23,12 +23,32 @@ interface PublicProfile {
     level: number;
     codename: string | null;
     activeCosmetics: { frame?: string | null } | null;
+    appearance: Record<string, unknown> | null;
+    equipped: Record<string, unknown> | null;
+    classProfiles: Record<string, { equipped: Record<string, unknown> | null; appearance: Record<string, unknown> | null }> | null;
   };
   updatedAt: FirebaseFirestore.FieldValue;
 }
 
 function buildPublicProfile(uid: string, data: FirebaseFirestore.DocumentData): PublicProfile {
   const gam = data.gamification || {};
+
+  // SECURITY: mirror ONLY equipped + appearance from classProfiles.
+  // Never mirror inventory, stats, currency, or any other field.
+  let classProfiles: PublicProfile["gamification"]["classProfiles"] = null;
+  if (gam.classProfiles && typeof gam.classProfiles === "object" && !Array.isArray(gam.classProfiles)) {
+    const profiles: NonNullable<PublicProfile["gamification"]["classProfiles"]> = {};
+    for (const [classType, profile] of Object.entries(gam.classProfiles as Record<string, unknown>)) {
+      if (!profile || typeof profile !== "object" || Array.isArray(profile)) continue;
+      const p = profile as Record<string, unknown>;
+      profiles[classType] = {
+        equipped: p.equipped && typeof p.equipped === "object" && !Array.isArray(p.equipped) ? (p.equipped as Record<string, unknown>) : null,
+        appearance: p.appearance && typeof p.appearance === "object" && !Array.isArray(p.appearance) ? (p.appearance as Record<string, unknown>) : null,
+      };
+    }
+    classProfiles = Object.keys(profiles).length > 0 ? profiles : null;
+  }
+
   return {
     id: uid,
     name: typeof data.name === "string" ? data.name : "",
@@ -42,6 +62,9 @@ function buildPublicProfile(uid: string, data: FirebaseFirestore.DocumentData): 
       level: typeof gam.level === "number" ? gam.level : 1,
       codename: typeof gam.codename === "string" ? gam.codename : null,
       activeCosmetics: gam.activeCosmetics && typeof gam.activeCosmetics === "object" ? { frame: gam.activeCosmetics.frame ?? null } : null,
+      appearance: gam.appearance && typeof gam.appearance === "object" && !Array.isArray(gam.appearance) ? (gam.appearance as Record<string, unknown>) : null,
+      equipped: gam.equipped && typeof gam.equipped === "object" && !Array.isArray(gam.equipped) ? (gam.equipped as Record<string, unknown>) : null,
+      classProfiles,
     },
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   };

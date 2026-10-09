@@ -1995,8 +1995,17 @@ export const dataService = {
 
   // --- PROFILE / INSPECT ---
 
-  getPublicProfile: async (userId: string): Promise<User | null> => {
-    const snap = await getDoc(doc(db, 'users', userId));
+  // Students can only read their OWN /users/{uid} doc (firestore.rules); the
+  // leaderboard list comes from /public_profiles. For inspect, admins read the
+  // full profile; students fall back to the public mirror so peer inspection
+  // never hangs on a permission-denied read.
+  getPublicProfile: async (userId: string, fullProfile = false): Promise<User | null> => {
+    if (fullProfile) {
+      const snap = await getDoc(doc(db, 'users', userId));
+      if (!snap.exists()) return null;
+      return { id: snap.id, ...snap.data() } as User;
+    }
+    const snap = await getDoc(doc(db, 'public_profiles', userId));
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() } as User;
   },

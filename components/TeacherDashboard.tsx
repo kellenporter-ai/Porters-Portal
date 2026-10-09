@@ -345,7 +345,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
             setNudgeMessage('Your teacher wants to check in with you.');
             setShowNudgeModal(true);
           }}
-          onAward={() => setShowBehaviorAward(true)}
         />
         </>
       )}
