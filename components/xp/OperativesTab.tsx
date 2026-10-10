@@ -39,7 +39,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
   }, []);
 
   const OpSortHeader = ({ label, col, className }: { label: string; col: string; className?: string }) => (
-    <th className={`cursor-pointer select-none group pb-4 ${className ?? ''}`} onClick={() => handleOperativesSort(col)}>
+    <div className={`cursor-pointer select-none group pb-4 ${className ?? ''}`} onClick={() => handleOperativesSort(col)}>
       <div className={`flex items-center gap-1 ${className?.includes('text-center') ? 'justify-center' : className?.includes('text-right') ? 'justify-end' : 'justify-start'}`}>
         <span>{label}</span>
         <span className="flex flex-col gap-px">
@@ -47,7 +47,7 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
           <ChevronDown className={`w-2.5 h-2.5 -mt-0.5 ${sortCol === col && sortDir === 'desc' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 group-hover:text-gray-400'} transition`} />
         </span>
       </div>
-    </th>
+    </div>
   );
 
   const getAggregateGearScore = (student: User): number => {
@@ -156,19 +156,15 @@ const OperativesTab: React.FC<OperativesTabProps> = ({
       </div>
       <div className="overflow-x-auto">
         {/* Fixed header */}
-        <table className="w-full text-left min-w-[900px]">
-          <thead>
-            <tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-black tracking-widest border-b border-[var(--border)]">
-              <OpSortHeader label="Operative" col="name" className="pl-4" />
-              <OpSortHeader label="Class" col="class" />
-              <OpSortHeader label="Level" col="level" className="text-center" />
-              <OpSortHeader label="Total XP" col="xp" className="text-center" />
-              <OpSortHeader label="Flux" col="flux" className="hidden lg:table-cell text-center" />
-              <OpSortHeader label="Gear" col="gear" className="hidden xl:table-cell text-center" />
-              <th className="pb-4 text-right pr-4">Actions</th>
-            </tr>
-          </thead>
-        </table>
+        <div className="flex items-center min-w-[900px] text-[11.5px] text-[var(--text-muted)] uppercase font-black tracking-widest border-b border-[var(--border)]">
+          <OpSortHeader label="Operative" col="name" className="flex-[2] pl-4" />
+          <OpSortHeader label="Class" col="class" className="flex-1" />
+          <OpSortHeader label="Level" col="level" className="w-16 text-center" />
+          <OpSortHeader label="Total XP" col="xp" className="w-20 text-center" />
+          <OpSortHeader label="Flux" col="flux" className="w-16 text-center hidden lg:block" />
+          <OpSortHeader label="Gear" col="gear" className="w-16 text-center hidden xl:block" />
+          <div className="w-40 pb-4 text-right pr-4">Actions</div>
+        </div>
         {/* Virtualized rows */}
         <div ref={listParentRef} className="max-h-[600px] overflow-auto min-w-[900px]">
           <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
