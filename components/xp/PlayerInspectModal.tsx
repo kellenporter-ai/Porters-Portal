@@ -31,7 +31,9 @@ const STAT_LABELS = [
   { key: 'charisma', label: 'Charisma', color: 'text-purple-600 dark:text-purple-400', icon: '🎤' },
 ];
 
-const SLOT_ORDER: EquipmentSlot[] = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', 'AMULET', 'RING1', 'RING2'];
+// Display slots must use normalizeEquipped's canonical keys (RING/WEAPON are
+// collapsed from RING1/RING2 and WEAPON1/WEAPON2 — see lib/classProfile.ts).
+const SLOT_ORDER = ['HEAD', 'CHEST', 'HANDS', 'BELT', 'FEET', 'AMULET', 'RING', 'WEAPON'] as const;
 
 const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classType, viewerRole, onClose }) => {
   const t = useT();
@@ -267,7 +269,7 @@ const PlayerInspectModal: React.FC<PlayerInspectModalProps> = ({ userId, classTy
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {SLOT_ORDER.map(slot => {
-              const item = equipped[slot] as RPGItem | undefined;
+              const item = equipped[slot as EquipmentSlot] as RPGItem | undefined;
               if (!item) {
                 return (
                   <div key={slot} className="p-2 bg-[var(--surface-glass)] rounded-lg border border-[var(--border)]">
