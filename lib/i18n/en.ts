@@ -1043,7 +1043,7 @@ export const en: Dictionary = {
   'public.syllabus.physics.honorsNote': 'Honors and CP sections share the same OpenSciEd storyline, labs, and projects. Honors moves at a faster pace with extended depth and more mathematical rigor — the journey below is the same for both.',
   'public.syllabus.physics.journeyHeading': 'The Year, Unit by Unit',
   'public.syllabus.physics.journeySub': 'Each unit opens with an anchoring phenomenon, builds ideas through investigation, and ends with a design problem or evidence-based explanation. One day ≈ one 45–50 minute class period.',
-  'public.syllabus.physics.overview.p1': 'Every unit starts with a phenomenon and a Driving Question Board: students record what they notice, what they wonder, and the questions that drive weeks of investigation.',
+  'public.syllabus.physics.overview.p1': 'Every unit starts with a phenomenon: students record what they notice, what they wonder, and the questions that drive weeks of investigation.',
   'public.syllabus.physics.overview.p2': 'Students work in teams the way scientists do — investigating, whiteboarding, arguing from evidence, and revising models. Almost everything can be resubmitted for a higher mark; the goal is growth, not gatekeeping.',
   'public.syllabus.physics.gradingIntro': 'Skills are graded on the same 5-level rubric used across all my classes (Missing → Refining). Grades come from three places:',
   'public.syllabus.physics.grading.cat1.name': 'Unit assessments',

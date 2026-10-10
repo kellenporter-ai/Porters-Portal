@@ -12,8 +12,6 @@ export const ADMIN_ROUTES = {
   ENROLLMENT_CODES: '/enrollment',
   XP_COMMAND: '/xp',
   STUDENT_REPORTS: '/reports',
-  BOARDS: '/boards',
-  BOARD_PROJECTOR: '/boards/:boardId/projector',
 } as const;
 
 // Student routes
@@ -31,7 +29,6 @@ export const STUDENT_ROUTES = {
   LEADERBOARD: '/leaderboard',
   FEEDBACK: '/feedback',
   BOSS: '/boss',
-  QUESTION_BOARD: '/board',
 } as const;
 
 // XP Command sub-routes (nested under /xp)
@@ -54,7 +51,6 @@ export const TAB_TO_PATH: Record<string, string> = {
   'User Management': ADMIN_ROUTES.USER_MANAGEMENT,
   'Enrollment Codes': ADMIN_ROUTES.ENROLLMENT_CODES,
   'Student Reports': ADMIN_ROUTES.STUDENT_REPORTS,
-  'Boards': ADMIN_ROUTES.BOARDS,
   // XP Command children — stored as "XP Command:Operatives" in the old system
   'XP Command:Operatives': '/xp/operatives',
   'XP Command:XP Protocols': '/xp/protocols',
@@ -74,7 +70,6 @@ export const TAB_TO_PATH: Record<string, string> = {
   'Leaderboard': STUDENT_ROUTES.LEADERBOARD,
   'Feedback': STUDENT_ROUTES.FEEDBACK,
   'Boss Encounters': STUDENT_ROUTES.BOSS,
-  'Question Board': STUDENT_ROUTES.QUESTION_BOARD,
 };
 
 /** Reverse lookup: URL path → old tab name (for Layout active state) */

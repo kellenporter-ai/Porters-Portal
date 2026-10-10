@@ -1043,7 +1043,7 @@ export const es: Dictionary = {
   'public.syllabus.physics.honorsNote': 'Las secciones de Honors y CP comparten la misma historia de OpenSciEd, los mismos laboratorios y los mismos proyectos. Honors avanza a un ritmo más rápido, con mayor profundidad y más rigor matemático — el recorrido de abajo es el mismo para ambos.',
   'public.syllabus.physics.journeyHeading': 'El Año, Unidad por Unidad',
   'public.syllabus.physics.journeySub': 'Cada unidad comienza con un fenómeno central y un Muro de Preguntas; los estudiantes investigan durante semanas y cierran con un problema de diseño o una explicación basada en evidencia. Un día ≈ un período de clase de 45–50 minutos.',
-  'public.syllabus.physics.overview.p1': 'Cada unidad arranca con un fenómeno y un Muro de Preguntas (Driving Question Board): los estudiantes registran lo que observan, lo que se preguntan y las preguntas que guiarán semanas de investigación.',
+  'public.syllabus.physics.overview.p1': 'Cada unidad arranca con un fenómeno: los estudiantes registran lo que observan, lo que se preguntan y las preguntas que guiarán semanas de investigación.',
   'public.syllabus.physics.overview.p2': 'Los estudiantes trabajan en equipos como científicos de verdad: investigan, escriben en pizarras, argumentan con evidencia y mejoran sus modelos. Casi todo se puede reentregar para una calificación más alta; la meta es crecer, no filtrar.',
   'public.syllabus.physics.gradingIntro': 'Las habilidades se califican con la misma rúbrica de 5 niveles que uso en todas mis clases (Missing → Refining). Las calificaciones provienen de tres fuentes:',
   'public.syllabus.physics.grading.cat1.name': 'Evaluaciones de unidad',
