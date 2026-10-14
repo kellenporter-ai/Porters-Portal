@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T14:34:53.931Z",
+  "generatedAt": "2026-10-12T19:12:54.609Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -22,7 +22,8 @@
     "/evidence-court": "/evidence-court.html",
     "/seven-s": "/seven-s/index.html",
     "/the-break-in": "/the-break-in/index.html",
-    "/grid-reference": "/grid-reference.html"
+    "/grid-reference": "/grid-reference.html",
+    "/power-line-lab": "/power-line-lab.html"
   },
   "dirs": [
     "/forensic-branches",

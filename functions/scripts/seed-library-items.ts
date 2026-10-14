@@ -114,6 +114,17 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/crime-scene-sketch-rubric.html',
   },
   {
+    title: 'Power Line Lab: AC & DC in a Transmission Wire',
+    description: 'Discovery simulation for OpenSciEd P.1 Lesson 6. Students explore how electrons move through a transmission wire with battery (DC) and generator (AC) sources, vary the wire material, diameter, length, and ambient temperature (down to absolute zero), record observations in an evidence journal, and write a mechanistic hypothesis. Print-ready export of journal + hypothesis. Bilingual EN/ES.',
+    url: '/power-line-lab',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Honors Physics',
+    tags: ['openscied', 'p1', 'lesson-6', 'electricity', 'circuits', 'ac-dc', 'transmission-wire', 'resistance', 'energy-loss', 'simulation', 'lab', 'bilingual'],
+    suggestedCategory: 'Lab',
+    sourceFingerprint: '/power-line-lab.html',
+  },
+  {
     title: 'Privacy Policy',
     description: 'Porter\'s Portal privacy policy.',
     url: '/privacy',

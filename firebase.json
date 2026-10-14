@@ -184,6 +184,10 @@
         "destination": "/grid-reference.html"
       },
       {
+        "source": "/power-line-lab",
+        "destination": "/power-line-lab.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

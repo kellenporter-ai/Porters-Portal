@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Based on the OpenSciEd Unit 11.1 model 'AC and DC Current in a Variable Transmission Wire', CC BY-NC 4.0. This model is part of the OpenSciEd unit 11.1 for High School: http://www.openscied.org/ It is used in lesson 5 of that unit. Clean-room rebuild with attribution. -->
+<title>Power Line Lab · Laboratorio de Líneas de Potencia</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F3EF; --ink:#1A1A1A;
+  --ink-soft:rgba(26,26,26,.55); --ink-faint:rgba(26,26,26,.35);
+  --accent:#FF4D26;
+  --dash:1px dashed rgba(26,26,26,.35);
+  --ok:#1E7F3C; --err:#C22F2F; --warn:#B47000;
+  --card:#FFFFFF;
+  --heat1:#ff8c1a; --heat2:#e02b1d;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;height:100%;}
+body{background:var(--paper);color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  overflow:hidden;}
+.display{font-family:'Archivo','Inter',-apple-system,'Segoe UI',sans-serif;font-weight:800;letter-spacing:-0.03em;line-height:1.05;}
+.eyebrow{font-family:'Archivo','Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);}
+#app{display:flex;flex-direction:column;height:100vh;max-height:100vh;}
+#screens{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+button{font:inherit;color:var(--ink);background:transparent;border:var(--dash);
+  border-radius:8px;padding:10px 14px;cursor:pointer;min-height:44px;min-width:44px;}
+button:hover{border-color:var(--accent);color:var(--accent);}
+button:disabled{opacity:.45;cursor:not-allowed;color:var(--ink-soft);}
+button.primary{background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600;}
+button.primary:hover{filter:brightness(1.08);color:#fff;}
+button.active{background:var(--accent);border:1px solid var(--accent);color:#fff;}
+select,input[type=text],textarea{font:inherit;color:var(--ink);background:#fff;
+  border:var(--dash);border-radius:8px;padding:9px 10px;width:100%;}
+textarea{min-height:60px;resize:vertical;}
+label{font-size:12px;color:var(--ink-soft);display:block;margin:8px 0 4px;font-weight:600;}
+.topbar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:var(--dash);
+  background:var(--paper);flex:0 0 auto;}
+.topbar .title{font-family:'Archivo','Inter',sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:17px;}
+.topbar .spacer{flex:1;}
+.lang{display:inline-flex;border:var(--dash);border-radius:8px;overflow:hidden;}
+.lang button{border:none;border-radius:0;min-height:32px;min-width:40px;padding:6px 10px;
+  font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--ink-soft);}
+.lang button.active{background:var(--accent);color:#fff;}
+.screen{display:none;flex:1 1 auto;min-height:0;flex-direction:column;}
+.screen.active{display:flex;}
+.row{display:flex;gap:10px;min-height:0;}
+.col{display:flex;flex-direction:column;min-height:0;}
+.panel{background:var(--card);border:var(--dash);border-radius:12px;padding:12px;}
+canvas{display:block;border-radius:8px;}
+.muted{color:var(--ink-soft);font-size:13px;}
+/* journal: no collapse; sections always fully visible, entries-first ordering */
+.jchips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:var(--dash);
+  background:var(--card);border-radius:0;position:sticky;top:0;z-index:2;align-items:center;}
+.jchips .jchip{min-height:32px;min-width:36px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;font-family:'Archivo',sans-serif;}
+.jchips .jchip.has{color:var(--accent);border-color:var(--accent);}
+.jsec-header{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  background:transparent;border:none;border-radius:8px;padding:8px 4px;min-height:44px;cursor:default;}
+.jsec-num{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:999px;background:var(--ink);color:#fff;
+  font:700 11px 'Archivo',sans-serif;letter-spacing:0;}
+.jsec-title{flex:1 1 auto;font-weight:700;font-size:13px;line-height:1.25;}
+.jsec-count{flex:0 0 auto;font-size:11px;color:var(--ink-faint);white-space:nowrap;}
+.jsec-body{padding:0 4px 8px 30px;}
+.jsec-empty{font-style:italic;font-size:12px;padding:3px 0;color:var(--ink-faint);border-top:1px dashed rgba(26,26,26,.18);}
+.jrow{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;border-top:1px dashed rgba(26,26,26,.22);}
+.jrow .jts{flex:0 0 92px;font-size:10px;color:var(--ink-faint);font-family:'Archivo',monospace;
+  letter-spacing:.03em;padding-top:2px;line-height:1.3;}
+.jrow .jtext{flex:1 1 auto;font-size:13px;line-height:1.4;min-width:0;white-space:pre-wrap;}
+.jrow .jacts{flex:0 0 auto;display:flex;gap:4px;}
+.jrow .jacts button{min-height:44px;min-width:44px;padding:2px 6px;font-size:11px;line-height:1.1;}
+.j-edit-row{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.j-edit-row textarea{flex:1 1 200px;min-height:56px;}
+.j-edit-row button{min-height:44px;}
+.footer{flex:0 0 auto;padding:6px 12px;border-top:var(--dash);font-size:11px;color:var(--ink-soft);
+  display:flex;justify-content:space-between;gap:10px;background:var(--paper);}
+.switchrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.pill{padding:5px 9px;border-radius:999px;border:var(--dash);font-size:12px;background:transparent;min-height:0;min-width:0;color:var(--ink-soft);}
+.temp-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;
+  font-family:'Archivo','Inter',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.01em;
+  border:2px solid #4a86c5;background:#eaf2fb;color:#1f5fa8;transition:background .3s,color .3s,border-color .3s;}
+.temp-pill.hot{background:#fbeaea;border-color:#C22F2F;color:#C22F2F;}
+.temp-pill.warm{background:#fdf3e3;border-color:#B47000;color:#8a5200;}
+/* hypothesis: three mechanistic guiding questions as a quiet reference list */
+.hyp-guides{font-size:12px;line-height:1.4;color:var(--ink-soft);margin:2px 0 10px 2px;
+  padding-left:16px;max-width:640px;}
+.hyp-guides li{margin:3px 0;}
+/* tabs */
+.tabbar{display:flex;gap:8px;padding:10px 10px 0;flex:0 0 auto;align-items:center;}
+.tabbar button.tabbtn{border-radius:10px 10px 0 0;border-bottom:none;font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;letter-spacing:.03em;}
+.tabbar button.tabbtn.active{background:var(--accent);color:#fff;}
+.tabbar .spacer{flex:1;}
+.tabpane{display:none;flex:1 1 auto;min-height:0;flex-direction:column;}
+.tabpane.active{display:flex;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+/* ============ EXPORT (print-optimized) ============ */
+.export-bar{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:var(--dash);background:var(--paper);flex:0 0 auto;}
+.export-bar .spacer{flex:1;}
+#scr-export{display:none;flex:1 1 auto;min-height:0;flex-direction:column;background:#fff;}
+#scr-export.active{display:flex;}
+.export-scroll{flex:1 1 auto;min-height:0;overflow:auto;padding:22px;}
+.export-sheet{max-width:700px;margin:0 auto;color:#111;font-size:12px;line-height:1.4;}
+.export-sheet h1{font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:22px;margin:0 0 2px;}
+.export-sheet .exp-sub{color:#555;font-size:11px;margin-bottom:14px;}
+.exp-hyp{border:1.5px dashed #333;border-radius:8px;padding:12px 14px;margin-bottom:16px;background:#fff;}
+.exp-hyp .exp-hlab{font-family:'Archivo',sans-serif;font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#333;margin-bottom:6px;}
+.exp-hyp .exp-htext{white-space:pre-wrap;font-size:13px;}
+.exp-hyp .exp-hnone{color:#777;font-style:italic;}
+table.exp-table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+table.exp-table th{font-family:'Archivo',sans-serif;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  text-align:left;color:#333;border-top:1.5px solid #333;border-bottom:1px dashed #333;padding:5px 6px;}
+table.exp-table td{border-bottom:1px dashed #999;padding:5px 6px;vertical-align:top;white-space:pre-wrap;}
+table.exp-table .col-task{width:34%;}
+table.exp-table .col-when{width:19%;}
+table.exp-empty{color:#777;font-style:italic;padding:8px 0;}
+.exp-foot{margin-top:12px;font-size:10px;color:#555;border-top:1px dashed #999;padding-top:6px;}
+@media (max-width:900px){ .row{flex-direction:column;} }
+/* ============ PRINT ============ */
+@media print{
+  body{overflow:visible;background:#fff;}
+  #app>.topbar,#app>.footer,.export-bar,#tabbar{display:none!important;}
+  #screens{height:auto;max-height:none;display:block;}
+  .screen{display:none!important;}
+  #scr-export{display:flex!important;position:static;}
+  .export-scroll{overflow:visible;padding:0;}
+  .export-sheet{max-width:none;font-size:11px;}
+  @page{size:letter portrait;margin:0.6in;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="title" data-i18n="appTitle">Power Line Lab</div>
+    <div class="spacer"></div>
+    <div class="switchrow" id="aidsRow" style="display:none;">
+      <button class="pill" id="btnDrift" data-i18n="driftAid">Drift arrow</button>
+      <button class="pill" id="btnEnergy" data-i18n="energyAid">Energy flow</button>
+    </div>
+    <div class="lang">
+      <button id="langEN" class="active">EN</button>
+      <button id="langES">ES</button>
+    </div>
+    <button id="btnHome" data-i18n="home">Home</button>
+  </div>
+  <div id="screens"></div>
+  <div class="footer">
+    <span data-i18n="attrib">Based on the OpenSciEd Unit 11.1 model 'AC and DC Current in a Variable Transmission Wire', CC BY-NC 4.0.</span>
+    <span class="muted" id="portalNote"></span>
+  </div>
+</div>
+<script>
+(() => {
+'use strict';
+/* ===================== I18N ===================== */
+const STR = {
+en:{
+  appTitle:"Power Line Lab", home:"Home",
+  driftAid:"Drift arrow", energyAid:"Energy flow",
+  attrib:"Based on the OpenSciEd Unit 11.1 model 'AC and DC Current in a Variable Transmission Wire', CC BY-NC 4.0.",
+  tagline:"You are a grid engineer. Keep the city block powered.",
+  expLab:"Experimental Lab",
+  expDesc:"Free sandbox. Explore the wire, run experiments, and record what you notice in your journal.",
+  startExp:"Enter the Lab",
+  controls:"Controls", source:"Source", battery15:"1.5V battery (DC)",
+  gen2:"2-coil generator (AC)", gen4:"4-coil generator (AC)", gen6:"6-coil generator (AC)",
+  material:"Material", silver:"Silver", copper:"Copper", aluminum:"Aluminum",
+  nickel:"Nickel", stainless:"Stainless steel", nichrome:"Nichrome (toaster element)",
+  wireTemp:"Ambient temperature", ambientSlider:"Ambient temperature", diameter:"Diameter (mm)", length:"Length to source (m)",
+  polarity:"Flip polarity", spin:"Generator spin (Hz)",
+  swA:"Switch A", swB:"Switch B", swC:"Switch C",
+  wireView:"Wire view (zoomed)", schematic:"Transmission schematic (city block)",
+  ammeters:"Ammeters", loss:"% energy loss", power:"Delivered power",
+  simTab:"Simulation", journalTab:"Evidence Journal",
+  noComplete:"No complete circuit", allClosed:"Close at least one switch to run a circuit.",
+  journal:"Observation Journal", hypothesisBank:"My Hypothesis",
+  addObservation:"Add observation", save:"Save",
+  promptObs1:"Watch electron motion with the battery. Flip the polarity. What pattern do you notice?",
+  promptObs2:"Change the material. What happens to the current and the wire temperature?",
+  promptObs3:"Use a generator instead of the battery. How does electron motion differ from the battery?",
+  entriesHere:"entries", noEntries:"No entries yet for this task.",
+  edit:"Edit", del:"Del", saveEdit:"Save", cancelEdit:"Cancel",
+  confirmDelete:"Delete?", editedTag:"edited",
+  promptObs4:"Compare electron paths in silver and in nichrome at the same settings. What is different about how the electrons travel?",
+  promptObs5:"Change the wire diameter. Watch how much room the electrons have. What happens to the current?",
+  promptObs6:"Change the length to source. What happens to the % energy loss and the delivered power?",
+  promptObs7:"Close two switches, then all three. What do the ammeters show? How does the city block respond?",
+  promptObs8:"Give the wire a big job (strong source, thin wire). Watch the wire temperature readout. What happens over time?",
+  promptObs9:"Lower the ambient temperature toward -273C. What happens to the lattice motion? To the current?",
+  promptObs10:"With the wire as cold as possible, switch between materials. Does any material behave differently near -272C?",
+  hypGuideIntro:"Your hypothesis should explain these:",
+  hypGuideA:"How is electrical energy transferred from the energy source to devices through wires?",
+  hypGuideB:"How and why do wires change temperature when electrical energy is transferred through them, and how does a wire's temperature affect its ability to transfer electrical energy?",
+  hypGuideC:"How and why do physical characteristics of a wire, its length, diameter, and material, affect its ability to transfer electrical energy?",
+  hypInstruction:"Look at your observations. What pattern keeps showing up across all of them? What are the electrons and ions DOING that would explain it? This one statement should account for everything you saw.",
+  hypLabel:"My mechanistic hypothesis - what the electrons and ions are doing that explains my observations",
+  hypPlaceholder:"The electrons ..., and the ions ..., which explains why ...",
+  hypSave:"Save hypothesis", hypSaved:"Saved", hypUpdated:"Last updated",
+  hypNever:"Not saved yet",
+  exportBtn:"Export", exportPrint:"Print", exportBack:"Back",
+  exportTitle:"Power Line Lab - Evidence Journal",
+  exportSub:"A summary of my hypothesis and observations",
+  exportHypHead:"My mechanistic hypothesis",
+  exportNoHyp:"No hypothesis saved yet.",
+  exportColTask:"Task", exportColObs:"My observation", exportColWhen:"When",
+  exportNoEntries:"No observations recorded yet.",
+  exportFoot:"Based on the OpenSciEd Unit 11.1 model, CC BY-NC 4.0.",
+  wireCooling:"Wire is cooling...",
+  overheatHint:"The wire is overheating.",
+  overheatHintTitle:"Overheat warning",
+  dismiss:"Dismiss",
+  tempLabel:"Wire temperature",
+  diaLabel:"Wire diameter",
+},
+es:{
+  appTitle:"Laboratorio de Líneas de Potencia", home:"Inicio",
+  driftAid:"Flecha de deriva", energyAid:"Flujo de energía",
+  attrib:"Basado en el modelo de OpenSciEd Unidad 11.1 'AC and DC Current in a Variable Transmission Wire', CC BY-NC 4.0.",
+  tagline:"Eres un ingeniero de la red. Mantén energizada la manzana de la ciudad.",
+  expLab:"Laboratorio Experimental",
+  expDesc:"Zona libre. Explora el cable, haz experimentos y anota lo que observas en tu diario.",
+  startExp:"Entrar al Laboratorio",
+  controls:"Controles", source:"Fuente", battery15:"Batería de 1.5V (CD)",
+  gen2:"Generador de 2 bobinas (CA)", gen4:"Generador de 4 bobinas (CA)", gen6:"Generador de 6 bobinas (CA)",
+  material:"Material", silver:"Plata", copper:"Cobre", aluminum:"Aluminio",
+  nickel:"Níquel", stainless:"Acero inoxidable", nichrome:"Níquel-cromo (resistencia de tostadora)",
+  wireTemp:"Temperatura ambiente", ambientSlider:"Temperatura ambiente", diameter:"Diámetro (mm)", length:"Longitud a la fuente (m)",
+  polarity:"Invertir polaridad", spin:"Giro del generador (Hz)",
+  swA:"Interruptor A", swB:"Interruptor B", swC:"Interruptor C",
+  wireView:"Vista del cable (ampliada)", schematic:"Esquema de transmisión (manzana de la ciudad)",
+  ammeters:"Amperímetros", loss:"% pérdida de energía", power:"Potencia entregada",
+  simTab:"Simulación", journalTab:"Diario de Evidencia",
+  noComplete:"No hay circuito completo", allClosed:"Cierra al menos un interruptor para activar un circuito.",
+  journal:"Diario de Observaciones", hypothesisBank:"Mi Hipótesis",
+  addObservation:"Añadir observación", save:"Guardar",
+  promptObs1:"Observa el movimiento de los electrones con la batería. Invierte la polaridad. ¿Qué patrón notas?",
+  promptObs2:"Cambia el material. ¿Qué pasa con la corriente y la temperatura del cable?",
+  promptObs3:"Usa un generador en vez de la batería. ¿En qué se diferencia el movimiento de los electrones?",
+  entriesHere:"entradas", noEntries:"Aún no hay entradas para esta tarea.",
+  edit:"Editar", del:"Elim", saveEdit:"Guardar", cancelEdit:"Cancelar",
+  confirmDelete:"¿Eliminar?", editedTag:"editada",
+  promptObs4:"Compara las trayectorias de los electrones en plata y en níquel-cromo con los mismos ajustes. ¿Qué es diferente en cómo se mueven los electrones?",
+  promptObs5:"Cambia el diámetro del cable. Observa cuánto espacio tienen los electrones. ¿Qué pasa con la corriente?",
+  promptObs6:"Cambia la longitud a la fuente. ¿Qué pasa con la % de pérdida de energía y la potencia entregada?",
+  promptObs7:"Cierra dos interruptores, luego los tres. ¿Qué muestran los amperímetros? ¿Cómo responde la manzana de la ciudad?",
+  promptObs8:"Dale al cable un trabajo pesado (fuente potente, cable delgado). Observa la lectura de temperatura del cable. ¿Qué pasa con el tiempo?",
+  promptObs9:"Baja la temperatura ambiente hacia -273C. ¿Qué pasa con el movimiento de la red cristalina? ¿Y con la corriente?",
+  promptObs10:"Con el cable lo más frío posible, cambia entre materiales. ¿Algún material se comporta diferente cerca de -272C?",
+  hypGuideIntro:"Tu hipótesis debe explicar esto:",
+  hypGuideA:"¿Cómo se transfiere la energía eléctrica de la fuente de energía a los dispositivos a través de los cables?",
+  hypGuideB:"¿Cómo y por qué cambia la temperatura de los cables cuando la energía eléctrica se transfiere a través de ellos, y cómo afecta la temperatura de un cable su capacidad de transferir energía eléctrica?",
+  hypGuideC:"¿Cómo y por qué las características físicas de un cable, su longitud, diámetro y material, afectan su capacidad de transferir energía eléctrica?",
+  hypInstruction:"Mira tus observaciones. ¿Qué patrón aparece una y otra vez en todas? ¿Qué ESTÁN HACIENDO los electrones y los iones que lo explicaría? Esta única afirmación debe explicar todo lo que observaste.",
+  hypLabel:"Mi hipótesis mecanicista, qué están haciendo los electrones y los iones que explica mis observaciones",
+  hypPlaceholder:"Los electrones ..., y los iones ..., lo cual explica por qué ...",
+  hypSave:"Guardar hipótesis", hypSaved:"Guardada", hypUpdated:"Última actualización",
+  hypNever:"Aún no guardada",
+  exportBtn:"Exportar", exportPrint:"Imprimir", exportBack:"Volver",
+  exportTitle:"Laboratorio de Líneas de Potencia - Diario de Evidencia",
+  exportSub:"Un resumen de mi hipótesis y mis observaciones",
+  exportHypHead:"Mi hipótesis mecanicista",
+  exportNoHyp:"Aún no hay hipótesis guardada.",
+  exportColTask:"Tarea", exportColObs:"Mi observación", exportColWhen:"Cuándo",
+  exportNoEntries:"Aún no hay observaciones registradas.",
+  exportFoot:"Basado en el modelo de OpenSciEd Unidad 11.1, CC BY-NC 4.0.",
+  wireCooling:"El cable se está enfriando...",
+  overheatHint:"El cable se está sobrecalentando.",
+  overheatHintTitle:"Advertencia de sobrecalentamiento",
+  dismiss:"Cerrar",
+  tempLabel:"Temperatura del cable",
+  diaLabel:"Diámetro del cable",
+}};
+let LANG='en';
+const T=k=>(STR[LANG]&&STR[LANG][k])||STR.en[k]||k;
+/* ===================== PHYSICS (constants extracted from OpenSciEd 11.1 source) ===================== */
+const MATERIALS = {
+  silver:     {rho:1.59,  a:0.0038},
+  copper:     {rho:1.72,  a:0.0039},
+  aluminum:   {rho:2.82,  a:0.0039},
+  nickel:     {rho:6.99,  a:0.0059},
+  stainless:  {rho:69.0,  a:0.0030},
+  nichrome:   {rho:150.0, a:0.00017},
+};
+const THERMAL = {
+  silver:2.47e6, copper:3.45e6, aluminum:2.42e6,
+  nickel:3.96e6, stainless:3.95e6, nichrome:3.78e6,
+};
+const TIME_WARP=300;
+const SCATTER_P = {};
+(function(){
+  const REF=1.72;
+  for(const k in MATERIALS){ SCATTER_P[k]=Math.min(0.97, Math.max(0.05, 0.16*(MATERIALS[k].rho/REF))); }
+})();
+const ENERGY_SCALAR = 1000;
+const BASE_RHO = 1e-8;
+function baseResistivity(mat){ return (MATERIALS[mat]?MATERIALS[mat].rho:1.72)*BASE_RHO; }
+const ABS_ZERO_C = -273;
+const AL_SC_C = -271.8;
+function rhoAtTemp(mat, tempC){
+  if(mat==='aluminum' && tempC<=AL_SC_C) return 0;
+  const a = MATERIALS[mat]?MATERIALS[mat].a:0.0039;
+  const linear = baseResistivity(mat)*(1 + a*(tempC + 270));
+  const residual = baseResistivity(mat)*0.04;
+  return Math.max(linear, residual);
+}
+function wireResistance(mat, tempC, lengthM, diameterMM){
+  const area = Math.PI*Math.pow((diameterMM/1000)/2,2);
+  return rhoAtTemp(mat,tempC)*(lengthM/area);
+}
+function sourceOf(sel){
+  if(sel==='b15')  return {type:'DC', mult:1};
+  if(sel==='gen2') return {type:'AC', mult:2};
+  if(sel==='gen4') return {type:'AC', mult:4};
+  if(sel==='gen6') return {type:'AC', mult:6};
+  return {type:'DC', mult:1};
+}
+function dcVoltage(src){ return 1.5*src.mult; }
+function acAvgVoltage(src, spinHz){ return spinHz*src.mult*9/540; }
+
+/* ===================== STATE + PERSISTENCE ===================== */
+const LS='acdcLab:';
+const store={
+  get(k,d){ try{const v=localStorage.getItem(LS+k);return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{localStorage.setItem(LS+k,JSON.stringify(v));}catch(e){} }
+};
+/* v6: single overarching mechanistic hypothesis. Migrate legacy list-shaped
+   stores (v5 {pattern,mech}[] and v3 {v,think,bec}[]) by concatenating their
+   mechanism texts into the one textarea, exactly once. */
+const S = {
+  screen:'title', labTab:'sim',
+  controls:{
+    source:'b15', material:'copper', ambient:20, diameterMM:1.0,
+    lengthM:50, polarity:1, spinHz:60, swA:false, swB:false, swC:false,
+  },
+  wireTemp:20,
+  showDrift:false, showEnergy:false,
+  journal: store.get('journal',[]),
+  hypothesis: (function(){
+    const raw=store.get('hypothesis',null);
+    if(typeof raw==='string'){ return {text:raw, ts:Date.now()}; }
+    const legacy=store.get('hypotheses',null);
+    if(Array.isArray(legacy)){
+      const parts=[];
+      for(const h of legacy){
+        if(!h) continue;
+        const mech=(typeof h.mech==='string')?h.mech:(typeof h.bec==='string'?h.bec:'');
+        if(mech.trim()) parts.push(mech.trim());
+      }
+      if(parts.length){ return {text:parts.join('\n'), ts:Date.now()}; }
+    }
+    return {text:'', ts:0};
+  })(),
+  simTime:0, portalContext:null, inPortal:false,
+  wireFail:false, wireGlow:0, genStrain:0,
+};
+const saveAll=()=>{ store.set('journal',S.journal); store.set('hypothesis',S.hypothesis.text); };
+store.set('hypothesis',S.hypothesis.text);
+/* ===================== PROCTOR BRIDGE ===================== */
+window.addEventListener('message',(e)=>{
+  if(e.data && e.data.type==='PORTAL_CONTEXT'){
+    S.portalContext=e.data; S.inPortal=true;
+    document.getElementById('portalNote').textContent='';
+  }
+});
+function tryPost(msg){ try{ if(window.parent && window.parent!==window){ window.parent.postMessage(msg,'*'); return true;} }catch(e){} return false; }
+
+/* ===================== SIM ENGINE ===================== */
+function analyze(){
+  const c=S.controls;
+  const src=sourceOf(c.source);
+  const Rbranch=5;
+  const n = (c.swA?1:0)+(c.swB?1:0)+(c.swC?1:0);
+  const Rw = wireResistance(c.material, S.wireTemp, c.lengthM, c.diameterMM);
+  let V = src.type==='DC' ? dcVoltage(src) : acAvgVoltage(src, c.spinHz);
+  V = Math.abs(V);
+  let I=0, Vload=0, pct=null, branches={A:0,B:0,C:0}, lightPower=0;
+  if(n>0){
+    const Re = Rw + Rbranch/n;
+    I = V/Re;
+    if(src.type==='DC') I = I*c.polarity;
+    Vload = Math.max(0, V - Math.abs(I)*Rw);
+    const Ib = Vload/Rbranch;
+    if(c.swA)branches.A=Ib; if(c.swB)branches.B=Ib; if(c.swC)branches.C=Ib;
+    pct = 100*Math.abs(I)*Rw/V;
+    lightPower = n*Vload*Ib*ENERGY_SCALAR;
+  }
+  return {src,Rw,Rbranch,n,V,I,Vload,pct,branches,lightPower};
+}
+function stepPhysics(dt){
+  const a=analyze();
+  const c=S.controls;
+  const ambient=Math.max(ABS_ZERO_C, Math.min(200, c.ambient));
+  const area=Math.PI*Math.pow((c.diameterMM/1000)/2,2);
+  if(a.n>0 && Math.abs(a.I)>0){
+    const J=Math.abs(a.I)/area;
+    const th=THERMAL[c.material]||THERMAL.copper;
+    const rhoNow=rhoAtTemp(c.material,S.wireTemp);
+    S.wireTemp=Math.min(400, S.wireTemp + TIME_WARP*(J*J*rhoNow/th)*dt);
+  }
+  S.wireTemp += (ambient - S.wireTemp)*dt*0.15;
+  S.wireTemp = Math.max(ABS_ZERO_C, S.wireTemp);
+  const glowTarget=Math.max(0, Math.min(1,(S.wireTemp-80)/120));
+  S.wireGlow += (glowTarget-S.wireGlow)*Math.min(1,dt*2);
+  if(S.wireTemp>=250){ S.wireFail=true; }
+  if(S.wireFail && S.wireTemp<60){ S.wireFail=false; }
+  S.genStrain = (a.src.type==='AC' && a.n>0 && Math.abs(a.I)>0.5) ? Math.min(1, Math.abs(a.I)/1.5) : 0;
+  S.simTime+=dt;
+  if(S.wireGlow>0.3 && overheatShownAt===0){ showOverheatHint(); }
+  return a;
+}
+let overheatShownAt=0, overheatDismissed=false;
+function overheatActive(){ return !overheatDismissed && overheatShownAt>0 && (performance.now()-overheatShownAt)<60000; }
+function showOverheatHint(){ overheatShownAt=performance.now(); overheatDismissed=false; renderOverheatHint(); }
+function renderOverheatHint(){
+  const scope=document.querySelector('.screen.active')||document;
+  const b=scope.querySelector('#ohBanner'); if(!b)return;
+  if(overheatShownAt===0){ b.style.display='none'; return; }
+  const elapsed=performance.now()-overheatShownAt;
+  const conditionCleared = S.wireGlow<=0.15;
+  if(overheatDismissed || (conditionCleared && elapsed>6000) || elapsed>60000){ b.style.display='none'; }
+  else { b.style.display='flex'; }
+}
+document.addEventListener('click',(e)=>{
+  if(e.target && e.target.id==='ohDismiss'){ overheatDismissed=true; renderOverheatHint(); }
+});
+/* ===================== CANVAS HELPERS ===================== */
+let wireCv, wireCtx, schCv, schCtx;
+const wireSize={w:0,h:0}, schSize={w:0,h:0};
+let dpr=1;
+function sizeCanvas(cv, size, ctx){
+  const r=cv.getBoundingClientRect();
+  dpr=Math.min(1.5, window.devicePixelRatio||1);
+  cv.width=Math.max(1, Math.round(r.width*dpr));
+  cv.height=Math.max(1, Math.round(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  size.w=r.width; size.h=r.height;
+}
+function initCanvases(){
+  const scope=document.querySelector('.screen.active')||document;
+  const wc=scope.querySelector('#wireCanvas');
+  const sc=scope.querySelector('#schCanvas');
+  if(wc && wc!==wireCv){ wireCv=wc; wireCtx=wc.getContext('2d'); }
+  if(sc && sc!==schCv){ schCv=sc; schCtx=sc.getContext('2d'); }
+  if(wireCv&&wireCtx)sizeCanvas(wireCv,wireSize,wireCtx);
+  if(schCv&&schCtx)sizeCanvas(schCv,schSize,schCtx);
+}
+let resizeQueued=false;
+function queueResize(){
+  if(resizeQueued)return; resizeQueued=true;
+  requestAnimationFrame(()=>{ resizeQueued=false; initCanvases(); });
+}
+window.addEventListener('resize', queueResize);
+(function watchDpr(){
+  let last=window.devicePixelRatio||1;
+  setInterval(()=>{ const cur=window.devicePixelRatio||1; if(cur!==last){ last=cur; queueResize(); } },250);
+})();
+/* ===================== WIRE VIEW ===================== */
+const N_ELECTRONS=120;
+const ION_PX=13;
+const WALL_HALF_MIN=0.10, WALL_HALF_MAX=0.95;
+let electrons=[];
+let dtFrame=0.016;
+function wallHalf(){
+  const t=(S.controls.diameterMM-0.4)/(4-0.4);
+  return WALL_HALF_MIN+(WALL_HALF_MAX-WALL_HALF_MIN)*t;
+}
+function confineY(y){
+  const half=wallHalf();
+  const top=0.5-half, bot=0.5+half;
+  return Math.min(Math.max(y,top),bot);
+}
+function initElectrons(){
+  electrons=[];
+  for(let i=0;i<N_ELECTRONS;i++){
+    electrons.push({ x:Math.random(), y:Math.random(), vx:(Math.random()-0.5)*0.6, vy:(Math.random()-0.5)*0.6, trail:[], broken:false });
+  }
+}
+function matColor(){ return {silver:'#cfd6dd',copper:'#c9803a',aluminum:'#b9bec6',nickel:'#8b929b',stainless:'#9aa2ab',nichrome:'#6f7680'}[S.controls.material]||'#c9803a'; }
+
+function drawWire(a, w, h){
+  if(w<20||h<20||!wireCtx)return;
+  const ctx=wireCtx; ctx.clearRect(0,0,w,h);
+  const c=S.controls;
+  const half=wallHalf();
+  const topN=0.5-half, botN=0.5+half;
+  const yPx=n=>n*h;
+  const wallTop=yPx(topN), wallBot=yPx(botN);
+  ctx.fillStyle='#d8d4ca';
+  ctx.fillRect(0,0,w,wallTop); ctx.fillRect(0,wallBot,w,h-wallBot);
+  ctx.strokeStyle='rgba(26,26,26,0.10)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let x=-h;x<w+h;x+=10){ ctx.moveTo(x,0); ctx.lineTo(x+wallTop,wallTop); }
+  for(let x=0;x<w+h;x+=10){ ctx.moveTo(x,0); ctx.lineTo(x-wallTop,wallTop); }
+  ctx.stroke();
+  ctx.beginPath();
+  for(let x=-h;x<w+h;x+=10){ ctx.moveTo(x,wallBot); ctx.lineTo(x+(h-wallBot),h); }
+  for(let x=0;x<w+h;x+=10){ ctx.moveTo(x,wallBot); ctx.lineTo(x-(h-wallBot),h); }
+  ctx.stroke();
+  const bg=ctx.createLinearGradient(0,wallTop,0,wallBot);
+  bg.addColorStop(0,'#e8cba8'); bg.addColorStop(0.5,'#dfc0a0'); bg.addColorStop(1,'#d4b28e');
+  ctx.fillStyle=bg; ctx.fillRect(0,wallTop,w,wallBot-wallTop);
+  const base=matColor();
+  const vib = 1.6*Math.max(0,(S.wireTemp+273.15)/400);
+  const cols=Math.max(1,Math.floor(w/ION_PX));
+  const rows=Math.max(1,Math.floor((wallBot-wallTop)/ION_PX));
+  for(let i=0;i<cols;i++){
+    for(let j=0;j<rows;j++){
+      const cx=(i+0.5)*w/cols, cy=wallTop+(j+0.5)*(wallBot-wallTop)/rows;
+      const ox=Math.sin(S.simTime*3+i*1.7+j*2.3)*vib;
+      const oy=Math.cos(S.simTime*3+i*2.9+j*1.3)*vib*0.6;
+      const x=cx+ox, y=cy+oy;
+      const rr=Math.max(0.5,Math.min(6,ION_PX*0.30));
+      const g=ctx.createRadialGradient(x-2,y-2,1,x,y,rr);
+      g.addColorStop(0,'#ffffff'); g.addColorStop(0.35,base); g.addColorStop(1,'rgba(60,40,20,0.55)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.strokeStyle='rgba(90,60,30,.9)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(0,wallTop); ctx.lineTo(w,wallTop); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,wallBot); ctx.lineTo(w,wallBot); ctx.stroke();
+  const closed=a.n>0;
+  let drift=0;
+  if(closed){
+    if(a.src.type==='DC'){ drift = 0.06*Math.sign(a.I); }
+    else { drift = 0.10*Math.sin(2*Math.PI*c.spinHz*S.simTime)*Math.sign(a.I||1); }
+  }
+  const pScatter=SCATTER_P[c.material]||0.16;
+  const yMinPx=wallTop+4, yMaxPx=wallBot-4;
+  for(const e of electrons){
+    e.vx += (Math.random()-0.5)*0.9;
+    e.vy += (Math.random()-0.5)*0.9;
+    e.vx += drift*dtFrame*10;
+    e.vx*=0.9; e.vy*=0.9;
+    e.x+=e.vx*dtFrame; e.y+=e.vy*dtFrame;
+    if(e.x<0){ e.x+=1; e.trail.length=0; e.broken=true; }
+    if(e.x>=1){ e.x-=1; e.trail.length=0; e.broken=true; }
+    if(e.y* h < yMinPx){ e.y=yMinPx/h; e.vy=Math.abs(e.vy); e.trail.length=0; }
+    if(e.y* h > yMaxPx){ e.y=yMaxPx/h; e.vy=-Math.abs(e.vy); e.trail.length=0; }
+    e.y=confineY(e.y);
+    const speed=Math.hypot(e.vx,e.vy);
+    if(speed>1e-4){
+      const pHit=Math.min(0.6, 2.0*ION_PX/(speed*h)*dtFrame);
+      if(Math.random()<pHit && Math.random()<pScatter){
+        const ang=Math.random()*Math.PI*2;
+        const s2=Math.max(0.3, speed*0.9);
+        e.vx=Math.cos(ang)*s2; e.vy=Math.sin(ang)*s2;
+      }
+    }
+    e.trail.push({x:e.x,y:e.y}); if(e.trail.length>5)e.trail.shift();
+    for(const off of [-1,0,1]){
+      const shifted=e.x+off;
+      if(shifted<0||shifted>=1)continue;
+      const px=shifted*w, py=e.y*h;
+      if(e.trail.length>1){
+        ctx.strokeStyle='rgba(26,26,26,0.16)'; ctx.lineWidth=1; ctx.beginPath();
+        let started=false;
+        for(let t=0;t<e.trail.length;t++){
+          const tp=e.trail[t];
+          if(tp.x+off<0||tp.x+off>=1){ started=false; continue; }
+          const tx=(tp.x+off)*w, ty=tp.y*h;
+          if(!started){ ctx.moveTo(tx,ty); started=true; } else ctx.lineTo(tx,ty);
+        }
+        ctx.stroke();
+      }
+      ctx.fillStyle='#1A1A1A'; ctx.beginPath(); ctx.arc(px,py,2.6,0,Math.PI*2); ctx.fill();
+    }
+  }
+  if(S.showDrift){
+    const cy=(wallTop+wallBot)/2;
+    const dc = a.src.type==='DC';
+    if(closed){
+      const dir = dc ? (Math.sign(a.I)||1) : (Math.sign(Math.sin(2*Math.PI*c.spinHz*S.simTime))||1);
+      const mag = dc ? Math.min(1, Math.abs(a.I)/1.2) : Math.abs(Math.sin(2*Math.PI*c.spinHz*S.simTime));
+      const len=w*0.34*(0.25+0.75*mag);
+      const cx=w/2, ah=Math.min(26,(wallBot-wallTop)*0.28), ay=cy;
+      const pulse=0.55+0.45*mag;
+      ctx.save();
+      ctx.globalAlpha=pulse;
+      ctx.fillStyle='#FF4D26'; ctx.strokeStyle='#FF4D26';
+      ctx.lineWidth=6; ctx.lineCap='round';
+      ctx.shadowColor='rgba(255,77,38,0.6)'; ctx.shadowBlur=10;
+      const x0=cx-dir*len/2, x1=cx+dir*len/2;
+      ctx.beginPath(); ctx.moveTo(x0,ay); ctx.lineTo(x1-dir*ah*0.4,ay); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x1,ay); ctx.lineTo(x1-dir*ah*0.9,ay-ah/2); ctx.lineTo(x1-dir*ah*0.9,ay+ah/2);
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.font='700 12px Archivo,Inter,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(T('driftAid'), cx, ay-ah/2-6);
+      ctx.textAlign='left';
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.globalAlpha=0.55;
+      ctx.strokeStyle='#9aa2ab'; ctx.fillStyle='#9aa2ab'; ctx.lineWidth=3; ctx.lineCap='round';
+      ctx.setLineDash([6,6]);
+      const cx=w/2, len=w*0.18, ay=cy;
+      ctx.beginPath(); ctx.moveTo(cx-len/2,ay); ctx.lineTo(cx+len/2,ay); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font='700 11px Archivo,Inter,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(T('driftAid')+' · '+T('noComplete'), cx, ay-14);
+      ctx.textAlign='left';
+      ctx.restore();
+    }
+  }
+  if(S.showEnergy && closed && a.Rw>0){
+    const shimmer=0.5+0.5*Math.sin(S.simTime*9);
+    const strength=Math.min(1, Math.abs(a.I)*Math.abs(a.I)*a.Rw/8)*(0.4+0.6*shimmer);
+    ctx.save();
+    ctx.strokeStyle='rgba(255,150,40,'+(0.10+0.28*strength)+')';
+    ctx.lineWidth=2;
+    for(let i=0;i<6;i++){
+      const fx=w*(0.08+i*0.15);
+      ctx.beginPath();
+      for(let yy=wallTop; yy<=wallBot; yy+=6){
+        const off=Math.sin(yy*0.09+S.simTime*10+i*1.3)*(3+7*strength);
+        if(yy===wallTop) ctx.moveTo(fx+off,yy); else ctx.lineTo(fx+off,yy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if(S.wireGlow>0){
+    ctx.fillStyle='rgba(255,140,26,'+(S.wireGlow*0.30)+')'; ctx.fillRect(0,wallTop,w,wallBot-wallTop);
+    ctx.fillStyle='rgba(224,43,29,'+(Math.max(0,S.wireGlow-0.5)*0.45)+')'; ctx.fillRect(0,wallTop,w,wallBot-wallTop);
+  }
+  if(S.wireFail){
+    for(let i=0;i<12;i++){ ctx.fillStyle='rgba(90,90,90,'+(0.15+Math.random()*0.2)+')';
+      ctx.beginPath(); ctx.arc(Math.random()*w, wallTop+Math.random()*(wallBot-wallTop)*0.4, 3+Math.random()*6,0,Math.PI*2); ctx.fill(); }
+    ctx.fillStyle='#C22F2F'; ctx.font='800 15px Archivo,Inter,sans-serif';
+    ctx.fillText(T('overheatHintTitle'), 10, (wallTop+wallBot)/2);
+  }
+}
+
+/* ===================== SCHEMATIC (v8 EXACT TOPOLOGY, spec 2026-10-12) =====================
+   One continuous rectangle loop with three parallel switched branches, drawn on
+   the EXACT node coordinates from the v8 spec (fractions of canvas W x H, y down):
+     SRC box centered (0.06,0.55); top terminal (0.06,0.47), bottom (0.06,0.63).
+     OUT-corner (0.06,0.15). Switch bus x=0.42 (y 0.15..0.75). Branch rows A/B/C
+     at y=0.25/0.45/0.65. Ammeter at (0.56,y). City x=0.85..0.91 per row, outlet
+     (0.88,y+0.08). Return bus x=0.88 (y 0.33..0.85). Return rail y=0.85 to x=0.06,
+     then UP into the source bottom terminal (0.06,0.63). */
+const SCH = {
+  srcX:0.06, srcY:0.55, srcTopT:0.47, srcBotT:0.63, outX:0.06, outY:0.15,
+  busX:0.42, busTop:0.15, busBot:0.75,
+  rows:[0.25,0.45,0.65], bladeIn:0.44, bladeOut:0.50, ammX:0.56,
+  cityL:0.85, cityR:0.91, retX:0.88, retTop:0.33, railY:0.85,
+};
+function drawArrowDir(ctx,x,y,dx,dy,color){
+  const ang=Math.atan2(dy,dx);
+  ctx.fillStyle=color;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(-5,-4); ctx.lineTo(5,0); ctx.lineTo(-5,4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+/* base packet + current direction for each loop leg, with normal (polarity +) DC
+   being COUNTERCLOCKWISE per the spec (outbound L->R, return R->L, up the left).
+   Polarity flip must reverse EVERY leg; AC swings with the sine. */
+function packetDir(ac, phase, pol, dx, dy){
+  if(ac) return phase>=0?1:-1;
+  let base;
+  if(dx>0.5) base=1;            /* horizontal, drawn left-to-right */
+  else if(dx<-0.5) base=-1;     /* horizontal, drawn right-to-left */
+  else if(dy<-0.5) base=1;      /* vertical, drawn top-to-bottom */
+  else base=-1;                 /* vertical, drawn bottom-to-top */
+  return base*pol;
+}
+function drawSchematic(a, w, h){
+  if(!schCtx)return;
+  const ctx=schCtx; ctx.clearRect(0,0,w,h);
+  const c=S.controls;
+  const src=sourceOf(c.source);
+  const pad=12;
+  const night='#10131f';
+  ctx.fillStyle=night; ctx.fillRect(0,0,w,h);
+  const X=f=>f*w, Y=f=>f*h;
+  const col = S.wireGlow>0.5?'#e02b1d':'#8b93a1';
+  const colDim = S.wireGlow>0.5?'#e02b1d':'#6b7382';
+  const srcTopY=Y(SCH.srcY)-17, srcBotY=Y(SCH.srcY)+17;
+  const closed = c.swA||c.swB||c.swC;
+  /* ---- current arrows + energy packets (under conductors) ---- */
+  if(closed && Math.abs(a.I)>0){
+    const ac = a.src.type==='AC';
+    const phase = Math.sin(2*Math.PI*c.spinHz*S.simTime);
+    const pol = c.polarity;
+    const spd=0.25+Math.min(1,Math.abs(a.I));
+    const legs=[
+      {x0:X(SCH.outX), y0:Y(SCH.srcTopT), x1:X(SCH.outX), y1:Y(SCH.outY)},
+      {x0:X(SCH.outX), y0:Y(SCH.outY),   x1:X(SCH.busX),  y1:Y(SCH.outY)},
+      {x0:X(SCH.retX), y0:Y(SCH.railY),  x1:X(SCH.outX),  y1:Y(SCH.railY)},
+      {x0:X(SCH.outX), y0:Y(SCH.railY),  x1:X(SCH.outX),  y1:Y(SCH.srcBotT)},
+    ];
+    for(const g of legs){
+      const dx=g.x1-g.x0, dy=g.y1-g.y0, len=Math.hypot(dx,dy);
+      const d=packetDir(ac,phase,pol,dx,dy);
+      const ux=dx/len, uy=dy/len;
+      for(let i=0;i<4;i++){
+        const t=((S.simTime*spd+i/4)%1);
+        drawArrowDir(ctx, g.x0+ux*t*len, g.y0+uy*t*len, d*ux, d*uy, '#FF4D26');
+      }
+    }
+    if(S.showEnergy){
+      const pNorm=Math.min(1, a.lightPower/400);
+      for(const g of legs){
+        const dx=g.x1-g.x0, dy=g.y1-g.y0, len=Math.hypot(dx,dy);
+        const d=packetDir(ac,phase,pol,dx,dy);
+        const ux=dx/len, uy=dy/len;
+        for(let i=0;i<5;i++){
+          const t=((S.simTime*(0.25+pNorm*0.9)*d+i/5)%1+1)%1;
+          const al=0.25+0.75*Math.sin(Math.PI*t);
+          ctx.fillStyle='rgba(255,214,90,'+(al*(0.35+0.65*pNorm))+')';
+          ctx.beginPath(); ctx.arc(g.x0+ux*t*len, g.y0+uy*t*len, 4.5,0,Math.PI*2); ctx.fill();
+        }
+      }
+    }
+  }
+  /* ---- SOURCE block with two terminals ---- */
+  const srcPx=X(SCH.srcX), srcPY=Y(SCH.srcY);
+  ctx.fillStyle='#1d2436'; ctx.strokeStyle='#3a4258'; ctx.lineWidth=1.5;
+  ctx.fillRect(srcPx-21,srcPY-17,42,34);
+  ctx.strokeRect(srcPx-21,srcPY-17,42,34);
+  if(src.type==='DC'){
+    ctx.fillStyle='#2fae5f';
+    ctx.fillRect(srcPx-13,srcPY-12,26,24);
+    ctx.fillStyle=night; ctx.font='700 11px Archivo,Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(c.polarity>0?'+':'-', srcPx, srcPY-1);
+    ctx.fillText(c.polarity>0?'-':'+', srcPx, srcPY+11);
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(47,174,95,'+(0.25+0.25*Math.sin(S.simTime*4))+')';
+    ctx.fillRect(srcPx-13,srcPY-12,26,24);
+    ctx.fillStyle='#9fb0c8'; ctx.font='9px Inter,sans-serif';
+    ctx.fillText('DC', srcPx-7, srcPY+28);
+  } else {
+    const spin=S.simTime*c.spinHz*(Math.PI*2)*0.02;
+    ctx.save(); ctx.translate(srcPx,srcPY);
+    if(S.genStrain>0.3){ ctx.translate((Math.random()-0.5)*S.genStrain*4,(Math.random()-0.5)*S.genStrain*4); }
+    ctx.strokeStyle='#c9803a'; ctx.lineWidth=2.5;
+    for(let i=0;i<src.mult;i++){ ctx.beginPath(); ctx.ellipse(0,0,14,7, spin+i*(Math.PI/src.mult),0,Math.PI*2); ctx.stroke(); }
+    ctx.restore();
+    ctx.fillStyle='#9fb0c8'; ctx.font='9px Inter,sans-serif';
+    ctx.fillText('AC '+src.mult, srcPx-12, srcPY+28);
+  }
+  /* ---- CONDUCTORS on exact spec coordinates ---- */
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.lineCap='round';
+  /* edge 1: outbound up from source top terminal, then right to the bus */
+  ctx.beginPath(); ctx.moveTo(X(SCH.outX),Y(SCH.srcTopT)); ctx.lineTo(X(SCH.outX),Y(SCH.outY)); ctx.lineTo(X(SCH.busX),Y(SCH.outY)); ctx.stroke();
+  /* edge 2: switch bus (vertical) */
+  ctx.beginPath(); ctx.moveTo(X(SCH.busX),Y(SCH.busTop)); ctx.lineTo(X(SCH.busX),Y(SCH.busBot)); ctx.stroke();
+  /* edge 5: return rail left, then up into the source bottom terminal */
+  ctx.beginPath(); ctx.moveTo(X(SCH.retX),Y(SCH.railY)); ctx.lineTo(X(SCH.outX),Y(SCH.railY)); ctx.lineTo(X(SCH.outX),Y(SCH.srcBotT)); ctx.stroke();
+  /* edge 4: return bus (vertical) connecting all three building outlets */
+  ctx.beginPath(); ctx.moveTo(X(SCH.retX),Y(SCH.retTop)); ctx.lineTo(X(SCH.retX),Y(SCH.railY)); ctx.stroke();
+  /* zoom callout sits ON the outbound top run */
+  ctx.fillStyle='rgba(160,170,190,0.60)'; ctx.font='9px Inter,sans-serif';
+  ctx.fillText('1mm slice ~ '+c.lengthM+'m run · Ø '+c.diameterMM.toFixed(1)+'mm', X(SCH.outX)+8, Y(SCH.outY)-5);
+  /* ---- three parallel switched branches ---- */
+  const labels=['A','B','C']; const sw=[c.swA,c.swB,c.swC];
+  for(let k=0;k<3;k++){
+    const y=SCH.rows[k], by=Y(y);
+    const bIn=X(SCH.bladeIn), bOut=X(SCH.bladeOut), amm=X(SCH.ammX);
+    /* branch: bus tap -> blade -> ammeter -> city left edge */
+    ctx.strokeStyle=col; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(X(SCH.busX),by); ctx.lineTo(bIn,by); ctx.stroke();
+    ctx.strokeStyle='#dfe6f0'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(X(SCH.busX),by,3,0,Math.PI*2); ctx.fillStyle='#dfe6f0'; ctx.fill();
+    ctx.beginPath(); ctx.arc(bIn,by,3,0,Math.PI*2); ctx.fill();
+    /* switch blade: flat when closed, rotated UP when open (gap visible) */
+    if(sw[k]){
+      ctx.strokeStyle='#2fae5f'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(bIn,by); ctx.lineTo(bOut,by); ctx.stroke();
+    } else {
+      ctx.strokeStyle='#c9a13a'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(bIn,by); ctx.lineTo(bOut-2,by-13); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(bOut,by,3,0,Math.PI*2); ctx.fillStyle='#dfe6f0'; ctx.fill();
+    /* ammeter circle */
+    ctx.strokeStyle='#9fb0c8'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(amm,by,8,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='#dfe6f0'; ctx.font='700 9px Archivo,Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('A', amm, by+3);
+    ctx.textAlign='left';
+    /* branch conductor through ammeter to the city building left edge */
+    ctx.strokeStyle=col; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(bOut,by); ctx.lineTo(amm-8,by); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(amm+8,by); ctx.lineTo(X(SCH.cityL),by); ctx.stroke();
+    /* city building, conductor passes THROUGH and out the bottom */
+    const bh=Math.min(30,h*0.14), bldX=X(SCH.cityL), bldW=X(SCH.cityR)-X(SCH.cityL);
+    ctx.fillStyle='#181c2c'; ctx.strokeStyle='#3a4258'; ctx.lineWidth=1.5;
+    ctx.fillRect(bldX,by-bh/2,bldW,bh);
+    ctx.strokeRect(bldX,by-bh/2,bldW,bh);
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(X(SCH.cityL),by); ctx.lineTo(X(SCH.cityR),by); ctx.stroke();
+    const outY=Y(Math.min(0.92, y+0.08));
+    ctx.beginPath(); ctx.moveTo(X(SCH.retX),by); ctx.lineTo(X(SCH.retX),outY); ctx.stroke();
+    /* windows: brightness follows delivered power */
+    const Ib=Math.abs(a.branches[labels[k]]);
+    const bright = sw[k]? Math.min(1, Ib/0.6) : 0;
+    for(let wx=0;wx<3;wx++)for(let wy=0;wy<2;wy++){
+      const lx=bldX+4+wx*13, ly=by-bh/2+4+wy*12;
+      ctx.fillStyle = sw[k]? 'rgba(255,220,120,'+(0.15+bright*0.85)+')' : 'rgba(120,130,150,0.15)';
+      ctx.fillRect(lx,ly,8,7);
+    }
+    /* labels, clear of conductors */
+    ctx.fillStyle='#9fb0c8'; ctx.font='9px Inter,sans-serif';
+    ctx.fillText(labels[k]+(sw[k]?'':' · open'), X(SCH.busX)-34, by-8);
+    ctx.fillText('A: '+Ib.toFixed(2)+'A', amm-18, by+18);
+    drawGauge(ctx, amm+34, by, Math.min(1,Ib/1.2));
+    /* closed-branch packets: bus -> blade -> ammeter -> city -> down -> return bus */
+    if(sw[k] && Math.abs(a.I)>0 && S.showEnergy){
+      const ac2=a.src.type==='AC';
+      const phase2=Math.sin(2*Math.PI*c.spinHz*S.simTime);
+      const d2=packetDir(ac2,phase2,c.polarity,1,0);
+      const pNorm=Math.min(1, a.lightPower/400);
+      const steps=[
+        [X(SCH.busX),by,bIn,by],
+        [bOut,by,amm-8,by],
+        [amm+8,by,X(SCH.cityL),by],
+        [X(SCH.retX),by,X(SCH.retX),outY],
+      ];
+      const Ls=steps.map(s=>Math.hypot(s[2]-s[0],s[3]-s[1]));
+      const total=Ls[0]+Ls[1]+Ls[2]+Ls[3];
+      for(let i=0;i<4;i++){
+        let t=((S.simTime*(0.25+pNorm*0.9)*d2+i/4)%1+1)%1;
+        let dist=t*total;
+        for(let s=0;s<4;s++){
+          if(dist<=Ls[s]||s===3){
+            const u=Math.min(1,Math.max(0,dist/Ls[s]));
+            const al=0.25+0.75*Math.sin(Math.PI*t);
+            ctx.fillStyle='rgba(255,214,90,'+(al*(0.35+0.65*pNorm))+')';
+            ctx.beginPath(); ctx.arc(steps[s][0]+(steps[s][2]-steps[s][0])*u, steps[s][1]+(steps[s][3]-steps[s][1])*u, 4,0,Math.PI*2); ctx.fill();
+            break;
+          }
+          dist-=Ls[s];
+        }
+      }
+    }
+  }
+  /* re-draw return bus segments ON TOP of the building fills so the vertical
+     return conductor stays visible (and continuous) across the city block */
+  ctx.strokeStyle=col; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(X(SCH.retX),Y(SCH.retTop)); ctx.lineTo(X(SCH.retX),Y(SCH.railY)); ctx.stroke();
+  /* ---- readouts ---- */
+  ctx.fillStyle='#dfe6f0'; ctx.font='700 11px Archivo,Inter,sans-serif';
+  ctx.fillText(T('loss')+': '+(a.pct==null?T('noComplete'):a.pct.toFixed(1)+'%'), pad, h-24);
+  ctx.fillText(T('power')+': '+Math.round(a.lightPower), pad, h-9);
+}
+function drawGauge(ctx,x,y,val){
+  ctx.save(); ctx.translate(x,y);
+  ctx.strokeStyle='#3a4258'; ctx.beginPath(); ctx.arc(0,0,9,Math.PI,0); ctx.stroke();
+  const ang=Math.PI + Math.min(1,Math.max(0,val))*Math.PI;
+  ctx.strokeStyle= val>0.75?'#e02b1d':(val>0.4?'#c9a13a':'#2fae5f'); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ang)*8, Math.sin(ang)*8); ctx.stroke();
+  ctx.restore();
+}
+
+/* ===================== ANIMATION LOOP ===================== */
+let lastT=0;
+function loop(ts){
+  const dt=Math.min(0.05,(ts-lastT)/1000||0); lastT=ts; dtFrame=dt;
+  if(S.screen==='lab'){
+    const a=stepPhysics(dt);
+    if(wireCv&&wireCtx&&wireSize.w>0)drawWire(a,wireSize.w,wireSize.h);
+    if(schCv&&schCtx&&schSize.w>0)drawSchematic(a,schSize.w,schSize.h);
+    updateReadouts(a);
+    renderOverheatHint();
+  }
+  requestAnimationFrame(loop);
+}
+document.addEventListener('visibilitychange',()=>{ lastT=performance.now(); });
+
+/* ===================== DOM / SCREENS ===================== */
+const screensEl=document.getElementById('screens');
+function el(tag, attrs, html){ const e=document.createElement(tag); if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]); if(html!=null)e.innerHTML=html; return e; }
+function clear(n){ while(n.firstChild)n.removeChild(n.firstChild); }
+function buildScreens(){
+  clear(screensEl);
+  screensEl.appendChild(buildTitle());
+  screensEl.appendChild(buildLab());
+  screensEl.appendChild(buildExportScreen());
+  applyLang();
+}
+function show(name){
+  S.screen=name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const sc=document.getElementById('scr-'+name); if(sc)sc.classList.add('active');
+  document.getElementById('aidsRow').style.display = (name==='lab')?'flex':'none';
+  if(name==='lab'){ setTimeout(initCanvases,0); }
+  if(name==='export'){ renderExport(); }
+}
+/* ---- TITLE ---- */
+function buildTitle(){
+  const s=el('section',{class:'screen','id':'scr-title'}); s.style.alignItems='center'; s.style.justifyContent='center';
+  const card=el('div',{class:'panel',style:'max-width:560px;width:92%;text-align:center;'});
+  card.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},'OpenSciEd 11.1'));
+  card.appendChild(el('h1',{class:'display',style:'margin:0 0 6px;font-size:30px;'}, T('appTitle')));
+  card.appendChild(el('p',{class:'muted',style:'font-size:15px;'}, T('tagline')));
+  const be=el('button',{class:'primary',style:'margin-top:16px;width:100%;min-height:52px;'}, '<b>'+T('expLab')+'</b><br><span class="muted" style="font-size:12px;color:rgba(255,255,255,.8);">'+T('expDesc')+'</span>');
+  be.onclick=()=>{ show('lab'); };
+  card.appendChild(be);
+  s.appendChild(card); return s;
+}
+/* ---- CONTROLS PANEL ---- */
+function buildControlsPanel(){
+  const p=el('div',{class:'panel col',style:'flex:0 0 236px;overflow:auto;max-height:100%;'});
+  const c=S.controls;
+  p.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},T('controls')));
+  p.appendChild(el('label',{},T('source')));
+  const src=el('select',{id:'ctlSource'});
+  [['b15',T('battery15')],['gen2',T('gen2')],['gen4',T('gen4')],['gen6',T('gen6')]].forEach(([v,t])=>{
+    const o=el('option',{value:v},t); if(c.source===v)o.selected=true; src.appendChild(o);
+  });
+  src.onchange=()=>{c.source=src.value;};
+  p.appendChild(src);
+  p.appendChild(el('label',{},T('material')));
+  const mat=el('select',{id:'ctlMat'});
+  [['silver',T('silver')],['copper',T('copper')],['aluminum',T('aluminum')],['nickel',T('nickel')],['stainless',T('stainless')],['nichrome',T('nichrome')]].forEach(([v,t])=>{
+    const o=el('option',{value:v},t); if(c.material===v)o.selected=true; mat.appendChild(o);
+  });
+  mat.onchange=()=>{c.material=mat.value;};
+  p.appendChild(mat);
+  const slider=(label,id,val,min,max,step,unit,cb)=>{
+    p.appendChild(el('label',{},label+': <span id="'+id+'v">'+val+unit+'</span>'));
+    const i=el('input',{type:'range',id:id,min,max,step,value:val});
+    i.oninput=()=>{const v=parseFloat(i.value);document.getElementById(id+'v').textContent=(unit==='C'?v.toFixed(1):v)+unit; cb(v);};
+    p.appendChild(i);
+  };
+  slider(T('ambientSlider'),'ctlTemp',c.ambient,-273,200,'1','C',v=>c.ambient=v);
+  slider(T('diameter'),'ctlDia',c.diameterMM,0.4,4,0.1,'mm',v=>c.diameterMM=v);
+  slider(T('length'),'ctlLen',c.lengthM,10,200,5,'m',v=>c.lengthM=v);
+  slider(T('spin'),'ctlSpin',c.spinHz,10,120,1,'Hz',v=>c.spinHz=v);
+  const bp=el('button',{style:'margin-top:8px;'},T('polarity')); bp.onclick=()=>{c.polarity*=-1;}; p.appendChild(bp);
+  p.appendChild(el('label',{},''));
+  const swrow=el('div',{class:'switchrow'});
+  [['swA',T('swA')],['swB',T('swB')],['swC',T('swC')]].forEach(([k,lab])=>{
+    const b=el('button',{class:'pill','data-sw':k},lab+(c[k]?' ON':' OFF'));
+    b.onclick=()=>{c[k]=!c[k]; b.textContent=lab+(c[k]?' ON':' OFF');};
+    swrow.appendChild(b);
+  });
+  p.appendChild(swrow);
+  return p;
+}
+/* ---- SIM PANES ---- */
+function buildSimPane(){
+  const wrap=el('div',{class:'col',style:'flex:1 1 auto;min-width:0;gap:8px;'});
+  /* wire pane: header carries the diameter pill (spec item 4, off the lattice) */
+  const wv=el('div',{class:'panel col',style:'flex:1 1 58%;min-height:0;padding:8px;'});
+  const hdr=el('div',{style:'display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;'});
+  const hl=el('span',{class:'eyebrow'},T('wireView'));
+  const dia=el('span',{class:'pill',id:'roDia',style:'background:#fff;font-weight:700;color:#1A1A1A;'},T('diaLabel')+' · Ø '+c_dia()+'mm');
+  const temp=el('span',{class:'temp-pill',id:'roTempPill'},'<span id="roTemp">20.0C</span>');
+  hl.style.marginRight='auto';
+  hdr.appendChild(hl); hdr.appendChild(dia); hdr.appendChild(temp);
+  wv.appendChild(hdr);
+  const wc=el('canvas',{id:'wireCanvas',style:'flex:1 1 auto;width:100%;min-height:0;'}); wv.appendChild(wc);
+  const sc=el('div',{class:'panel col',style:'flex:1 1 42%;min-height:0;padding:8px;'});
+  sc.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:4px;'},T('schematic')));
+  const scc=el('canvas',{id:'schCanvas',style:'flex:1 1 auto;width:100%;min-height:0;'}); sc.appendChild(scc);
+  wrap.appendChild(wv); wrap.appendChild(sc); return wrap;
+}
+function c_dia(){ return S.controls.diameterMM.toFixed(1); }
+function updateReadouts(a){
+  const scope=document.querySelector('.screen.active')||document;
+  const set=(id,v)=>{const e=scope.querySelector('#'+id); if(e)e.textContent=v;};
+  set('roA', a.n>0? Math.abs(a.branches.A).toFixed(2):'0.00');
+  set('roB', a.n>0? Math.abs(a.branches.B).toFixed(2):'0.00');
+  set('roC', a.n>0? Math.abs(a.branches.C).toFixed(2):'0.00');
+  set('roLoss', a.pct==null?T('noComplete'):a.pct.toFixed(1)+'%');
+  set('roPow', String(Math.round(a.lightPower)));
+  set('roTemp', S.wireTemp.toFixed(1)+'C');
+  set('roDia', T('diaLabel')+' · Ø '+c_dia()+'mm');
+  const pill=scope.querySelector('#roTempPill');
+  if(pill){
+    const t=S.wireTemp;
+    pill.classList.toggle('hot', t>=100);
+    pill.classList.toggle('warm', t>=50 && t<100);
+  }
+}
+
+/* ---- LAB (tabs: Simulation | Evidence Journal) ---- */
+function buildLab(){
+  const s=el('section',{class:'screen','id':'scr-lab'});
+  const tabbar=el('div',{class:'tabbar','id':'tabbar'});
+  const bSim=el('button',{class:'tabbtn',id:'tabSim'},T('simTab'));
+  const bJou=el('button',{class:'tabbtn',id:'tabJou'},T('journalTab'));
+  bSim.onclick=()=>{S.labTab='sim'; syncLabTabs();};
+  bJou.onclick=()=>{S.labTab='journal'; syncLabTabs();};
+  tabbar.appendChild(bSim); tabbar.appendChild(bJou);
+  const tsp=el('div',{class:'spacer'}); tabbar.appendChild(tsp);
+  const bExp=el('button',{class:'primary',id:'btnExport',style:'min-height:36px;padding:6px 16px;border-radius:8px;'},T('exportBtn'));
+  bExp.onclick=()=>{ openExport(); };
+  tabbar.appendChild(bExp);
+  s.appendChild(tabbar);
+  const paneSim=el('div',{class:'tabpane','id':'paneSim'});
+  const row=el('div',{class:'row',style:'flex:1 1 auto;min-height:0;padding:10px;'});
+  row.appendChild(buildControlsPanel());
+  row.appendChild(buildSimPane());
+  const rail=el('div',{class:'col',style:'flex:0 0 210px;overflow:auto;max-height:100%;gap:8px;'});
+  const ro=el('div',{class:'panel'});
+  ro.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},T('ammeters')));
+  const tbl=el('div',{class:'muted'});
+  [['A','roA'],['B','roB'],['C','roC']].forEach(([k,id])=>{
+    const d=el('div',{},k+': ');
+    const b=el('b',{id:id,style:'color:#1A1A1A;'},'0.00'); d.appendChild(b);
+    d.appendChild(document.createTextNode(' A')); tbl.appendChild(d);
+  });
+  const dl=el('div',{style:'margin-top:6px;'},T('loss')+': ');
+  dl.appendChild(el('b',{id:'roLoss',style:'color:#1A1A1A;'},'--')); tbl.appendChild(dl);
+  const dp=el('div',{},T('power')+': ');
+  dp.appendChild(el('b',{id:'roPow',style:'color:#1A1A1A;'},'0')); tbl.appendChild(dp);
+  ro.appendChild(tbl);
+  rail.appendChild(ro);
+  row.appendChild(rail);
+  paneSim.appendChild(row);
+  s.appendChild(paneSim);
+  const oh=el('div',{id:'ohBanner',style:'display:none;position:absolute;left:260px;right:230px;top:6px;z-index:5;align-items:center;gap:10px;background:#fff;border:1px dashed #C22F2F;border-radius:10px;padding:8px 12px;font-size:13px;color:#C22F2F;'});
+  oh.appendChild(el('b',{},T('overheatHintTitle')));
+  oh.appendChild(el('span',{style:'flex:1;'},T('overheatHint')));
+  oh.appendChild(el('button',{id:'ohDismiss',style:'min-height:32px;padding:4px 12px;'},T('dismiss')));
+  paneSim.appendChild(oh);
+  paneSim.style.position='relative';
+  const paneJou=el('div',{class:'tabpane','id':'paneJou',style:'overflow:auto;padding:10px;'});
+  s.appendChild(paneJou);
+  return s;
+}
+function syncLabTabs(){
+  const sim=S.labTab==='sim';
+  const bSim=document.getElementById('tabSim'), bJou=document.getElementById('tabJou');
+  if(bSim)bSim.classList.toggle('active',sim);
+  if(bJou)bJou.classList.toggle('active',!sim);
+  const pS=document.getElementById('paneSim'), pJ=document.getElementById('paneJou');
+  if(pS)pS.classList.toggle('active',sim);
+  if(pJ)pJ.classList.toggle('active',!sim);
+  if(sim){ setTimeout(initCanvases,0); } else { renderJournal(); }
+}
+/* ===================== JOURNAL (no collapse: all sections always visible, spec v7) ===================== */
+function fmtWhen(ts){
+  try{ return new Date(ts).toLocaleString(); }catch(e){ return ''; }
+}
+function renderJournal(){
+  const p=document.getElementById('paneJou'); if(!p)return; clear(p);
+  const prompts=[T('promptObs1'),T('promptObs2'),T('promptObs3'),T('promptObs4'),T('promptObs5'),
+                 T('promptObs6'),T('promptObs7'),T('promptObs8'),T('promptObs9'),T('promptObs10')];
+  /* slim sticky chip row: scroll-to navigation, chips never hide content */
+  const chips=el('div',{class:'jchips','id':'jChips'});
+  prompts.forEach((q,i)=>{
+    const n=S.journal.filter(j=>j.prompt===i).length;
+    const chip=el('button',{class:'jchip'+(n?' has':''),'data-jchip':String(i)},String(i+1));
+    chip.title=q;
+    chip.onclick=()=>{
+      const sec=document.getElementById('jsec-'+i);
+      if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
+    };
+    chips.appendChild(chip);
+  });
+  p.appendChild(chips);
+  const comp=el('div',{class:'panel',style:'margin-bottom:12px;'});
+  comp.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},T('addObservation')));
+  const pd=el('select',{id:'jPrompt'});
+  prompts.forEach((q,i)=>pd.appendChild(el('option',{value:i},(i+1)+'. '+q)));
+  comp.appendChild(pd);
+  comp.appendChild(el('textarea',{id:'jText'}));
+  const bs=el('button',{class:'primary',style:'margin-top:6px;'},T('save'));
+  bs.onclick=()=>{ const t=document.getElementById('jText').value.trim(); if(!t)return;
+    S.journal.unshift({prompt:parseInt(pd.value,10),text:t,ts:Date.now(),edited:false}); saveAll();
+    document.getElementById('jText').value=''; renderJournal(); };
+  comp.appendChild(bs);
+  p.appendChild(comp);
+  /* entries-first: sections with entries (most recent first), then empties in numeric order */
+  const order=prompts.map((q,i)=>({i,q,n:S.journal.filter(j=>j.prompt===i).length}))
+    .sort((a,b)=> (b.n>0)-(a.n>0) || a.i-b.i);
+  order.forEach(({i,q,n})=>{
+    const sec=el('div',{class:'panel jsec',id:'jsec-'+i,style:'margin-bottom:8px;padding:4px 10px;scroll-margin-top:60px;'});
+    const hdr=el('div',{class:'jsec-header'});
+    hdr.appendChild(el('span',{class:'jsec-num'},String(i+1)));
+    hdr.appendChild(el('span',{class:'jsec-title'},q));
+    hdr.appendChild(el('span',{class:'jsec-count'},n+' '+T('entriesHere')));
+    sec.appendChild(hdr);
+    const body=el('div',{class:'jsec-body'});
+    if(n===0){
+      /* slim one-line prompt row; no big empty box */
+      body.appendChild(el('div',{class:'jsec-empty'},T('noEntries')));
+    } else {
+      S.journal.filter(j=>j.prompt===i).forEach(j=>{ body.appendChild(buildEntryRow(j)); });
+    }
+    sec.appendChild(body);
+    p.appendChild(sec);
+  });
+  p.appendChild(buildHypothesisArea());
+}
+function buildEntryRow(j){
+  const d=el('div',{class:'jrow','data-jidx':S.journal.indexOf(j)});
+  const jts=el('div',{class:'jts'},fmtWhen(j.ts)+(j.edited?' \u00B7 '+T('editedTag'):''));
+  const jbody=el('div',{class:'jtext'},j.text);
+  const actions=el('div',{class:'jacts'});
+  const bEdit=el('button',{},T('edit'));
+  const bDel=el('button',{},T('del'));
+  actions.appendChild(bEdit); actions.appendChild(bDel);
+  d.appendChild(jts); d.appendChild(jbody); d.appendChild(actions);
+  bEdit.onclick=()=>{
+    const ta=el('textarea',{});
+    ta.value=j.text;
+    const row=el('div',{class:'j-edit-row'});
+    row.appendChild(ta);
+    const bSave=el('button',{class:'primary'},T('saveEdit'));
+    const bCancel=el('button',{},T('cancelEdit'));
+    row.appendChild(bSave); row.appendChild(bCancel);
+    d.removeChild(jbody); d.removeChild(actions); d.appendChild(row);
+    bSave.onclick=()=>{
+      const t=ta.value.trim(); if(!t)return;
+      j.text=t; j.edited=true; saveAll(); renderJournal();
+    };
+    bCancel.onclick=()=>renderJournal();
+  };
+  bDel.onclick=()=>{
+    if(bDel.dataset.armed==='1'){
+      S.journal.splice(S.journal.indexOf(j),1); saveAll(); renderJournal();
+    } else {
+      bDel.dataset.armed='1';
+      bDel.textContent=T('confirmDelete');
+      bDel.classList.add('active');
+      setTimeout(()=>{ if(bDel.isConnected){ bDel.dataset.armed=''; bDel.textContent=T('del'); bDel.classList.remove('active'); } },3000);
+    }
+  };
+  return d;
+}
+/* ===================== HYPOTHESIS (single overarching statement, spec item 1) ===================== */
+function buildHypothesisArea(){
+  const wrap=el('div',{class:'panel',style:'margin-top:4px;'});
+  wrap.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},T('hypothesisBank')));
+  wrap.appendChild(el('div',{class:'muted',style:'margin-bottom:8px;'},T('hypInstruction')));
+  wrap.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:4px;'},T('hypGuideIntro')));
+  const gl=el('ol',{class:'hyp-guides muted'});
+  gl.appendChild(el('li',{},T('hypGuideA')));
+  gl.appendChild(el('li',{},T('hypGuideB')));
+  gl.appendChild(el('li',{},T('hypGuideC')));
+  wrap.appendChild(gl);
+  wrap.appendChild(el('label',{},T('hypLabel')));
+  const ta=el('textarea',{id:'hText',style:'min-height:96px;'});
+  ta.value=S.hypothesis.text||'';
+  ta.setAttribute('placeholder',T('hypPlaceholder'));
+  wrap.appendChild(ta);
+  const row=el('div',{style:'display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap;'});
+  const bs=el('button',{class:'primary'},T('hypSave'));
+  const stamp=el('span',{class:'muted',style:'font-size:12px;'},(S.hypothesis.ts? T('hypUpdated')+': '+fmtWhen(S.hypothesis.ts) : T('hypNever')));
+  row.appendChild(bs); row.appendChild(stamp);
+  bs.onclick=()=>{
+    const t=ta.value.trim();
+    S.hypothesis={text:t, ts:Date.now()};
+    saveAll();
+    stamp.textContent=T('hypSaved')+' \u00B7 '+T('hypUpdated')+': '+fmtWhen(S.hypothesis.ts);
+  };
+  wrap.appendChild(row);
+  return wrap;
+}
+
+/* ===================== EXPORT / PRINT VIEW (spec item 6) ===================== */
+let exportReturn='lab';
+function openExport(){
+  exportReturn=S.screen;
+  show('export');
+  try{ window.print(); }catch(e){}
+}
+function buildExportScreen(){
+  const s=el('section',{class:'screen','id':'scr-export'});
+  const bar=el('div',{class:'export-bar'});
+  const bBack=el('button',{id:'expBack'},T('exportBack'));
+  bBack.onclick=()=>{ show(exportReturn||'lab'); };
+  const bPrint=el('button',{class:'primary',id:'expPrint'},T('exportPrint'));
+  bPrint.onclick=()=>{ try{ window.print(); }catch(e){} };
+  bar.appendChild(bBack);
+  bar.appendChild(el('span',{class:'eyebrow'},T('exportBtn')));
+  const sp=el('span',{class:'spacer'}); bar.appendChild(sp);
+  bar.appendChild(bPrint);
+  s.appendChild(bar);
+  const scroll=el('div',{class:'export-scroll'});
+  const sheet=el('div',{class:'export-sheet','id':'expSheet'});
+  scroll.appendChild(sheet);
+  s.appendChild(scroll);
+  return s;
+}
+function renderExport(){
+  const sheet=document.getElementById('expSheet'); if(!sheet)return; clear(sheet);
+  sheet.appendChild(el('h1',{},T('exportTitle')));
+  sheet.appendChild(el('div',{class:'exp-sub'},T('exportSub')));
+  /* hypothesis featured in a bordered box */
+  const hb=el('div',{class:'exp-hyp'});
+  hb.appendChild(el('div',{class:'exp-hlab'},T('exportHypHead')));
+  if(S.hypothesis.text && S.hypothesis.text.trim()){
+    hb.appendChild(el('div',{class:'exp-htext'},S.hypothesis.text));
+  } else {
+    hb.appendChild(el('div',{class:'exp-hnone'},T('exportNoHyp')));
+  }
+  sheet.appendChild(hb);
+  /* observations table grouped by task */
+  const prompts=[T('promptObs1'),T('promptObs2'),T('promptObs3'),T('promptObs4'),T('promptObs5'),
+                 T('promptObs6'),T('promptObs7'),T('promptObs8'),T('promptObs9'),T('promptObs10')];
+  let any=false;
+  prompts.forEach((q,i)=>{
+    const entries=S.journal.filter(j=>j.prompt===i);
+    if(!entries.length) return;
+    any=true;
+    const tbl=el('table',{class:'exp-table'});
+    const thead=el('thead',{});
+    const hr=el('tr',{});
+    hr.appendChild(el('th',{class:'col-task'},T('exportColTask')));
+    hr.appendChild(el('th',{class:'col-obs'},T('exportColObs')));
+    hr.appendChild(el('th',{class:'col-when'},T('exportColWhen')));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tb=el('tbody',{});
+    /* chronological within task */
+    entries.slice().sort((x,y)=>x.ts-y.ts).forEach(j=>{
+      const tr=el('tr',{});
+      tr.appendChild(el('td',{class:'col-task'},(i+1)+'. '+q));
+      tr.appendChild(el('td',{class:'col-obs'},j.text+(j.edited?' ('+T('editedTag')+')':'')));
+      tr.appendChild(el('td',{class:'col-when'},fmtWhen(j.ts)));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    sheet.appendChild(tbl);
+  });
+  if(!any){ sheet.appendChild(el('div',{class:'exp-empty'},T('exportNoEntries'))); }
+  sheet.appendChild(el('div',{class:'exp-foot'},T('exportFoot')+' '+T('attrib')));
+}
+/* ---- AID TOGGLES ---- */
+document.getElementById('btnDrift').onclick=function(){S.showDrift=!S.showDrift; this.classList.toggle('active',S.showDrift);};
+document.getElementById('btnEnergy').onclick=function(){S.showEnergy=!S.showEnergy; this.classList.toggle('active',S.showEnergy);};
+/* ---- LANGUAGE ---- */
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(n=>{ n.textContent=T(n.getAttribute('data-i18n')); });
+}
+document.getElementById('langEN').onclick=()=>{LANG='en';setLangUI();};
+document.getElementById('langES').onclick=()=>{LANG='es';setLangUI();};
+function setLangUI(){
+  document.getElementById('langEN').classList.toggle('active',LANG==='en');
+  document.getElementById('langES').classList.toggle('active',LANG==='es');
+  const scr=S.screen, tab=S.labTab;
+  buildScreens(); show(scr);
+  if(scr==='lab'){ S.labTab=tab; syncLabTabs(); }
+}
+/* ---- NAV ---- */
+document.getElementById('btnHome').onclick=()=>{ show('title'); };
+/* ---- BOOT ---- */
+initElectrons();
+buildScreens();
+show('title');
+syncLabTabs();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
