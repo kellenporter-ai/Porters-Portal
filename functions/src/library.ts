@@ -70,6 +70,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/the-break-in",
   "/grid-reference",
   "/power-line-lab",
+  "/generator-investigations",
 ]);
 
 /**

@@ -188,6 +188,10 @@
         "destination": "/power-line-lab.html"
       },
       {
+        "source": "/generator-investigations",
+        "destination": "/generator-investigations.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

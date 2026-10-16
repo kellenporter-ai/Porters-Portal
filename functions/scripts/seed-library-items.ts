@@ -134,6 +134,17 @@ const SEED_ITEMS: SeedItem[] = [
     suggestedCategory: 'Supplemental',
     sourceFingerprint: '/privacy.html',
   },
+  {
+    title: 'Generator Investigations Lab Guide',
+    description: 'Bilingual interactive lab guide for OpenSciEd P.1 Lesson 5: six compass and iron filings investigations (generator at rest, slow vs fast spin, loose magnet, bare coil, coil with power supply, iron filings station). Students record observations, find patterns, sketch with vector tools, and build one big idea. Work autosaves on the device and exports to a PDF for Google Classroom. Includes a student self-check rubric.',
+    url: '/generator-investigations',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Honors Physics',
+    tags: ['openscied', 'generators', 'magnetism', 'energy', 'lab', 'bilingual'],
+    suggestedCategory: 'Lab',
+    sourceFingerprint: '/generator-investigations.html',
+  },
 ];
 
 async function main() {
