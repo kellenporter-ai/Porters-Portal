@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T20:33:28.775Z",
+  "generatedAt": "2026-10-16T13:58:47.872Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -92,6 +92,11 @@
       "sizeBytes": 1441302
     },
     {
+      "path": "/generator-investigations.html",
+      "fingerprint": "/generator-investigations.html",
+      "sizeBytes": 487052
+    },
+    {
       "path": "/grid-reference.html",
       "fingerprint": "/grid-reference.html",
       "sizeBytes": 293885
@@ -119,7 +124,7 @@
     {
       "path": "/openscied-hub.html",
       "fingerprint": "/openscied-hub.html",
-      "sizeBytes": 16180
+      "sizeBytes": 17443
     },
     {
       "path": "/power-line-lab.html",
