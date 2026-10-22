@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T12:56:19.304Z",
+  "generatedAt": "2026-10-22T16:07:01.225Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -94,7 +94,7 @@
     {
       "path": "/generator-investigations.html",
       "fingerprint": "/generator-investigations.html",
-      "sizeBytes": 490843
+      "sizeBytes": 494819
     },
     {
       "path": "/grid-reference.html",
@@ -170,6 +170,11 @@
       "path": "/privacy.html",
       "fingerprint": "/privacy.html",
       "sizeBytes": 11142
+    },
+    {
+      "path": "/rubbing-balloons.html",
+      "fingerprint": "/rubbing-balloons.html",
+      "sizeBytes": 813284
     },
     {
       "path": "/scientists-circle-toolkit.html",

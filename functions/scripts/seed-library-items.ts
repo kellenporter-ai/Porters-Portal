@@ -145,6 +145,17 @@ const SEED_ITEMS: SeedItem[] = [
     suggestedCategory: 'Lab',
     sourceFingerprint: '/generator-investigations.html',
   },
+  {
+    title: 'Rubbing Balloons: Seven Stations',
+    description: 'Seven-station electrostatics investigation. Students rub balloons with fur, plastic, cloth, and hair; record whether each pair pulls together, pushes apart, or does nothing; sort all seven stations; and build one big idea from the patterns. English/Spanish toggle, autosaves locally, exports responses to PDF.',
+    url: '/rubbing-balloons',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Physics',
+    tags: ['physics', 'electrostatics', 'openscied', 'stations', 'lab', 'bilingual', 'activity'],
+    suggestedCategory: 'Lab',
+    sourceFingerprint: '/rubbing-balloons.html',
+  },
 ];
 
 async function main() {

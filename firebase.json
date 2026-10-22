@@ -192,6 +192,10 @@
         "destination": "/generator-investigations.html"
       },
       {
+        "source": "/rubbing-balloons",
+        "destination": "/rubbing-balloons.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

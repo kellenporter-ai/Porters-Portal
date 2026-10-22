@@ -71,6 +71,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/grid-reference",
   "/power-line-lab",
   "/generator-investigations",
+  "/rubbing-balloons",
 ]);
 
 /**

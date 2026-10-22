@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T12:56:19.339Z",
+  "generatedAt": "2026-10-22T16:07:01.264Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -24,7 +24,8 @@
     "/the-break-in": "/the-break-in/index.html",
     "/grid-reference": "/grid-reference.html",
     "/power-line-lab": "/power-line-lab.html",
-    "/generator-investigations": "/generator-investigations.html"
+    "/generator-investigations": "/generator-investigations.html",
+    "/rubbing-balloons": "/rubbing-balloons.html"
   },
   "dirs": [
     "/forensic-branches",
