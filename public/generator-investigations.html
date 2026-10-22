@@ -149,6 +149,16 @@ canvas.sketch{width:100%;height:auto;aspect-ratio:900/470;max-height:none;backgr
 
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#F4F3EF;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;z-index:300;transition:transform .3s ease;pointer-events:none;}
 #toast.show{transform:translateX(-50%) translateY(0);}
+#pdfPanel{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:16px 18px;width:min(92vw,430px);box-shadow:0 12px 40px rgba(0,0,0,.18);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;}
+#pdfPanel.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+#pdfPanel .pp-msg{font-size:13.5px;line-height:1.45;margin:0 0 12px;}
+#pdfPanel .pp-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+#pdfPanel a.pp-dl{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;padding:8px 18px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;}
+#pdfPanel a.pp-tab{display:inline-block;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;}
+#pdfPanel a.pp-dl:hover{filter:brightness(1.1);}
+#pdfPanel a.pp-tab:hover{border-color:var(--ink);}
+#pdfPanel button.pp-close{margin-left:auto;background:transparent;border:1.5px solid var(--line);border-radius:999px;color:var(--muted);width:28px;height:28px;font-size:15px;line-height:1;cursor:pointer;}
+#pdfPanel button.pp-close:hover{border-color:var(--ink);color:var(--ink);}
 .foot-note{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5;}
 
 @keyframes crankSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
@@ -899,6 +909,15 @@ canvas.sketch{width:100%;height:auto;aspect-ratio:900/470;max-height:none;backgr
 </div>
 
 <div id="toast"></div>
+
+<div id="pdfPanel" role="dialog" aria-live="polite" aria-label="PDF ready">
+  <p class="pp-msg"><span class="lang-en">Your PDF is ready. If the download did not start, use one of these:</span><span class="lang-es">Tu PDF está listo. Si la descarga no comenzó, usa una de estas opciones:</span></p>
+  <div class="pp-actions">
+    <a class="pp-dl" id="pdfPanelDl" href="#"><span class="lang-en">Download PDF</span><span class="lang-es">Descargar PDF</span></a>
+    <a class="pp-tab" id="pdfPanelTab" href="#" target="_blank" rel="noopener"><span class="lang-en">Open in new tab</span><span class="lang-es">Abrir en otra pestaña</span></a>
+    <button class="pp-close" id="pdfPanelClose" title="Close / Cerrar" aria-label="Close / Cerrar">×</button>
+  </div>
+</div>
 
 <script>
 /** @license
@@ -1887,6 +1906,52 @@ SketchPad.prototype.renderToDataURL = function () {
   }
   return c.toDataURL('image/png');
 };
+/* Async render for PDF export: waits for any legacy raster image layer to
+   load (up to ~3s) before capturing, so saved images are never silently
+   missing from the exported PDF. Returns '' if capture fails. */
+SketchPad.prototype.renderToDataURLAsync = function (timeoutMs) {
+  var self = this;
+  timeoutMs = timeoutMs || 3000;
+  return new Promise(function (resolve) {
+    var c = document.createElement('canvas');
+    c.width = SK_W;
+    c.height = SK_H;
+    var ctx = c.getContext('2d');
+    if (!ctx) { resolve(''); return; }
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, SK_W, SK_H);
+    if (self.background) self.background(ctx);
+    var legacy = null;
+    self.elements.forEach(function (e) {
+      if (e.type === 'image') legacy = e;
+      else drawElement(ctx, e);
+    });
+    if (!legacy || !legacy.dataUrl) { resolve(c.toDataURL('image/png')); return; }
+    var settled = false;
+    var img = new Image();
+    var timer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      try { console.error('PDF export: sketch image load timed out'); } catch (e) {}
+      resolve(c.toDataURL('image/png'));
+    }, timeoutMs);
+    img.onload = function () {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { ctx.drawImage(img, 0, 0, SK_W, SK_H); } catch (e) { console.error(e); }
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = function () {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { console.error('PDF export: sketch image failed to load'); } catch (e) {}
+      resolve(c.toDataURL('image/png'));
+    };
+    img.src = legacy.dataUrl;
+  });
+};
 
 Array.prototype.forEach.call(document.querySelectorAll('canvas.sketch'), function (c) {
   sketches[c.dataset.sketch] = new SketchPad(c);
@@ -2215,24 +2280,38 @@ var PDFDEF = [
     ], sketches: [{ k: 'R.sketch', cEn: 'Big idea sketch', cEs: 'Dibujo de la gran idea' }] }
 ];
 
-function exportPdf() {
+function exportPdf(padDataUrls) {
+  padDataUrls = padDataUrls || {};
   var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
   if (!jsPDFCtor) { toast('PDF engine missing.'); return; }
   var es = document.documentElement.lang === 'es';
   var none = es ? '(sin respuesta todavía)' : '(no response yet)';
+  var sketchNone = es ? '(sin dibujo todavía)' : '(no sketch yet)';
+  var sketchFail = es
+    ? '(no se pudo incluir el dibujo)'
+    : '(sketch could not be embedded)';
   var doc = new jsPDFCtor({ unit: 'pt', format: 'letter' });
-  var M = 50, W = 612, CW = W - 2 * M, y = 0;
+  var M = 50, W = 612, CW = W - 2 * M, BOTTOM = 792 - M, y = 0;
 
   function newPage() { doc.addPage(); y = M; }
-  function ensure(h) { if (y + h > 792 - M) newPage(); }
+  function ensure(h) { if (y + h > BOTTOM) newPage(); }
+  function printLines(lines, x, lineH, contColor) {
+    /* Print line-by-line across page breaks: no text is ever dropped or
+       clipped, no matter how long a single answer runs. */
+    for (var i = 0; i < lines.length; i++) {
+      if (y + lineH > BOTTOM) newPage();
+      doc.text(lines[i], x, y);
+      y += lineH;
+    }
+    if (contColor) doc.setTextColor(contColor[0], contColor[1], contColor[2]);
+  }
   function heading(text, size, color) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(size);
     doc.setTextColor(color[0], color[1], color[2]);
     var lines = doc.splitTextToSize(text, CW);
-    ensure(lines.length * (size + 3) + 10);
-    doc.text(lines, M, y);
-    y += lines.length * (size + 3) + 4;
+    printLines(lines, M, size + 3, color);
+    y += 4;
   }
   function rule() {
     ensure(8);
@@ -2246,9 +2325,8 @@ function exportPdf() {
     doc.setFontSize(10.5);
     doc.setTextColor(107, 107, 99);
     var lines = doc.splitTextToSize(text, CW);
-    ensure(lines.length * 14 + 6);
-    doc.text(lines, M, y);
-    y += lines.length * 14 + 2;
+    printLines(lines, M, 14, [107, 107, 99]);
+    y += 2;
   }
   function body(text, indent) {
     doc.setFont('helvetica', 'normal');
@@ -2256,9 +2334,8 @@ function exportPdf() {
     doc.setTextColor(26, 26, 24);
     var x = M + (indent || 0);
     var lines = doc.splitTextToSize(text, CW - (indent || 0));
-    ensure(lines.length * 14.5 + 6);
-    doc.text(lines, x, y);
-    y += lines.length * 14.5 + 8;
+    printLines(lines, x, 14.5, [26, 26, 24]);
+    y += 8;
   }
   function img(dataUrl, caption) {
     var prop = 470 / 900;
@@ -2266,7 +2343,17 @@ function exportPdf() {
     var h = w * prop;
     ensure(h + 34);
     label(caption);
-    try { doc.addImage(dataUrl, 'PNG', M + 20, y, w, h); } catch (e) {}
+    if (!dataUrl || String(dataUrl).length < 2000) {
+      /* Blank, invalid, or failed render: visible placeholder, never silent. */
+      body(sketchFail, 14);
+      return;
+    }
+    try { doc.addImage(dataUrl, 'PNG', M + 20, y, w, h); }
+    catch (e) {
+      try { console.error('PDF export: could not embed sketch', e); } catch (e2) {}
+      body(sketchFail, 14);
+      return;
+    }
     y += h + 10;
   }
 
@@ -2316,16 +2403,106 @@ function exportPdf() {
     });
     sec.sketches.forEach(function (sk) {
       var pad = sketches[sk.k];
-      if (!pad || !pad.elements.length) return;
-      img(pad.renderToDataURL(), es ? sk.cEs : sk.cEn);
+      var caption = es ? sk.cEs : sk.cEn;
+      if (!pad || !pad.elements.length) {
+        /* Empty pad: visible marker instead of vanishing from the PDF. */
+        label(caption);
+        body(sketchNone, 14);
+        return;
+      }
+      img(padDataUrls[sk.k], caption);
     });
   });
 
+  // Footers on every page (second pass): page numbers + student name.
+  var total = doc.getNumberOfPages();
+  for (var pg = 1; pg <= total; pg++) {
+    doc.setPage(pg);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(107, 107, 99);
+    var footer = es
+      ? ('Página ' + pg + ' de ' + total + ' · ' + nm)
+      : ('Page ' + pg + ' of ' + total + ' · ' + nm);
+    doc.text(footer, W / 2, 792 - 30, { align: 'center' });
+  }
+
   var nameSafe = (get('name') || 'student').trim().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '-').slice(0, 40) || 'student';
-  doc.save('L5-Generator-Investigations-' + nameSafe + '.pdf');
+  var fname = 'L5-Generator-Investigations-' + nameSafe + '.pdf';
+  var blob, url;
+  try {
+    blob = doc.output('blob');
+    url = URL.createObjectURL(blob);
+  } catch (e) {
+    toast(es ? 'Error al exportar el PDF.' : 'PDF export failed. Try again or tell Mr. Porter.');
+    return;
+  }
+  // Revoke any blob URL from a previous export panel.
+  if (window.__pdfPanelUrl) {
+    try { URL.revokeObjectURL(window.__pdfPanelUrl); } catch (e) {}
+    window.__pdfPanelUrl = null;
+  }
+  // Auto-download attempt: DOM-attached anchor click (same mechanism jsPDF
+  // uses internally, but attached to the body).
+  try {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (e) {}
+  // Persistent fallback panel: real links the student can click even if the
+  // programmatic download was blocked.
+  try {
+    var panel = document.getElementById('pdfPanel');
+    var dl = document.getElementById('pdfPanelDl');
+    var tab = document.getElementById('pdfPanelTab');
+    if (panel && dl && tab) {
+      dl.href = url;
+      dl.setAttribute('download', fname);
+      tab.href = url;
+      window.__pdfPanelUrl = url;
+      panel.classList.add('show');
+    }
+  } catch (e) {}
   toast(es ? 'PDF exportado.' : 'PDF exported.');
 }
-document.getElementById('btnPdf').addEventListener('click', exportPdf);
+document.getElementById('btnPdf').addEventListener('click', function () {
+  /* Pre-render every non-empty sketch pad (async: waits for legacy raster
+     layers to load) before building the PDF, so no sketch is ever silently
+     missing from the export. */
+  var btn = this;
+  if (btn.disabled) return;
+  btn.disabled = true;
+  var jobs = Object.keys(sketches).map(function (k) {
+    var pad = sketches[k];
+    if (!pad || !pad.elements.length) return Promise.resolve([k, null]);
+    return pad.renderToDataURLAsync(3000).then(function (u) { return [k, u]; });
+  });
+  Promise.all(jobs).then(function (pairs) {
+    var map = {};
+    pairs.forEach(function (p) { if (p[1]) map[p[0]] = p[1]; });
+    exportPdf(map);
+  }).catch(function (e) {
+    try { console.error('PDF export: pad pre-render failed', e); } catch (e2) {}
+    exportPdf({});
+  }).finally(function () { btn.disabled = false; });
+});
+
+/* PDF export fallback panel wiring */
+(function () {
+  var panel = document.getElementById('pdfPanel');
+  var closeBtn = document.getElementById('pdfPanelClose');
+  if (!panel || !closeBtn) return;
+  closeBtn.addEventListener('click', function () {
+    panel.classList.remove('show');
+    if (window.__pdfPanelUrl) {
+      try { URL.revokeObjectURL(window.__pdfPanelUrl); } catch (e) {}
+      window.__pdfPanelUrl = null;
+    }
+  });
+})();
 
 /* ============ rubric modal ============ */
 /* NOTE: #rubricOverlay markup lives after this script block, so this wiring
