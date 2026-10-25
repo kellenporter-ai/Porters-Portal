@@ -63,7 +63,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
   const navigate = useNavigate();
   const toast = useToast();
   const isMounted = useIsMounted();
-  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   // Initialize activeClass from user, but DON'T snap back on every classType change.
   // For multi-class students, activeClass is the local view selector.
   const [activeClass, setActiveClass] = useState<string>(user.classType || user.enrolledClasses?.[0] || 'Unassigned');
@@ -322,15 +321,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
     });
     return groups;
   }, [assignments, submissions, activeClass]);
-
-  const toggleUnit = useCallback((unit: string) => {
-    setExpandedUnits(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(unit)) newSet.delete(unit);
-      else newSet.add(unit);
-      return newSet;
-    });
-  }, []);
 
   const level = user.gamification?.level || 1;
   const currency = user.gamification?.currency || 0;
@@ -605,8 +595,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                    <React.Suspense fallback={<GamificationSkeleton lines={6} />}>
                    <ResourcesTab
                        unitGroups={unitGroups}
-                       expandedUnits={expandedUnits}
-                       onToggleUnit={toggleUnit}
                        practiceCompletion={practiceCompletion}
                        onStartAssignment={onStartAssignment}
                        classConfigs={classConfigs}

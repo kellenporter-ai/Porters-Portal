@@ -35,8 +35,8 @@ import { computeUnitProgress } from '../../lib/unitProgress';
  *   - All colors via CSS custom properties in style.css (no hex literals, no
  *     bare `text-*-400`, no dynamic Tailwind class fragments)
  *
- * Public API (ResourcesTabProps) and the controlled `expandedUnits` +
- * `onToggleUnit` contract are preserved unchanged — the parent
+ * Public API (ResourcesTabProps) — expansion state is self-owned by this
+ * component (sticky active-unit default + explicit user overrides); the parent
  * (`components/StudentDashboard.tsx`) owns expand state.
  */
 
@@ -104,8 +104,6 @@ type UnitStatus = 'active' | 'next' | 'past' | 'future';
 
 interface ResourcesTabProps {
   unitGroups: Record<string, EnrichedAssignment[]>;
-  expandedUnits: Set<string>;
-  onToggleUnit: (unit: string) => void;
   practiceCompletion: Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>;
   onStartAssignment?: (id: string) => void;
   classConfigs?: ClassConfig[];
@@ -117,8 +115,6 @@ interface ResourcesTabProps {
 
 const ResourcesTab: React.FC<ResourcesTabProps> = ({
   unitGroups,
-  expandedUnits,
-  onToggleUnit,
   practiceCompletion,
   onStartAssignment,
   classConfigs,
@@ -230,6 +226,17 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     }
     return allSortedUnitKeys[allSortedUnitKeys.length - 1] ?? null;
   }, [allSortedUnitKeys, unitGroups, practiceCompletion, submissions]);
+
+  // ── Unit expansion (self-owned: resets when the tab unmounts — "no persist")
+  // Explicit user overrides win over the auto-expanded default.
+  const [userToggles, setUserToggles] = useState<Record<string, boolean>>({});
+
+  // Sticky default: freeze whichever unit was active when data first resolved,
+  // so completing work mid-session cannot pop a different unit open.
+  const [stickyActiveKey, setStickyActiveKey] = useState<string | null>(null);
+  if (stickyActiveKey === null && activeUnitKey !== null) {
+    setStickyActiveKey(activeUnitKey);
+  }
 
   /** Compute unit status relative to the active unit.
    *  Sort order is DESCENDING (newest unit first), so indices ABOVE the
@@ -523,7 +530,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
       typeof rawDisplayNumber === 'string' && rawDisplayNumber.trim().length > 0
         ? rawDisplayNumber.trim()
         : null;
-    const isOpen = expandedUnits.has(unitKey);
+    const isOpen = userToggles[unitKey] ?? (unitKey === stickyActiveKey);
 
     // Size + opacity per status
     const zoneOpacity =
@@ -615,10 +622,13 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
           </div>
         )}
 
-        {/* Header row — click toggles expand, delegates to parent controlled state */}
+        {/* Header row — click records an explicit override for this unit */}
         <button
           type="button"
-          onClick={() => onToggleUnit(unitKey)}
+          onClick={() => setUserToggles(prev => ({
+            ...prev,
+            [unitKey]: !(prev[unitKey] ?? (unitKey === stickyActiveKey)),
+          }))}
           aria-expanded={isOpen}
           className="relative z-10 w-full flex items-center gap-3 text-left focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] rounded-xl"
         >
