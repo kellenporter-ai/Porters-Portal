@@ -886,7 +886,7 @@ function show(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sc=document.getElementById('scr-'+name); if(sc)sc.classList.add('active');
   document.getElementById('aidsRow').style.display = (name==='lab')?'flex':'none';
-  if(name==='lab'){ setTimeout(initCanvases,0); }
+  if(name==='lab'){ syncLabTabs(); }
   if(name==='export'){ renderExport(); }
 }
 /* ---- TITLE ---- */
