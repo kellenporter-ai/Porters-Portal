@@ -114,6 +114,17 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/crime-scene-sketch-rubric.html',
   },
   {
+    title: 'Types of Evidence: Direct vs Circumstantial, Class vs Individual',
+    description: 'Interactive bilingual (EN/ES) reference for the quarter exam. Splits evidence classification into two independent questions with illustrated examples: how evidence proves (direct vs circumstantial) and how many sources it can come from (class vs individual). Includes the four combinations, a 20-item commit-then-check classifier, and a 20-item review bank with reasoning for every item.',
+    url: '/evidence-types',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: ['forensic-science', 'evidence-types', 'evidence-classification', 'quarter-review', 'bilingual', 'activity'],
+    suggestedCategory: 'Supplemental',
+    sourceFingerprint: '/evidence-types/index.html',
+  },
+  {
     title: 'Power Line Lab: AC & DC in a Transmission Wire',
     description: 'Discovery simulation for OpenSciEd P.1 Lesson 6. Students explore how electrons move through a transmission wire with battery (DC) and generator (AC) sources, vary the wire material, diameter, length, and ambient temperature (down to absolute zero), record observations in an evidence journal, and write a mechanistic hypothesis. Print-ready export of journal + hypothesis. Bilingual EN/ES.',
     url: '/power-line-lab',

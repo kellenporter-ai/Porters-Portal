@@ -196,6 +196,14 @@
         "destination": "/rubbing-balloons.html"
       },
       {
+        "source": "/evidence-types",
+        "destination": "/evidence-types/index.html"
+      },
+      {
+        "source": "/evidence-types/",
+        "destination": "/evidence-types/index.html"
+      },
+      {
         "source": "/ap1-q1-review",
         "destination": "/ap1-q1-review/index.html"
       },
