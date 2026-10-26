@@ -114,13 +114,20 @@ async function fetchBundledManifest(correlationId: string): Promise<ScannedItem[
     });
     throw new HttpsError("internal", "Could not fetch the deployed content manifest. Deploy the app first.");
   }
-  return manifest.items.map((item) => ({
-    title: titleFromFilename(item.path),
-    url: cleanUrlFromManifestPath(item.path),
-    hostingType: "bundled" as const,
-    contentKind: guessContentKind(item.path),
-    sourceFingerprint: item.fingerprint ?? item.path,
-  }));
+  return manifest.items.map((item) => {
+    // Directory pages arrive as `/x/`. Curated seed entries fingerprint the
+    // served file (`/x/index.html`), so normalize the fingerprint to match;
+    // otherwise every scanned directory page creates an untagged duplicate of
+    // its curated card (hit by /evidence-types and /seven-s, 2026-10-26).
+    const path = item.path.endsWith("/") ? `${item.path}index.html` : item.path;
+    return {
+      title: titleFromFilename(item.path),
+      url: cleanUrlFromManifestPath(item.path),
+      hostingType: "bundled" as const,
+      contentKind: guessContentKind(item.path),
+      sourceFingerprint: item.fingerprint ?? path,
+    };
+  });
 }
 
 /**

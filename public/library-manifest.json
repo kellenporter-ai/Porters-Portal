@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T14:13:27.043Z",
+  "generatedAt": "2026-10-26T16:10:55.742Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -50,6 +50,11 @@
       "path": "/evidence-court.html",
       "fingerprint": "/evidence-court.html",
       "sizeBytes": 29305
+    },
+    {
+      "path": "/evidence-types/",
+      "fingerprint": "/evidence-types/",
+      "sizeBytes": 1427394
     },
     {
       "path": "/forensic-branches/",

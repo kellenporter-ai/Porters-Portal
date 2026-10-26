@@ -1,8 +1,10 @@
-// Run: cd functions && npx ts-node scripts/seed-library-items.ts [--dry-run]
+// Run: cd functions && npx ts-node scripts/seed-library-items.ts [--dry-run] [--update-curated]
 //
-// One-time seed for the Hosted Content Library: upserts the 7 known hosted
+// One-time seed for the Hosted Content Library: upserts the known hosted
 // pages with starter metadata. Idempotent — matches by sourceFingerprint and
-// never overwrites curated fields (title/description/tags/subject) once set.
+// never overwrites curated fields (title/description/tags/subject) once set,
+// UNLESS --update-curated is passed, which pushes the seed's metadata onto
+// curated docs too (use when the curated copy itself needs correcting).
 
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -11,6 +13,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const DRY_RUN = process.argv.includes('--dry-run');
+const UPDATE_CURATED = process.argv.includes('--update-curated');
 
 interface SeedItem {
   title: string;
@@ -114,13 +117,13 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/crime-scene-sketch-rubric.html',
   },
   {
-    title: 'Types of Evidence: Direct vs Circumstantial, Class vs Individual',
-    description: 'Interactive bilingual (EN/ES) reference for the quarter exam. Splits evidence classification into two independent questions with illustrated examples: how evidence proves (direct vs circumstantial) and how many sources it can come from (class vs individual). Includes the four combinations, a 20-item commit-then-check classifier, and a 20-item review bank with reasoning for every item.',
+    title: 'Types of Evidence: Direct, Circumstantial, Class, and Individual',
+    description: 'Quarter exam review covering direct vs circumstantial evidence and class vs individual evidence. Explains the two questions separately, then shows the four combinations, with a 20-item sorting practice and a 20-item review bank. Includes eyewitness testimony, DNA, fingerprints, footwear, hair, ballistics, and blood type examples. Bilingual EN/ES.',
     url: '/evidence-types',
     hostingType: 'bundled',
     contentKind: 'activity',
     subject: 'Forensic Science',
-    tags: ['forensic-science', 'evidence-types', 'evidence-classification', 'quarter-review', 'bilingual', 'activity'],
+    tags: ['forensic-science', 'evidence-types', 'evidence-classification', 'quarter-review', 'bilingual', 'activity', 'testimony', 'individual-evidence', 'class-evidence'],
     suggestedCategory: 'Supplemental',
     sourceFingerprint: '/evidence-types/index.html',
   },
@@ -197,6 +200,7 @@ async function main() {
   let created = 0;
   let updated = 0;
   let skippedCurated = 0;
+  let recurated = 0;
 
   const commit = async () => {
     if (DRY_RUN || batchCount === 0) return;
@@ -250,6 +254,20 @@ async function main() {
           batchCount++;
         }
         updated++;
+      } else if (UPDATE_CURATED) {
+        // Explicitly asked to correct the curated copy (title/description/tags).
+        console.log(`  [RECURATE] ${item.title} (${item.sourceFingerprint})`);
+        if (!DRY_RUN) {
+          batch.update(existing.ref, {
+            ...base,
+            title: item.title,
+            description: item.description,
+            tags: item.tags,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          batchCount++;
+        }
+        recurated++;
       } else {
         // Curated by hand — only backfill missing structural fields.
         console.log(`  [SKIP] ${item.title} — already curated`);
@@ -264,6 +282,7 @@ async function main() {
   console.log('=== Summary ===');
   console.log(`  Created:          ${created}`);
   console.log(`  Updated (stub):   ${updated}`);
+  console.log(`  Recurated:        ${recurated}`);
   console.log(`  Skipped (curated):${skippedCurated}`);
 }
 

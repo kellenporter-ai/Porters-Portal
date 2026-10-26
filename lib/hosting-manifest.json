@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T14:13:27.003Z",
+  "generatedAt": "2026-10-26T16:10:55.781Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -26,11 +26,14 @@
     "/power-line-lab": "/power-line-lab.html",
     "/generator-investigations": "/generator-investigations.html",
     "/rubbing-balloons": "/rubbing-balloons.html",
+    "/evidence-types": "/evidence-types/index.html",
+    "/evidence-types/": "/evidence-types/index.html",
     "/ap1-q1-review": "/ap1-q1-review/index.html",
     "/ap1-q1-review/": "/ap1-q1-review/index.html"
   },
   "dirs": [
     "/ap1-q1-review",
+    "/evidence-types",
     "/forensic-branches",
     "/infrastructure-tagging",
     "/power-strip-reading",
