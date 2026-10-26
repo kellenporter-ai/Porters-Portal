@@ -732,14 +732,14 @@ export const es: Dictionary = {
 
   // ── Fortune wheel ──
   'fortune.title': 'Terminal de la fortuna',
-  'fortune.subtitle': 'Gasta {cost} Flux por un giro diario',
-  'fortune.spin': 'GIRAR',
-  'fortune.spinning': 'Girando...',
+  'fortune.subtitle': 'Un giro gratis cada día',
+    'fortune.spinning': 'Girando...',
   'fortune.comeBack': '¡Vuelve mañana!',
-  'fortune.spinBtn': 'Girar ({cost} Flux)',
+  'fortune.spinBtn': 'Girar la rueda',
   'fortune.wonLabel': 'Ganaste:',
   'fortune.wonToast': '¡Ganaste: {reward}!',
   'fortune.spinFailed': 'El giro falló',
+  'fortune.pityHint': 'Los premios mayores son raros. Sigue girando cada día.',
 
   // ── Daily challenges ──
   'challenges.title': 'Desafíos diarios',

@@ -21,7 +21,7 @@ import {
 // ─── Achievement Definitions ───
 describe('ACHIEVEMENTS', () => {
   it('contains 50 achievements', () => {
-    expect(ACHIEVEMENTS.length).toBe(50);
+    expect(ACHIEVEMENTS.length).toBe(51);
   });
 
   it('has unique IDs', () => {
@@ -229,6 +229,21 @@ describe('spinWheel', () => {
   it('all prize weights sum to expected total', () => {
     const totalWeight = FORTUNE_WHEEL_PRIZES.reduce((sum, p) => sum + p.weight, 0);
     expect(totalWeight).toBeGreaterThan(0);
+  });
+
+  it('has 13 segments and weights summing to 122', () => {
+    expect(FORTUNE_WHEEL_PRIZES.length).toBe(13);
+    expect(FORTUNE_WHEEL_PRIZES.reduce((s, p) => s + p.weight, 0)).toBe(122);
+  });
+  it('keeps every prize winnable (weight >= 1)', () => {
+    for (const p of FORTUNE_WHEEL_PRIZES) expect(p.weight).toBeGreaterThanOrEqual(1);
+  });
+  it('has no NOTHING prize', () => {
+    expect(FORTUNE_WHEEL_PRIZES.some(p => p.type === 'NOTHING')).toBe(false);
+  });
+  it('weights strictly decrease across the ordinary rungs', () => {
+    const w = FORTUNE_WHEEL_PRIZES.slice(0, 10).map(p => p.weight);
+    for (let i = 1; i < w.length; i++) expect(w[i]).toBeLessThanOrEqual(w[i - 1]);
   });
 });
 

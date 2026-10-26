@@ -326,12 +326,15 @@ export interface User {
     // Server-authoritative counters for achievement tracking
     bossesDefeated?: number; // Incremented each time a boss is killed while student contributed
     wheelSpins?: number; // Incremented each successful spinFortuneWheel call
+    wheelDryStreak?: number; // Spins since the last top-tier prize (pity system)
+    wheelEpicWins?: number; // Incremented when a spin lands on a gold-rail prize
     itemsCrafted?: number; // Incremented each successful craftItem call
 
     // === DAILY ENGAGEMENT ===
     lastLoginRewardDate?: string; // ISO date of last daily login reward
     loginStreak?: number; // Consecutive days logged in
-    lastWheelSpin?: string; // ISO date of last fortune wheel spin
+    lastWheelSpin?: string; // Local YYYY-MM-DD of last fortune wheel spin
+    lastWheelSpinAt?: number; // Epoch ms of last spin (server-authoritative pity clock)
     activeDailyChallenges?: DailyChallengeProgress[];
 
     // === SKILL TREE ===
@@ -689,7 +692,7 @@ export interface Achievement {
   condition: {
     type: 'XP_TOTAL' | 'LEVEL_REACHED' | 'ITEMS_COLLECTED' | 'QUESTS_COMPLETED' | 'STREAK_WEEKS'
       | 'GEAR_SCORE' | 'STAT_THRESHOLD' | 'LOGIN_STREAK' | 'BOSS_KILLS' | 'TUTORING_SESSIONS'
-      | 'ITEMS_CRAFTED' | 'WHEEL_SPINS' | 'CHALLENGES_COMPLETED';
+      | 'ITEMS_CRAFTED' | 'WHEEL_SPINS' | 'CHALLENGES_COMPLETED' | 'WHEEL_EPIC_WINS';
     target: number;
     stat?: string; // For STAT_THRESHOLD: which stat
   };
@@ -732,6 +735,7 @@ export type WheelPrizeType = 'XP' | 'FLUX' | 'ITEM' | 'GEM' | 'SKILL_POINT' | 'N
 export interface FortuneWheelPrize {
   id: string;
   label: string;
+  short?: string; // Compact single-line segment label (must fit a 27.7 degree wedge)
   type: WheelPrizeType;
   value: number; // XP amount, Flux amount, etc.
   rarity?: ItemRarity; // For ITEM prizes

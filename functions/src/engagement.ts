@@ -585,19 +585,37 @@ export const claimDailyLogin = onCall({ memory: "256MiB", timeoutSeconds: 60 }, 
     };
   });
 });
+// Spins without a top-tier prize before one is forced. Hidden from students.
+const PITY_LIMIT = 14;
+// The gold rail. Landing here resets the pity streak; going PITY_LIMIT spins without
+// one forces the next roll onto this pool. Order = ascending prize value.
+const RAIL_PRIZE_IDS = new Set<string>(["w_xp_500", "w_flux_250", "w_item_legendary"]);
+/** YYYY-MM-DD in the server's local timezone. UTC days would split the school day. */
+function localDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+// Reward ladder, 13 rungs. Weights are DERIVED: round((46 * 1.55^-i + 46 * 1.55^-11) * 0.9)
+// for i = 0..11, with the final rung duplicating the last ordinary weight. Total = 122.
+// Array order IS the visual segment order (the client maps findIndex onto segment index).
+// NOTE: the top item prize is a NAMED UNIQUE item (UNIQUES pool) — there is no LEGENDARY
+// rarity in ItemRarity; 'w_item_legendary' is kept as the id for parity with the client.
 const WHEEL_PRIZES = [
-  { id: "w_xp_50", type: "XP", value: 50, weight: 25 },
-  { id: "w_xp_100", type: "XP", value: 100, weight: 18 },
-  { id: "w_xp_250", type: "XP", value: 250, weight: 8 },
-  { id: "w_flux_10", type: "FLUX", value: 10, weight: 20 },
-  { id: "w_flux_25", type: "FLUX", value: 25, weight: 12 },
-  { id: "w_flux_100", type: "FLUX", value: 100, weight: 3 },
-  { id: "w_item_common", type: "ITEM", value: 1, weight: 15, rarity: "COMMON" },
-  { id: "w_item_uncommon", type: "ITEM", value: 1, weight: 8, rarity: "UNCOMMON" },
-  { id: "w_item_rare", type: "ITEM", value: 1, weight: 3, rarity: "RARE" },
-  { id: "w_gem", type: "GEM", value: 1, weight: 10 },
-  { id: "w_skillpt", type: "SKILL_POINT", value: 1, weight: 5 },
-  { id: "w_nothing", type: "NOTHING", value: 0, weight: 15 },
+  { id: "w_xp_50", type: "XP", value: 50, weight: 42 },
+  { id: "w_xp_100", type: "XP", value: 100, weight: 27 },
+  { id: "w_xp_150", type: "XP", value: 150, weight: 18 },
+  { id: "w_xp_250", type: "XP", value: 250, weight: 11 },
+  { id: "w_flux_15", type: "FLUX", value: 15, weight: 8 },
+  { id: "w_flux_50", type: "FLUX", value: 50, weight: 5 },
+  { id: "w_item_common", type: "ITEM", value: 1, weight: 3, rarity: "COMMON" },
+  { id: "w_item_uncommon", type: "ITEM", value: 1, weight: 2, rarity: "UNCOMMON" },
+  { id: "w_gem", type: "GEM", value: 1, weight: 2 },
+  { id: "w_skillpt", type: "SKILL_POINT", value: 1, weight: 1 },
+  { id: "w_xp_500", type: "XP", value: 500, weight: 1 },
+  { id: "w_flux_250", type: "FLUX", value: 250, weight: 1 },
+  { id: "w_item_legendary", type: "ITEM", value: 1, weight: 1, rarity: "UNIQUE" },
 ];
 const GEM_TYPES = [
   { name: "Ruby", stat: "tech", color: "#ef4444" },
@@ -626,7 +644,6 @@ export const spinFortuneWheel = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   const { classType } = request.data;
   const db = admin.firestore();
   const userRef = db.doc(`users/${uid}`);
-  const WHEEL_COST = 25; // Flux cost to spin
   const correlationId = generateCorrelationId();
   logWithCorrelation("info", "spinFortuneWheel: invoked", correlationId, { uid });
 
@@ -637,40 +654,48 @@ export const spinFortuneWheel = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     const data = userSnap.data()!;
     if (classType) assertEnrolled(data, classType);
     const gam = data.gamification || {};
+    // Gate: one spin per LOCAL calendar day.
+    // The client runs the same date logic so the button state always matches the server.
+    // `today` is the server's own local date; the client date is never trusted.
+    // lastWheelSpinAt is a number for current users and may be a legacy ISO string,
+    // so only a numeric value participates in the day comparison.
     const now = Date.now();
-    const oneHourAgo = now - 3600000; // 1 hour in ms
-    const lastSpinAt = gam.lastWheelSpinAt;
-    const lastSpinDate = gam.lastWheelSpin;
+    const today = localDateString(new Date(now));
+    const lastSpinAtMs = typeof gam.lastWheelSpinAt === "number" ? gam.lastWheelSpinAt : null;
+    const lastSpinDay = lastSpinAtMs === null ? null : localDateString(new Date(lastSpinAtMs));
+    const lastSpinDate = gam.lastWheelSpin ?? null;
 
-    if (lastSpinAt) {
-      const lastSpinTime = new Date(lastSpinAt).getTime();
-      if (lastSpinTime > oneHourAgo) {
-        const minutesLeft = Math.ceil((lastSpinTime - oneHourAgo) / 60000);
-        throw new HttpsError("failed-precondition", `Wheel on cooldown. Try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`);
-      }
-    } else if (lastSpinDate === new Date().toISOString().split("T")[0]) {
+    if (lastSpinDay === today || lastSpinDate === today) {
       throw new HttpsError("failed-precondition", "Already spun today. Come back tomorrow!");
     }
 
-    if ((gam.currency || 0) < WHEEL_COST) {
-      throw new HttpsError("failed-precondition", "Insufficient Cyber-Flux.");
-    }
-
-    // Spin the wheel
-    const totalWeight = WHEEL_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+    // Spin the wheel. If the student has gone PITY_LIMIT spins without a top-tier prize,
+    // the roll is confined to the top tier on this spin.
+    const dryStreak = gam.wheelDryStreak || 0;
+    const pool = dryStreak >= PITY_LIMIT
+      ? WHEEL_PRIZES.filter((p) => RAIL_PRIZE_IDS.has(p.id))
+      : WHEEL_PRIZES;
+    const rollPool = pool.length > 0 ? pool : WHEEL_PRIZES;
+    const totalWeight = rollPool.reduce((sum, p) => sum + p.weight, 0);
     let roll = Math.random() * totalWeight;
-    let prize = WHEEL_PRIZES[WHEEL_PRIZES.length - 1];
-    for (const p of WHEEL_PRIZES) {
+    let prize = rollPool[rollPool.length - 1];
+    for (const p of rollPool) {
       roll -= p.weight;
       if (roll <= 0) { prize = p; break; }
     }
 
+    // Pity clock. `lastWheelSpinAt` is a real number (ms). Firestore is authoritative
+    // for the first write of each day; we stamp max(prior, serverTime) + 1ms so a
+    // replayed call sees a prior stamp it cannot exceed and is rejected above.
+    const serverTime = admin.firestore.Timestamp.now().toMillis();
+    const resolvedSpinTime = Math.max(serverTime, (lastSpinAtMs ?? 0) + 1);
+
     const updates: Record<string, unknown> = {
-      "gamification.lastWheelSpinAt": new Date().toISOString(),
-      "gamification.lastWheelSpin": new Date().toISOString().split("T")[0],
+      "gamification.lastWheelSpinAt": resolvedSpinTime,
+      "gamification.lastWheelSpin": today,
     };
-    // Start from current currency minus wheel cost
-    let currencyAfter = (gam.currency || 0) - WHEEL_COST;
+    // Free spin: no cost, so currency only ever goes up from a FLUX prize.
+    let currencyAfter = gam.currency || 0;
 
     let rewardDescription = "";
 
@@ -680,14 +705,21 @@ export const spinFortuneWheel = onCall({ memory: "256MiB", timeoutSeconds: 60 },
       // If level-up occurred, buildXPUpdates already set currency to (old + 100).
       // We need to layer the wheel cost deduction on top of that.
       if (xpResult.leveledUp) {
-        currencyAfter = (xpResult.updates["gamification.currency"] as number) - WHEEL_COST;
+        currencyAfter = xpResult.updates["gamification.currency"] as number;
       }
       rewardDescription = `${prize.value} XP`;
     } else if (prize.type === "FLUX") {
       currencyAfter += prize.value;
       rewardDescription = `${prize.value} Cyber-Flux`;
     } else if (prize.type === "ITEM") {
-      const item = generateLoot(gam.level || 1, prize.rarity);
+      // Defensive: generateLoot's UNIQUE branch falls through to a generic item if the
+      // UNIQUES pool were ever empty, but guard anyway — degrade to RARE rather than
+      // persist a falsy item.
+      let item = generateLoot(gam.level || 1, prize.rarity);
+      if (!item) {
+        logWithCorrelation("warn", "spinFortuneWheel: UNIQUE loot roll produced no item; degrading to RARE", correlationId, { uid });
+        item = generateLoot(gam.level || 1, "RARE");
+      }
       const paths = getProfilePaths(classType);
       const { inventory } = getProfileData(data, classType);
       updates[paths.inventory] = [...inventory, item];
@@ -702,6 +734,8 @@ export const spinFortuneWheel = onCall({ memory: "256MiB", timeoutSeconds: 60 },
       updates["gamification.skillPoints"] = (gam.skillPoints || 0) + 1;
       rewardDescription = "1 Skill Point";
     } else {
+      // NOTHING is still in the WheelPrizeType union, so this fallback stays; no prize
+      // in WHEEL_PRIZES currently produces it.
       rewardDescription = "Better luck next time!";
     }
 
@@ -710,9 +744,15 @@ export const spinFortuneWheel = onCall({ memory: "256MiB", timeoutSeconds: 60 },
 
     // Increment wheelSpins counter and check achievements
     updates["gamification.wheelSpins"] = (gam.wheelSpins || 0) + 1;
+    // Pity: increment the dry streak, or reset it when this spin produced a top-tier prize.
+    const isRailPrize = RAIL_PRIZE_IDS.has(prize.id);
+    updates["gamification.wheelDryStreak"] = isRailPrize ? 0 : (gam.wheelDryStreak || 0) + 1;
+    // Gold-rail lifetime counter (drives the wheel_star achievement). CF-only, like wheelSpins.
+    updates["gamification.wheelEpicWins"] = (gam.wheelEpicWins || 0) + (isRailPrize ? 1 : 0);
     const { rewardUpdates: wheelAchievementUpdates, newUnlocks: wheelNewUnlocks } =
       checkAndUnlockAchievements(data, updates);
-    // Merge achievement rewards — re-apply final currency on top to preserve wheel cost deduction
+    // Achievement rewards may also grant Flux; that value already includes any
+    // FLUX prize, so it is the final authority on currency.
     Object.assign(updates, wheelAchievementUpdates);
     if (wheelAchievementUpdates["gamification.currency"] !== undefined) {
       // Achievement awarded flux — add on top of the wheel-cost-adjusted currency

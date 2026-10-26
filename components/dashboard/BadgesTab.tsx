@@ -39,6 +39,7 @@ const BadgesTab: React.FC<BadgesTabProps> = ({ user, activeClass }) => {
     const challengesDone = gam.challengesCompleted || 0;
     const craftCount = gam.itemsCrafted || 0;
     const wheelSpins = gam.wheelSpins || 0;
+    const wheelEpicWins = gam.wheelEpicWins || 0;
 
     const setProgress = (id: string, val: number) => {
       if (!progress[id] || val > progress[id]) progress[id] = val;
@@ -103,6 +104,7 @@ const BadgesTab: React.FC<BadgesTabProps> = ({ user, activeClass }) => {
     setProgress('craft_10', craftCount);
     setProgress('craft_50', craftCount);    // secret
     setProgress('wheel_25', wheelSpins);    // Fortune Seeker
+    setProgress('wheel_star', wheelEpicWins); // Starstruck
 
     return progress;
   }, [user, gearScore, playerStats]);

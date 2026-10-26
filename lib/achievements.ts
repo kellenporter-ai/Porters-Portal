@@ -69,6 +69,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'craft_10', title: 'Artisan', description: 'Craft items 10 times', icon: '🔨', category: 'MASTERY', condition: { type: 'ITEMS_CRAFTED', target: 10 }, xpReward: 100, fluxReward: 50 },
   { id: 'craft_50', title: 'Master Craftsman', description: 'Craft items 50 times', icon: '⚒️', category: 'MASTERY', condition: { type: 'ITEMS_CRAFTED', target: 50 }, xpReward: 400, fluxReward: 200, isSecret: true },
   { id: 'wheel_25', title: 'Fortune Seeker', description: 'Spin the Fortune Wheel 25 times', icon: '🎰', category: 'MASTERY', condition: { type: 'WHEEL_SPINS', target: 25 }, xpReward: 200, fluxReward: 100 },
+  { id: 'wheel_star', title: 'Starstruck', description: 'Land a top Fortune prize 3 times', icon: '⭐', category: 'MASTERY', condition: { type: 'WHEEL_EPIC_WINS', target: 3 }, xpReward: 300, fluxReward: 150 },
 ];
 
 export const getAchievementsByCategory = (category: AchievementCategory): Achievement[] =>
@@ -153,19 +154,25 @@ export const getActiveSetBonuses = (equippedItems: { baseName: string }[]): { se
 // ========================================
 
 export const FORTUNE_WHEEL_PRIZES: FortuneWheelPrize[] = [
-  { id: 'w_xp_50', label: '50 XP', type: 'XP', value: 50, weight: 25, color: '#3b82f6' },
-  { id: 'w_xp_100', label: '100 XP', type: 'XP', value: 100, weight: 18, color: '#6366f1' },
-  { id: 'w_xp_250', label: '250 XP', type: 'XP', value: 250, weight: 8, color: '#8b5cf6' },
-  { id: 'w_flux_10', label: '10 Flux', type: 'FLUX', value: 10, weight: 20, color: '#06b6d4' },
-  { id: 'w_flux_25', label: '25 Flux', type: 'FLUX', value: 25, weight: 12, color: '#0891b2' },
-  { id: 'w_flux_100', label: '100 Flux', type: 'FLUX', value: 100, weight: 3, color: '#0e7490' },
-  { id: 'w_item_common', label: 'Common Item', type: 'ITEM', value: 1, rarity: 'COMMON', weight: 15, color: '#64748b' },
-  { id: 'w_item_uncommon', label: 'Uncommon Item', type: 'ITEM', value: 1, rarity: 'UNCOMMON', weight: 8, color: '#22c55e' },
-  { id: 'w_item_rare', label: 'Rare Item!', type: 'ITEM', value: 1, rarity: 'RARE', weight: 3, color: '#eab308' },
-  { id: 'w_gem', label: 'Random Gem', type: 'GEM', value: 1, weight: 10, color: '#ec4899' },
-  { id: 'w_skillpt', label: 'Skill Point', type: 'SKILL_POINT', value: 1, weight: 5, color: '#a855f7' },
-  { id: 'w_nothing', label: 'Try Again!', type: 'NOTHING', value: 0, weight: 15, color: '#374151' },
+  { id: 'w_xp_50', label: '50 XP', short: '50 XP', type: 'XP', value: 50, weight: 42, color: '#2563eb' },
+  { id: 'w_xp_100', label: '100 XP', short: '100 XP', type: 'XP', value: 100, weight: 27, color: '#4f46e5' },
+  { id: 'w_xp_150', label: '150 XP', short: '150 XP', type: 'XP', value: 150, weight: 18, color: '#7c3aed' },
+  { id: 'w_xp_250', label: '250 XP', short: '250 XP', type: 'XP', value: 250, weight: 11, color: '#9333ea' },
+  { id: 'w_flux_15', label: '15 Flux', short: '15 Flux', type: 'FLUX', value: 15, weight: 8, color: '#0e7490' },
+  { id: 'w_flux_50', label: '50 Flux', short: '50 Flux', type: 'FLUX', value: 50, weight: 5, color: '#0f766e' },
+  { id: 'w_item_common', label: 'Common Item', short: 'Common', type: 'ITEM', value: 1, rarity: 'COMMON', weight: 3, color: '#475569' },
+  { id: 'w_item_uncommon', label: 'Uncommon Item', short: 'Unc', type: 'ITEM', value: 1, rarity: 'UNCOMMON', weight: 2, color: '#15803d' },
+  { id: 'w_gem', label: 'Random Gem', short: 'Gem', type: 'GEM', value: 1, weight: 2, color: '#be185d' },
+  { id: 'w_skillpt', label: 'Skill Point', short: 'Skill', type: 'SKILL_POINT', value: 1, weight: 1, color: '#a21caf' },
+  { id: 'w_xp_500', label: '500 XP', short: '500 XP', type: 'XP', value: 500, weight: 1, color: '#d97706' },
+  { id: 'w_flux_250', label: '250 Flux', short: '250 Flux', type: 'FLUX', value: 250, weight: 1, color: '#d97706' },
+  // Top item tier is a NAMED UNIQUE item (no LEGENDARY rarity exists in ItemRarity);
+  // id kept as w_item_legendary for server/client parity.
+  { id: 'w_item_legendary', label: 'Unique Item', short: 'Unique', type: 'ITEM', value: 1, rarity: 'UNIQUE', weight: 1, color: '#d97706' },
 ];
+
+// The gold rail (top-tier prize ids). Mirrors RAIL_PRIZE_IDS in functions/src/engagement.ts.
+export const RAIL_PRIZE_IDS_CLIENT = new Set<string>(['w_xp_500', 'w_flux_250', 'w_item_legendary']);
 
 export const spinWheel = (): FortuneWheelPrize => {
   const totalWeight = FORTUNE_WHEEL_PRIZES.reduce((sum, p) => sum + p.weight, 0);

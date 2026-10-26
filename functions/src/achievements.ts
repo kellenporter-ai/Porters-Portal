@@ -44,6 +44,7 @@ export const ACHIEVEMENT_DEFS: {
   { id: 'craft_10', conditionType: 'ITEMS_CRAFTED', conditionTarget: 10, xpReward: 100, fluxReward: 50 },
   { id: 'craft_50', conditionType: 'ITEMS_CRAFTED', conditionTarget: 50, xpReward: 400, fluxReward: 200 },
   { id: 'wheel_25', conditionType: 'WHEEL_SPINS', conditionTarget: 25, xpReward: 200, fluxReward: 100 },
+  { id: 'wheel_star', conditionType: 'WHEEL_EPIC_WINS', conditionTarget: 3, xpReward: 300, fluxReward: 150 },
   // NOTE: ITEMS_COLLECTED, GEAR_SCORE, STAT_THRESHOLD badges rely on client-computed
   // gear/inventory data and are not checked server-side.
 ];
@@ -82,6 +83,7 @@ export function checkAndUnlockAchievements(
   const projectedLevel = pendingUpdates["gamification.level"] ?? (gam.level || 1);
   const projectedBosses = pendingUpdates["gamification.bossesDefeated"] ?? (gam.bossesDefeated || 0);
   const projectedSpins = pendingUpdates["gamification.wheelSpins"] ?? (gam.wheelSpins || 0);
+  const projectedEpicWins = pendingUpdates["gamification.wheelEpicWins"] ?? (gam.wheelEpicWins || 0);
   const projectedCrafts = pendingUpdates["gamification.itemsCrafted"] ?? (gam.itemsCrafted || 0);
   const projectedStreak = pendingUpdates["gamification.engagementStreak"] ?? (gam.engagementStreak || 0);
   const projectedLoginStreak = pendingUpdates["gamification.loginStreak"] ?? (gam.loginStreak || 0);
@@ -92,6 +94,7 @@ export function checkAndUnlockAchievements(
     LEVEL_REACHED: projectedLevel,
     BOSS_KILLS: projectedBosses,
     WHEEL_SPINS: projectedSpins,
+    WHEEL_EPIC_WINS: projectedEpicWins,
     ITEMS_CRAFTED: projectedCrafts,
     STREAK_WEEKS: projectedStreak,
     LOGIN_STREAK: projectedLoginStreak,

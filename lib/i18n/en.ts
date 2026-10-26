@@ -732,14 +732,14 @@ export const en: Dictionary = {
 
   // ── Fortune wheel ──
   'fortune.title': 'Fortune Terminal',
-  'fortune.subtitle': 'Spend {cost} Flux for a daily spin',
-  'fortune.spin': 'SPIN',
-  'fortune.spinning': 'Spinning...',
+  'fortune.subtitle': 'One free spin every day',
+    'fortune.spinning': 'Spinning...',
   'fortune.comeBack': 'Come back tomorrow!',
-  'fortune.spinBtn': 'Spin ({cost} Flux)',
+  'fortune.spinBtn': 'Spin the Wheel',
   'fortune.wonLabel': 'You won:',
   'fortune.wonToast': 'You won: {reward}!',
   'fortune.spinFailed': 'Spin failed',
+  'fortune.pityHint': 'Top prizes are rare. Keep spinning daily.',
 
   // ── Daily challenges ──
   'challenges.title': 'Daily Challenges',
