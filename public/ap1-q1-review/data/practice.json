@@ -1,0 +1,1788 @@
+[
+  {
+    "id": "p-kinematics-25",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A motion diagram shows a ball moving to the right at equal time intervals. The gaps between successive dots decrease as time passes. The ball's acceleration is directed",
+    "options": [
+      "to the left (opposite the motion).",
+      "upward.",
+      "to the right (the same direction as the motion).",
+      "It cannot be determined from the diagram."
+    ],
+    "answer": 0,
+    "explanation": "Decreasing gaps mean the ball covers less distance in each equal time interval: it is slowing down. When an object slows, its acceleration points opposite its motion. Moving right and slowing means the acceleration is to the left.",
+    "feedback": {
+      "2": "Acceleration in the direction of the motion would speed the ball up, which would show increasing gaps.",
+      "1": "In one-dimensional motion along a horizontal line there is no vertical component of acceleration to detect here; the changing gaps point along the line of motion.",
+      "3": "The diagram gives enough information: decreasing gaps with rightward motion uniquely determine a leftward acceleration."
+    },
+    "sourceId": "kinematics-25",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 150' role='img' aria-label='Six dots in a row, moving from left to right, with the spacing between successive dots getting smaller as time goes on.'><rect width='520' height='150' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arAccent' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='30' y1='80' x2='490' y2='80' stroke='#E3E1D8' stroke-width='2'/><circle cx='60' cy='80' r='9' fill='#1A1A1A'/><circle cx='185' cy='80' r='9' fill='#1A1A1A'/><circle cx='285' cy='80' r='9' fill='#1A1A1A'/><circle cx='360' cy='80' r='9' fill='#1A1A1A'/><circle cx='415' cy='80' r='9' fill='#1A1A1A'/><circle cx='455' cy='80' r='9' fill='#1A1A1A'/><line x1='30' y1='118' x2='90' y2='118' stroke='#FF4D26' stroke-width='2.5' marker-end='url(#arAccent)'/><text x='96' y='123' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' fill='#FF4D26'>motion</text><text x='30' y='34' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B'>dots at equal time intervals</text></svg>",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-kinematics-24",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A motion diagram of a puck sliding on a horizontal, frictionless surface shows dots at equal time intervals. Each successive dot is farther to the left than the previous one, and the gaps between successive dots increase. The puck",
+    "options": [
+      "moves right and slows down.",
+      "moves left and speeds up.",
+      "moves left at constant speed.",
+      "moves left and slows down."
+    ],
+    "answer": 1,
+    "explanation": "Each dot is farther left, so the motion is leftward. The gaps grow with time, so more distance is covered in each equal interval: the speed is increasing. Leftward and speeding up.",
+    "feedback": {
+      "0": "The dots progress leftward (earliest at the right), so the motion is leftward, not rightward.",
+      "3": "Slowing down would show the gaps getting smaller over time, the opposite of what is shown.",
+      "2": "Constant speed would show equal gaps between the dots. Here the gaps increase."
+    },
+    "sourceId": "kinematics-24",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 150' role='img' aria-label='Six dots in a row moving from right to left, with the spacing between successive dots getting larger as time goes on.'><rect width='520' height='150' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arAccent' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='30' y1='80' x2='490' y2='80' stroke='#E3E1D8' stroke-width='2'/><circle cx='460' cy='80' r='9' fill='#1A1A1A'/><circle cx='430' cy='80' r='9' fill='#1A1A1A'/><circle cx='385' cy='80' r='9' fill='#1A1A1A'/><circle cx='320' cy='80' r='9' fill='#1A1A1A'/><circle cx='230' cy='80' r='9' fill='#1A1A1A'/><circle cx='105' cy='80' r='9' fill='#1A1A1A'/><line x1='490' y1='118' x2='430' y2='118' stroke='#FF4D26' stroke-width='2.5' marker-end='url(#arAccent)'/><text x='424' y='123' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' fill='#FF4D26' text-anchor='end'>motion</text><text x='30' y='34' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B'>dots at equal time intervals</text></svg>",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-ch02-s2-2-q035",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A car is traveling north at 17.7 m/s. After 12 s, its velocity is 14.1 m/s in the same direction. Find the magnitude and direction of the car's average acceleration during this time interval.",
+    "options": [
+      "2.7 m/s\u00b2, south",
+      "2.7 m/s\u00b2, north",
+      "0.30 m/s\u00b2, south",
+      "0.30 m/s\u00b2, north"
+    ],
+    "answer": 2,
+    "explanation": "Average acceleration is the velocity change divided by the time: (14.1 m/s - 17.7 m/s)/12 s = -0.30 m/s\u00b2. Taking north as positive, the negative sign means the acceleration points south, opposite the motion, which is why the car slows.",
+    "feedback": {
+      "0": "The direction is right, but the magnitude is not. The velocity change is 3.6 m/s over 12 s, which gives 0.30 m/s\u00b2, not 2.7 m/s\u00b2. Recompute (14.1 - 17.7)/12 carefully.",
+      "1": "Both parts are off. Dividing the 3.6 m/s velocity change by 12 s gives 0.30 m/s\u00b2, and because the car slows while heading north, the acceleration points south, not north.",
+      "3": "The magnitude 0.30 m/s\u00b2 is correct, but the direction is not. A car moving north that slows down has acceleration opposite its motion, so the acceleration points south."
+    },
+    "sourceId": "ch02-s2.2-q035"
+  },
+  {
+    "id": "p-ch02-s2-1-q059",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "Suppose that a car traveling to the west slows down as it approaches a traffic light. Which of the following statements about its acceleration is correct?",
+    "options": [
+      "The direction of the acceleration cannot be determined.",
+      "The acceleration is zero.",
+      "The acceleration is toward the west.",
+      "The acceleration is toward the east."
+    ],
+    "answer": 3,
+    "explanation": "The car moves west and slows down, so its acceleration points opposite its velocity, toward the east. Whenever an object slows, its acceleration points against the direction of motion, no matter which way it is heading.",
+    "feedback": {
+      "2": "Acceleration in the same direction as the motion (west) would speed the car up. Because the car is slowing, the acceleration must point the other way, toward the east.",
+      "1": "Zero acceleration would keep the velocity constant. A car whose speed is changing, even if it is only slowing down, has a nonzero acceleration.",
+      "0": "The direction of motion (west) and the fact that the car slows down together fix the acceleration direction: opposite the motion, toward the east, so it can be determined."
+    },
+    "sourceId": "ch02-s2.1-q059"
+  },
+  {
+    "id": "p-kinematics-30",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object's velocity changes from -6 m/s to -2 m/s over a 4 s interval with constant acceleration. During this interval, the object",
+    "options": [
+      "slows down and its acceleration is positive.",
+      "speeds up and its acceleration is negative.",
+      "slows down and its acceleration is negative.",
+      "speeds up and its acceleration is positive."
+    ],
+    "answer": 0,
+    "explanation": "The velocity goes from -6 m/s to -2 m/s: its magnitude shrinks from 6 to 2, so the object is slowing down. The acceleration is \u0394v/\u0394t = (-2 \u2212 (\u22126))/4 = +4/4 = +1 m/s\u00b2, which is positive.",
+    "feedback": {
+      "2": "Slowing down here means the speed decreases, which is what happens. The sign of the acceleration is positive because the velocity is increasing from -6 to -2.",
+      "1": "The acceleration is +1 m/s\u00b2, not negative. A negative acceleration would make the velocity more negative, i.e., -2 m/s to -6 m/s, which is the reverse of what is given.",
+      "3": "The speed (magnitude of velocity) decreases from 6 m/s to 2 m/s, so the object is slowing, not speeding up."
+    },
+    "sourceId": "kinematics-30"
+  },
+  {
+    "id": "p-kinematics-8",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object moves along a straight line so that its position-time graph is a curve that gets steeper in the positive direction as time increases (the curve is concave up). During this motion, the object's velocity and acceleration are",
+    "options": [
+      "velocity is positive and increasing; acceleration is negative",
+      "velocity is positive and increasing; acceleration is positive",
+      "velocity is negative; acceleration is negative",
+      "velocity is zero"
+    ],
+    "answer": 1,
+    "explanation": "A curve that gets steeper in the positive direction has a positive slope that is increasing. Positive slope means positive velocity; an increasing slope means the velocity is increasing, which is a positive acceleration.",
+    "feedback": {
+      "0": "If the velocity is increasing, the acceleration (the rate of change of velocity) must be positive, not negative. Negative acceleration would make the slope decrease.",
+      "2": "The slope is positive throughout, so the velocity is positive, not negative.",
+      "3": "Zero velocity would appear as a horizontal line with zero slope, not a curve with growing positive slope."
+    },
+    "sourceId": "kinematics-8"
+  },
+  {
+    "id": "p-kinematics-65",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "The graph shows the velocity of a car as a function of time over a 6 s interval: a straight line rising from 0 to 4 m/s over the first 2 s, then a straight line falling from 4 m/s to 0 over the next 4 s. Which statement about the car's acceleration is correct?",
+    "options": [
+      "The acceleration is -1 m/s\u00b2 for the first 2 s and +2 m/s\u00b2 for the next 4 s.",
+      "The acceleration is zero at all times because the car returns to rest.",
+      "The acceleration is +2 m/s\u00b2 for the first 2 s and -1 m/s\u00b2 for the next 4 s.",
+      "The acceleration is +2 m/s\u00b2 for the whole 6 s."
+    ],
+    "answer": 2,
+    "explanation": "Acceleration is the slope of each segment. First segment: (4 \u2212 0)/2 = +2 m/s\u00b2. Second segment: (0 \u2212 4)/4 = \u22121 m/s\u00b2. The car speeds up, then slows at a gentler rate.",
+    "feedback": {
+      "3": "The slope clearly changes at t = 2 s: the line turns from rising to falling, so the acceleration changes from +2 to \u22121 m/s\u00b2, not +2 throughout.",
+      "1": "Returning to zero velocity says nothing about the acceleration during the trip. The sloped segments show nonzero acceleration the whole time (the car ends at rest only because it slowed to a stop).",
+      "0": "This swaps the two segments: the rising part has positive slope and the falling part has negative slope."
+    },
+    "sourceId": "kinematics-65",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 290' role='img' aria-label='Velocity-versus-time graph shaped like a triangle: velocity rises steadily from 0 to 4 meters per second over the first 2 seconds, then falls steadily back to 0 by 6 seconds.'><rect width='440' height='290' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arAccent' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='56.0' y1='232.0' x2='168.0' y2='88.0' stroke='#1A1A1A' stroke-width='3'/><line x1='168.0' y1='88.0' x2='392.0' y2='232.0' stroke='#1A1A1A' stroke-width='3'/><circle cx='168.0' cy='88.0' r='4.5' fill='#1A1A1A'/><line x1='168.0' y1='88.0' x2='168.0' y2='232' stroke='#6B6B6B' stroke-width='1.2' stroke-dasharray='4 3'/><text x='176.0' y='78.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B'>4 m/s at 2 s</text><line x1='56' y1='232' x2='400' y2='232' stroke='#1A1A1A' stroke-width='1.5' marker-end='url(#ar)'/><line x1='56' y1='232' x2='56' y2='40' stroke='#1A1A1A' stroke-width='1.5' marker-end='url(#ar)'/><line x1='56.0' y1='232' x2='56.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='56.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>0</text><line x1='112.0' y1='232' x2='112.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='112.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>1</text><line x1='168.0' y1='232' x2='168.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='168.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>2</text><line x1='224.0' y1='232' x2='224.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='224.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>3</text><line x1='280.0' y1='232' x2='280.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='280.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>4</text><line x1='336.0' y1='232' x2='336.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='336.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>5</text><line x1='392.0' y1='232' x2='392.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='392.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>6</text><line x1='56' y1='232.0' x2='50' y2='232.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='236.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>0</text><line x1='56' y1='196.0' x2='50' y2='196.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='200.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>1</text><line x1='56' y1='160.0' x2='50' y2='160.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='164.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>2</text><line x1='56' y1='124.0' x2='50' y2='124.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='128.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>3</text><line x1='56' y1='88.0' x2='50' y2='88.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='92.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>4</text><text x='396.0' y='266.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-style='italic' fill='#1A1A1A'>t (s)</text><text x='26.0' y='26.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-style='italic' fill='#1A1A1A' text-anchor='start'>v (m/s)</text></svg>",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-ch02-s2-1-q077",
+    "skill": "motion-diagram-interpretation",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object is moving with constant nonzero acceleration in the +x direction. The position- versus-time graph of this object is",
+    "options": [
+      "a horizontal straight line.",
+      "a non-vertical straight line with a constant, nonzero slope.",
+      "a vertical straight line.",
+      "a parabolic curve."
+    ],
+    "answer": 3,
+    "explanation": "With constant acceleration, position grows as x = x\u2080 + v\u2080t + \u00bdat\u00b2, which is a quadratic function of time. A quadratic plots as a parabola, so the position-time graph for constant nonzero acceleration is a parabola.",
+    "feedback": {
+      "0": "A horizontal line means the position never changes, so both velocity and acceleration are zero. That contradicts the stated constant nonzero acceleration.",
+      "1": "A straight line has constant slope, which means constant velocity and zero acceleration. Constant nonzero acceleration curves the position-time graph into a parabola.",
+      "2": "A vertical line would mean many positions at one instant, which is impossible. Position must have exactly one value at each time."
+    },
+    "sourceId": "ch02-s2.1-q077"
+  },
+  {
+    "id": "p-ch02-s2-1-q081",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "The slope of a velocity-versus-time graph represents",
+    "options": [
+      "acceleration.",
+      "velocity.",
+      "distance traveled.",
+      "displacement."
+    ],
+    "answer": 0,
+    "explanation": "Acceleration is the rate of change of velocity, a = \u0394v/\u0394t. On a velocity-versus-time graph, that rate of change is exactly the slope of the curve, so the slope represents acceleration.",
+    "feedback": {
+      "1": "Velocity is read from the height of the graph at each time, not from its steepness. The steepness measures how quickly the velocity changes, which is acceleration.",
+      "2": "Distance traveled comes from the area under a velocity-time graph, not the slope. The slope tells how fast the velocity is changing, which is the acceleration.",
+      "3": "Displacement is the signed area under the velocity-time curve. The slope instead gives the rate of change of velocity, which is acceleration."
+    },
+    "sourceId": "ch02-s2.1-q081"
+  },
+  {
+    "id": "p-ch02-s2-1-q080",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "The slope of a position-versus-time graph represents",
+    "options": [
+      "distance traveled.",
+      "velocity.",
+      "acceleration.",
+      "displacement."
+    ],
+    "answer": 1,
+    "explanation": "Velocity is the rate of change of position, v = \u0394x/\u0394t. On a position-versus-time graph, that rate of change is the slope, so the slope of the graph represents the object's velocity.",
+    "feedback": {
+      "0": "Distance traveled is the total length of the path, not a slope. The slope of a position-time graph measures how quickly position changes, which is velocity.",
+      "2": "Acceleration describes how the slope itself changes, which you would read from a velocity-time graph. The slope of position-time gives velocity directly.",
+      "3": "Displacement is the difference between two position values read from the graph, not a slope. The slope measures the rate of change of position, which is velocity."
+    },
+    "sourceId": "ch02-s2.1-q080"
+  },
+  {
+    "id": "p-kinematics-69",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "Which set of three graphs (position, velocity, and acceleration, all versus time) is consistent with a single object's motion?",
+    "options": [
+      "Position is a straight line with positive slope; velocity is a straight line with positive slope; acceleration is a horizontal line above zero.",
+      "Position is a concave-up curve; velocity is a horizontal line; acceleration is a horizontal line above zero.",
+      "Position is a concave-up curve; velocity is a straight line with positive slope; acceleration is a horizontal line above zero.",
+      "Position is a concave-down curve; velocity is a straight line with positive slope; acceleration is a horizontal line above zero."
+    ],
+    "answer": 2,
+    "explanation": "A concave-up position graph has a slope that steadily increases: velocity is a straight line with positive slope, and a straight velocity line means constant acceleration, a horizontal line above zero. All three descriptions agree.",
+    "feedback": {
+      "1": "A horizontal velocity line means zero acceleration, contradicting the horizontal acceleration line above zero. A concave-up position graph also requires increasing velocity, not constant velocity.",
+      "3": "A concave-down position graph means the slope (velocity) is decreasing, so the velocity line would slope downward and the acceleration would be below zero, contradicting the other two graphs.",
+      "0": "A straight position line means constant velocity, which contradicts the sloped velocity line and the nonzero acceleration line."
+    },
+    "sourceId": "kinematics-69"
+  },
+  {
+    "id": "p-ch02-s2-1-q079",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object is moving with constant nonzero acceleration in the +x direction. The velocity- versus-time graph of this object is",
+    "options": [
+      "a parabolic curve.",
+      "a vertical straight line.",
+      "a horizontal straight line.",
+      "a non-vertical straight line with a constant, nonzero slope."
+    ],
+    "answer": 3,
+    "explanation": "Constant acceleration means the velocity changes by the same amount every second: v = v\u2080 + at, a linear function of time. A linear velocity-time graph is a straight line with a constant, nonzero slope.",
+    "feedback": {
+      "2": "A horizontal velocity line means the velocity never changes, so the acceleration is zero. Constant nonzero acceleration requires a sloped straight line.",
+      "1": "A vertical line would mean many velocities at a single instant, which is impossible. Velocity must have exactly one value at each time.",
+      "0": "A parabola on a velocity-time graph means the acceleration is changing with time. Constant acceleration produces a straight line with constant slope, not a curve."
+    },
+    "sourceId": "ch02-s2.1-q079"
+  },
+  {
+    "id": "p-kinematics-62",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "The graph shows the velocity of an object as a function of time. The shaded region under the curve from t = 0 to t = 5 s consists of a triangle from 0 to 2 s, a trapezoid from 2 s to 4 s, and a triangle from 4 s to 5 s. What is the object's displacement over the 5 s?",
+    "options": [
+      "+11 m",
+      "+8 m",
+      "+6 m",
+      "+14 m"
+    ],
+    "answer": 0,
+    "explanation": "Add the three areas: triangle (0 to 2 s) = \u00bd(2)(4) = 4 m. Trapezoid (2 to 4 s) = \u00bd(4 + 2)(2) = 6 m. Triangle (4 to 5 s) = \u00bd(1)(2) = 1 m. Total: 4 + 6 + 1 = 11 m.",
+    "feedback": {
+      "2": "+6 m is only the middle trapezoid, ignoring the two triangular pieces.",
+      "1": "+8 m is the first triangle plus the last triangle (4 + 1 doubled) or a mis-summed area; the correct total includes all three pieces: 11 m.",
+      "3": "+14 m overcounts, for example by treating the trapezoid as a rectangle of height 4 m over 2 s (8 m) instead of its true area of 6 m."
+    },
+    "sourceId": "kinematics-62",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 290' role='img' aria-label='Velocity-versus-time graph rising to 4 meters per second at 2 seconds, falling to 2 meters per second at 4 seconds, then to 0 at 5 seconds. The area under the curve from 0 to 5 seconds is shaded.'><rect width='440' height='290' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arAccent' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><polygon points='56.0,232.0 168.0,88.0 280.0,160.0 336.0,232.0 56.0,232.0' fill='#E3E1D8' stroke='none'/><line x1='56.0' y1='232.0' x2='168.0' y2='88.0' stroke='#1A1A1A' stroke-width='3'/><line x1='168.0' y1='88.0' x2='280.0' y2='160.0' stroke='#1A1A1A' stroke-width='3'/><line x1='280.0' y1='160.0' x2='336.0' y2='232.0' stroke='#1A1A1A' stroke-width='3'/><line x1='168.0' y1='88.0' x2='168.0' y2='232' stroke='#6B6B6B' stroke-width='1.2' stroke-dasharray='4 3'/><line x1='280.0' y1='160.0' x2='280.0' y2='232' stroke='#6B6B6B' stroke-width='1.2' stroke-dasharray='4 3'/><line x1='56' y1='232' x2='400' y2='232' stroke='#1A1A1A' stroke-width='1.5' marker-end='url(#ar)'/><line x1='56' y1='232' x2='56' y2='40' stroke='#1A1A1A' stroke-width='1.5' marker-end='url(#ar)'/><line x1='56.0' y1='232' x2='56.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='56.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>0</text><line x1='112.0' y1='232' x2='112.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='112.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>1</text><line x1='168.0' y1='232' x2='168.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='168.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>2</text><line x1='224.0' y1='232' x2='224.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='224.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>3</text><line x1='280.0' y1='232' x2='280.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='280.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>4</text><line x1='336.0' y1='232' x2='336.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='336.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>5</text><line x1='392.0' y1='232' x2='392.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='392.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>6</text><line x1='56' y1='232.0' x2='50' y2='232.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='236.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>0</text><line x1='56' y1='196.0' x2='50' y2='196.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='200.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>1</text><line x1='56' y1='160.0' x2='50' y2='160.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='164.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>2</text><line x1='56' y1='124.0' x2='50' y2='124.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='128.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>3</text><line x1='56' y1='88.0' x2='50' y2='88.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='92.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>4</text><text x='396.0' y='266.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-style='italic' fill='#1A1A1A'>t (s)</text><text x='26.0' y='26.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-style='italic' fill='#1A1A1A' text-anchor='start'>v (m/s)</text><text x='75.6' y='192.4' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' font-style='italic'>shaded area</text></svg>",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-kinematics-12",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "On a velocity-versus-time graph, the area between the curve and the time axis from t = t\u2081 to t = t\u2082 gives the object's",
+    "options": [
+      "change in acceleration over the interval",
+      "displacement over the interval",
+      "average speed over the interval",
+      "total distance traveled over the interval"
+    ],
+    "answer": 1,
+    "explanation": "The area under a velocity-time curve equals velocity times time (for a rectangle) and sums to the net change in position in general. Areas above the axis count positive, areas below count negative, giving the signed displacement.",
+    "feedback": {
+      "3": "Total distance adds the areas with their absolute values (no sign). The signed area gives displacement, which is different whenever the object reverses direction.",
+      "2": "Average speed is total distance divided by time. It is not the area under the velocity curve.",
+      "0": "Change in acceleration would come from the slope of the velocity graph (how the slope changes), not from the area."
+    },
+    "sourceId": "kinematics-12"
+  },
+  {
+    "id": "p-kinematics-5",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object's position-time graph is a horizontal line from t = 1 s to t = 4 s. During this interval, the object's velocity and acceleration are",
+    "options": [
+      "velocity = 0 and acceleration > 0",
+      "velocity > 0 (constant) and acceleration = 0",
+      "velocity = 0 and acceleration = 0",
+      "velocity < 0 and acceleration < 0"
+    ],
+    "answer": 2,
+    "explanation": "A horizontal line has zero slope, so the velocity is zero. If the velocity is zero at every instant of the interval, it is not changing, so the acceleration is also zero.",
+    "feedback": {
+      "3": "A negative velocity would appear as a line sloping downward. A horizontal line has zero slope in either direction.",
+      "0": "Acceleration is the rate of change of velocity. A zero velocity that stays zero does not change, so the acceleration cannot be positive.",
+      "1": "A positive constant velocity would appear as a straight line with positive slope. A horizontal line means the position never changes."
+    },
+    "sourceId": "kinematics-5"
+  },
+  {
+    "id": "p-kinematics-28",
+    "skill": "graphical-kinematics",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object moves in the positive direction while slowing down at a constant rate. The signs of its velocity and acceleration are",
+    "options": [
+      "v > 0 and a > 0",
+      "v < 0 and a > 0",
+      "v < 0 and a < 0",
+      "v > 0 and a < 0"
+    ],
+    "answer": 3,
+    "explanation": "Moving in the positive direction means positive velocity. Slowing down means the acceleration opposes the motion, so it points in the negative direction: a < 0.",
+    "feedback": {
+      "1": "Same problem: the velocity must be positive for motion in the positive direction.",
+      "0": "If both velocity and acceleration were positive, the object would speed up in the positive direction, not slow down.",
+      "2": "A negative velocity would mean motion in the negative direction, which contradicts the stated motion in the positive direction."
+    },
+    "sourceId": "kinematics-28"
+  },
+  {
+    "id": "p-ch02-s2-1-q061",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object moving positive direction along the x-axis has an acceleration of +2.0 m/s\u00b2. This means the object",
+    "options": [
+      "is increasing its velocity by 2.0 m/s every second.",
+      "is traveling at 2.0 m/s.",
+      "travels 2.0 m in every second.",
+      "is decreasing its velocity by 2.0 m/s every second."
+    ],
+    "answer": 0,
+    "explanation": "An acceleration of +2.0 m/s\u00b2 means the velocity increases by 2.0 m/s each second while the object moves in the +x direction. Acceleration measures the rate of change of velocity, not the velocity itself or the distance covered.",
+    "feedback": {
+      "1": "2.0 m/s\u00b2 is an acceleration, not a speed. It tells how quickly the velocity changes each second, not how fast the object is moving.",
+      "2": "Traveling 2.0 m every second would be a speed with units m/s. The units m/s\u00b2 describe a change in velocity of 2.0 m/s per second, not a distance per second.",
+      "3": "A positive acceleration while moving in the positive direction increases the velocity. The velocity would decrease only if the acceleration pointed in the negative direction."
+    },
+    "sourceId": "ch02-s2.1-q061"
+  },
+  {
+    "id": "p-kinematics-38",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object moves in a straight line with constant velocity (which may be positive or negative). Which graph correctly shows the object's total distance traveled as a function of time?",
+    "options": [
+      "A straight line with a negative slope.",
+      "A straight line through the origin with a constant positive slope.",
+      "A horizontal line.",
+      "A parabola opening upward."
+    ],
+    "answer": 1,
+    "explanation": "With constant velocity, the object covers a fixed distance in each equal time interval, so total distance grows linearly with time. Distance traveled never decreases and starts at zero, giving a straight line through the origin with positive slope.",
+    "feedback": {
+      "0": "A negative slope would mean the distance traveled decreases with time, which is impossible: distance traveled only accumulates.",
+      "2": "A horizontal line would mean no distance is covered at all, which contradicts a nonzero constant velocity.",
+      "3": "A parabola would mean the speed is changing (constant acceleration). Here the velocity is constant, so the distance-time graph is a straight line."
+    },
+    "sourceId": "kinematics-38"
+  },
+  {
+    "id": "p-ch02-s2-1-q038",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "During which time interval(s) is the object moving in negative direction?",
+    "options": [
+      "From t = 3 s to t = 8 s",
+      "From t = 3 s to t = 5 s",
+      "From t = 3 s to t = 6 s",
+      "From t = 5 s to t = 8 s",
+      "From t = 5 s to t = 6 s"
+    ],
+    "answer": 3,
+    "explanation": "Motion in the negative direction means the velocity is below the time axis on the velocity-time graph. The graph stays below the axis from t = 5 s to t = 8 s, so that is the interval of negative-direction motion.",
+    "feedback": {
+      "0": "From 3 s to 5 s the velocity is still above the axis, so the object moves in the positive direction then. Only the part from 5 s to 8 s lies below the axis.",
+      "1": "Between 3 s and 5 s the graph sits above the time axis, meaning positive velocity. The negative-direction motion does not begin until 5 s.",
+      "2": "This interval starts while the velocity is still positive. The curve crosses the axis at 5 s, so only the stretch from 5 s to 8 s counts as negative motion.",
+      "4": "The velocity stays below the axis until 8 s, not just 6 s. The full interval of motion in the negative direction runs from 5 s to 8 s."
+    },
+    "sourceId": "ch02-s2.1-q038"
+  },
+  {
+    "id": "p-kinematics-4",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A car's position-time graph is a straight line with a steep positive slope from t = 0 to t = 2 s, then a straight line with a shallower positive slope from t = 2 s to t = 6 s. What is true about the car's motion at t = 2 s?",
+    "options": [
+      "The car reversed direction.",
+      "The car's acceleration became negative.",
+      "The car came to a complete stop.",
+      "The car's velocity decreased, but it kept moving in the same direction."
+    ],
+    "answer": 3,
+    "explanation": "Velocity is the slope of the position-time graph. Both segments have positive slopes, so the car never reverses. The slope simply becomes smaller in magnitude at t = 2 s, meaning the velocity decreased while staying positive.",
+    "feedback": {
+      "0": "Reversing direction would require the slope to change sign (positive to negative). Both slopes here are positive.",
+      "1": "A sudden change in velocity does imply a momentary acceleration spike, but the velocity itself stayed positive. The defining feature of the graph is the reduced positive slope, not a negative acceleration as the best description of the motion.",
+      "2": "Stopping would appear as a horizontal line (zero slope). The second segment still has a positive slope, so the car is still moving forward."
+    },
+    "sourceId": "kinematics-4"
+  },
+  {
+    "id": "p-kinematics-72",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A cart moves along a straight line with constant acceleration. A graph of v\u00b2 versus position x for the cart is a straight line with a positive slope. Which statement about the cart's motion is correct?",
+    "options": [
+      "The acceleration is constant and positive.",
+      "The acceleration increases as the cart moves.",
+      "The velocity is constant.",
+      "The acceleration is constant and negative."
+    ],
+    "answer": 0,
+    "explanation": "The kinematic equation v\u00b2 = v\u2080\u00b2 + 2a(x \u2212 x\u2080) is linear in x with slope 2a. A straight v\u00b2-versus-x graph with positive slope means 2a > 0, so the acceleration is constant and positive.",
+    "feedback": {
+      "2": "Constant velocity would give v\u00b2 as a horizontal line (zero slope), not a line with positive slope.",
+      "3": "A positive slope means 2a is positive, so the acceleration is positive, not negative. A negative acceleration would give a line with negative slope.",
+      "1": "The straightness of the line is exactly what constant acceleration produces. If the acceleration were changing, the v\u00b2-versus-x graph would curve."
+    },
+    "sourceId": "kinematics-72"
+  },
+  {
+    "id": "p-ch02-s2-1-q022",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "When is the object represented by the graph above moving in the positive direction?",
+    "options": [
+      "from t = 8 s to t = 10 s only",
+      "from t = 0 s to t = 4 s only",
+      "at t = 4 s and t = 10 s",
+      "from t = 0 s to t = 3 s and from t = 6 s to t = 8 s"
+    ],
+    "answer": 1,
+    "explanation": "Motion in the positive direction means the velocity is above the time axis. On the graph, the velocity stays above the axis from t = 0 s to t = 4 s and is at or below it afterward, so that is the only positive interval.",
+    "feedback": {
+      "0": "From 8 s to 10 s the velocity lies below the time axis, so the object moves in the negative direction then, not the positive direction.",
+      "2": "A single instant cannot describe an interval of motion, and at t = 10 s the velocity is negative. The positive motion lasts continuously from 0 s to 4 s.",
+      "3": "The graph stays above the axis all the way to 4 s, not just 3 s, and it dips below the axis between 6 s and 8 s. The only positive interval is 0 s to 4 s."
+    },
+    "sourceId": "ch02-s2.1-q022",
+    "figure": "figures/ch02-s2.1-q022.png",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-kinematics-10",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object's position-time graph is a straight line with a negative slope. What is the object's acceleration?",
+    "options": [
+      "Cannot be determined from the graph",
+      "Negative",
+      "Zero",
+      "Positive"
+    ],
+    "answer": 2,
+    "explanation": "A straight line means constant slope, which means constant velocity. A velocity that does not change has zero acceleration. The negative sign only tells you the direction of motion.",
+    "feedback": {
+      "3": "Positive acceleration would mean the velocity is increasing. A straight line's slope never changes, so the velocity is constant.",
+      "0": "The graph gives complete information about the motion: constant slope means constant velocity, which fully determines that the acceleration is zero.",
+      "1": "This is the most common trap: a negative slope means negative velocity, not negative acceleration. Acceleration is about how the velocity changes, and here it does not change."
+    },
+    "sourceId": "kinematics-10"
+  },
+  {
+    "id": "p-ch02-s2-1-q050",
+    "skill": "vector-and-unit-reasoning",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "Suppose that an object travels from one point in space to another. Make a comparison between the magnitude of the object's displacement and the path length traveled by the object.",
+    "options": [
+      "The displacement is always equal to the path length traveled.",
+      "The displacement can be either greater than, smaller than, or equal to the path length traveled.",
+      "The displacement is either greater than or equal to the path length traveled.",
+      "The displacement is either less than or equal to the path length traveled."
+    ],
+    "answer": 3,
+    "explanation": "Displacement is the straight-line change in position, while path length is the total distance traveled along the actual route. The straight line between two points is the shortest possible path, so displacement can equal but never exceed the path length.",
+    "feedback": {
+      "0": "Displacement equals the path length only for straight-line motion with no reversal. Any curved or backtracking route makes the path length longer than the displacement.",
+      "1": "Displacement can be smaller than or equal to the path length, but never greater, because the straight line between two points is always the shortest route.",
+      "2": "This reverses the relationship. The path traveled can be longer than the displacement, but the displacement cannot be longer than the path actually traveled."
+    },
+    "sourceId": "ch02-s2.1-q050"
+  },
+  {
+    "id": "p-kinematics-55",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "Which kinematic equation relates an object's final velocity, initial velocity, acceleration, and displacement without involving time?",
+    "options": [
+      "v\u00b2 = v\u2080\u00b2 + 2a\u0394x",
+      "\u0394x = \u00bd(v\u2080 + v)t",
+      "\u0394x = v\u2080t + \u00bdat\u00b2",
+      "v = v\u2080 + at"
+    ],
+    "answer": 0,
+    "explanation": "v\u00b2 = v\u2080\u00b2 + 2a\u0394x contains exactly those four quantities (v, v\u2080, a, \u0394x) and no time. It is derived by eliminating t from the other equations.",
+    "feedback": {
+      "3": "v = v\u2080 + at involves time and does not contain displacement.",
+      "1": "\u0394x = \u00bd(v\u2080 + v)t involves time, which this question asks to avoid.",
+      "2": "\u0394x = v\u2080t + \u00bdat\u00b2 involves time, so it does not fit."
+    },
+    "sourceId": "kinematics-55"
+  },
+  {
+    "id": "p-kinematics-63",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "The graph shows the positions of two objects, A and B, as functions of time. Object A's position follows the curved line and object B's follows the straight line. The two lines cross at t = 3 s. At t = 3 s, which statement is true?",
+    "options": [
+      "The objects have the same average velocity over 0 to 3 s.",
+      "The objects are at the same position.",
+      "The objects have the same velocity.",
+      "The objects have the same acceleration."
+    ],
+    "answer": 1,
+    "explanation": "Where two position-time graphs cross, the objects share the same position at that instant. That is all a crossing guarantees.",
+    "feedback": {
+      "2": "Equal velocities would require equal slopes at t = 3 s. The curve and the line have different slopes at the crossing, so the velocities differ.",
+      "3": "The accelerations are different kinds of things here: the curve (changing slope) implies a nonzero acceleration, while the straight line implies zero acceleration.",
+      "0": "Both objects start at the same point (x = 0 at t = 0) and end at the same point (the crossing at t = 3 s), so they do in fact have the same average velocity over 0 to 3 s. However, the question asks what is true at t = 3 s, and the defining feature of the crossing at that instant is the shared position."
+    },
+    "sourceId": "kinematics-63",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 290' role='img' aria-label='Position-versus-time graph. Curve A is concave up starting from the origin; straight line B starts higher and the two crossings at t equals 3 seconds, marked with a dot.'><rect width='440' height='290' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arAccent' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><polyline points='56.0,232.0 61.6,231.9 67.2,231.4 72.8,230.7 78.4,229.7 84.0,228.4 89.6,226.8 95.2,224.9 100.8,222.8 106.4,220.3 112.0,217.6 117.6,214.6 123.2,211.3 128.8,207.7 134.4,203.8 140.0,199.6 145.6,195.1 151.2,190.4 156.8,185.3 162.4,180.0 168.0,174.4 173.6,168.5 179.2,162.3 184.8,155.8 190.4,149.1 196.0,142.0 201.6,134.7 207.2,127.0 212.8,119.1 218.4,110.9 224.0,102.4 229.6,93.6 235.2,84.5 240.8,75.2 246.4,65.5 252.0,55.6 257.6,45.4 263.2,34.9 268.8,24.1 274.4,13.0 280.0,1.6 285.6,-10.1 291.2,-22.0 296.8,-34.3 302.4,-46.8 308.0,-59.6 313.6,-72.7 319.2,-86.1 324.8,-99.8 330.4,-113.7 336.0,-128.0 341.6,-142.5 347.2,-157.4 352.8,-172.5 358.4,-187.9 364.0,-203.6 369.6,-219.6 375.2,-235.9 380.8,-252.4 386.4,-269.3 392.0,-286.4' fill='none' stroke='#1A1A1A' stroke-width='3'/><line x1='56.0' y1='184.0' x2='392.0' y2='20.8' stroke='#B33A22' stroke-width='2.5'/><line x1='224.0' y1='102.4' x2='224.0' y2='232' stroke='#FF4D26' stroke-width='1.5' stroke-dasharray='5 4'/><circle cx='224.0' cy='102.4' r='6' fill='#FF4D26'/><text x='240.0' y='144.4' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' font-weight='700' fill='#FF4D26' text-anchor='start'>crosses at t = 3 s</text><line x1='56' y1='232' x2='400' y2='232' stroke='#1A1A1A' stroke-width='1.5' marker-end='url(#ar)'/><line x1='56' y1='232' x2='56' y2='40' stroke='#1A1A1A' stroke-width='1.5' marker-end='url(#ar)'/><line x1='56.0' y1='232' x2='56.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='56.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>0</text><line x1='112.0' y1='232' x2='112.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='112.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>1</text><line x1='168.0' y1='232' x2='168.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='168.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>2</text><line x1='224.0' y1='232' x2='224.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='224.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>3</text><line x1='280.0' y1='232' x2='280.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='280.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>4</text><line x1='336.0' y1='232' x2='336.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='336.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>5</text><line x1='392.0' y1='232' x2='392.0' y2='238' stroke='#1A1A1A' stroke-width='1.2'/><text x='392.0' y='252.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='middle'>6</text><line x1='56' y1='232.0' x2='50' y2='232.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='236.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>0</text><line x1='56' y1='168.0' x2='50' y2='168.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='172.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>4</text><line x1='56' y1='104.0' x2='50' y2='104.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='108.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>8</text><line x1='56' y1='40.0' x2='50' y2='40.0' stroke='#1A1A1A' stroke-width='1.2'/><text x='46.0' y='44.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='12' fill='#6B6B6B' text-anchor='end'>12</text><text x='396.0' y='266.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-style='italic' fill='#1A1A1A'>t (s)</text><text x='26.0' y='26.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-style='italic' fill='#1A1A1A' text-anchor='start'>x (m)</text><text x='341.6' y='-116.5' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-weight='700' fill='#1A1A1A'>A</text><text x='341.6' y='33.3' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' font-weight='700' fill='#B33A22'>B</text></svg>",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-ch02-s2-2-q018",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A polar bear starts at the North Pole. It travels 1.0 km south, then 1.0 km east, and then 1.0 km north to return to its starting point. This trip takes 45 min. What was the bear's average speed during this time interval?",
+    "options": [
+      "0.067 km/h",
+      "5.3 km/h",
+      "4.0 km/h",
+      "0.00 km/h"
+    ],
+    "answer": 2,
+    "explanation": "Average speed is total distance divided by total time. The bear covers 1.0 + 1.0 + 1.0 = 3.0 km in 45 min, which is 0.75 h, so the average speed is 3.0 km/0.75 h = 4.0 km/h.",
+    "feedback": {
+      "3": "The bear covered 3.0 km of ground, so its average speed cannot be zero. Zero would describe the average velocity, which uses displacement, and the bear returns to its start.",
+      "0": "0.067 km/h comes from dividing by the wrong time, about 45 hours instead of 45 minutes. Convert 45 min to 0.75 h, then divide 3.0 km by 0.75 h.",
+      "1": "5.3 km/h does not come from the bear's numbers. The total distance is 3.0 km and the time is 0.75 h, which gives 4.0 km/h."
+    },
+    "sourceId": "ch02-s2.2-q018"
+  },
+  {
+    "id": "p-kinematics-33",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A runner runs 100 m north in 12 s, then jogs 40 m south in 8 s. What is the runner's average velocity over the entire trip?",
+    "options": [
+      "0 m/s",
+      "+5 m/s (north)",
+      "+7 m/s (north)",
+      "+3 m/s (north)"
+    ],
+    "answer": 3,
+    "explanation": "Take north as positive. Displacement = +100 m \u2212 40 m = +60 m. Total time = 12 + 8 = 20 s. Average velocity = 60 m / 20 s = +3 m/s.",
+    "feedback": {
+      "1": "+5 m/s comes from dividing the 100 m by 20 s and ignoring the 40 m jog south. Displacement, not just the first leg, counts.",
+      "2": "+7 m/s is the average speed: total distance 140 m divided by 20 s. Average velocity uses displacement, not distance.",
+      "0": "The runner does not return to the start; she is still 60 m north of it, so the displacement (and average velocity) is not zero."
+    },
+    "sourceId": "kinematics-33"
+  },
+  {
+    "id": "p-kinematics-71",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "An object moves in one dimension with constant acceleration. Its instantaneous velocity at t = 2 s is 4 m/s, and its average velocity over the interval from t = 0 to t = 4 s is also 4 m/s. What can be determined from this information alone?",
+    "options": [
+      "The value of the acceleration cannot be determined from the given information.",
+      "The acceleration is zero.",
+      "The acceleration is +4 m/s\u00b2.",
+      "The acceleration is +2 m/s\u00b2."
+    ],
+    "answer": 0,
+    "explanation": "For any object with constant acceleration, the instantaneous velocity at the midpoint of a time interval always equals the average velocity over that interval, regardless of the acceleration's value. The given numbers are automatically satisfied for every constant acceleration, so a is not determined.",
+    "feedback": {
+      "3": "The equality holds for +2 m/s\u00b2, but it also holds for +5 m/s\u00b2, 0, or \u22123 m/s\u00b2. The information does not single out one value.",
+      "1": "Zero acceleration is one case that works, but so does any other constant acceleration. The given information is not specific enough to conclude a = 0.",
+      "2": "Again, the equality is a general property of constant acceleration, not a fingerprint of a particular value like +4 m/s\u00b2."
+    },
+    "sourceId": "kinematics-71"
+  },
+  {
+    "id": "p-ch02-s2-2-q026",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A runner runs around a track consisting of two parallel straight lanes 96 m long connected at the ends by two semicircles with a radius of 49 m. She completes one lap in 100 seconds. What is her average velocity?",
+    "options": [
+      "5.0 m/s",
+      "2.5 m/s",
+      "1.3 m/s",
+      "10 m/s",
+      "0 m/s"
+    ],
+    "answer": 4,
+    "explanation": "Average velocity is displacement divided by time. One full lap returns the runner to her starting point, so the displacement is zero and the average velocity is 0 m/s, no matter how fast she ran.",
+    "feedback": {
+      "1": "2.5 m/s is an average speed, the lap distance divided by 100 s. Average velocity uses displacement, and a full lap gives zero displacement.",
+      "0": "5.0 m/s is the average speed around the track, total distance over time. Average velocity depends on displacement, which is zero after one complete lap.",
+      "3": "10 m/s is not supported by the lap data; the lap is about 500 m in 100 s, or 5.0 m/s as a speed. Velocity depends on displacement, which is zero for a full lap.",
+      "2": "1.3 m/s does not follow from the lap geometry. The key idea is that average velocity uses displacement, and one complete lap gives zero displacement."
+    },
+    "sourceId": "ch02-s2.2-q026"
+  },
+  {
+    "id": "p-ch02-s2-2-q019",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A polar bear starts at the North Pole. It travels 1.0 km south, then 1.0 km east, and then 1.0 km north to return to its starting point. This trip takes 45 min. What was the bear's average velocity during this time interval?",
+    "options": [
+      "4.0 km/h",
+      "0.067 km/h",
+      "0.00 km/h",
+      "5.3 km/h"
+    ],
+    "answer": 2,
+    "explanation": "Average velocity is displacement divided by time. The bear returns to its starting point at the North Pole, so its displacement is zero and its average velocity is 0.00 km/h for the whole trip.",
+    "feedback": {
+      "1": "0.067 km/h mishandles the time and ignores displacement. Velocity is displacement over time, and the bear's displacement is zero because it returns to the start.",
+      "0": "4.0 km/h is the average speed, total distance 3.0 km over 0.75 h. Average velocity uses displacement, which is zero for this round trip.",
+      "3": "5.3 km/h does not match the bear's data, and velocity is not distance over time in any case. The bear ends where it started, so displacement and average velocity are zero."
+    },
+    "sourceId": "ch02-s2.2-q019"
+  },
+  {
+    "id": "p-ch02-s2-2-q027",
+    "skill": "kinematics-calculations",
+    "chapter": 2,
+    "type": "mc",
+    "stem": "A runner runs around a track consisting of two parallel straight lanes 96 m long connected at the ends by two semicircles with a radius of 49 m. She completes one lap in 100 seconds. What is her average speed?",
+    "options": [
+      "10 m/s",
+      "5.0 m/s",
+      "2.5 m/s",
+      "0 m/s",
+      "1.3 m/s"
+    ],
+    "answer": 1,
+    "explanation": "Average speed is total distance over time. One lap covers the two 96 m straights plus two semicircles that together form a full circle of radius 49 m: 192 m + 2\u03c0(49) m \u2248 500 m. Then 500 m/100 s = 5.0 m/s.",
+    "feedback": {
+      "2": "2.5 m/s is half the correct value. It likely comes from counting only one straight plus one semicircle instead of the full lap distance.",
+      "0": "10 m/s is twice the correct value. The full lap is about 500 m, and 500 m covered in 100 s gives 5.0 m/s.",
+      "3": "Zero would be the average velocity for a full lap, not the average speed. The runner covers about 500 m of track, so her speed is clearly not zero.",
+      "4": "1.3 m/s does not come from the lap geometry. Add the two 96 m straights and the full circle of radius 49 m, then divide the total by 100 s."
+    },
+    "sourceId": "ch02-s2.2-q027"
+  },
+  {
+    "id": "p-forces-3-3-4",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A hockey puck slides across frictionless ice in a straight line at constant speed. The net force on the puck is",
+    "options": [
+      "zero, because friction is absent",
+      "backward, because the puck is slowly stopping",
+      "equal to the puck's weight",
+      "forward, in the direction of motion"
+    ],
+    "answer": 0,
+    "explanation": "Constant velocity means zero acceleration, so the net force on the puck is zero. Gravity and the normal force cancel vertically, and frictionless ice means no horizontal force is needed to keep the puck moving.",
+    "feedback": {
+      "1": "On frictionless ice nothing slows the puck, so it is not stopping. Constant velocity means zero net force. A backward force would make the puck slow down, which is not what the frictionless surface allows.",
+      "2": "Weight acts straight down and is canceled by the upward normal force. Net force is the sum of all forces, so the canceled vertical forces give zero, not a net force equal to the weight.",
+      "3": "A forward net force would speed the puck up. Trap alert: no force is needed to keep an object moving at constant velocity. Inertia maintains the motion on frictionless ice."
+    },
+    "sourceId": "forces-3.3-4"
+  },
+  {
+    "id": "p-forces-3-3-7",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A block sits on a flat, stationary table, and nothing pushes it. Which force diagram correctly shows the forces on the block?",
+    "options": [
+      "A downward arrow for gravity and a downward arrow for the normal force, since both point toward the table",
+      "A downward arrow for gravity and an upward arrow for the normal force, equal length",
+      "Only a downward arrow for gravity, because a resting object has no other interactions",
+      "Only an upward arrow, because the table holds the block up"
+    ],
+    "answer": 1,
+    "explanation": "Two forces act on the block: gravity pulling down and the table's normal force pushing up. The block does not accelerate, so the two arrows must be equal in length.",
+    "feedback": {
+      "0": "The normal force points up, away from the surface, never down. Two downward arrows would leave a net downward force, and the block would accelerate into the table instead of resting.",
+      "2": "A resting block still interacts with the table. The table pushes up with a normal force; if gravity acted alone, the block would accelerate downward through the table.",
+      "3": "An unbalanced upward force would launch the block off the table. Gravity must be on the diagram too, and the two equal arrows leave zero net force for a block at rest."
+    },
+    "sourceId": "forces-3.3-7"
+  },
+  {
+    "id": "p-forces-3-3-1",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A ball is tossed straight up and is still moving upward after it has left your hand. While it moves upward through the air, the net force on the ball is",
+    "options": [
+      "upward first, then downward after it passes the peak",
+      "zero, because it already has upward motion",
+      "downward and constant",
+      "upward and decreasing"
+    ],
+    "answer": 2,
+    "explanation": "After the ball leaves your hand, gravity is the only force acting on it. Gravity points down with constant magnitude the whole trip, so the net force is downward and constant, even while the ball moves up.",
+    "feedback": {
+      "0": "After the ball leaves your hand, gravity is the only force, and it points down the entire trip. The velocity changes direction at the top, but the net force never does.",
+      "1": "A downward net force only reduces the upward speed; the ball keeps rising because it started with upward velocity. Zero net force would keep the velocity constant, so the ball would never slow.",
+      "3": "No upward force acts after release. An upward net force would speed the ball up, and gravity is constant in size and direction the whole flight."
+    },
+    "sourceId": "forces-3.3-1"
+  },
+  {
+    "id": "p-forces-3-3-2",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A falling ball is caught by your hand and slows down while still moving downward. During the slowing, the direction of the net force on the ball is",
+    "options": [
+      "downward, because the ball is still moving downward",
+      "zero, because the ball is almost stopped",
+      "downward first, then upward",
+      "upward, because the ball is slowing down"
+    ],
+    "answer": 3,
+    "explanation": "The ball slows while moving down, so its acceleration points up. Net force points the same way as acceleration, so the hand's upward push on the ball must be larger than gravity's downward pull.",
+    "feedback": {
+      "0": "Net force points the way the velocity changes, not the way the ball moves. Slowing while moving down means the velocity change points up, so the net force points up.",
+      "1": "Almost stopped is still changing velocity, and changing velocity means nonzero acceleration and nonzero net force. Trap alert: net force depends on acceleration, not on speed.",
+      "2": "The hand pushes up harder than gravity the whole time the ball slows. The net force stays upward throughout the catch and never points down."
+    },
+    "sourceId": "forces-3.3-2"
+  },
+  {
+    "id": "p-forces-3-1-6",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A book rests motionless on a horizontal table. Which force diagram for the book is correct?",
+    "options": [
+      "A downward arrow for gravity and an upward arrow for the table's normal force, drawn equal in length from the book",
+      "A downward arrow for gravity and a shorter upward arrow for the normal force, because the book presses on the table",
+      "A downward arrow for gravity only, because the table is not part of the book",
+      "An upward arrow for the normal force only, because the table holds the book up"
+    ],
+    "answer": 0,
+    "explanation": "Two forces act on the book: Earth's downward gravitational pull and the table's upward contact (normal) force. The book is in equilibrium, so the arrows are equal in length. The normal force is not optional, and it is not shorter than gravity while the book rests at rest.",
+    "feedback": {
+      "1": "The normal force must fully balance gravity here. If it were shorter, gravity would win and the book would accelerate downward through the table, which does not happen.",
+      "2": "The table is not part of the book, but it still pushes up on the book with a contact force. If gravity were the only force, the book would fall straight through.",
+      "3": "Gravity from Earth never stops acting. If only the upward normal force acted, the book would accelerate upward off the table."
+    },
+    "sourceId": "forces-3.1-6"
+  },
+  {
+    "id": "p-forces-3-4-5",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "An astronaut floats freely inside an orbiting space station and feels weightless. Which statement is correct?",
+    "options": [
+      "There is no gravity in orbit this far above the surface of Earth, so nothing pulls on the astronaut or on the station",
+      "Gravity pulls on the astronaut almost as strongly as on Earth's surface, but the astronaut and station are in free fall together",
+      "The centrifugal force from the station's orbit cancels the gravitational force on the astronaut exactly, leaving zero net force",
+      "The station's floor pushes up on the astronaut with a normal force equal to the astronaut's weight"
+    ],
+    "answer": 1,
+    "explanation": "Gravity still pulls on the astronaut and station. They are in free fall together, so the station does not push up on the astronaut. Weightlessness means no support force, not no gravity.",
+    "feedback": {
+      "0": "Gravity is strong in low orbit. The astronaut feels weightless because the astronaut and station fall together, not because gravity disappeared.",
+      "2": "Centrifugal force is a rotating-frame bookkeeping force, not a real second force. Gravity alone provides the centripetal acceleration.",
+      "3": "The astronaut floats because the floor does not push up. A normal force equal to weight would make the astronaut feel supported, not weightless."
+    },
+    "sourceId": "forces-3.4-5"
+  },
+  {
+    "id": "p-forces-3-1-4",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "Two crates sit stacked on the floor: Crate A (3 kg) on top of Crate B (5 kg). If the system is Crate B only, which of these is an external force on the system?",
+    "options": [
+      "The force of Crate B on the floor",
+      "The force of the floor on Crate A",
+      "The force of Crate A on Crate B",
+      "The force of Crate B on Crate A"
+    ],
+    "answer": 2,
+    "explanation": "Crate A is outside the system (Crate B), so its weight pressing down on Crate B is an external force on Crate B. Forces the system exerts on other objects are not forces on the system.",
+    "feedback": {
+      "0": "This is a force Crate B exerts on the floor, not a force on Crate B. External forces on a system must act ON the system from objects outside it.",
+      "3": "This is Crate B pushing on Crate A, a force the system exerts on its surroundings. Forces the system exerts are never external forces on the system itself.",
+      "1": "This names a force on Crate A, not on Crate B, so it cannot be external to a system that is only Crate B. The floor pushing up directly on Crate B would qualify, but that is a different force."
+    },
+    "sourceId": "forces-3.1-4"
+  },
+  {
+    "id": "p-forces-3-3-8",
+    "skill": "force-diagram-reasoning",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A box is pushed across the floor at constant velocity. Which force diagram correctly shows the horizontal forces on the box?",
+    "options": [
+      "One arrow forward for the push, and no other horizontal arrows",
+      "A forward arrow for the push, a backward arrow for friction, and a forward arrow for the motion",
+      "One arrow backward for friction, and no other horizontal arrows",
+      "A forward arrow for the push and a backward arrow for friction, equal length"
+    ],
+    "answer": 3,
+    "explanation": "Constant velocity means zero net force. The forward push and backward kinetic friction must be equal in length, and there is no separate force of motion; velocity is not a force.",
+    "feedback": {
+      "0": "The sliding box feels kinetic friction from the floor pointing backward. Push alone would leave a forward net force and the box would speed up, not move at constant velocity.",
+      "1": "There is no force of motion; velocity is not a force. Only real interactions belong on the diagram, and here those are the push and friction.",
+      "2": "Friction alone would slow the box to a stop. Constant velocity requires balanced horizontal forces, so the push must be present and equal in size to friction."
+    },
+    "sourceId": "forces-3.3-8"
+  },
+  {
+    "id": "p-forces-3-2-10",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "Your hands are tied together with a thin string and you push outward against the string as hard as you can, yet the string does not break. A friend says: the two forces of your hands cancel, so the string feels no force. Which statement is correct?",
+    "options": [
+      "Each hand feels a force from the string and the string feels both pushes; acting on different objects, they do not cancel",
+      "The string breaks only if you push harder with one hand than the other, since the stronger push would overwhelm the string",
+      "The string feels no force because your hands are not moving, and without motion there is no interaction",
+      "Your friend is right; two equal pushes in opposite directions always cancel, so the string feels nothing"
+    ],
+    "answer": 0,
+    "explanation": "The two outward pushes act on the string, one from each hand, and the string's inward pulls act on your hands. Forces only cancel when they act on the same object, so nothing cancels here. The string feels both pushes and is under tension.",
+    "feedback": {
+      "1": "Trap alert: an unbalanced push from one hand is not what breaks the string. The string is under tension from both hands at once, so even perfectly equal pushes still pull it apart.",
+      "2": "Trap alert: forces do not require motion. A stationary hand still pushes on the string, and the string pushes back. Static contact produces tension just as moving contact does.",
+      "3": "Trap alert: forces cancel only when they act on the same object. Each push acts on the string and each pull acts on a hand. These are different objects, so nothing cancels."
+    },
+    "sourceId": "forces-3.2-10"
+  },
+  {
+    "id": "p-ch03-s3-1-q037",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "Bill and his daughter Susan are both standing on identical skateboards (with frictionless axles), initially at rest. Bill's mass is three times that of Susan. Bill pushes horizontally on Susan's back, causing Susan to accelerate away from Bill. Just after Bill stops pushing,",
+    "options": [
+      "Susan and Bill are moving away from each other, with equal speeds.",
+      "Susan and Bill are moving away from each other, and Susan's speed is three times that of Bill.",
+      "Susan and Bill are moving away from each other, and Susan's speed is one-third that of Bill.",
+      "Susan is moving away from Bill, and Bill is stationary."
+    ],
+    "answer": 1,
+    "explanation": "The push gives Bill and Susan equal-magnitude changes in momentum. Bill has three times Susan's mass, so Susan's speed change is three times Bill's. They move apart with Susan three times as fast.",
+    "feedback": {
+      "0": "Equal momenta do not mean equal speeds. Bill has three times Susan's mass, so his speed is one-third of Susan's.",
+      "2": "This reverses the mass ratio. Susan has the smaller mass, so the same momentum gives her the larger speed.",
+      "3": "Bill feels Susan's push back on him, so he moves too. The pair separates after the interaction."
+    },
+    "sourceId": "ch03-s3.1-q037"
+  },
+  {
+    "id": "p-forces-3-1-11",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A student pushes a heavy wheeled trash bin along a level sidewalk at constant speed. If the student is chosen as the system, which objects belong in the surroundings and what interaction should appear in the system schema?",
+    "options": [
+      "Only Earth; the gravitational interaction is the only force the student actually feels",
+      "Only the bin; the student's interactions with the sidewalk and Earth do not belong in the schema",
+      "The bin, the sidewalk, and Earth, each interacting with the student through contact or gravity",
+      "The bin only, connected to the student by a single interaction arrow labeled net force"
+    ],
+    "answer": 2,
+    "explanation": "A system schema lists every object outside the chosen system that interacts with it. The bin pushes on the student, the sidewalk's friction acts on the student's shoes, and Earth pulls gravitationally on the student, so all three belong in the surroundings with their own interaction connections. Net force is a computed sum, not a separate interaction.",
+    "feedback": {
+      "1": "Leaving out the sidewalk and Earth drops real interactions. Friction from the sidewalk and gravity both act on the student, so both belong in the surroundings alongside the bin.",
+      "0": "The student also feels the bin pushing back, friction from the sidewalk on the shoes, and gravity. A schema must list every object that interacts with the system, not only Earth.",
+      "3": "Net force is a sum computed from the individual forces, not its own interaction. The schema needs one connection per interacting object: the bin, the sidewalk, and Earth."
+    },
+    "sourceId": "forces-3.1-11"
+  },
+  {
+    "id": "p-ch03-s3-1-q041",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "Two boxes, with m1 > m2, are on a level frictionless surface. A horizontal force F, of magnitude 20.0 N, can be exerted either toward the right on m1 or toward the left on m2. The magnitude of the forces that the boxes exert on each other is",
+    "options": [
+      "larger if the force is exerted toward the right.",
+      "zero newtons in either case.",
+      "the same in either case.",
+      "larger if the force is exerted toward the left."
+    ],
+    "answer": 3,
+    "explanation": "Both arrangements give the same total mass and same 20.0 N applied force, so the acceleration is the same. The contact force accelerates the box not directly pushed, so it is larger when the heavier m1 is the one pushed.",
+    "feedback": {
+      "0": "Pushing m1 makes the contact force accelerate only the smaller m2. Pushing m2 makes it accelerate the larger m1, which requires more force.",
+      "1": "The boxes stay in contact and accelerate together, so they must exert a nonzero contact force on each other.",
+      "2": "The system acceleration is the same, but the mass being accelerated by the contact force changes. The force is not the same."
+    },
+    "sourceId": "ch03-s3.1-q041",
+    "figureAlt": "Diagram for p-ch03-s3-1-q041",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 820 300' role='img' aria-label='Two panels. In (a) a horizontal force F pushes the larger box m1 to the right, and m1 pushes the smaller box m2. In (b) the same force F pushes m2 to the left, and m2 pushes m1. Both boxes rest on a level surface.'><rect width='820' height='300' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arA' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='96' y1='200' x2='356' y2='200' stroke='#1A1A1A' stroke-width='2'/><line x1='96' y1='200' x2='88' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='109' y1='200' x2='101' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='122' y1='200' x2='114' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='135' y1='200' x2='127' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='148' y1='200' x2='140' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='161' y1='200' x2='153' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='174' y1='200' x2='166' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='187' y1='200' x2='179' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='200' y1='200' x2='192' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='213' y1='200' x2='205' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='226' y1='200' x2='218' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='239' y1='200' x2='231' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='252' y1='200' x2='244' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='265' y1='200' x2='257' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='278' y1='200' x2='270' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='291' y1='200' x2='283' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='304' y1='200' x2='296' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='317' y1='200' x2='309' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='330' y1='200' x2='322' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='343' y1='200' x2='335' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='356' y1='200' x2='348' y2='209' stroke='#6B6B6B' stroke-width='1'/><rect x='152' y='116' width='120' height='84' fill='white' stroke='#1A1A1A' stroke-width='2'/><rect x='272' y='142' width='74' height='58' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='212.0' y='166.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='17' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>m\u2081</text><text x='309.0' y='178.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='16' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>m\u2082</text><line x1='46' y1='158.0' x2='130' y2='158.0' stroke='#FF4D26' stroke-width='3.5' marker-end='url(#arA)'/><text x='88.0' y='144.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#FF4D26' text-anchor='middle' font-weight='700' font-style='normal'>F = 20.0 N</text><text x='226.0' y='248.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>(a) F pushes m\u2081 to the right</text><line x1='420' y1='200' x2='680' y2='200' stroke='#1A1A1A' stroke-width='2'/><line x1='420' y1='200' x2='412' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='433' y1='200' x2='425' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='446' y1='200' x2='438' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='459' y1='200' x2='451' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='472' y1='200' x2='464' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='485' y1='200' x2='477' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='498' y1='200' x2='490' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='511' y1='200' x2='503' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='524' y1='200' x2='516' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='537' y1='200' x2='529' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='550' y1='200' x2='542' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='563' y1='200' x2='555' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='576' y1='200' x2='568' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='589' y1='200' x2='581' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='602' y1='200' x2='594' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='615' y1='200' x2='607' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='628' y1='200' x2='620' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='641' y1='200' x2='633' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='654' y1='200' x2='646' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='667' y1='200' x2='659' y2='209' stroke='#6B6B6B' stroke-width='1'/><line x1='680' y1='200' x2='672' y2='209' stroke='#6B6B6B' stroke-width='1'/><rect x='476' y='116' width='120' height='84' fill='white' stroke='#1A1A1A' stroke-width='2'/><rect x='596' y='142' width='74' height='58' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='536.0' y='166.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='17' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>m\u2081</text><text x='633.0' y='178.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='16' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>m\u2082</text><line x1='776' y1='171.0' x2='692' y2='171.0' stroke='#FF4D26' stroke-width='3.5' marker-end='url(#arA)'/><text x='734.0' y='157.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#FF4D26' text-anchor='middle' font-weight='700' font-style='normal'>F = 20.0 N</text><text x='550.0' y='248.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>(b) F pushes m\u2082 to the left</text></svg>"
+  },
+  {
+    "id": "p-forces-3-1-2",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "An elephant leans against a tree and the tree bends. What does the bending of the tree most directly show?",
+    "options": [
+      "That the elephant and the tree are interacting through a contact force",
+      "That the wind is pushing the tree over at the same time the elephant leans on it",
+      "That the elephant must be more massive than the tree, since only the tree bends",
+      "That the tree exerts no force back on the elephant while the elephant pushes on it"
+    ],
+    "answer": 0,
+    "explanation": "A visible deformation like bending is direct evidence that two objects are in contact and interacting: the elephant pushes on the tree and the tree is deformed. The bend shows that an interaction is happening, not which object is more massive.",
+    "feedback": {
+      "2": "The bend shows an interaction, not a mass comparison. The amount of bend depends on the force and the object's stiffness, so the more rigid object can bend while the softer one does not.",
+      "1": "Nothing in the setup mentions wind, and the bend appears exactly when the elephant leans. The deformation tracks the contact, so inventing a second agent is an unnecessary guess.",
+      "3": "Newton's third law says the tree pushes back on the elephant with an equal force. The bend is evidence of that two-way interaction, not a one-way push with no reply."
+    },
+    "sourceId": "forces-3.1-2"
+  },
+  {
+    "id": "p-forces-3-3-13",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "multi-select",
+    "stem": "A ball is tossed straight up, leaves the hand, and is tracked all the way back down. Ignore air resistance. Select TWO answers: which statements are true about the ball's motion?",
+    "options": [
+      "On the way up, the ball slows down",
+      "The net force on the ball changes direction when the ball reaches the top",
+      "At the top, the acceleration is zero",
+      "On the way down, the ball speeds up"
+    ],
+    "answer": [
+      0,
+      3
+    ],
+    "explanation": "Gravity acts downward during the entire flight. On the way up it opposes the motion and the ball slows; on the way down it aids the motion and the ball speeds up. At the top the velocity is zero for an instant, but the acceleration is still g downward and the net force never changes direction.",
+    "feedback": {
+      "1": "Gravity points down before, during, and after the top of the flight. The velocity changes direction at the top, but the net force never does. Trap alert: the ball is never force-free.",
+      "2": "At the top the velocity is zero for an instant, but gravity still acts, so the acceleration is g downward. Zero acceleration would need zero net force, which never happens during the flight."
+    },
+    "sourceId": "forces-3.3-13"
+  },
+  {
+    "id": "p-forces-3-4-1",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A car is parked on a street that is not tilted. A ball hangs straight down from a string attached to the car's ceiling. The car now accelerates forward. In the car's reference frame, the string swings so the ball",
+    "options": [
+      "moves in a circle around the string as the car picks up speed",
+      "tilts forward, in the direction the car accelerates",
+      "tilts backward, opposite the direction the car accelerates",
+      "hangs straight down, because gravity still points down"
+    ],
+    "answer": 2,
+    "explanation": "In the car frame, the accelerating reference frame creates an apparent backward push. The ball tilts opposite the car's forward acceleration until the string's horizontal component can accelerate it forward.",
+    "feedback": {
+      "0": "The ball does not keep circling the string. It settles at a backward angle where the string tension can give it the car's forward acceleration.",
+      "1": "Tilting forward would require an apparent force in the direction of acceleration. In the car frame, the apparent push points backward.",
+      "3": "If the string stayed vertical, there would be no horizontal force to accelerate the ball with the car. It must tilt backward to produce that force."
+    },
+    "sourceId": "forces-3.4-1"
+  },
+  {
+    "id": "p-forces-3-4-7",
+    "skill": "newtons-third-law-pairs",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "You are a passenger in a car that rounds a flat curve to the left at constant speed. You feel as if you are being pushed to the right, toward the outside of the curve. Which statement is correct from the ground's inertial frame?",
+    "options": [
+      "A real centrifugal force pushes you outward toward the door whenever the car rounds a curve at speed, and that is the push you feel",
+      "Your weight pulls you toward the outside of the curve because the car tilts as it turns",
+      "No horizontal forces act on you while the car turns, so your body simply stays put relative to the seat",
+      "The seat and door push you toward the center of the curve, and your inertia makes that inward push feel like being pressed outward"
+    ],
+    "answer": 3,
+    "explanation": "Circular motion requires a real net force toward the center. The seat and door push you left, toward the center. Your tendency to continue straight makes that inward push feel like an outward press.",
+    "feedback": {
+      "0": "Centrifugal force is not a real interaction in the ground frame. The real horizontal force from the seat and door points inward, toward the center.",
+      "1": "Weight acts downward, not sideways around the curve. The outward feeling comes from inertia, not from gravity pulling you toward the door.",
+      "2": "Without a horizontal force, you would continue straight while the car turned. The seat and door must push you inward to keep you on the curved path."
+    },
+    "sourceId": "forces-3.4-7"
+  },
+  {
+    "id": "p-forces-3-2-1",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A person stands on a bathroom scale inside a stationary elevator, and the scale reads 600 N. The elevator then moves upward at constant velocity. While it moves at this steady speed, the scale reads",
+    "options": [
+      "exactly 600 N, because only acceleration changes the reading, not velocity",
+      "less than 600 N, because the elevator already got going, so the scale no longer feels the full weight",
+      "more than 600 N, because the upward motion adds to the push of the floor on the person",
+      "zero, because the elevator is no longer at rest, so the person is essentially weightless inside"
+    ],
+    "answer": 0,
+    "explanation": "Constant velocity means the velocity is not changing, so the net force on the person is zero. The floor still pushes up with 600 N, and the scale reads 600 N. Only acceleration changes the reading.",
+    "feedback": {
+      "1": "The reading drops below 600 N only while the elevator accelerates downward. At constant velocity the forces balance, so the floor still pushes up with the full 600 N.",
+      "2": "Trap alert: upward motion does not add to the push. Only upward acceleration does that. At constant velocity the scale reading equals the person's weight.",
+      "3": "Trap alert: weightlessness comes from free fall, not from moving. At constant velocity the person is supported as usual, so the scale reads the full 600 N."
+    },
+    "sourceId": "forces-3.2-1"
+  },
+  {
+    "id": "p-forces-3-3-3",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "At the very top of its flight, a ball tossed straight up has",
+    "options": [
+      "upward velocity and zero acceleration",
+      "zero velocity and acceleration of g downward",
+      "zero acceleration because its velocity is zero",
+      "zero velocity and zero acceleration"
+    ],
+    "answer": 1,
+    "explanation": "At the top of the flight the ball's velocity is zero for an instant, but gravity has not changed. The acceleration is still g downward. Zero velocity does not mean zero acceleration.",
+    "feedback": {
+      "0": "At the peak the ball stops rising for an instant, so its velocity is zero, not upward. The acceleration stays g downward for the entire flight.",
+      "2": "Zero velocity does not mean zero acceleration. Acceleration measures how velocity changes, and at the top gravity is busy changing the velocity from up to down.",
+      "3": "If the velocity and acceleration were both zero at the top, the ball would stay there. It falls because gravity still acts, giving a downward acceleration of g."
+    },
+    "sourceId": "forces-3.3-3"
+  },
+  {
+    "id": "p-ch03-s3-1-q049",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A 75-kg box rests on a perfectly smooth horizontal surface. The minimum force need to start the box moving is",
+    "options": [
+      "7.5 N",
+      "750 N",
+      "any nonzero horizontal force will start the box moving.",
+      "75 N"
+    ],
+    "answer": 2,
+    "explanation": "A perfectly smooth surface has no friction. Any nonzero horizontal force creates a net force and therefore an acceleration, no matter how small the force is.",
+    "feedback": {
+      "0": "There is no friction threshold to overcome on a perfectly smooth surface. Even a tiny nonzero force produces acceleration.",
+      "1": "750 N is about the box's weight, but weight acts vertically. Horizontal acceleration needs only a nonzero horizontal force.",
+      "3": "75 N is not a minimum. With no friction, any horizontal force greater than zero starts the motion."
+    },
+    "sourceId": "ch03-s3.1-q049"
+  },
+  {
+    "id": "p-ch03-s3-2-q017",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "The figure shows an acceleration-versus-force graph for a 125-g object. What should be the value of the first tick-mark on the vertical scale, as indicated by the arrow in the figure?",
+    "options": [
+      "0.00400",
+      "0.00800",
+      "8",
+      "4"
+    ],
+    "answer": 3,
+    "explanation": "The line is linear and reaches 8 m/s\u00b2 at 1.0 N for the 125-g object. The first marked vertical interval is half of that value, so the first tick is 4 m/s\u00b2.",
+    "feedback": {
+      "0": "0.00400 confuses kilograms and grams and does not match the graph's acceleration scale. The tick spacing represents 4 m/s\u00b2.",
+      "1": "0.00800 is also a unit-scale error. The graph reaches 8 m/s\u00b2 at 1.0 N, and the first tick is half of that, 4 m/s\u00b2.",
+      "2": "8 is the acceleration at 1.0 N, not the first tick. The arrow marks the first interval below that value."
+    },
+    "sourceId": "ch03-s3.2-q017",
+    "figure": "figures/ch03-s3.2-q017.png",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-forces-3-2-6",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A person stands motionless on a bathroom scale that reads 700 N, then suddenly rises up on tiptoe, accelerating upward. While the person accelerates upward, the scale reads",
+    "options": [
+      "more than 700 N, because the floor pushes up harder than the weight during the upward acceleration",
+      "zero, because the person briefly leaves the floor, so the scale has nothing to push against",
+      "less than 700 N, because rising up means the floor does not need to push as hard on the person",
+      "exactly 700 N, because the person's weight has not changed, and a scale can only ever read the weight"
+    ],
+    "answer": 0,
+    "explanation": "To accelerate upward, the upward forces must exceed the downward weight. The floor pushes up harder than 700 N, so the scale, which reads that push, reads more than 700 N while the person speeds up.",
+    "feedback": {
+      "1": "The person is still in contact with the scale while accelerating upward, so the floor must push harder, not zero. A zero reading would require the person to be in free fall.",
+      "2": "A smaller push would make the net force downward, which would accelerate the person downward. To accelerate up, the floor must push up harder than the 700 N weight.",
+      "3": "Trap alert: a scale reads the normal force, not the weight. The weight is unchanged at 700 N, but the upward acceleration needs an extra push, so the reading grows above 700 N."
+    },
+    "sourceId": "forces-3.2-6"
+  },
+  {
+    "id": "p-ch03-s3-2-q010",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "An object experiences a gravitational force of 75 N on Earth. The object is then pulled on a horizontal surface by a horizontal pull of 50 N to the right. The friction force on this object is 30 N horizontally to the left. What is the acceleration of the object?",
+    "options": [
+      "0.27 m/s\u00b2 to the right",
+      "2.6 m/s\u00b2 to the right",
+      "1.1 m/s\u00b2 to the right",
+      "11 m/s\u00b2 to the right"
+    ],
+    "answer": 1,
+    "explanation": "The object's mass is 75 N / 9.8 m/s\u00b2 = 7.65 kg. The net force is 50 N - 30 N = 20 N right, so a = 20 N / 7.65 kg = 2.6 m/s\u00b2 right.",
+    "feedback": {
+      "0": "0.27 m/s\u00b2 comes from using the wrong mass or force. Use the net force of 20 N and mass from the 75-N weight.",
+      "2": "1.1 m/s\u00b2 is too small. It likely comes from using the full 75 N as mass or mishandling the 20-N net force.",
+      "3": "11 m/s\u00b2 is too large. The mass is about 7.65 kg, so a 20-N net force gives only 2.6 m/s\u00b2."
+    },
+    "sourceId": "ch03-s3.2-q010"
+  },
+  {
+    "id": "p-forces-3-3-10",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A sled accelerates down a snowy hill. While it speeds up, the component of gravity along the hill must be",
+    "options": [
+      "equal to the total weight of the sled",
+      "less than the friction force on the sled",
+      "greater than the friction force on the sled",
+      "zero, because the normal force cancels gravity"
+    ],
+    "answer": 2,
+    "explanation": "The normal force cancels the part of gravity perpendicular to the hill. Along the hill, the downhill component of gravity must exceed friction for the sled to have a downhill net force and speed up.",
+    "feedback": {
+      "0": "On a hill the weight splits into components. Only the part parallel to the slope pulls the sled downhill; the rest presses into the hill, so the downhill component is less than the total weight.",
+      "1": "If friction were larger than the downhill gravity component, the net force would point uphill and the sled would slow down or stay put. Speeding up requires the larger downhill pull.",
+      "3": "The normal force cancels only the perpendicular part of gravity. The along-slope component is untouched, and that component is what drives the sled downhill."
+    },
+    "sourceId": "forces-3.3-10"
+  },
+  {
+    "id": "p-forces-3-4-3",
+    "skill": "qualitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A passenger in a smoothly moving, non-accelerating train flips a coin straight up. The coin lands back in the passenger's hand. Which statement explains this best?",
+    "options": [
+      "A forward force from the toss keeps acting on the coin the whole time it is in the air",
+      "The air inside the train moves along with the train and pushes the coin forward while it is in the air between toss and catch",
+      "The coin should land behind the hand because the train moves forward while the coin is in the air",
+      "The coin shares the train's forward velocity, so it keeps pace with the hand while it rises and falls"
+    ],
+    "answer": 3,
+    "explanation": "The coin already shares the train's forward velocity. With no horizontal force, it keeps that velocity while rising and falling, so it stays above the passenger's hand.",
+    "feedback": {
+      "0": "No forward force keeps acting after the toss. The coin keeps its forward velocity by inertia while gravity changes only its vertical motion.",
+      "1": "The air does not need to push the coin forward. The coin already has the train's horizontal velocity before it leaves the hand.",
+      "2": "That would be true if the coin lost the train's forward velocity. It does not; inertia keeps it moving with the train."
+    },
+    "sourceId": "forces-3.4-3"
+  },
+  {
+    "id": "p-forces-3-1-1",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A book rests motionless on a horizontal table. You draw a force diagram with the book as the system. How many forces belong on that diagram?",
+    "options": [
+      "Two, gravity downward and the table's upward push",
+      "None, because the book is not moving",
+      "Three, because a force of motion keeps the book at rest",
+      "One, because only Earth's gravity pulls on the book"
+    ],
+    "answer": 0,
+    "explanation": "Two forces act on the book: Earth's gravitational pull downward and the table's upward contact force. The book is motionless, so these two balance, but balanced forces are still forces and both belong on the diagram.",
+    "feedback": {
+      "1": "Forces are what keep the book at rest; they just balance to zero net force. Motionless means the net force is zero, not that no forces act.",
+      "3": "There is no force of motion. A book at rest needs no forward push, and adding one would make it accelerate forward, which it does not.",
+      "2": "Gravity alone would pull the book downward. The table pushes up with a real contact force, and the two balance, so both arrows belong on the diagram."
+    },
+    "sourceId": "forces-3.1-1"
+  },
+  {
+    "id": "p-forces-3-1-3",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "Which force diagram (system schema) best represents the external forces on a book that rests motionless on a horizontal table?",
+    "options": [
+      "Upward arrow from the table on the book and downward arrow from the book on the table, equal length",
+      "Upward arrow from the table on the book and downward arrow from Earth on the book, equal length",
+      "Only a downward arrow from Earth on the book",
+      "Upward arrow from the table on the book, downward arrow from Earth on the book, and a horizontal arrow from the book's motion"
+    ],
+    "answer": 1,
+    "explanation": "Only external forces on the book are drawn: gravity from Earth and the normal force from the table. Because the book is motionless these have equal magnitudes. Forces the book exerts on other objects are not part of the book's diagram.",
+    "feedback": {
+      "0": "A diagram for the book shows only forces acting ON the book. The book's downward push on the table acts on the table, so it does not belong on the book's diagram.",
+      "3": "There is no horizontal force because nothing pushes the book sideways. A force of motion is a common invention, and a book at rest has no velocity that needs maintaining.",
+      "2": "Gravity alone would make the book accelerate downward. The table's upward normal force is real and needed for equilibrium, so both arrows belong."
+    },
+    "sourceId": "forces-3.1-3"
+  },
+  {
+    "id": "p-ch03-s3-2-q002",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "What is the mass of an object that has a 685 N gravitational force exerted on it near Earth's surface, where g = 9.80 m/s\u00b2?",
+    "options": [
+      "72.7 kg",
+      "68.5 kg",
+      "69.9 kg",
+      "71.3 kg"
+    ],
+    "answer": 2,
+    "explanation": "Weight is W = mg, so m = W/g. Dividing 685 N by 9.80 m/s\u00b2 gives 69.9 kg.",
+    "feedback": {
+      "0": "72.7 kg comes from a division or rounding error. Compute 685 / 9.80 carefully.",
+      "1": "68.5 kg treats 685 N as if it were 685 kg or divides by about 10 without enough precision. Use g = 9.80 m/s\u00b2.",
+      "3": "71.3 kg is close but too high. The correct quotient is 685 / 9.80 = 69.9 kg."
+    },
+    "sourceId": "ch03-s3.2-q002"
+  },
+  {
+    "id": "p-ch03-s3-2-q001",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A cart is initially at rest on a frictionless surface, and has exerted on it a net force of constant magnitude F. Measurements are taken of its acceleration a. Then the process is repeated with a force of different magnitude. The data are summarized in the graph above. What is the best estimate for the mass of the cart?",
+    "options": [
+      "1.0 kg",
+      "0.5 kg",
+      "0.7 kg",
+      "0.2 kg",
+      "1.5 kg"
+    ],
+    "answer": 4,
+    "explanation": "Newton's second law gives m = F/a, which is the inverse slope of an acceleration-versus-force graph. The graphed ratio is closest to 1.5 kg.",
+    "feedback": {
+      "0": "1.0 kg would require a steeper acceleration-versus-force line than shown. The line's force-to-acceleration ratio is closer to 1.5 kg.",
+      "1": "0.5 kg is too small. The graph shows less acceleration for a given force than a 0.5-kg cart would have.",
+      "2": "0.7 kg is still too small. Compare a clear point on the line with F/a to estimate the mass.",
+      "3": "0.2 kg would produce a much larger acceleration for each force value than the graph shows."
+    },
+    "sourceId": "ch03-s3.2-q001",
+    "figure": "figures/ch03-s3.2-q001.png",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-ch03-s3-1-q052",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "In the following figure, a 10-lb object (that is, an object on which Earth exerts gravitational force of 10 lb down) is suspended from two spring scales, each of which has negligible mass. Which one of the following statements about the readings in the scales is true?",
+    "options": [
+      "None of these is true.",
+      "Each scale will show a reading between one and 10 lb, such that the sum of the two is 10 lb. However, exact readings cannot be determined without more information.",
+      "Each scale will read 5 lb.",
+      "The top scale will read zero, the lower scale will read 10 lb.",
+      "The lower scale will read zero, the top scale will read 10 lb."
+    ],
+    "answer": 0,
+    "explanation": "The two spring scales are in series. The same 10-lb tension passes through each scale, so both scales read 10 lb. Since that choice is not listed, none of the statements is true.",
+    "feedback": {
+      "1": "The readings do not add to 10 lb. Each scale measures the same tension in the series connection, so each reads 10 lb.",
+      "2": "The weight is not split into two 5-lb readings. Each spring scale experiences the full 10-lb tension.",
+      "3": "The top scale supports the lower scale and object, so it cannot read zero.",
+      "4": "The lower scale supports the 10-lb object, so it cannot read zero."
+    },
+    "sourceId": "ch03-s3.1-q052",
+    "figure": "figures/ch03-s3.1-q052.png",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-forces-3-1-10",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "Which of these forces is NOT a contact force?",
+    "options": [
+      "The tension of a rope on a sled",
+      "The pull of a magnet on a paper clip",
+      "The friction of the floor on your shoes",
+      "The push of a hand on a door"
+    ],
+    "answer": 1,
+    "explanation": "Gravity, electric, and magnetic forces act at a distance. Push, friction, and tension all require touching. The magnet pulls the paper clip without touching it.",
+    "feedback": {
+      "0": "Tension requires the rope to touch the sled. A taut rope in contact pulls through its fibers, so this is a contact force, not action at a distance.",
+      "2": "Friction only acts where two surfaces touch. The floor and the shoe must be in contact for friction to exist at all.",
+      "3": "A hand must touch the door to push it. Every push is a contact force, since the pusher and the pushed object must physically meet."
+    },
+    "sourceId": "forces-3.1-10"
+  },
+  {
+    "id": "p-forces-3-3-9",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A couch is pushed across a level floor at constant velocity. How do the horizontal forces on the couch compare?",
+    "options": [
+      "No horizontal forces act on the couch once it is moving, since motion can sustain itself",
+      "The push must be less than friction, because the couch moves slowly rather than speeding up",
+      "The sum of the horizontal forces is zero, so the push and the floor's friction balance each other",
+      "The push must be greater than friction, because the couch keeps moving forward across the floor"
+    ],
+    "answer": 2,
+    "explanation": "Constant velocity means the net force is zero. The horizontal forces are the person's push and the floor's kinetic friction, and they must be equal in size and opposite in direction. Motion at constant speed needs no extra forward push.",
+    "feedback": {
+      "0": "Constant velocity needs zero net force, but friction acts on the sliding couch, so a balancing push is required. Trap alert: motion only sustains itself when no friction acts.",
+      "1": "A push smaller than friction would leave a backward net force and the couch would slow down. Constant velocity requires the push and friction to be equal in size.",
+      "3": "A larger forward push would leave a forward net force and the couch would speed up. Keeping constant velocity needs exactly balanced horizontal forces, not a winning push."
+    },
+    "sourceId": "forces-3.3-9"
+  },
+  {
+    "id": "p-forces-3-2-2",
+    "skill": "quantitative-newton-second-law",
+    "chapter": 3,
+    "type": "mc",
+    "stem": "A delivery person pushes a box across the floor, straightening a crooked path: a 40 N push aimed east plus a 30 N push from a co-worker aimed north, both applied at the same instant. The magnitude of the single push that would have the same effect is",
+    "options": [
+      "70 N, because two pushes applied at the same instant always add as ordinary numbers",
+      "35 N, the average of the two pushes, since the two workers share the effort equally",
+      "10 N, the difference of the two pushes, since they partially work against each other",
+      "50 N, from adding the two pushes as perpendicular vectors"
+    ],
+    "answer": 3,
+    "explanation": "The 40 N east push and the 30 N north push are perpendicular, so they combine with the Pythagorean rule: the square root of 40 squared plus 30 squared is the square root of 2500, which is 50 N.",
+    "feedback": {
+      "0": "Ordinary addition works only when pushes point the same way. East and north are perpendicular, so the pushes combine with the Pythagorean rule, giving 50 N rather than 70 N.",
+      "1": "Averaging ignores direction. The co-worker's north push adds a full 30 N of effect in a new direction, which increases the combined push instead of splitting the difference.",
+      "2": "The pushes do not work against each other, so there is nothing to subtract. They act at right angles, and perpendicular vectors add through squares and a square root."
+    },
+    "sourceId": "forces-3.2-2"
+  },
+  {
+    "id": "p-ch04-s4-1-q035",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "A force of magnitude P is exerted on a box of mass m, as shown in the figure. The force is directed at an angle \u03b8 below the horizontal, and the box remains a rest. The box rests on a horizontal surface, with which the box has a nonzero coefficient of friction. The normal force on the box due to the floor is equal to",
+    "options": [
+      "mg - P sin \u03b8.",
+      "mg",
+      "mg + P",
+      "mg + P cos \u03b8.",
+      "mg + P sin \u03b8."
+    ],
+    "answer": 4,
+    "explanation": "The downward push component P sin \u03b8 adds to the box's weight. The floor's normal force balances both downward effects, so N = mg + P sin \u03b8.",
+    "feedback": {
+      "0": "P sin \u03b8 points downward here, not upward. It increases the force the floor must support.",
+      "1": "mg would be right without the downward push component. The angled push adds P sin \u03b8 to the load.",
+      "2": "Only the vertical component of P affects the normal force. The full push P is not directed downward.",
+      "3": "P cos \u03b8 is the horizontal component. The normal force responds to the vertical component P sin \u03b8."
+    },
+    "sourceId": "ch04-s4.1-q035",
+    "figure": "figures/ch04-s4.1-q035.png",
+    "figureAlt": "Question figure"
+  },
+  {
+    "id": "p-ch04-s4-2-q029",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "The components of vectors and are given as follows: Bx = -9.2 Cx = -4.5 By = -6.1 Cy = 4.3 The angle (less than 180\u00b0) between vectors and is closest to",
+    "options": [
+      "77\u00b0",
+      "170\u00b0",
+      "84\u00b0",
+      "103\u00b0",
+      "10\u00b0"
+    ],
+    "answer": 0,
+    "explanation": "Use the dot product: cos \u03b8 = (BxCx + ByCy)/(|B||C|). Here the numerator is 41.4 - 26.2 = 15.2, which gives an angle closest to 77\u00b0.",
+    "feedback": {
+      "1": "170\u00b0 would require a strong negative dot product. Here BxCx is positive and larger in magnitude than the negative ByCy term.",
+      "2": "84\u00b0 is close but comes from rounding the components or dot product too early. The computed angle is nearer 77\u00b0.",
+      "3": "103\u00b0 would also require a negative dot product. The x-component product makes the total dot product positive.",
+      "4": "10\u00b0 would require the vectors to point in nearly the same direction. Their components are far from proportional."
+    },
+    "sourceId": "ch04-s4.2-q029"
+  },
+  {
+    "id": "p-ch04-s4-2-q021",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "The x component of vector is 5.3 units, and its y component is -2.3 units. The angle that vector makes, measured counterclockwise from the +x-axis is closest to",
+    "options": [
+      "160\u00b0",
+      "340\u00b0",
+      "250\u00b0",
+      "110\u00b0",
+      "23\u00b0"
+    ],
+    "answer": 1,
+    "explanation": "The vector is in quadrant IV. Its reference angle is tan\u207b\u00b9(2.3/5.3) \u2248 23\u00b0, so measured counterclockwise from +x the angle is 360\u00b0 - 23\u00b0 \u2248 337\u00b0, closest to 340\u00b0.",
+    "feedback": {
+      "0": "160\u00b0 is in quadrant II, but the x component is positive and the y component is negative.",
+      "2": "250\u00b0 is in quadrant III. This vector has positive x and negative y, placing it in quadrant IV.",
+      "3": "110\u00b0 is also in quadrant II. The positive x component rules that out.",
+      "4": "23\u00b0 is the reference angle below the +x-axis. Counterclockwise measurement gives about 340\u00b0, not 23\u00b0."
+    },
+    "sourceId": "ch04-s4.2-q021"
+  },
+  {
+    "id": "p-ch04-s4-2-q023",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "A displacement vector is 34.0 m in length and is directed 60.0\u00b0 east of north. Selected from the choices in the table below, what are the components of this vector?",
+    "options": [
+      "choice 1",
+      "choice 5",
+      "choice 4",
+      "choice 3",
+      "choice 2"
+    ],
+    "answer": 2,
+    "explanation": "At 60.0\u00b0 east of north, the north component is 34.0 cos 60.0\u00b0 = 17.0 m and the east component is 34.0 sin 60.0\u00b0 = 29.4 m. That is choice 4.",
+    "feedback": {
+      "0": "Choice 1 swaps the components. The angle is measured from north, so cosine gives north and sine gives east.",
+      "1": "Choice 5 does not match either component calculation. Check 34.0 cos 60.0\u00b0 and 34.0 sin 60.0\u00b0.",
+      "3": "Choice 3 has components that are too small to form a 34.0-m vector.",
+      "4": "Choice 2 reverses the trigonometric assignments. Since the angle is from north, north uses cosine."
+    },
+    "sourceId": "ch04-s4.2-q023",
+    "figureAlt": "A displacement vector of 34.0 meters drawn 60.0 degrees east of north, with north up and east to the right.",
+    "figureSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 520 400\" role=\"img\" aria-label=\"A displacement vector of 34.0 meters drawn 60.0 degrees east of north, with north up and east to the right.\" width=\"100%\" style=\"max-width:520px\"><defs><marker id=\"arrowSoft\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto-start-reverse\"><path d=\"M 0 0 L 10 5 L 0 10 z\" fill=\"#6B6B6B\"/></marker><marker id=\"arrowAccent\" viewBox=\"0 0 10 10\" refX=\"7\" refY=\"5\" markerWidth=\"5\" markerHeight=\"5\" orient=\"auto-start-reverse\"><path d=\"M 0 0 L 10 5 L 0 10 z\" fill=\"#FF4D26\"/></marker></defs><line x1=\"104\" y1=\"326\" x2=\"104\" y2=\"36.0\" stroke=\"#6B6B6B\" stroke-width=\"1.5\" marker-end=\"url(#arrowSoft)\"/><line x1=\"104\" y1=\"326\" x2=\"398.0\" y2=\"326\" stroke=\"#6B6B6B\" stroke-width=\"1.5\" marker-end=\"url(#arrowSoft)\"/><text x=\"104\" y=\"24.0\" font-family=\"Inter,Arial,Helvetica,sans-serif\" font-size=\"17\" font-weight=\"700\" fill=\"#1A1A1A\" text-anchor=\"middle\">N</text><text x=\"410.0\" y=\"332\" font-family=\"Inter,Arial,Helvetica,sans-serif\" font-size=\"17\" font-weight=\"700\" fill=\"#1A1A1A\" text-anchor=\"start\">E</text><line x1=\"104\" y1=\"326\" x2=\"320.5\" y2=\"201.0\" stroke=\"#FF4D26\" stroke-width=\"3.5\" marker-end=\"url(#arrowAccent)\"/><path d=\"M 104 242 A 84 84 0 0 1 176.7 284.0\" fill=\"none\" stroke=\"#FF4D26\" stroke-width=\"2.5\"/><text x=\"162.0\" y=\"225.5\" font-family=\"Inter,Arial,Helvetica,sans-serif\" font-size=\"17\" font-weight=\"700\" fill=\"#FF4D26\" text-anchor=\"middle\" dominant-baseline=\"middle\">60.0\u00b0</text><text x=\"235.3\" y=\"303.3\" font-family=\"Inter,Arial,Helvetica,sans-serif\" font-size=\"17\" font-weight=\"700\" fill=\"#1A1A1A\" text-anchor=\"middle\" dominant-baseline=\"middle\">34.0 m</text></svg>",
+    "table": {
+      "headers": [
+        "choice",
+        "Northward component",
+        "Eastward component"
+      ],
+      "rows": [
+        [
+          "1",
+          "29.4 m",
+          "17.0 m"
+        ],
+        [
+          "2",
+          "18.2 m",
+          "28.1 m"
+        ],
+        [
+          "3",
+          "22.4 m",
+          "11.5 m"
+        ],
+        [
+          "4",
+          "17.0 m",
+          "29.4 m"
+        ],
+        [
+          "5",
+          "25.2 m",
+          "18.2 m"
+        ]
+      ]
+    }
+  },
+  {
+    "id": "p-ch04-s4-2-q020",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "When Jeff ran up a hill at 7.0 m/s, the horizontal component of his velocity vector was 5.1 m/s. What was the vertical component of Jeff's velocity?",
+    "options": [
+      "4.8 m/s",
+      "3.4 m/s",
+      "4.3 m/s",
+      "3.8 m/s"
+    ],
+    "answer": 0,
+    "explanation": "Use the Pythagorean theorem: vy = sqrt(7.0\u00b2 - 5.1\u00b2) = sqrt(22.99) \u2248 4.8 m/s.",
+    "feedback": {
+      "1": "3.4 m/s is too small. Squaring the components must satisfy 5.1\u00b2 + vy\u00b2 = 7.0\u00b2.",
+      "2": "4.3 m/s does not quite satisfy the Pythagorean relationship. The calculation gives about 4.8 m/s.",
+      "3": "3.8 m/s is too small. Solve vy = sqrt(7.0\u00b2 - 5.1\u00b2), not by subtracting the speeds directly."
+    },
+    "sourceId": "ch04-s4.2-q020"
+  },
+  {
+    "id": "p-ch04-s4-2-q027",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "A boy jumps with a velocity of magnitude 20.0 m/s at an angle of 25.0\u00b0 above the horizontal. What is the horizontal component of the boy's velocity?",
+    "options": [
+      "9.33 m/s",
+      "12.6 m/s",
+      "15.6 m/s",
+      "8.45 m/s",
+      "18.1 m/s"
+    ],
+    "answer": 4,
+    "explanation": "The horizontal component uses cosine: vx = 20.0 cos 25.0\u00b0 = 18.1 m/s.",
+    "feedback": {
+      "0": "9.33 m/s is much too small. Cosine of 25\u00b0 is about 0.906, so the horizontal component is most of 20.0 m/s.",
+      "1": "12.6 m/s is too small. Check that you used 20.0 cos 25.0\u00b0, not sine or an incorrect angle.",
+      "2": "15.6 m/s still underestimates the component. Cos 25.0\u00b0 \u2248 0.906, giving 18.1 m/s.",
+      "3": "8.45 m/s is about 20.0 sin 25.0\u00b0. That is the vertical component, not the horizontal one."
+    },
+    "sourceId": "ch04-s4.2-q027"
+  },
+  {
+    "id": "p-ch04-s4-2-q024",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "A player throws a football 50.0 m at 61.0\u00b0 north of west. What is the westward component of the displacement of the football?",
+    "options": [
+      "24.2 m",
+      "74.0 m",
+      "55.0 m",
+      "64.7 m",
+      "0.00 m"
+    ],
+    "answer": 0,
+    "explanation": "The westward component is adjacent to the 61.0\u00b0 angle north of west, so it is 50.0 cos 61.0\u00b0 = 24.2 m west.",
+    "feedback": {
+      "1": "74.0 m is longer than the total 50.0-m displacement, so it cannot be a component.",
+      "2": "55.0 m is also longer than the full displacement. Components of a vector cannot exceed its magnitude.",
+      "3": "64.7 m exceeds the 50.0-m displacement. Use 50.0 cos 61.0\u00b0 for the westward component.",
+      "4": "The football clearly travels west as well as north, so the westward component is not zero."
+    },
+    "sourceId": "ch04-s4.2-q024"
+  },
+  {
+    "id": "p-ch04-s4-1-q008",
+    "skill": "incline-components-and-normal-force",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "An ice cube slides down a frictionless ramp. How does N, the magnitude of the normal force exerted by the ramp on the ice cube, compare to FE on C, the magnitude of the gravitational force exerted by the Earth on the ice cube?",
+    "options": [
+      "N = FE on C",
+      "0 < N < FE on C",
+      "Not enough information",
+      "N = 0 < FE on C",
+      "N > FE on C"
+    ],
+    "answer": 1,
+    "explanation": "On a frictionless ramp, the normal force balances only the perpendicular component of gravity: N = mg cos \u03b8. Since cos \u03b8 is between 0 and 1, N is positive but less than the full weight.",
+    "feedback": {
+      "0": "N equals the full weight only on a horizontal surface. The ramp angle makes the perpendicular component smaller than mg.",
+      "2": "There is enough information. A frictionless incline gives N = mg cos \u03b8, so N is between zero and the full weight.",
+      "3": "The ramp still pushes on the ice cube, so the normal force is not zero.",
+      "4": "The normal force cannot exceed the full weight here. Only the perpendicular component of gravity presses into the ramp."
+    },
+    "sourceId": "ch04-s4.1-q008"
+  },
+  {
+    "id": "p-ch04-s4-1-q040",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "Two boxes are connected to each other by a string as shown in the figure. The box which has a gravitational force of 10 N exerted on it slides without friction on the horizontal table surface. The pulley is massless and frictionless and the string has negligible mass. What is true about the tension T in the string? (More than one answer might be true.)",
+    "options": [
+      "T = 20 N",
+      "T = 10 N",
+      "T < 30 N",
+      "T > 30 N",
+      "T = 30 N"
+    ],
+    "answer": 2,
+    "explanation": "The hanging 30-N box accelerates the connected system, so the rope does not need to support its full weight. The tension is therefore less than 30 N.",
+    "feedback": {
+      "0": "T = 20 N is not required by the setup. The key comparison is that acceleration means the hanging box's weight exceeds the tension.",
+      "1": "T = 10 N would be static support for the table box's weight, but the rope's tension comes from the accelerating 30-N hanging box.",
+      "3": "T cannot exceed the hanging box's 30-N weight while it accelerates downward. The remaining net force produces acceleration.",
+      "4": "T = 30 N would mean the hanging box is in equilibrium, but the system accelerates."
+    },
+    "sourceId": "ch04-s4.1-q040",
+    "figureAlt": "Diagram for p-ch04-s4-1-q040",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 340' role='img' aria-label='A 10 newton box rests on a frictionless horizontal table. A string runs from the box horizontally over a pulley at the table edge and hangs vertically, supporting a 30 newton box. The string tension is labelled T.'><rect width='520' height='340' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arA' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='60' y1='190' x2='340' y2='190' stroke='#1A1A1A' stroke-width='2.5'/><line x1='340' y1='190' x2='340' y2='300' stroke='#1A1A1A' stroke-width='2.5'/><line x1='60' y1='190' x2='60' y2='220' stroke='#1A1A1A' stroke-width='2.5'/><rect x='120' y='128' width='92' height='62' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='166.0' y='166.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='16' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>10 N</text><circle cx='340' cy='175' r='15' fill='white' stroke='#1A1A1A' stroke-width='2'/><circle cx='340' cy='175' r='2.5' fill='#1A1A1A'/><line x1='340' y1='190' x2='340' y2='175' stroke='#1A1A1A' stroke-width='2'/><line x1='212' y1='160' x2='340' y2='160' stroke='#1A1A1A' stroke-width='1.8'/><path d='M 340 160 A 15 15 0 0 1 355 175' fill='none' stroke='#1A1A1A' stroke-width='1.8'/><line x1='355' y1='175' x2='355' y2='253' stroke='#1A1A1A' stroke-width='1.8'/><text x='242.0' y='148.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='15' fill='#1F4E79' text-anchor='middle' font-weight='700' font-style='normal'>T</text><rect x='309' y='253' width='92' height='62' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='355.0' y='291.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='16' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>30 N</text></svg>"
+  },
+  {
+    "id": "p-ch04-s4-2-q084",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "Three boxes rest side-by-side on a smooth, horizontal floor. Their masses are 5.0 kg, 3.0 kg, and 2.0 kg, with the 3.0-kg mass in the center. A force of 50 N pushes on the 5.0-kg box, which pushes against the other two boxes. What magnitude force does the 5.0-kg box exert on the 3.0- kg box?",
+    "options": [
+      "40 N",
+      "10 N",
+      "0 N",
+      "25 N",
+      "50 N"
+    ],
+    "answer": 3,
+    "explanation": "The three boxes have total mass 10.0 kg, so a = 50 N / 10.0 kg = 5.0 m/s\u00b2. The 5.0-kg box pushes the 3.0-kg and 2.0-kg boxes forward together, requiring (5.0 kg)(5.0 m/s\u00b2) = 25 N.",
+    "feedback": {
+      "0": "40 N would accelerate 8.0 kg at 5.0 m/s\u00b2, but only the 3.0-kg and 2.0-kg boxes are being pushed by this contact force.",
+      "1": "10 N would accelerate only 2.0 kg at the shared acceleration. The contact force pushes both trailing boxes, totaling 5.0 kg.",
+      "2": "The boxes remain in contact and move together, so the 5.0-kg box must exert a nonzero force on the center box.",
+      "4": "50 N accelerates the whole 10.0-kg system. The contact force only accelerates the 5.0 kg beyond the pushed box."
+    },
+    "sourceId": "ch04-s4.2-q084"
+  },
+  {
+    "id": "p-ch04-s4-1-q039",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "Earth exerts gravitational forces as shown in the figure on three boxes, which are pulled along a horizontal frictionless floor by a constant horizontal force P. The boxes are connected by light horizontal strings, having tensions T1 and T2. Which of the following statements about the tensions is correct? (There could be more than one correct choice.)",
+    "options": [
+      "T1 + T2 = P",
+      "T2 = P",
+      "T1 = P",
+      "T2 > T1",
+      "T1 > T2"
+    ],
+    "answer": 4,
+    "explanation": "The front string T1 accelerates more trailing mass than the rear string T2. Since the boxes share one acceleration, the string pulling more mass has the larger tension, so T1 > T2.",
+    "feedback": {
+      "0": "The tensions are internal forces at different connection points, not two pieces that simply add to the applied force P.",
+      "1": "T2 equals P only if there is no trailing mass for the front string to accelerate. T1 must also account for additional mass.",
+      "2": "T1 equals P only at the point where the applied force enters the system. Downstream tension decreases as less mass remains to accelerate.",
+      "3": "T2 > T1 reverses the mass relationship. The upstream string T1 pulls more boxes than T2, so T1 is larger."
+    },
+    "sourceId": "ch04-s4.1-q039",
+    "figureAlt": "Diagram for p-ch04-s4-1-q039",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 660 250' role='img' aria-label='Three boxes on a horizontal frictionless floor joined by two horizontal strings. Reading left to right the boxes are m1, m2, m3, and an applied force P pulls the rightmost box to the right. The rear string is labelled T2 and the front string T1.'><rect width='660' height='250' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arA' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='30' y1='176' x2='630' y2='176' stroke='#1A1A1A' stroke-width='2'/><line x1='34' y1='176' x2='26' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='47' y1='176' x2='39' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='60' y1='176' x2='52' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='73' y1='176' x2='65' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='86' y1='176' x2='78' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='99' y1='176' x2='91' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='112' y1='176' x2='104' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='125' y1='176' x2='117' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='138' y1='176' x2='130' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='151' y1='176' x2='143' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='164' y1='176' x2='156' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='177' y1='176' x2='169' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='190' y1='176' x2='182' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='203' y1='176' x2='195' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='216' y1='176' x2='208' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='229' y1='176' x2='221' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='242' y1='176' x2='234' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='255' y1='176' x2='247' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='268' y1='176' x2='260' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='281' y1='176' x2='273' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='294' y1='176' x2='286' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='307' y1='176' x2='299' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='320' y1='176' x2='312' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='333' y1='176' x2='325' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='346' y1='176' x2='338' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='359' y1='176' x2='351' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='372' y1='176' x2='364' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='385' y1='176' x2='377' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='398' y1='176' x2='390' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='411' y1='176' x2='403' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='424' y1='176' x2='416' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='437' y1='176' x2='429' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='450' y1='176' x2='442' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='463' y1='176' x2='455' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='476' y1='176' x2='468' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='489' y1='176' x2='481' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='502' y1='176' x2='494' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='515' y1='176' x2='507' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='528' y1='176' x2='520' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='541' y1='176' x2='533' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='554' y1='176' x2='546' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='567' y1='176' x2='559' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='580' y1='176' x2='572' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='593' y1='176' x2='585' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='606' y1='176' x2='598' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='619' y1='176' x2='611' y2='185' stroke='#6B6B6B' stroke-width='1'/><line x1='632' y1='176' x2='624' y2='185' stroke='#6B6B6B' stroke-width='1'/><rect x='60' y='80' width='100' height='96' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='110.0' y='134.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>30 N</text><rect x='218' y='100' width='68' height='76' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='252.0' y='144.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>20 N</text><rect x='344' y='116' width='46' height='60' fill='white' stroke='#1A1A1A' stroke-width='2'/><text x='367.0' y='152.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='14' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>10 N</text><line x1='160' y1='142' x2='218' y2='142' stroke='#1A1A1A' stroke-width='2'/><text x='189.0' y='132.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='15' fill='#1F4E79' text-anchor='middle' font-weight='700' font-style='normal'>T\u2082</text><line x1='286' y1='142' x2='344' y2='142' stroke='#1A1A1A' stroke-width='2'/><text x='315.0' y='132.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='15' fill='#1F4E79' text-anchor='middle' font-weight='700' font-style='normal'>T\u2081</text><line x1='402' y1='146.0' x2='494' y2='146.0' stroke='#FF4D26' stroke-width='3.5' marker-end='url(#arA)'/><text x='502.0' y='152.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='17' fill='#FF4D26' text-anchor='start' font-weight='700' font-style='normal'>P</text></svg>"
+  },
+  {
+    "id": "p-ch04-s4-2-q002",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "The x component of vector is 8.7 units, and its y component is -6.5 units. The magnitude of is closest to",
+    "options": [
+      "11 units",
+      "9.9 units",
+      "12 units",
+      "7.9 units",
+      "8.9 units"
+    ],
+    "answer": 0,
+    "explanation": "Use the Pythagorean theorem: |A| = sqrt(8.7\u00b2 + (-6.5)\u00b2) = sqrt(117.94) \u2248 10.9 units, which rounds to 11 units.",
+    "feedback": {
+      "1": "9.9 units is too small. Square both components before adding them: 8.7\u00b2 + 6.5\u00b2 \u2248 117.9.",
+      "2": "12 units is too large. The square root of 117.94 is about 10.9, not 12.",
+      "3": "7.9 units is smaller than one component alone, so it cannot be the vector's magnitude.",
+      "4": "8.9 units is also smaller than the x component's magnitude. The total magnitude must exceed 8.7 units."
+    },
+    "sourceId": "ch04-s4.2-q002"
+  },
+  {
+    "id": "p-ch04-s4-2-q077",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "A 400-kg box is lifted vertically upward with constant velocity by means of two cables pulling at 40.0\u00b0 on either side of the vertical direction. What is the tension in each cable?",
+    "options": [
+      "231 N",
+      "2560 N",
+      "400 N",
+      "3920 N",
+      "800 N"
+    ],
+    "answer": 1,
+    "explanation": "Constant velocity means vertical forces balance: 2T cos 40.0\u00b0 = mg. With m = 400 kg, T = 3920 N / (2 cos 40.0\u00b0) \u2248 2560 N.",
+    "feedback": {
+      "0": "231 N is far too small. Each cable's vertical component must combine to support the 3920-N weight.",
+      "2": "400 N is the mass in kilograms, not a force in newtons. First find the weight, mg = 3920 N.",
+      "3": "3920 N is the total weight, not the tension in each cable. The two angled cables share the load and need extra tension because of the angle.",
+      "4": "800 N is much too small. Each cable needs a vertical component of 1960 N, so its full tension must be larger."
+    },
+    "sourceId": "ch04-s4.2-q077"
+  },
+  {
+    "id": "p-ch04-s4-2-q075",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "The figure shows a block of mass M hanging at rest. The light wire fastened to the wall is horizontal and has a tension of 38 N. The wire fastened to the ceiling is also very light, has a tension of 59N, and makes an angle \u03b8 with the ceiling. Find the angle \u03b8.",
+    "options": [
+      "33\u00b0",
+      "40\u00b0",
+      "50\u00b0",
+      "65\u00b0",
+      "45\u00b0"
+    ],
+    "answer": 2,
+    "explanation": "Horizontal forces balance, so the ceiling wire's horizontal component equals 38 N: 59 cos \u03b8 = 38. Thus \u03b8 = cos\u207b\u00b9(38/59) \u2248 50\u00b0.",
+    "feedback": {
+      "0": "33\u00b0 would make the horizontal component about 49 N, larger than the 38-N wall tension.",
+      "1": "40\u00b0 gives 59 cos 40\u00b0 \u2248 45 N, still larger than 38 N. The correct inverse cosine is about 50\u00b0.",
+      "3": "65\u00b0 gives a horizontal component near 25 N, too small to balance the 38-N wall tension.",
+      "4": "45\u00b0 gives 59 cos 45\u00b0 \u2248 42 N, not 38 N. The angle must be slightly larger, about 50\u00b0."
+    },
+    "sourceId": "ch04-s4.2-q075",
+    "figureAlt": "Diagram for p-ch04-s4-2-q075",
+    "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 560 400' role='img' aria-label='A block labelled M hangs at rest. A horizontal light wire runs from the block to a wall on the left with tension 38 newtons. A second light wire runs from the block up to the ceiling with tension 59 newtons, making an angle theta with the ceiling.'><rect width='560' height='400' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arA' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='60' y1='70.0' x2='530' y2='70.0' stroke='#1A1A1A' stroke-width='2.5'/><line x1='62' y1='70.0' x2='54' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='76' y1='70.0' x2='68' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='90' y1='70.0' x2='82' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='104' y1='70.0' x2='96' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='118' y1='70.0' x2='110' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='132' y1='70.0' x2='124' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='146' y1='70.0' x2='138' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='160' y1='70.0' x2='152' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='174' y1='70.0' x2='166' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='188' y1='70.0' x2='180' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='202' y1='70.0' x2='194' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='216' y1='70.0' x2='208' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='230' y1='70.0' x2='222' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='244' y1='70.0' x2='236' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='258' y1='70.0' x2='250' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='272' y1='70.0' x2='264' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='286' y1='70.0' x2='278' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='300' y1='70.0' x2='292' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='314' y1='70.0' x2='306' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='328' y1='70.0' x2='320' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='342' y1='70.0' x2='334' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='356' y1='70.0' x2='348' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='370' y1='70.0' x2='362' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='384' y1='70.0' x2='376' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='398' y1='70.0' x2='390' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='412' y1='70.0' x2='404' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='426' y1='70.0' x2='418' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='440' y1='70.0' x2='432' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='454' y1='70.0' x2='446' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='468' y1='70.0' x2='460' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='482' y1='70.0' x2='474' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='496' y1='70.0' x2='488' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='510' y1='70.0' x2='502' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='524' y1='70.0' x2='516' y2='61.0' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='100' x2='70.0' y2='360' stroke='#1A1A1A' stroke-width='2.5'/><line x1='70.0' y1='104' x2='61.0' y2='96' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='118' x2='61.0' y2='110' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='132' x2='61.0' y2='124' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='146' x2='61.0' y2='138' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='160' x2='61.0' y2='152' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='174' x2='61.0' y2='166' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='188' x2='61.0' y2='180' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='202' x2='61.0' y2='194' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='216' x2='61.0' y2='208' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='230' x2='61.0' y2='222' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='244' x2='61.0' y2='236' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='258' x2='61.0' y2='250' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='272' x2='61.0' y2='264' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='286' x2='61.0' y2='278' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='300' x2='61.0' y2='292' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='314' x2='61.0' y2='306' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='328' x2='61.0' y2='320' stroke='#6B6B6B' stroke-width='1'/><line x1='70.0' y1='342' x2='61.0' y2='334' stroke='#6B6B6B' stroke-width='1'/><text x='300.0' y='270.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='1' fill='#1A1A1A' text-anchor='start' font-weight='normal' font-style='normal'></text><circle cx='300.0' cy='266.0' r='3.5' fill='#1A1A1A'/><line x1='300.0' y1='266.0' x2='300.0' y2='300.0' stroke='#1F4E79' stroke-width='2.5'/><line x1='70.0' y1='266.0' x2='300.0' y2='266.0' stroke='#1F4E79' stroke-width='2.5'/><line x1='465.0' y1='70.0' x2='300.0' y2='266.0' stroke='#1F4E79' stroke-width='2.5'/><text x='185.0' y='254.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='15' fill='#1F4E79' text-anchor='middle' font-weight='700' font-style='normal'>38 N</text><text x='368.5' y='172.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='15' fill='#1F4E79' text-anchor='end' font-weight='700' font-style='normal'>59 N</text><path d='M 419.0 70.0 A 46 46 0 0 0 435.4 105.2' fill='none' stroke='#FF4D26' stroke-width='2.5'/><text x='409.0' y='90.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='17' fill='#FF4D26' text-anchor='end' font-weight='700' font-style='normal'>\u03b8</text><rect x='248.0' y='300.0' width='104' height='68' fill='white' stroke='#1A1A1A' stroke-width='2.5'/><text x='300.0' y='342.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='18' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>M</text></svg>"
+  },
+  {
+    "id": "p-ch04-s4-2-q028",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "The magnitude of is 5.5 m, and this vector lies in the second quadrant and makes an angle of 34\u00b0 with the +y-axis. The components of are closest to:",
+    "options": [
+      "Ax = -4.6 m, Ay = 3.1 m.",
+      "Ax = 4.6 m, Ay = -3.1 m.",
+      "Ax = 3.1 m, Ay = -4.6 m.",
+      "Ax = -3.1 m, Ay = 4.6 m.",
+      "Ax = -4.6 m, Ay = -3.1 m."
+    ],
+    "answer": 3,
+    "explanation": "The vector is in quadrant II, so Ax is negative and Ay is positive. With 34\u00b0 from +y, Ay = 5.5 cos 34\u00b0 \u2248 4.6 m and Ax = -5.5 sin 34\u00b0 \u2248 -3.1 m.",
+    "feedback": {
+      "0": "This swaps the sine and cosine components. The angle is measured from +y, so cosine gives the y component.",
+      "1": "Both signs are wrong for quadrant II. The x component must be negative and the y component positive.",
+      "2": "The x component should be negative, and the component magnitudes are swapped. Use sine for x and cosine for y.",
+      "4": "The y component should be positive in quadrant II, and 4.6 m belongs with Ay, not Ax."
+    },
+    "sourceId": "ch04-s4.2-q028"
+  },
+  {
+    "id": "p-ch04-s4-2-q093",
+    "skill": "equilibrium-and-connected-systems",
+    "chapter": 4,
+    "type": "mc",
+    "stem": "The figure shows a 100-kg block being released from rest from a height of 1.0 m. It then takes 0.53 s for it to reach the floor. What is the mass m of the block on the left? There is no friction or mass in the pulley, and the connecting rope is very light.",
+    "options": [
+      "14 kg",
+      "13 kg",
+      "11 kg",
+      "16 kg"
+    ],
+    "answer": 3,
+    "explanation": "From y = \u00bdat\u00b2, a = 2(1.0 m)/(0.53 s)\u00b2 \u2248 7.1 m/s\u00b2. For the Atwood system, a = (100 - m)g/(100 + m). Solving gives m \u2248 16 kg.",
+    "feedback": {
+      "0": "14 kg would make the acceleration slightly larger than the measured 7.1 m/s\u00b2. Use the fall time first, then the Atwood equation.",
+      "1": "13 kg is too light. It would make the mass difference larger and the 100-kg block accelerate faster than observed.",
+      "2": "11 kg would produce a substantially larger acceleration and a shorter fall time than 0.53 s."
+    },
+    "sourceId": "ch04-s4.2-q093",
+    "figure": "figures/ch04-s4.2-q093.png",
+    "figureAlt": "Question figure"
+  }
+]

@@ -1,0 +1,709 @@
+{
+  "mc": [
+    {
+      "id": "m-ch02-s2-2-q069",
+      "skill": "motion-diagram-interpretation",
+      "chapter": 2,
+      "type": "mc",
+      "stem": "Car A is traveling at 22.0 m/s and car B is traveling at 29.0 m/s. Car A is 300 m behind car B, when car A begins to speed up with a constant acceleration of 2.40 m/s\u00b2. For what time interval does car A accelerate until it reaches the same position as car B?",
+      "options": [
+        "19.0 s",
+        "12.6 s",
+        "5.50 s",
+        "316 s",
+        "Car A never reaches the same position as car B."
+      ],
+      "answer": 0,
+      "explanation": "Set the positions equal. Car A starts 300 m behind, so 22.0t + 1.2t\u00b2 = 29.0t + 300. Rearranged: 1.2t\u00b2 - 7.0t - 300 = 0. The positive root is t = [7.0 + sqrt(49 + 1440)] / 2.4 = 45.6 / 2.4 = 19.0 s.",
+      "feedback": {
+        "1": "12.6 s does not solve 1.2t\u00b2 - 7.0t - 300 = 0. Check the quadratic formula: the positive root uses plus the square root of 1489 in the numerator, giving 19.0 s.",
+        "2": "5.50 s is far too short to close a 300 m gap while gaining only 7.0 m/s at first. Substitute 5.50 s into both position expressions; car A is still well behind car B.",
+        "3": "316 s comes from treating the 300 m gap and the speeds inconsistently, for example dividing 300 m by roughly 1 m/s. The gap closes at an increasing rate because car A accelerates.",
+        "4": "Car A does reach car B. Its speed keeps growing past 29.0 m/s, so the gap eventually closes. Solving 1.2t\u00b2 - 7.0t - 300 = 0 gives a positive time of 19.0 s."
+      },
+      "sourceId": "ch02-s2.2-q069"
+    },
+    {
+      "id": "m-authored-ms-graph-zero-crossing",
+      "skill": "graphical-kinematics",
+      "chapter": 2,
+      "type": "multi-select",
+      "stem": "A velocity-versus-time graph for a cart crosses the time axis at one instant. Select TWO statements that must be true at that crossing.",
+      "options": [
+        "The cart must be back at its starting position at the crossing.",
+        "The cart is instantaneously at rest at the crossing.",
+        "The cart reverses its direction of motion if the velocity changes sign across the crossing.",
+        "The cart has zero acceleration at the crossing."
+      ],
+      "answer": [
+        1,
+        2
+      ],
+      "explanation": "A velocity value of zero means the cart is instantaneously at rest. If the sign of velocity changes from one side of the crossing to the other, the direction of motion reverses. Acceleration depends on the slope, not the value, and position depends on accumulated area.",
+      "feedback": {
+        "3": "Acceleration is the slope of a velocity-time graph. The graph can cross zero with a nonzero slope.",
+        "0": "Position is accumulated displacement, not the current velocity. The cart need not return to its starting position."
+      },
+      "sourceId": "authored-ms-graph-zero-crossing"
+    },
+    {
+      "id": "m-authored-ms-position-intersection",
+      "skill": "graphical-kinematics",
+      "chapter": 2,
+      "type": "multi-select",
+      "stem": "Two cyclists' position-versus-time graphs intersect at 8 s. Select TWO statements that must be true at that instant.",
+      "options": [
+        "Both cyclists must have zero acceleration at 8 s.",
+        "The cyclist with the steeper graph at 8 s has the greater velocity at that instant.",
+        "The cyclists have the same position at 8 s.",
+        "The cyclists necessarily have the same velocity at 8 s."
+      ],
+      "answer": [
+        1,
+        2
+      ],
+      "explanation": "An intersection on a position-time graph means the two objects are at the same position then. Velocity is the slope at that instant, so the steeper graph has the greater velocity. Equal position does not imply equal velocity or zero acceleration.",
+      "feedback": {
+        "3": "Velocity comes from the slope of the graph, not from whether the two position curves intersect.",
+        "0": "An intersection does not say either slope is changing. Acceleration is not determined by the crossing alone."
+      },
+      "sourceId": "authored-ms-position-intersection"
+    },
+    {
+      "id": "m-authored-ms-velocity-representations",
+      "skill": "vector-and-unit-reasoning",
+      "chapter": 2,
+      "type": "multi-select",
+      "stem": "Which entries can represent a velocity when a positive direction has been chosen? Select TWO answers.",
+      "options": [
+        "3.5 m/s at 40\u00b0 north of east",
+        "-4.2 m/s",
+        "9.8 m/s\u00b2 downward",
+        "26 km"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Velocity requires speed units and direction. A negative component gives direction relative to the chosen positive axis, and an angle can also specify direction. Acceleration units and distance units do not describe velocity.",
+      "feedback": {
+        "2": "The units are acceleration units, not velocity units.",
+        "3": "Kilometers measure distance or displacement magnitude, but this entry lacks the per-second rate required for velocity."
+      },
+      "sourceId": "authored-ms-velocity-representations"
+    },
+    {
+      "id": "m-ch02-s2-2-q058",
+      "skill": "kinematics-calculations",
+      "chapter": 2,
+      "type": "mc",
+      "stem": "Acceleration is sometimes expressed in multiples of g, where g = 9.8 m/s\u00b2 is the acceleration of an object in freefall near Earth's surface. In a car crash, the car's velocity may go from 29 m/s to 0 m/s in 0.15 s. What is the average acceleration of a passenger in this car, in terms of g?",
+      "options": [
+        "20 g",
+        "24 g",
+        "26 g",
+        "14 g"
+      ],
+      "answer": 0,
+      "explanation": "Average acceleration is the velocity change over time: a = (29 m/s - 0) / 0.15 s = 193 m/s\u00b2. Dividing by g = 9.8 m/s\u00b2 gives 193 / 9.8 = 19.7, which rounds to 20 g.",
+      "feedback": {
+        "1": "24 g comes from using about 0.12 s instead of the stated 0.15 s. Recompute 29 m/s divided by 0.15 s to get about 193 m/s\u00b2, then divide by 9.8 m/s\u00b2 to express the result in g.",
+        "2": "26 g is too large for the given numbers. Check the division 29 / 0.15 first; the average acceleration is about 193 m/s\u00b2, and 193 / 9.8 rounds to 20 g, not 26 g.",
+        "3": "14 g is too small. Dividing 29 m/s by 0.15 s gives about 193 m/s\u00b2, and 193 / 9.8 is about 20. A result of 14 g signals an arithmetic slip in one of those two divisions."
+      },
+      "sourceId": "ch02-s2.2-q058"
+    },
+    {
+      "id": "m-ch02-s2-1-q001",
+      "skill": "kinematics-calculations",
+      "chapter": 2,
+      "type": "mc",
+      "stem": "A bowling ball rolls over a smooth horizontal floor with constant velocity. Four students (Antonio, Bela, Charles, and Dominique) are presented with the measured position-versus-time data shown in the graphs below, and are asked to calculate the velocity of the ball. Each of the students takes a different approach, drawing a line in red on the data and calculating its slope. Which student's analysis will result in the most accurate calculation of the ball's velocity during the six-second time interval shown?",
+      "options": [
+        "Bela",
+        "Dominique",
+        "Antonio",
+        "Charles"
+      ],
+      "answer": 1,
+      "explanation": "Look at how each red line sits against the points. Dominique's line balances the data: some points lie above it and some below, so its slope averages all of the scatter. Antonio drew a line through only the first and last points, which leaves every other point below his line and makes his slope too steep. Bela forced the line through the origin, which the data do not support. Charles used only the earliest points. Dominique's line gives the best estimate of the velocity.",
+      "feedback": {
+        "0": "Bela's line is set by only a pair of points and ignores the rest of the data. The most accurate slope balances all of the measurements, which is what Dominique's best-fit line does.",
+        "2": "Antonio's line matches the data at one instant only. Velocity over the full six seconds comes from the slope of the line that best fits every data point, which is Dominique's line.",
+        "3": "Charles's line is skewed by forcing the graph through the origin instead of following the data. The best-fit line lets the data determine both the intercept and the slope, as Dominique's does."
+      },
+      "sourceId": "ch02-s2.1-q001",
+      "figureAlt": "Diagram for m-ch02-s2-1-q001",
+      "figureSvg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 672 502' role='img' aria-label='Four small position-versus-time graphs arranged in a two by two grid. Each panel shows the same seven measured data points with one student's candidate line drawn in red. The panels are labelled Antonio, Bela, Charles and Dominique.'><rect width='672' height='502' fill='white'/><defs><marker id='ar' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#1A1A1A'/></marker><marker id='arA' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='6' markerHeight='6' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#FF4D26'/></marker></defs><line x1='54' y1='220' x2='307.2' y2='220' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='54' y1='220' x2='54' y2='69.6' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='54.0' y1='220' x2='54.0' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='54.0' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>0</text><line x1='135.7' y1='220' x2='135.7' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='135.7' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>2</text><line x1='217.3' y1='220' x2='217.3' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='217.3' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>4</text><line x1='299.0' y1='220' x2='299.0' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='299.0' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>6</text><line x1='54' y1='220.0' x2='49' y2='220.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='223.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>0</text><line x1='54' y1='188.0' x2='49' y2='188.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='191.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>2</text><line x1='54' y1='156.0' x2='49' y2='156.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='159.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>4</text><line x1='54' y1='124.0' x2='49' y2='124.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='127.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>6</text><line x1='54' y1='92.0' x2='49' y2='92.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='95.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>8</text><text x='307.2' y='250.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='end' font-weight='normal' font-style='italic'>t (s)</text><text x='20.0' y='65.6' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='start' font-weight='normal' font-style='italic'>x (m)</text><circle cx='54.0' cy='180.0' r='3.4' fill='#1A1A1A'/><circle cx='94.8' cy='173.6' r='3.4' fill='#1A1A1A'/><circle cx='135.7' cy='152.8' r='3.4' fill='#1A1A1A'/><circle cx='176.5' cy='144.8' r='3.4' fill='#1A1A1A'/><circle cx='217.3' cy='122.4' r='3.4' fill='#1A1A1A'/><circle cx='258.2' cy='114.4' r='3.4' fill='#1A1A1A'/><circle cx='299.0' cy='84.0' r='3.4' fill='#1A1A1A'/><line x1='54.0' y1='180.0' x2='299.0' y2='84.0' stroke='#FF4D26' stroke-width='2.2'/><text x='176.5' y='264.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>Antonio</text><line x1='367' y1='220' x2='620.2' y2='220' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='367' y1='220' x2='367' y2='69.6' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='367.0' y1='220' x2='367.0' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='367.0' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>0</text><line x1='448.7' y1='220' x2='448.7' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='448.7' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>2</text><line x1='530.3' y1='220' x2='530.3' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='530.3' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>4</text><line x1='612.0' y1='220' x2='612.0' y2='225' stroke='#1A1A1A' stroke-width='1'/><text x='612.0' y='237.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>6</text><line x1='367' y1='220.0' x2='362' y2='220.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='223.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>0</text><line x1='367' y1='188.0' x2='362' y2='188.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='191.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>2</text><line x1='367' y1='156.0' x2='362' y2='156.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='159.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>4</text><line x1='367' y1='124.0' x2='362' y2='124.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='127.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>6</text><line x1='367' y1='92.0' x2='362' y2='92.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='95.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>8</text><text x='620.2' y='250.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='end' font-weight='normal' font-style='italic'>t (s)</text><text x='333.0' y='65.6' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='start' font-weight='normal' font-style='italic'>x (m)</text><circle cx='367.0' cy='180.0' r='3.4' fill='#1A1A1A'/><circle cx='407.8' cy='173.6' r='3.4' fill='#1A1A1A'/><circle cx='448.7' cy='152.8' r='3.4' fill='#1A1A1A'/><circle cx='489.5' cy='144.8' r='3.4' fill='#1A1A1A'/><circle cx='530.3' cy='122.4' r='3.4' fill='#1A1A1A'/><circle cx='571.2' cy='114.4' r='3.4' fill='#1A1A1A'/><circle cx='612.0' cy='84.0' r='3.4' fill='#1A1A1A'/><line x1='367.0' y1='220.0' x2='612.0' y2='84.0' stroke='#FF4D26' stroke-width='2.2'/><text x='489.5' y='264.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>Bela</text><line x1='54' y1='456' x2='307.2' y2='456' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='54' y1='456' x2='54' y2='305.6' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='54.0' y1='456' x2='54.0' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='54.0' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>0</text><line x1='135.7' y1='456' x2='135.7' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='135.7' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>2</text><line x1='217.3' y1='456' x2='217.3' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='217.3' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>4</text><line x1='299.0' y1='456' x2='299.0' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='299.0' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>6</text><line x1='54' y1='456.0' x2='49' y2='456.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='459.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>0</text><line x1='54' y1='424.0' x2='49' y2='424.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='427.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>2</text><line x1='54' y1='392.0' x2='49' y2='392.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='395.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>4</text><line x1='54' y1='360.0' x2='49' y2='360.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='363.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>6</text><line x1='54' y1='328.0' x2='49' y2='328.0' stroke='#1A1A1A' stroke-width='1'/><text x='46.0' y='331.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>8</text><text x='307.2' y='486.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='end' font-weight='normal' font-style='italic'>t (s)</text><text x='20.0' y='301.6' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='start' font-weight='normal' font-style='italic'>x (m)</text><circle cx='54.0' cy='416.0' r='3.4' fill='#1A1A1A'/><circle cx='94.8' cy='409.6' r='3.4' fill='#1A1A1A'/><circle cx='135.7' cy='388.8' r='3.4' fill='#1A1A1A'/><circle cx='176.5' cy='380.8' r='3.4' fill='#1A1A1A'/><circle cx='217.3' cy='358.4' r='3.4' fill='#1A1A1A'/><circle cx='258.2' cy='350.4' r='3.4' fill='#1A1A1A'/><circle cx='299.0' cy='320.0' r='3.4' fill='#1A1A1A'/><line x1='54.0' y1='416.0' x2='299.0' y2='377.6' stroke='#FF4D26' stroke-width='2.2'/><text x='176.5' y='500.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>Charles</text><line x1='367' y1='456' x2='620.2' y2='456' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='367' y1='456' x2='367' y2='305.6' stroke='#1A1A1A' stroke-width='1.2' marker-end='url(#ar)'/><line x1='367.0' y1='456' x2='367.0' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='367.0' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>0</text><line x1='448.7' y1='456' x2='448.7' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='448.7' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>2</text><line x1='530.3' y1='456' x2='530.3' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='530.3' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>4</text><line x1='612.0' y1='456' x2='612.0' y2='461' stroke='#1A1A1A' stroke-width='1'/><text x='612.0' y='473.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='middle' font-weight='normal' font-style='normal'>6</text><line x1='367' y1='456.0' x2='362' y2='456.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='459.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>0</text><line x1='367' y1='424.0' x2='362' y2='424.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='427.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>2</text><line x1='367' y1='392.0' x2='362' y2='392.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='395.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>4</text><line x1='367' y1='360.0' x2='362' y2='360.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='363.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>6</text><line x1='367' y1='328.0' x2='362' y2='328.0' stroke='#1A1A1A' stroke-width='1'/><text x='359.0' y='331.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='10' fill='#6B6B6B' text-anchor='end' font-weight='normal' font-style='normal'>8</text><text x='620.2' y='486.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='end' font-weight='normal' font-style='italic'>t (s)</text><text x='333.0' y='301.6' font-family='Inter,Arial,Helvetica,sans-serif' font-size='11' fill='#1A1A1A' text-anchor='start' font-weight='normal' font-style='italic'>x (m)</text><circle cx='367.0' cy='416.0' r='3.4' fill='#1A1A1A'/><circle cx='407.8' cy='409.6' r='3.4' fill='#1A1A1A'/><circle cx='448.7' cy='388.8' r='3.4' fill='#1A1A1A'/><circle cx='489.5' cy='380.8' r='3.4' fill='#1A1A1A'/><circle cx='530.3' cy='358.4' r='3.4' fill='#1A1A1A'/><circle cx='571.2' cy='350.4' r='3.4' fill='#1A1A1A'/><circle cx='612.0' cy='320.0' r='3.4' fill='#1A1A1A'/><line x1='367.0' y1='421.7' x2='612.0' y2='328.1' stroke='#FF4D26' stroke-width='2.2'/><text x='489.5' y='500.0' font-family='Inter,Arial,Helvetica,sans-serif' font-size='13' fill='#1A1A1A' text-anchor='middle' font-weight='700' font-style='normal'>Dominique</text></svg>"
+    },
+    {
+      "id": "m-ch03-s3-2-q018",
+      "skill": "force-diagram-reasoning",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "The figure shows an object's acceleration-versus-force graph. What is the mass of this object?",
+      "options": [
+        "1.6 g",
+        "400,000 g",
+        "2.5 g",
+        "630 g"
+      ],
+      "answer": 2,
+      "explanation": "Newton's second law gives m = F/a. Reading one point from the acceleration-versus-force line and dividing force by acceleration yields about 0.0025 kg, and 0.0025 kg = 2.5 g.",
+      "feedback": {
+        "0": "1.6 g results from flipping the ratio and computing a/F instead of F/a. Mass is the force divided by the acceleration at a point on the line, which gives about 0.0025 kg = 2.5 g.",
+        "1": "400,000 g is 400 kg, a unit conversion error. The ratio F/a is about 0.0025 kg; converting kilograms to grams moves the decimal three places to give 2.5 g, not six places.",
+        "3": "630 g does not match any F/a pair on the line. Pick one clear point on the graph, divide its force by its acceleration, and convert the result from kilograms to grams."
+      },
+      "sourceId": "ch03-s3.2-q018",
+      "figure": "figures/ch03-s3.2-q018.png",
+      "figureAlt": "Question figure"
+    },
+    {
+      "id": "m-forces-3-2-5",
+      "skill": "force-diagram-reasoning",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "The roller coaster car then passes through the bottom of a circular dip at constant speed. At the very bottom, the normal force from the seat on the rider is",
+      "options": [
+        "less than the weight",
+        "equal to the weight",
+        "zero, because at the bottom the rider briefly feels weightless",
+        "greater than the weight"
+      ],
+      "answer": 3,
+      "explanation": "At the bottom of the dip, the center of the circle is upward. The upward normal force must exceed the downward weight to provide upward centripetal acceleration.",
+      "feedback": {
+        "0": "A normal force smaller than the weight would leave a downward net force, but the center of the circle is upward at the bottom.",
+        "1": "Equal forces give zero net force. Circular motion at the bottom needs an upward net force.",
+        "2": "The rider does not feel weightless at the bottom. The seat pushes harder than usual to curve the rider upward."
+      },
+      "sourceId": "forces-3.2-5"
+    },
+    {
+      "id": "m-forces-3-3-5",
+      "skill": "force-diagram-reasoning",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A person pushes a heavy crate across the floor at constant velocity. How does the magnitude of the person's push compare with the kinetic friction on the crate?",
+      "options": [
+        "The push equals friction in magnitude",
+        "The push is zero once the crate is moving",
+        "The push is less than friction, because the crate is heavy",
+        "The push is greater than friction, because the crate is moving"
+      ],
+      "answer": 0,
+      "explanation": "Constant velocity means zero net force. The forward push and backward kinetic friction must have equal magnitudes.",
+      "feedback": {
+        "1": "Friction still acts while the crate slides. A balancing push is needed to keep the velocity constant.",
+        "2": "A smaller push would leave a backward net force and the crate would slow down, no matter how heavy it is.",
+        "3": "A larger push would make the crate speed up. Constant velocity requires the push and friction to balance."
+      },
+      "sourceId": "forces-3.3-5"
+    },
+    {
+      "id": "m-forces-3-4-8",
+      "skill": "newtons-third-law-pairs",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A rider on a rotating merry-go-round throws a ball straight toward the center of the ride. In the rider's rotating frame, the ball appears to curve. This curving is best explained by",
+      "options": [
+        "air resistance curving the ball as it moves across the ride",
+        "the Coriolis effect: the rotating frame turns beneath the ball, so its path looks curved to the rider; in an inertial frame the ball flies straight",
+        "a real sideways force acts on the ball once it leaves the rider's hand, steadily pushing it away from its straight path toward the center",
+        "gravity pulling the ball sideways as it crosses the ride"
+      ],
+      "answer": 1,
+      "explanation": "In an inertial frame the ball travels in a straight line at constant velocity once thrown. The curved appearance in the rotating frame is the Coriolis effect, a fictitious sideways force that appears only in rotating frames. No real sideways force acts on the ball.",
+      "feedback": {
+        "2": "Once the ball leaves the rider's hand, no object exerts a sideways contact force on it. The curved appearance comes from the rotating frame, not a real sideways push.",
+        "3": "Gravity pulls the ball downward, not sideways across the merry-go-round. It cannot explain the sideways curve in the rider's frame.",
+        "0": "Air resistance would oppose the ball's motion through the air. The described frame-dependent curve is explained by the rotating viewpoint, not drag."
+      },
+      "sourceId": "forces-3.4-8"
+    },
+    {
+      "id": "m-forces-3-4-2",
+      "skill": "newtons-third-law-pairs",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A mug sits on a car's dashboard. When the car suddenly accelerates forward, a passenger inside the car sees the mug slide backward. From the ground (an inertial frame), the best explanation is that",
+      "options": [
+        "a real backward force acts on the mug from the dashboard whenever the car speeds up, shoving it toward the back of the passenger compartment",
+        "the mug's weight pulls it toward the back of the accelerating car, dragging it off the dashboard",
+        "the mug keeps its original motion while the dashboard accelerates forward beneath it, and friction is too weak to drag it along",
+        "the air inside the car rushes toward the back when the car speeds up, pushing the mug along with it"
+      ],
+      "answer": 2,
+      "explanation": "In the ground frame, the mug tends to keep its original velocity. The dashboard accelerates forward beneath it, and friction is not strong enough to drag the mug along.",
+      "feedback": {
+        "0": "No real backward interaction appears in the ground frame. The mug's inertia explains the apparent backward slide.",
+        "1": "Weight acts downward, not toward the back of the car. It cannot pull the mug across the dashboard.",
+        "3": "The air is not the main cause. Even without a push from the air, the mug tends to stay behind as the car accelerates forward."
+      },
+      "sourceId": "forces-3.4-2"
+    },
+    {
+      "id": "m-forces-3-2-4",
+      "skill": "newtons-third-law-pairs",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A roller coaster car goes over a circular hill at constant speed. At the very top of the hill, how does the magnitude of the normal force from the seat on a rider compare with the rider's weight?",
+      "options": [
+        "Equal to the weight",
+        "Cannot be determined without knowing the speed",
+        "Greater than the weight",
+        "Less than the weight"
+      ],
+      "answer": 3,
+      "explanation": "At the top of the hill, the center of the circle is downward. Gravity supplies part of the needed inward force, so the seat's normal force is less than the rider's weight.",
+      "feedback": {
+        "0": "Equal normal and weight would give zero net force, but circular motion at the top requires a downward net force.",
+        "1": "The exact value needs speed, but the comparison does not. The normal force must be smaller than weight for a downward net force.",
+        "2": "A normal force greater than weight would make the net force upward, away from the circle's center at the top."
+      },
+      "sourceId": "forces-3.2-4"
+    },
+    {
+      "id": "m-forces-3-3-6",
+      "skill": "newtons-third-law-pairs",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "The same crate now accelerates across the floor. While it speeds up in the direction of the push, how do the push and kinetic friction compare?",
+      "options": [
+        "The push is greater than friction",
+        "The push is less than friction",
+        "The push equals friction",
+        "The friction is zero while the crate speeds up"
+      ],
+      "answer": 0,
+      "explanation": "Speeding up in the push direction means the net force points forward. The push must be larger than kinetic friction.",
+      "feedback": {
+        "1": "A smaller push would create a backward net force and slow the crate down.",
+        "2": "Equal forces give zero acceleration, which matches constant velocity, not speeding up.",
+        "3": "Kinetic friction still acts while the crate slides. The push simply has to exceed it."
+      },
+      "sourceId": "forces-3.3-6"
+    },
+    {
+      "id": "m-forces-3-3-12",
+      "skill": "qualitative-newton-second-law",
+      "chapter": 3,
+      "type": "multi-select",
+      "stem": "A box sits at rest on a rough horizontal floor. No one pushes it. Select TWO answers: which forces act on the box?",
+      "options": [
+        "Gravity pulling the box down",
+        "The normal force from the floor pushing up",
+        "A forward force in the direction the box might move",
+        "Static friction pushing the box backward"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Only actual interactions belong on the force list. The resting box feels gravity downward and the floor's normal force upward. With no push or tendency to slide, static friction is zero.",
+      "feedback": {
+        "2": "There is no force of motion. A force must come from another object, and nothing pushes the box forward.",
+        "3": "Static friction appears only when another force tries to make the box slide. With no push, friction is zero."
+      },
+      "sourceId": "forces-3.3-12"
+    },
+    {
+      "id": "m-forces-3-1-7",
+      "skill": "qualitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "Two spring scales are hooked together and pulled apart horizontally. Scale 1 reads 25 N. What does scale 2 read?",
+      "options": [
+        "50 N",
+        "12.5 N",
+        "25 N",
+        "0 N, because the forces cancel"
+      ],
+      "answer": 2,
+      "explanation": "The scales are in series, so the same 25-N tension passes through both. Each scale reads 25 N.",
+      "feedback": {
+        "0": "The tensions do not add inside a series connection. Each scale measures the same 25-N tension.",
+        "1": "The force is not split between the two readings. Each spring scale experiences the full tension.",
+        "3": "The pulls act on different objects at the ends of the rope, so they do not cancel the reading to zero."
+      },
+      "sourceId": "forces-3.1-7"
+    },
+    {
+      "id": "m-ch03-s3-1-q048",
+      "skill": "qualitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A person stands on a bathroom scale, which has a reading of 700 N when the person remains at rest. If the person stands on the scale in an elevator that is moving upward and slowing down, what would the scale read?",
+      "options": [
+        "700 N",
+        "more than 700 N",
+        "It could be more or less than 700 N, depending on whether the magnitude of the acceleration is greater than or less than 9.8 m/s\u00b2.",
+        "less than 700 N"
+      ],
+      "answer": 3,
+      "explanation": "Moving upward while slowing down means the acceleration points downward. Newton's second law gives mg - N = ma, so N = m(g - a), which is less than the 700 N weight. The scale reads less than 700 N.",
+      "feedback": {
+        "0": "700 N is the reading only when the elevator moves at constant velocity. Slowing down while rising means downward acceleration, so the scale must read less than the 700 N weight.",
+        "1": "More than 700 N happens when the elevator speeds up while moving upward. This elevator is slowing down, so the apparent weight drops below 700 N.",
+        "2": "The direction of the acceleration is fixed: upward motion that is slowing means acceleration points down, and any downward acceleration makes N = m(g - a) less than 700 N. The size of a does not change that conclusion."
+      },
+      "sourceId": "ch03-s3.1-q048"
+    },
+    {
+      "id": "m-forces-3-4-6",
+      "skill": "quantitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A rotating space station is designed to create artificial gravity for astronauts walking on its inner rim. Which statement describes the origin of the apparent weight?",
+      "options": [
+        "The rim pushes inward on the astronaut to keep them moving in a circle, and the astronaut's inertia makes that inward push feel like a floor",
+        "The station creates real gravity by spinning, the way a spinning planet would generate its own pull",
+        "The station's rotation flings the astronauts outward with a real centrifugal force, and that outward pull is what they feel as weight under their feet",
+        "The astronauts are in free fall along with the station, so they cannot have any apparent weight at all"
+      ],
+      "answer": 0,
+      "explanation": "The rim's inward normal force provides centripetal acceleration. The astronaut's inertia makes that inward support feel like a floor under their feet.",
+      "feedback": {
+        "1": "Spinning does not create real gravitational mass attraction. The apparent weight comes from the rim's inward contact force.",
+        "2": "Centrifugal force is not a real outward pull in the ground frame. The real force from the rim points inward.",
+        "3": "The astronaut is not freely falling around the rim. The rim continuously pushes inward to keep them moving in a circle."
+      },
+      "sourceId": "forces-3.4-6"
+    },
+    {
+      "id": "m-forces-3-1-5",
+      "skill": "quantitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A skydiver descends at constant velocity with an open parachute. How does the magnitude of the upward air resistance compare with the skydiver's weight?",
+      "options": [
+        "Air resistance is slightly more than the weight",
+        "Air resistance is equal to the weight",
+        "Air resistance is slightly less than the weight",
+        "Air resistance is zero once terminal velocity is reached"
+      ],
+      "answer": 1,
+      "explanation": "Constant velocity means zero net force. The upward air resistance must equal the skydiver's downward weight.",
+      "feedback": {
+        "0": "Greater air resistance would create an upward net force and slow the descent or move the skydiver upward.",
+        "2": "Less air resistance would leave a downward net force and the skydiver would speed up.",
+        "3": "Terminal velocity is maintained by air resistance. It does not disappear once the speed becomes constant."
+      },
+      "sourceId": "forces-3.1-5"
+    },
+    {
+      "id": "m-forces-3-2-9",
+      "skill": "quantitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A climber hangs motionless from a rope, and the rope at the harness reads 600 N. While the climber hangs at rest, the tension in the rope directly above the harness is",
+      "options": [
+        "300 N, because the climber's weight splits between the harness and the anchor",
+        "1200 N, because the harness below and the anchor above each supply 600 N to the same rope",
+        "600 N, because a rope in equilibrium carries the same tension throughout its length",
+        "0 N, because the climber is not moving, and a motionless rope carries no tension"
+      ],
+      "answer": 2,
+      "explanation": "A light rope in equilibrium carries the same tension throughout its length. The rope above the harness still reads 600 N.",
+      "feedback": {
+        "0": "The 600 N is not split between two rope segments. The same tension passes through the continuous rope.",
+        "1": "The harness and anchor do not add two separate 600-N tensions. Each point in the rope experiences the same 600-N pull.",
+        "3": "A motionless climber still has weight, and the rope must carry tension to support that weight."
+      },
+      "sourceId": "forces-3.2-9"
+    },
+    {
+      "id": "m-forces-3-1-9",
+      "skill": "quantitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A motionless sign hangs from two vertical ropes, one at each end. The sign weighs 30 N. What is the tension in each rope?",
+      "options": [
+        "0 N in each rope because the sign is not moving",
+        "60 N in each rope",
+        "30 N in each rope",
+        "15 N in each rope"
+      ],
+      "answer": 3,
+      "explanation": "The sign is in equilibrium, so the two vertical tensions add to the 30-N weight. Symmetric ropes share it equally: 15 N each.",
+      "feedback": {
+        "0": "The sign is supported, so the ropes must carry nonzero tension even though the sign is motionless.",
+        "1": "60 N each would support 120 N total, far more than the 30-N weight.",
+        "2": "30 N each would support 60 N total. The two ropes share the 30-N weight equally."
+      },
+      "sourceId": "forces-3.1-9"
+    },
+    {
+      "id": "m-forces-3-2-7",
+      "skill": "quantitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "A 0.5 kg ball hangs motionless from a vertical cable. What is the tension in the cable? Use g = 10 m/s\u00b2.",
+      "options": [
+        "5 N",
+        "2.5 N",
+        "10 N",
+        "0 N"
+      ],
+      "answer": 0,
+      "explanation": "The ball is in equilibrium, so tension equals weight: T = mg = 0.5 kg \u00d7 10 m/s\u00b2 = 5 N.",
+      "feedback": {
+        "1": "2.5 N is half the weight. A single vertical cable must support the full 5-N weight.",
+        "2": "10 N would be the weight of a 1-kg ball using g = 10 m/s\u00b2. This ball has mass 0.5 kg.",
+        "3": "A hanging motionless ball still has weight, so the cable must carry tension."
+      },
+      "sourceId": "forces-3.2-7"
+    },
+    {
+      "id": "m-forces-3-4-4",
+      "skill": "quantitative-newton-second-law",
+      "chapter": 3,
+      "type": "mc",
+      "stem": "Which of these observers is in an inertial reference frame?",
+      "options": [
+        "A person in a car that is speeding up",
+        "A person standing at rest on the ground",
+        "A person in a car that is turning a corner at constant speed",
+        "A person standing on a rotating merry-go-round"
+      ],
+      "answer": 1,
+      "explanation": "An inertial frame does not accelerate. A person at rest on the ground is the only observer here with no acceleration or rotation.",
+      "feedback": {
+        "0": "A speeding-up car accelerates, so it is a non-inertial frame.",
+        "2": "Turning at constant speed is still acceleration because the direction of velocity changes.",
+        "3": "A rotating merry-go-round involves centripetal acceleration, so it is non-inertial."
+      },
+      "sourceId": "forces-3.4-4"
+    },
+    {
+      "id": "m-ch04-s4-2-q017",
+      "skill": "incline-components-and-normal-force",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "When a rock rolled down a mountainside at 7.0 m/s, the horizontal component of its velocity vector was 1.8 m/s. What was the angle of the mountain surface with the horizontal?",
+      "options": [
+        "33\u00b0",
+        "15\u00b0",
+        "75\u00b0",
+        "57\u00b0"
+      ],
+      "answer": 2,
+      "explanation": "The horizontal component is v cos \u03b8, so cos \u03b8 = (1.8 m/s) / (7.0 m/s) = 0.257. Taking the inverse cosine gives \u03b8 = cos\u207b\u00b9(0.257) = 75\u00b0, the angle of the mountain surface with the horizontal.",
+      "feedback": {
+        "0": "33\u00b0 does not come from the component ratio. The horizontal component is v cos \u03b8, so divide 1.8 m/s by 7.0 m/s and take the inverse cosine, not another trigonometric function.",
+        "1": "15\u00b0 is sin\u207b\u00b9(1.8/7.0). That computes the angle from the vertical side. Since the horizontal component uses cosine, the correct step is cos\u207b\u00b9(1.8/7.0) = 75\u00b0.",
+        "3": "57\u00b0 is the complement of 33\u00b0, which signals sine and cosine were swapped. The horizontal component is adjacent over hypotenuse, so use cos \u03b8 = 1.8 / 7.0 to get 75\u00b0."
+      },
+      "sourceId": "ch04-s4.2-q017"
+    },
+    {
+      "id": "m-ch04-s4-2-q083",
+      "skill": "incline-components-and-normal-force",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "A 3.0-kg and a 5.0-kg box rest side-by-side on a smooth, level floor. A horizontal force of 32 N is applied to the 5.0-kg box pushing it against the 3.0-kg box, and, as a result, both boxes slide along the floor. How hard do the two boxes push against each other?",
+      "options": [
+        "20 N",
+        "24 N",
+        "32 N",
+        "12 N",
+        "0 N"
+      ],
+      "answer": 3,
+      "explanation": "Both boxes share one acceleration: a = 32 N / 8.0 kg = 4.0 m/s\u00b2. The contact force is what accelerates the 3.0-kg box, so F = (3.0 kg)(4.0 m/s\u00b2) = 12 N.",
+      "feedback": {
+        "0": "20 N is the force that would accelerate the 5.0-kg box at 4.0 m/s\u00b2, but the boxes push on the 3.0-kg box. Use its mass: 3.0 kg \u00d7 4.0 m/s\u00b2 = 12 N.",
+        "1": "24 N does not follow from Newton's second law for either box. The 3.0-kg box accelerates at 4.0 m/s\u00b2, so the contact force on it must be 12 N.",
+        "2": "32 N is the applied force on the whole two-box system, not the force across the contact. Only 12 N is needed to accelerate the 3.0-kg box at the shared 4.0 m/s\u00b2.",
+        "4": "The boxes move together and touch, so they must push on each other. A zero contact force would leave the 3.0-kg box with nothing to accelerate it."
+      },
+      "sourceId": "ch04-s4.2-q083"
+    },
+    {
+      "id": "m-ch04-s4-2-q082",
+      "skill": "incline-components-and-normal-force",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "A 3.0-kg and a 5.0-kg box rest side-by-side on a perfectly smooth, level floor. A horizontal force of 32 N is applied to the 3.0-kg box pushing it against the 5.0-kg box, and, as a result, both boxes slide along the floor. How hard do the two boxes push against each other?",
+      "options": [
+        "24 N",
+        "12 N",
+        "32 N",
+        "0 N",
+        "20 N"
+      ],
+      "answer": 4,
+      "explanation": "Both boxes share one acceleration: a = 32 N / 8.0 kg = 4.0 m/s\u00b2. The contact force accelerates the 5.0-kg box, so F = (5.0 kg)(4.0 m/s\u00b2) = 20 N.",
+      "feedback": {
+        "0": "24 N does not come from F = ma for either box. The box being pushed is the 5.0-kg box, which needs 5.0 kg \u00d7 4.0 m/s\u00b2 = 20 N to keep up.",
+        "1": "12 N would be right if the 3.0-kg box were the one being pushed, as in a mirrored problem. Here the 5.0-kg box receives the push, so the contact force is 5.0 kg \u00d7 4.0 m/s\u00b2 = 20 N.",
+        "2": "32 N is the applied force on the combined 8.0 kg, not the force across the contact. The 5.0-kg box only needs 20 N to accelerate at the shared 4.0 m/s\u00b2.",
+        "3": "Zero contact force would leave the 5.0-kg box unaccelerated while the 3.0-kg box speeds away, so they could not move together. The contact must supply 20 N."
+      },
+      "sourceId": "ch04-s4.2-q082"
+    },
+    {
+      "id": "m-ch04-s4-1-q042",
+      "skill": "incline-components-and-normal-force",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "Two objects have masses m and 5 m. They both are placed side by side on a frictionless inclined ramp and allowed to slide down from rest without any air resistance. Which one of the following statements about these objects is correct?",
+      "options": [
+        "The two objects reach the bottom of the ramp at precisely the same time.",
+        "It takes the heavier object 10 times longer to reach the bottom of the ramp than the lighter.",
+        "It takes the lighter object 10 times longer to reach the bottom of the ramp than the heavier.",
+        "It takes the heavier object 5 times longer to reach the bottom of the ramp than the lighter.",
+        "It takes the lighter object 5 times longer to reach the bottom of the ramp than the heavier."
+      ],
+      "answer": 0,
+      "explanation": "On a frictionless ramp, Newton's second law along the incline gives a = g sin \u03b8, with mass canceled out. Both objects have identical accelerations from rest over the same distance, so they reach the bottom at precisely the same time.",
+      "feedback": {
+        "1": "The 10:1 ratio assumes acceleration grows with mass. On a frictionless ramp a = g sin \u03b8 contains no mass, so the heavier object does not lag; both arrive together.",
+        "2": "The lighter object is not slower. With no friction, a = g sin \u03b8 is the same for both, and equal accelerations from rest over the same ramp give equal times.",
+        "3": "Mass cancels in a = g sin \u03b8, so a 5:1 mass ratio does not become a 5:1 time ratio. The heavier object accelerates identically and arrives at the same time.",
+        "4": "There is no factor of 5 anywhere in the motion: acceleration on a frictionless incline is g sin \u03b8, independent of mass. Both objects take the same time to reach the bottom."
+      },
+      "sourceId": "ch04-s4.1-q042"
+    },
+    {
+      "id": "m-ch04-s4-2-q080",
+      "skill": "equilibrium-and-connected-systems",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "A load is being lifted vertically upward by means of two cables attached to it. The first cable exerts a force of 600 N at an angle of 35.0\u00b0 to the left of the vertical. The second cable exerts a force of 1300 N. At what angle to the right of the vertical is the second cable pulling?",
+      "options": [
+        "30.8\u00b0",
+        "15.4\u00b0",
+        "67.8\u00b0",
+        "75.8\u00b0",
+        "16.2\u00b0"
+      ],
+      "answer": 1,
+      "explanation": "For the load to accelerate straight up, the horizontal components must cancel: 1300 sin \u03b8 = 600 sin 35.0\u00b0 = 344 N. So sin \u03b8 = 344 / 1300 = 0.265, giving \u03b8 = sin\u207b\u00b9(0.265) = 15.4\u00b0 to the right of vertical.",
+      "feedback": {
+        "0": "30.8\u00b0 is roughly double the correct angle. Recheck the equation: the east-west balance is 1300 sin \u03b8 = 600 sin 35.0\u00b0, which gives sin \u03b8 = 0.265, not about 0.5.",
+        "2": "67.8\u00b0 comes from setting the vertical components equal with cosines. The cable angle controls the east-west balance, so match horizontal components: 1300 sin \u03b8 = 600 sin 35.0\u00b0.",
+        "3": "75.8\u00b0 does not satisfy the horizontal balance equation. Substitute it back: 1300 sin 75.8\u00b0 far exceeds 600 sin 35.0\u00b0, so the load would accelerate sideways.",
+        "4": "16.2\u00b0 comes from rounding sin 35.0\u00b0 too early or too coarsely. Keep sin 35.0\u00b0 = 0.5736, giving sin \u03b8 = (600)(0.5736) / 1300 = 0.2647 and \u03b8 = 15.4\u00b0."
+      },
+      "sourceId": "ch04-s4.2-q080"
+    },
+    {
+      "id": "m-ch04-s4-1-q036",
+      "skill": "equilibrium-and-connected-systems",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "A push of magnitude P acts on a box of mass m as shown in the figure. The push is directed at an angle \u03b8 below the horizontal, and the box remains a rest. The box rests on a horizontal surface, with which the box has some nonzero coefficient of friction. The friction force on the box due to the floor is equal to",
+      "options": [
+        "P cos \u03b8 + mg",
+        "P + mg",
+        "P cos \u03b8",
+        "P sin \u03b8",
+        "0"
+      ],
+      "answer": 2,
+      "explanation": "The box is at rest, so horizontal forces balance. The push has horizontal component P cos \u03b8, and static friction must match it exactly. Friction equals P cos \u03b8; P sin \u03b8 only adds to the downward load on the floor.",
+      "feedback": {
+        "0": "P cos \u03b8 + mg adds the weight to the friction term. Friction is a horizontal force here; the vertical forces (normal, mg, and P sin \u03b8) have their own balance, separate from the horizontal one.",
+        "1": "P + mg ignores the angle entirely. Only the horizontal component of the push needs balancing, and friction equals that component, P cos \u03b8, not the full push plus weight.",
+        "3": "P sin \u03b8 is the vertical component of the push, which presses the box into the floor. The horizontal component P cos \u03b8 is what friction must oppose.",
+        "4": "Zero friction would leave a net horizontal force P cos \u03b8, and the box could not stay at rest. Since it remains at rest, friction must exactly cancel P cos \u03b8."
+      },
+      "sourceId": "ch04-s4.1-q036",
+      "figure": "figures/ch04-s4.1-q036.png",
+      "figureAlt": "Question figure"
+    },
+    {
+      "id": "m-ch04-s4-2-q069",
+      "skill": "equilibrium-and-connected-systems",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "A 1000-kg barge is being towed by means of two horizontal cables. One cable is pulling with a force of 80.0 N in a direction 30.0\u00b0 west of north. In what direction should the second cable pull so that the barge will accelerate due northward, if the force exerted by the cable is 120 N? Assume that the water exerts no appreciable frictional drag on the barge.",
+      "options": [
+        "21.1\u00b0 east of north",
+        "47.5\u00b0 east of north",
+        "54.7\u00b0 east of north",
+        "19.5\u00b0 east of north",
+        "39.0\u00b0 east of north"
+      ],
+      "answer": 3,
+      "explanation": "For the barge to accelerate due north, the east-west components must cancel. The first cable pulls 80.0 N west of north, so its westward piece is 80.0 sin 30.0\u00b0 = 40.0 N. The second cable must balance with 120 sin \u03b8 = 40.0 N, giving \u03b8 = sin\u207b\u00b9(40.0/120) = 19.5\u00b0 east of north.",
+      "feedback": {
+        "0": "21.1\u00b0 does not satisfy the component balance. Check the westward piece of the first cable: 80.0 sin 30.0\u00b0 = 40.0 N, so the second cable needs sin \u03b8 = 40.0 / 120, which gives 19.5\u00b0.",
+        "1": "47.5\u00b0 overestimates the angle badly. Recompute the component of the 80.0 N cable that points west: 80.0 sin 30.0\u00b0 = 40.0 N, so the 120 N cable only needs a small angle to match it.",
+        "2": "54.7\u00b0 would make the eastward component of the second cable far exceed the westward component of the first. Set 120 sin \u03b8 = 80.0 sin 30.0\u00b0 = 40.0 N and solve for \u03b8.",
+        "4": "39.0\u00b0 looks like the 80.0 N cable's own east-west component misread as an angle. The angle you need belongs to the 120 N cable: sin \u03b8 = 40.0 / 120 = 0.333, so \u03b8 = 19.5\u00b0."
+      },
+      "sourceId": "ch04-s4.2-q069"
+    },
+    {
+      "id": "m-ch04-s4-1-q026",
+      "skill": "equilibrium-and-connected-systems",
+      "chapter": 4,
+      "type": "mc",
+      "stem": "James and John dive from an overhang into the lake below. James simply drops straight down from the edge. John takes a running start and jumps with an initial horizontal velocity of 12 m/s. If there is no air resistance, when they reach the lake below",
+      "options": [
+        "they will both have the same speed.",
+        "the speed of James must be 9.8 m/s larger than that of John.",
+        "the speed of John must be 12 m/s larger than that of James.",
+        "the speed of James is larger than that of John.",
+        "the speed of John is larger than that of James."
+      ],
+      "answer": 4,
+      "explanation": "Both divers fall for the same time, so both gain the same vertical speed from gravity. John also keeps his 12 m/s horizontal velocity, so by the Pythagorean theorem his total speed is larger than James's purely vertical speed.",
+      "feedback": {
+        "0": "Same speed would require John's horizontal velocity to vanish. Nothing removes it; he keeps 12 m/s horizontally and adds vertical speed, so his total speed must exceed James's.",
+        "1": "The 9.8 m/s\u00b2 is an acceleration, not a fixed speed difference. Both divers gain vertical speed at the same rate, so the gap in vertical speeds stays zero; only John's extra horizontal speed separates them.",
+        "2": "12 m/s is the horizontal velocity, not a speed difference at the lake. Use the Pythagorean theorem: John's speed is sqrt(vx\u00b2 + vy\u00b2), which exceeds vy alone but not by a flat 12 m/s.",
+        "3": "James drops straight down with no horizontal velocity, while John keeps 12 m/s horizontally. Adding a horizontal piece to the same vertical speed can only make John's total speed larger, not James's."
+      },
+      "sourceId": "ch04-s4.1-q026"
+    }
+  ],
+  "frq": {
+    "prompt": "A worker pulls an 8.0-kg equipment case up a smooth loading ramp inclined at 25\u00b0 above horizontal. The strap is parallel to the ramp and exerts a steady 55-N pull on the case. While the strap remains attached, the case moves up the ramp.",
+    "parts": [
+      {
+        "label": "A",
+        "prompt": "Sketch the forces acting on the case while the strap is pulling it uphill. Begin every arrow at one dot, use lengths consistent with the motion, and identify which outside object exerts each force.",
+        "checklist": [
+          "Includes Earth, ramp, and strap as the three force-exerting objects with correct directions.",
+          "Arrow lengths show the strap force larger than the ramp-parallel component of gravity."
+        ]
+      },
+      {
+        "label": "B",
+        "prompt": "Determine how hard the ramp surface pushes on the case. Show your work.",
+        "checklist": [
+          "Uses the component of weight perpendicular to the ramp.",
+          "Obtains approximately 71 N with units and reasonable rounding."
+        ]
+      },
+      {
+        "label": "C",
+        "prompt": "Find the case's acceleration while the strap is pulling it uphill. Show your work.",
+        "checklist": [
+          "Subtracts the ramp-parallel component of weight from the 55-N strap force.",
+          "Divides the net force by 8.0 kg to obtain approximately 2.7 m/s\u00b2."
+        ]
+      },
+      {
+        "label": "D",
+        "prompt": "The strap snaps when the case has uphill speed 2.4 m/s. (i) How much farther uphill does it travel before stopping momentarily? (ii) After that instant, does it stay put or move back downhill? Explain without another calculation.",
+        "checklist": [
+          "Uses the downslope acceleration after the break to find approximately 0.70 m.",
+          "States it slides back because the ramp-parallel component of gravity remains unbalanced."
+        ]
+      },
+      {
+        "label": "E",
+        "prompt": "Repeat the strap-snap event on a ramp with noticeable friction. Without computing a coefficient, state whether the uphill coasting distance increases, decreases, or stays the same, and support the claim with force reasoning.",
+        "checklist": [
+          "States the distance is shorter than in the smooth-ramp case.",
+          "Explains that friction acts down the ramp while the case slides up, adding to the downslope net force."
+        ]
+      }
+    ]
+  }
+}

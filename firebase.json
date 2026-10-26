@@ -196,6 +196,14 @@
         "destination": "/rubbing-balloons.html"
       },
       {
+        "source": "/ap1-q1-review",
+        "destination": "/ap1-q1-review/index.html"
+      },
+      {
+        "source": "/ap1-q1-review/",
+        "destination": "/ap1-q1-review/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "motion-diagram-interpretation",
+    "label": "Motion Descriptions and Diagrams",
+    "chapter": "Ch2",
+    "description": "Connect dot spacing, velocity changes, and acceleration direction; compare each interval before deciding how an object moves.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students treat equal spacing as 'constant speed' even when direction changes, or infer acceleration direction from velocity direction rather than from the change in spacing between successive dots."
+  },
+  {
+    "id": "graphical-kinematics",
+    "label": "Interpreting Kinematics Graphs",
+    "chapter": "Ch2",
+    "description": "Distinguish what the graph's axes represent; connect slope to the derived quantity and height to the state quantity; for direction changes require sign comparison across the zero crossing.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students conflate slope and value on v-t and x-t graphs (e.g., reading a v-t graph's height as position, or claiming 'changing direction' whenever the v-t curve crosses zero without checking sign before and after)."
+  },
+  {
+    "id": "vector-and-unit-reasoning",
+    "label": "Vectors, Signs, and Units",
+    "chapter": "Ch2",
+    "description": "Separate magnitude-units from direction requirements; verify that a negative sign encodes direction relative to a chosen positive axis, not a 'smaller' quantity.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students treat units alone as sufficient to classify a quantity (e.g., 'm/s downward' is a velocity but '9.8 m/s² downward' is not), or ignore that a signed scalar component (e.g., −120 m/s) is a valid velocity representation."
+  },
+  {
+    "id": "kinematics-calculations",
+    "label": "Kinematics Calculations",
+    "chapter": "Ch2",
+    "description": "Require time-weighted averaging for multi-leg trips; force explicit listing of knowns before equation selection; check that the chosen equation contains the target variable and only knowns.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students average speeds arithmetically over unequal-time legs, or reach for Δx = ½at² without accounting for nonzero initial velocity; sign errors also appear when direction reverses."
+  },
+  {
+    "id": "force-diagram-reasoning",
+    "label": "Force Diagrams and Net Force",
+    "chapter": "Ch3",
+    "description": "Require every force to be identified by an external object; net force direction must come from vector sum, not from velocity; constant velocity means zero net force regardless of speed.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students draw forces in the direction of motion, add a separate 'force of motion,' or believe constant velocity requires a net force in the direction of travel."
+  },
+  {
+    "id": "newtons-third-law-pairs",
+    "label": "Newton's Third Law Pairs",
+    "chapter": "Ch3",
+    "description": "Apply the two-object test: each pair member acts on a different object, same interaction, equal magnitude, opposite direction; mass and acceleration do not modify pair magnitudes.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students select a same-object partner force (e.g., normal force as the pair to gravity on a table) or reason that the larger/faster object exerts more force; pairs must act on different objects with equal magnitude regardless of motion outcome."
+  },
+  {
+    "id": "qualitative-newton-second-law",
+    "label": "Qualitative Newton's Second Law",
+    "chapter": "Ch3",
+    "description": "Separate acceleration (from net force) from velocity (from prior state); zero net force preserves whatever velocity exists; a shrinking net force shrinks acceleration, not speed.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students believe zero net force means the object stops (rather than continues at constant velocity), or that a decreasing net force means decreasing speed rather than decreasing acceleration; direction of acceleration is conflated with direction of velocity."
+  },
+  {
+    "id": "quantitative-newton-second-law",
+    "label": "Newton's Second Law Calculations",
+    "chapter": "Ch3",
+    "description": "Require a defined system before writing ΣF = ma; distinguish mass (inertia, kg) from weight (gravitational force, N); for two-body systems identify which object's forces belong in the equation.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students divide force by acceleration incorrectly (or invert), assume gravitational force changes when the same block moves to the Moon (mass vs. weight confusion), or apply F=ma to a multi-object system while ignoring internal forces."
+  },
+  {
+    "id": "incline-components-and-normal-force",
+    "label": "Vector Components and Normal Force",
+    "chapter": "Ch4",
+    "description": "Choose useful axes, resolve vectors into components, and connect the perpendicular component of weight to the normal force on a surface.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students set the normal force equal to mg on every surface, swap the sin and cos assignments for the parallel and perpendicular components, or believe the normal force is a fixed reaction to weight independent of surface orientation."
+  },
+  {
+    "id": "equilibrium-and-connected-systems",
+    "label": "2-D Equilibrium and Connected Systems",
+    "chapter": "Ch4",
+    "description": "Force component decomposition along chosen axes before summing; tension transmits the interaction but each body gets its own ΣF = ma; connected systems share one acceleration magnitude.",
+    "practiceTarget": 8,
+    "commonMisconception": "Students sum force magnitudes directly without components (e.g., treating 60 N + 75 N as the missing force), assume tension is the same in non-ideal rope segments with different geometry, or ignore that connected bodies share acceleration but not force."
+  }
+]

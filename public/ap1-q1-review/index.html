@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AP Physics 1 Q1 Review</title>
+  <meta name="description" content="AP Physics 1 Q1 review: skill practice drills and a mock quarterly exam.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚡%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#view">Skip to content</a>
+
+  <header class="topbar" role="banner">
+    <div class="topbar-inner">
+      <a class="brand" href="#/">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span class="brand-text">AP Physics 1 Q1 Review</span>
+      </a>
+      <span class="brand-teacher">Mr. Porter</span>
+      <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
+    </div>
+  </header>
+
+  <div id="standalone-notice" class="standalone-notice" hidden>
+    <span>Standalone mode. Open through Porter&rsquo;s Portal to save progress.</span>
+    <button type="button" id="dismiss-standalone" class="standalone-dismiss" aria-label="Dismiss notice">&times;</button>
+  </div>
+
+  <main id="view" tabindex="-1" aria-live="polite"></main>
+
+  <div id="error-state" class="error-state" role="alert" hidden>
+    <h2>Something went wrong</h2>
+    <p id="error-message">The review content could not be loaded.</p>
+    <button type="button" id="error-retry" class="btn btn-primary">Try again</button>
+  </div>
+
+  <script src="../portalBridge.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

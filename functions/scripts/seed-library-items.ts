@@ -156,6 +156,17 @@ const SEED_ITEMS: SeedItem[] = [
     suggestedCategory: 'Lab',
     sourceFingerprint: '/rubbing-balloons.html',
   },
+  {
+    title: 'AP Physics 1 Q1 Review',
+    description: 'Quarter 1 review for AP Physics 1, covering Chapters 2 through 4 (kinematics, forces, Newton\'s laws, and vectors). Ten skills each get eight practice questions with instant per-distractor feedback, common-misconception notes, and mastery tracking. Ends with a fresh 30-question multiple-choice mock quarterly plus a five-part free response that students self-score against a checklist. Questions are new versions, not the quarter exam.',
+    url: '/ap1-q1-review/',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'AP Physics 1',
+    tags: ['ap-physics-1', 'quarter-review', 'kinematics', 'forces', 'newtons-laws', 'vectors', 'practice', 'mock-exam'],
+    suggestedCategory: 'Practice',
+    sourceFingerprint: '/ap1-q1-review/',
+  },
 ];
 
 async function main() {
