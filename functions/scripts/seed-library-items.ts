@@ -128,6 +128,17 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/evidence-types/index.html',
   },
   {
+    title: 'The 7 S\'s of Crime Scene Processing',
+    description: 'Reference walkthrough of the seven S\'s of crime scene investigation: securing the scene, separating witnesses, scanning, seeing, sketching, searching, and securing evidence. Use it when you need the order of steps before you start a scene or a sketch.',
+    url: '/seven-s/',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: ['forensic-science', 'crime-scene', 'seven-s', 'procedure', 'quarter-review', 'bilingual'],
+    suggestedCategory: 'Supplemental',
+    sourceFingerprint: '/seven-s/',
+  },
+  {
     title: 'Power Line Lab: AC & DC in a Transmission Wire',
     description: 'Discovery simulation for OpenSciEd P.1 Lesson 6. Students explore how electrons move through a transmission wire with battery (DC) and generator (AC) sources, vary the wire material, diameter, length, and ambient temperature (down to absolute zero), record observations in an evidence journal, and write a mechanistic hypothesis. Print-ready export of journal + hypothesis. Bilingual EN/ES.',
     url: '/power-line-lab',
