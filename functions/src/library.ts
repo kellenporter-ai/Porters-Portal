@@ -196,7 +196,11 @@ export const scanLibraryItems = onCall({ memory: "256MiB", timeoutSeconds: 60 },
   const existingSnap = await db.collection("library_items").get();
   const known = new Set(existingSnap.docs.map((d) => {
     const fp = d.data().sourceFingerprint;
-    return typeof fp === "string" ? fp : d.id;
+    const key = typeof fp === "string" ? fp : d.id;
+    // Directory pages are fingerprinted `/x/index.html` (normalized above), but
+    // older scans registered them as `/x/`. Treat the trailing-slash form as the
+    // same item so a page cannot acquire a second, untagged card.
+    return key.endsWith("/index.html") ? key.slice(0, -"index.html".length) : key;
   }));
 
   let batch = db.batch();
@@ -209,6 +213,15 @@ export const scanLibraryItems = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     if (known.has(item.sourceFingerprint)) {
       alreadyKnown++;
       continue;
+    }
+    // A directory page whose legacy `/x/` fingerprint already exists is the same
+    // card, not a new one — register it so a re-scan cannot re-add it.
+    if (item.sourceFingerprint.endsWith("/index.html")) {
+      const legacyKey = item.sourceFingerprint.slice(0, -"index.html".length);
+      if (known.has(legacyKey)) {
+        alreadyKnown++;
+        continue;
+      }
     }
     const ref = db.collection("library_items").doc(); // auto-ID (hotspot-safe)
     // Merge-only stub fields: a concurrent scan that lost the fingerprint

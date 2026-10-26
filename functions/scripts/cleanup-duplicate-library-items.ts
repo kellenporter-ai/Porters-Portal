@@ -29,9 +29,16 @@ async function main() {
       .map((d) => String(d.data.sourceFingerprint ?? ''))
   );
 
+  // A doc counts as a duplicate when it is an untagged stub whose path form
+  // differs from a curated doc for the same page: `/x/` vs `/x/index.html`
+  // (directory pages) or `/x.html` vs `/x` (clean-URL pages).
   const duplicates = docs.filter((d) => {
+    if (d.data.untagged !== true) return false;
     const fp = String(d.data.sourceFingerprint ?? '');
-    return d.data.untagged === true && fp.endsWith('/') && curatedFps.has(`${fp}index.html`);
+    if (fp.endsWith('/') && curatedFps.has(`${fp}index.html`)) return true;
+    if (fp.endsWith('.html') && curatedFps.has(fp.slice(0, -'.html'.length))) return true;
+    if (curatedFps.has(`${fp}.html`)) return true;
+    return false;
   });
 
   for (const d of duplicates) {
