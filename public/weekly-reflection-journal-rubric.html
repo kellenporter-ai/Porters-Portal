@@ -434,9 +434,9 @@ var GISTS = {
       "Name what is unclear and why it matters"
     ],
     cells: {
-      q1: ["Nothing submitted.", "Names a topic but adds no description.", "Names a real idea, describes it too generally.", "Names a specific idea and describes it in own words.", "Explains with a detail or example anyone can follow."],
-      q2: ["Nothing submitted.", "Repeats the answer without naming how it was learned.", "Names an activity but not how it helped.", "Names an activity and connects it to understanding.", "Explains why that way of learning worked."],
-      q3: ["Nothing submitted.", "Says \"nothing\" or \"I don't know\" with no idea.", "Names a real question but not why it matters.", "Names a specific question and says why it matters.", "Explains why it matters and proposes a next step."]
+      q1: ["Nothing submitted.", "Writes something, but it adds no idea.", "Names the topic or activity, but does not explain it.", "Names a specific idea and describes it in own words.", "Explains with a detail or example anyone can follow."],
+      q2: ["Nothing submitted.", "Writes something, but it adds no idea about how.", "Names the activity, but does not say how it helped.", "Names an activity and connects it to understanding.", "Explains why that way of learning worked."],
+      q3: ["Nothing submitted.", "Says \"nothing\" or \"I don't know\" with no idea.", "Names what is unclear, but not what part or why.", "Names a specific question and says why it matters.", "Explains why it matters and proposes a next step."]
     }
   },
   es: {
@@ -446,9 +446,9 @@ var GISTS = {
       "Nombra tu duda y explica por qué importa"
     ],
     cells: {
-      q1: ["No se entregó nada.", "Nombra un tema pero no agrega descripción.", "Nombra una idea real, la describe muy general.", "Nombra una idea específica y la describe con sus palabras.", "Explica con un detalle o ejemplo que cualquiera entiende."],
-      q2: ["No se entregó nada.", "Repite la respuesta sin decir cómo se aprendió.", "Nombra una actividad pero no cómo ayudó.", "Conecta la actividad con cómo entendió la idea.", "Explica por qué esa forma de aprender funcionó."],
-      q3: ["No se entregó nada.", "Dice \"nada\" o \"no sé\" sin agregar una idea.", "Nombra una pregunta real pero no por qué importa.", "Nombra una pregunta específica y dice por qué importa.", "Explica por qué importa y propone un próximo paso."]
+      q1: ["No se entregó nada.", "Escribe algo, pero no agrega una idea.", "Nombra el tema o la actividad, pero no lo explica.", "Nombra una idea específica y la describe con sus palabras.", "Explica con un detalle o ejemplo que cualquiera entiende."],
+      q2: ["No se entregó nada.", "Escribe algo, pero no agrega una idea de cómo.", "Nombra la actividad, pero no dice cómo ayudó.", "Conecta la actividad con cómo entendió la idea.", "Explica por qué esa forma de aprender funcionó."],
+      q3: ["No se entregó nada.", "Dice \"nada\" o \"no sé\" sin agregar una idea.", "Nombra lo que no está claro, pero no qué parte ni por qué.", "Nombra una pregunta específica y dice por qué importa.", "Explica por qué importa y propone un próximo paso."]
     }
   }
 };
@@ -475,7 +475,7 @@ var EXPLAINER = {
       { lead: "A missing day with no note counts as a weak day.",
         text: "An in-school day with no entry and no absence note counts against you. It pulls each skill's grade down. The easy fix: write the absence note." },
       { lead: "Grace floor + resubmits.",
-        text: "Any skill with at least one genuine attempt earns at least Emerging. You can resubmit your journal to raise your grades. The goal is Developing on every skill." }
+        text: "Any skill where you wrote something real all week earns at least 55%. You can resubmit your journal to raise your grades. If your weakest day is dragging your grade down, go back and fix that day. The goal is Developing on every skill." }
     ],
     compact: "Your weakest day sets each skill's grade. Absent? Write the absence note and that day is excused. Goal: Developing on all three skills."
   },
@@ -490,7 +490,7 @@ var EXPLAINER = {
       { lead: "Un día sin entrada y sin nota cuenta como un día débil.",
         text: "Un día de clases sin entrada y sin nota de ausencia te perjudica. Baja la calificación de cada habilidad. La solución fácil: escribe la nota de ausencia." },
       { lead: "Piso de gracia y entregas de nuevo.",
-        text: "Cualquier habilidad con al menos un intento genuino gana al menos Emergente. Puedes entregar tu diario de nuevo para subir tus calificaciones. La meta es En desarrollo en cada habilidad." }
+        text: "Cualquier habilidad donde escribiste algo real toda la semana gana al menos 55%. Puedes entregar tu diario de nuevo para subir tus calificaciones. Si tu día más débil baja tu nota, regresa y corrige ese día. La meta es En desarrollo en cada habilidad." }
     ],
     compact: "Tu día más débil decide la calificación de cada habilidad. ¿Ausente? Escribe la nota de ausencia y ese día se perdona. Meta: En desarrollo en las tres habilidades."
   }
@@ -523,136 +523,251 @@ var DATA = {
         q: "What did you learn today?",
         skill: "I am able to name a specific thing I learned today and describe it clearly.",
         tiers: {
-          t0: { chip: "Missing 0%", title: null, lines: ["Missing: There is no attempt to name something learned today."] },
-          t1: { chip: "Emerging 55%", title: null, lines: [
-            "Emerging: There is an attempt to name something learned today",
-            "-BUT-", "the response is blank, off topic, or copies the question without adding an idea",
-            "-OR-", "the response names a topic without any description of what was learned about it."
-          ] },
-          t2: { chip: "Approaching 65%", title: null, lines: [
-            "Approaching: There is a partial attempt to name something learned today",
-            "-BECAUSE-", "the response names a real topic or idea from class",
-            "-BUT-", "the description stays general and could apply to any day or any class",
-            "-OR-", "the response repeats the class activity without saying what the student now understands."
-          ], examples: [
-            "\"We learned about friction.\"",
-            "\"I learned cells today.\"",
-            "\"We did the lab with the ramps.\""
-          ] },
-          t3: { chip: "Developing 85%", title: null, lines: [
-            "Developing: There is a solid attempt to name something learned today",
-            "-BECAUSE-", "the response names a specific idea or concept from today's class",
-            "-AND-", "the response describes the idea in the student's own words",
-            "-BUT-", "the description is short, missing a detail, or slightly unclear",
-            "-OR-", "the response names a specific idea but explains it with the exact words of the teacher or the textbook."
-          ], examples: [
-            "\"I learned that friction slows objects down and it depends on the surface.\"",
-            "\"I learned that cells have membranes that control what goes in and out.\"",
-            "\"I learned that the ramp angle changes how fast the cart moves.\""
-          ] },
-          t4: { chip: "Refining 100%", title: null, lines: [
-            "Refining: There is a strong attempt to name something learned today",
-            "-BECAUSE-", "the response names a specific idea or concept from today's class",
-            "-AND-", "the response describes the idea in the student's own words with a detail or example",
-            "-AND-", "the description is clear enough that someone who was not in class could understand what was learned."
-          ], examples: [
-            "\"I learned that friction is a force that opposes motion, like when my shoe grips the gym floor and keeps me from sliding.\"",
-            "\"I learned that the cell membrane is selective, so it lets water in but blocks some chemicals, which explains why the potato slice changed size in the salt water.\"",
-            "\"I learned that a steeper ramp gives the cart more acceleration because gravity pulls it along the slope more strongly.\""
-          ] }
+          t0: {
+            chip: "Missing 0%",
+            title: null,
+            lines: [
+              "Missing: There is no attempt to name something learned today."
+            ]
+          },
+          t1: {
+            chip: "Emerging 55%",
+            title: null,
+            lines: [
+              "Emerging: There is text in the answer today",
+              "-BUT-",
+              "it does not add an idea about what was learned",
+              "-BECAUSE-",
+              "the response is off topic, copies the question, or cannot be understood",
+              "-OR-",
+              "the response is a general statement that names no topic or activity."
+            ],
+            examples: [
+              "I learned a lot.",
+              "I learned stuff today.",
+              "We did something."
+            ]
+          },
+          t2: {
+            chip: "Approaching 65%",
+            title: null,
+            lines: [
+              "Approaching: There is a partial attempt to name something learned today",
+              "-BECAUSE-",
+              "the response names a real topic, idea, or activity from class",
+              "-BUT-",
+              "it does not describe what was learned about that topic",
+              "-OR-",
+              "the description stays so general that it could apply to any day or any class."
+            ],
+            examples: [
+              "We learned about friction.",
+              "I learned cells today.",
+              "We did the lab with the ramps."
+            ]
+          },
+          t3: {
+            chip: "Developing 85%",
+            title: null,
+            lines: [
+              "Developing: There is a solid attempt to name something learned today",
+              "-BECAUSE-",
+              "the response names a specific idea or concept from today's class",
+              "-AND-",
+              "the response describes the idea in the student's own words",
+              "-BUT-",
+              "the description is short, missing a detail, or slightly unclear",
+              "-OR-",
+              "the response names a specific idea but explains it with the exact words of the teacher or the textbook."
+            ]
+          },
+          t4: {
+            chip: "Refining 100%",
+            title: null,
+            lines: [
+              "Refining: There is a strong attempt to name something learned today",
+              "-BECAUSE-",
+              "the response names a specific idea or concept from today's class",
+              "-AND-",
+              "the response describes the idea in the student's own words with a detail or example",
+              "-AND-",
+              "the description is clear enough that someone who was not in class could understand what was learned."
+            ]
+          }
         }
       },
       {
         q: "How did you learn it?",
         skill: "I am able to explain the process, activity, or strategy that helped me learn.",
         tiers: {
-          t0: { chip: "Missing 0%", title: null, lines: ["Missing: There is no attempt to explain how the learning happened."] },
-          t1: { chip: "Emerging 55%", title: null, lines: [
-            "Emerging: There is an attempt to explain how the learning happened",
-            "-BUT-", "the response only restates the answer to question one without naming how it was learned",
-            "-OR-", "the response is blank, off topic, or copies the question."
-          ] },
-          t2: { chip: "Approaching 65%", title: null, lines: [
-            "Approaching: There is a partial attempt to explain how the learning happened",
-            "-BECAUSE-", "the response mentions a class activity, such as a lab, discussion, video, or reading",
-            "-BUT-", "the response does not say how that activity helped the idea make sense",
-            "-OR-", "the response gives only a vague process word like \"we studied\" or \"I paid attention\" with no detail."
-          ], examples: [
-            "\"We learned it in the lab.\"",
-            "\"We watched a video and took notes.\"",
-            "\"I studied and listened in class.\""
-          ] },
-          t3: { chip: "Developing 85%", title: null, lines: [
-            "Developing: There is a solid attempt to explain how the learning happened",
-            "-BECAUSE-", "the response names a specific activity or strategy used in class",
-            "-AND-", "the response connects that activity to how the idea became clear",
-            "-BUT-", "the connection is short, missing a step, or stays on the surface."
-          ], examples: [
-            "\"We rolled the cart down ramps at different angles, and seeing the times get shorter showed me why the steeper ramp made it faster.\"",
-            "\"The diagram in our notes helped because I could see the membrane as a barrier instead of just reading the word.\"",
-            "\"Arguing about the answer in our group made me realize I had the direction of friction backwards.\""
-          ] },
-          t4: { chip: "Refining 100%", title: null, lines: [
-            "Refining: There is a strong attempt to explain how the learning happened",
-            "-BECAUSE-", "the response names a specific activity or strategy used in class",
-            "-AND-", "the response connects that activity to how the idea became clear",
-            "-AND-", "the response reflects on why that way of learning worked, or names a moment when the idea clicked."
-          ], examples: [
-            "\"Testing the ramps myself worked better than the video, because when I changed only the angle and the cart got faster every time, I could see the cause and effect myself.\"",
-            "\"The potato lab made it click for me. When the slice shrank in salt water, I finally understood the membrane moving water, not just blocking it.\"",
-            "\"Explaining my answer out loud to my partner showed me the gap in my reasoning, and fixing it is what made the concept stick.\""
-          ] }
+          t0: {
+            chip: "Missing 0%",
+            title: null,
+            lines: [
+              "Missing: There is no attempt to explain how the learning happened."
+            ]
+          },
+          t1: {
+            chip: "Emerging 55%",
+            title: null,
+            lines: [
+              "Emerging: There is text in the answer today",
+              "-BUT-",
+              "it does not add an idea about how the learning happened",
+              "-BECAUSE-",
+              "the response is off topic, copies the question, or cannot be understood",
+              "-OR-",
+              "it only gives a vague process word such as paying attention or doing the work, with nothing specific."
+            ],
+            examples: [
+              "By paying attention.",
+              "I did the work.",
+              "We did something."
+            ]
+          },
+          t2: {
+            chip: "Approaching 65%",
+            title: null,
+            lines: [
+              "Approaching: There is a partial attempt to explain how the learning happened",
+              "-BECAUSE-",
+              "the response names a real class activity, source, or strategy",
+              "-BUT-",
+              "it does not say how that activity helped the idea make sense",
+              "-OR-",
+              "it only names the activity without saying what the student did or noticed."
+            ],
+            examples: [
+              "We did a lab.",
+              "We took notes.",
+              "I used the computer."
+            ]
+          },
+          t3: {
+            chip: "Developing 85%",
+            title: null,
+            lines: [
+              "Developing: There is a solid attempt to explain how the learning happened",
+              "-BECAUSE-",
+              "the response names a specific activity or strategy used in class",
+              "-AND-",
+              "the response connects that activity to how the idea became clear",
+              "-BUT-",
+              "the connection is short, missing a step, or stays on the surface."
+            ]
+          },
+          t4: {
+            chip: "Refining 100%",
+            title: null,
+            lines: [
+              "Refining: There is a strong attempt to explain how the learning happened",
+              "-BECAUSE-",
+              "the response names a specific activity or strategy used in class",
+              "-AND-",
+              "the response connects that activity to how the idea became clear",
+              "-AND-",
+              "the response reflects on why that way of learning worked, or names a moment when the idea clicked."
+            ]
+          }
         }
       },
       {
         q: "What is still unclear, or what are you curious about?",
         skill: "I am able to name something still unclear or a curiosity, and explain why it matters or what I have tried.",
         tiers: {
-          t0: { chip: "Missing 0%", title: null, lines: ["Missing: There is no attempt to name something unclear or a curiosity."] },
-          t1: { chip: "Emerging 55%", title: null, lines: [
-            "Emerging: There is an attempt to name something unclear or a curiosity",
-            "-BUT-", "the response is blank, off topic, or copies the question",
-            "-OR-", "the response says \"nothing\" or \"I don't know\" without adding any idea."
-          ] },
-          t2: { chip: "Approaching 65%", title: null, lines: [
-            "Approaching: There is a partial attempt to name something unclear or a curiosity",
-            "-BECAUSE-", "the response names a real question or confusing point",
-            "-BUT-", "the response does not say why it matters or what the student has tried",
-            "-OR-", "the question is so general it could be asked in any class on any day."
-          ], examples: [
-            "\"I'm confused about friction.\"",
-            "\"Why do cells need membranes?\"",
-            "\"I don't get the ramp math.\""
-          ] },
-          t3: { chip: "Developing 85%", title: null, lines: [
-            "Developing: There is a solid attempt to name something unclear or a curiosity",
-            "-BECAUSE-", "the response names a specific question, confusion, or curiosity tied to today's class",
-            "-AND-", "the response says why it matters or what the student has already tried",
-            "-BUT-", "the explanation of why it matters is short, missing a step, or slightly off from the main idea."
-          ], examples: [
-            "\"I'm still unsure how friction works on ice, because we only tested rough surfaces, and I tried thinking about my driveway in winter but I'm not sure it fits.\"",
-            "\"I'm curious why the salt water made the potato shrink instead of grow, and I reread the notes but the word 'selective' is still fuzzy.\"",
-            "\"I don't fully get why the steepest ramp gave the fastest time. I tried graphing it but my line does not look like the other groups' lines.\""
-          ] },
-          t4: { chip: "Refining 100%", title: null, lines: [
-            "Refining: There is a strong attempt to name something unclear or a curiosity",
-            "-BECAUSE-", "the response names a specific question, confusion, or curiosity tied to today's class",
-            "-AND-", "the response explains why it matters for understanding the bigger idea",
-            "-AND-", "the response shows what the student has already tried and proposes a next step, a connection to another idea, or a way to test it."
-          ], examples: [
-            "\"I'm still unsure how friction works on ice, because our data only covered rough surfaces, and I want to retest with a smooth board and compare, since friction changing with the surface is the main idea of the unit.\"",
-            "\"I'm curious if the membrane would still shrink the potato in sugar water the same way, and I checked two sources that disagreed, so my next step is to ask which solute concentration they used.\"",
-            "\"I don't fully see why mass did not change the cart's acceleration, because heavier feels like it should fall faster. I want to run the ramp test with a loaded cart to test my own prediction.\""
-          ] }
+          t0: {
+            chip: "Missing 0%",
+            title: null,
+            lines: [
+              "Missing: There is no attempt to name something unclear or a curiosity."
+            ]
+          },
+          t1: {
+            chip: "Emerging 55%",
+            title: null,
+            lines: [
+              "Emerging: There is text in the answer today",
+              "-BUT-",
+              "it does not add an idea about what is unclear or curious",
+              "-BECAUSE-",
+              "the response is off topic, copies the question, or cannot be understood",
+              "-OR-",
+              "the response says nothing, I don't know, or everything with no idea added."
+            ],
+            examples: [
+              "Nothing.",
+              "I don't know.",
+              "Everything."
+            ]
+          },
+          t2: {
+            chip: "Approaching 65%",
+            title: null,
+            lines: [
+              "Approaching: There is a partial attempt to name something unclear or a curiosity",
+              "-BECAUSE-",
+              "the response names a real topic or a real point of confusion",
+              "-BUT-",
+              "it does not say what part is unclear or why it matters",
+              "-OR-",
+              "the question is so general it could be asked in any class on any day."
+            ],
+            examples: [
+              "Short circuits.",
+              "The math part.",
+              "The bones lab."
+            ]
+          },
+          t3: {
+            chip: "Developing 85%",
+            title: null,
+            lines: [
+              "Developing: There is a solid attempt to name something unclear or a curiosity",
+              "-BECAUSE-",
+              "the response names a specific question, confusion, or curiosity tied to today's class",
+              "-AND-",
+              "the response says why it matters or what the student has already tried",
+              "-BUT-",
+              "the explanation of why it matters is short, missing a step, or slightly off from the main idea."
+            ]
+          },
+          t4: {
+            chip: "Refining 100%",
+            title: null,
+            lines: [
+              "Refining: There is a strong attempt to name something unclear or a curiosity",
+              "-BECAUSE-",
+              "the response names a specific question, confusion, or curiosity tied to today's class",
+              "-AND-",
+              "the response explains why it matters for understanding the bigger idea",
+              "-AND-",
+              "the response shows what the student has already tried and proposes a next step, a connection to another idea, or a way to test it."
+            ]
+          }
         }
       }
     ],
     ladder: [
-      { chip: "Missing · 0%", text: "Nothing was submitted." },
-      { chip: "Emerging · 55%", text: "Something was submitted, but the skill is just starting." },
-      { chip: "Approaching · 65%", text: "The skill is partly there, with important pieces missing." },
-      { chip: "Developing · 85%", text: "The skill is mostly there, with a small gap left." },
-      { chip: "Refining · 100%", text: "The skill is clearly there, and practice keeps it strong." }
+      {
+        chip: "Missing · 0%",
+        text: "Nothing was submitted."
+      },
+      {
+        chip: "Emerging · 55%",
+        text: "Something was written, but it does not give an idea yet."
+      },
+      {
+        chip: "Approaching · 65%",
+        text: "You named the topic or activity, but did not explain it yet."
+      },
+      {
+        chip: "Developing · 85%",
+        text: "You explained the idea in your own words, with a small gap left."
+      },
+      {
+        chip: "Refining · 100%",
+        text: "You explained the idea clearly, with a detail or example."
+      }
     ]
   },
   es: {
@@ -661,139 +776,254 @@ var DATA = {
         q: "¿Qué aprendiste hoy?",
         skill: "Soy capaz de nombrar algo específico que aprendí hoy y describirlo con claridad.",
         tiers: {
-          t0: { chip: "Ausente 0%", title: "Ausente (Missing)", lines: ["Ausente: No hay intento de nombrar algo aprendido hoy."] },
-          t1: { chip: "Emergente 55%", title: "Emergente (Emerging)", lines: [
-            "Emergente: Hay un intento de nombrar algo aprendido hoy",
-            "-PERO-", "la respuesta está en blanco, está fuera del tema, o copia la pregunta sin agregar una idea",
-            "-O-", "la respuesta nombra un tema sin ninguna descripción de qué se aprendió sobre él."
-          ] },
-          t2: { chip: "Progresando 65%", title: "Progresando (Approaching)", lines: [
-            "Progresando: Hay un intento parcial de nombrar algo aprendido hoy",
-            "-PORQUE-", "la respuesta nombra un tema o idea real de la clase",
-            "-PERO-", "la descripción se queda general y podría aplicar a cualquier día o cualquier clase",
-            "-O-", "la respuesta repite la actividad de la clase sin decir qué entiende ahora el estudiante."
-          ], examples: [
-            "\"Aprendimos sobre la fricción.\"",
-            "\"Aprendí sobre las células hoy.\"",
-            "\"Hicimos la práctica de laboratorio con las rampas.\""
-          ] },
-          t3: { chip: "En desarrollo 85%", title: "En desarrollo (Developing)", lines: [
-            "En desarrollo: Hay un intento sólido de nombrar algo aprendido hoy",
-            "-PORQUE-", "la respuesta nombra una idea o concepto específico de la clase de hoy",
-            "-Y-", "la respuesta describe la idea con las palabras del estudiante",
-            "-PERO-", "la descripción es corta, le falta un detalle, o es un poco confusa",
-            "-O-", "la respuesta nombra una idea específica pero la explica con las palabras exactas del maestro o del libro de texto."
-          ], examples: [
-            "\"Aprendí que la fricción frena a los objetos y depende de la superficie.\"",
-            "\"Aprendí que las células tienen membranas que controlan qué entra y qué sale.\"",
-            "\"Aprendí que el ángulo de la rampa cambia qué tan rápido se mueve el carrito.\""
-          ] },
-          t4: { chip: "Refinando 100%", title: "Refinando (Refining)", lines: [
-            "Refinando: Hay un intento fuerte de nombrar algo aprendido hoy",
-            "-PORQUE-", "la respuesta nombra una idea o concepto específico de la clase de hoy",
-            "-Y-", "la respuesta describe la idea con las palabras del estudiante con un detalle o ejemplo",
-            "-Y-", "la descripción es clara al punto de que alguien que no estuvo en la clase podría entender qué se aprendió."
-          ], examples: [
-            "\"Aprendí que la fricción es una fuerza que se opone al movimiento, como cuando mi zapato agarra el piso del gimnasio y evita que me resbale.\"",
-            "\"Aprendí que la membrana celular es selectiva, deja entrar el agua pero bloquea algunas sustancias, y eso explica por qué el pedazo de papa cambió de tamaño en el agua con sal.\"",
-            "\"Aprendí que una rampa más inclinada le da al carrito más aceleración porque la gravedad lo jala con más fuerza a lo largo de la pendiente.\""
-          ] }
+          t0: {
+            chip: "Ausente 0%",
+            title: "Ausente (Missing)",
+            lines: [
+              "Ausente: No hay intento de nombrar algo aprendido hoy."
+            ]
+          },
+          t1: {
+            chip: "Emergente 55%",
+            title: "Emergente (Emerging)",
+            lines: [
+              "Emergente: Hay texto en la respuesta de hoy",
+              "-PERO-",
+              "no agrega una idea sobre lo que se aprendió",
+              "-PORQUE-",
+              "la respuesta está fuera del tema, copia la pregunta, o no se puede entender",
+              "-O-",
+              "la respuesta es una frase general que no nombra ningún tema ni actividad."
+            ],
+            examples: [
+              "Aprendí mucho.",
+              "Aprendí cosas hoy.",
+              "Hicimos algo."
+            ]
+          },
+          t2: {
+            chip: "Progresando 65%",
+            title: "Progresando (Approaching)",
+            lines: [
+              "Progresando: Hay un intento parcial de nombrar algo aprendido hoy",
+              "-PORQUE-",
+              "la respuesta nombra un tema, idea o actividad real de la clase",
+              "-PERO-",
+              "no describe qué se aprendió sobre ese tema",
+              "-O-",
+              "la descripción es tan general que podría aplicar a cualquier día o cualquier clase."
+            ],
+            examples: [
+              "Aprendimos sobre la fricción.",
+              "Aprendí células hoy.",
+              "Hicimos la práctica con las rampas."
+            ]
+          },
+          t3: {
+            chip: "En desarrollo 85%",
+            title: "En desarrollo (Developing)",
+            lines: [
+              "En desarrollo: Hay un intento sólido de nombrar algo aprendido hoy",
+              "-PORQUE-",
+              "la respuesta nombra una idea o concepto específico de la clase de hoy",
+              "-Y-",
+              "la respuesta describe la idea con las palabras del estudiante",
+              "-PERO-",
+              "la descripción es corta, le falta un detalle, o es un poco confusa",
+              "-O-",
+              "la respuesta nombra una idea específica pero la explica con las palabras exactas del maestro o del libro de texto."
+            ]
+          },
+          t4: {
+            chip: "Refinando 100%",
+            title: "Refinando (Refining)",
+            lines: [
+              "Refinando: Hay un intento fuerte de nombrar algo aprendido hoy",
+              "-PORQUE-",
+              "la respuesta nombra una idea o concepto específico de la clase de hoy",
+              "-Y-",
+              "la respuesta describe la idea con las palabras del estudiante con un detalle o ejemplo",
+              "-Y-",
+              "la descripción es clara al punto de que alguien que no estuvo en la clase podría entender qué se aprendió."
+            ]
+          }
         }
       },
       {
         q: "¿Cómo lo aprendiste?",
         skill: "Soy capaz de explicar el proceso, la actividad o la estrategia que me ayudó a aprender.",
         tiers: {
-          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No hay intento de explicar cómo ocurrió el aprendizaje."] },
-          t1: { chip: "Emergente 55%", title: null, lines: [
-            "Emergente: Hay un intento de explicar cómo ocurrió el aprendizaje",
-            "-PERO-", "la respuesta solo repite la respuesta de la pregunta uno sin nombrar cómo se aprendió",
-            "-O-", "la respuesta está en blanco, está fuera del tema, o copia la pregunta."
-          ] },
-          t2: { chip: "Progresando 65%", title: null, lines: [
-            "Progresando: Hay un intento parcial de explicar cómo ocurrió el aprendizaje",
-            "-PORQUE-", "la respuesta menciona una actividad de la clase, como una práctica de laboratorio, una discusión, un video o una lectura",
-            "-PERO-", "la respuesta no dice cómo esa actividad ayudó a que la idea tuviera sentido",
-            "-O-", "la respuesta solo da una palabra de proceso vaga como \"estudiamos\" o \"puse atención\" sin detalle."
-          ], examples: [
-            "\"Lo aprendimos en la práctica de laboratorio.\"",
-            "\"Vimos un video y tomamos apuntes.\"",
-            "\"Estudié y escuché en clase.\""
-          ] },
-          t3: { chip: "En desarrollo 85%", title: null, lines: [
-            "En desarrollo: Hay un intento sólido de explicar cómo ocurrió el aprendizaje",
-            "-PORQUE-", "la respuesta nombra una actividad o estrategia específica usada en clase",
-            "-Y-", "la respuesta conecta esa actividad con la forma en que la idea se aclaró",
-            "-PERO-", "la conexión es corta, le falta un paso, o se queda en la superficie."
-          ], examples: [
-            "\"Dejamos caer el carrito por rampas con distintos ángulos, y ver que los tiempos eran más cortos me mostró por qué la rampa más inclinada lo hacía más rápido.\"",
-            "\"El diagrama de nuestros apuntes ayudó porque pude ver la membrana como una barrera en vez de solo leer la palabra.\"",
-            "\"Discutir la respuesta en nuestro grupo me hizo darme cuenta de que tenía la dirección de la fricción al revés.\""
-          ] },
-          t4: { chip: "Refinando 100%", title: null, lines: [
-            "Refinando: Hay un intento fuerte de explicar cómo ocurrió el aprendizaje",
-            "-PORQUE-", "la respuesta nombra una actividad o estrategia específica usada en clase",
-            "-Y-", "la respuesta conecta esa actividad con la forma en que la idea se aclaró",
-            "-Y-", "la respuesta reflexiona sobre por qué esa forma de aprender funcionó, o nombra el momento en que la idea hizo clic."
-          ], examples: [
-            "\"Probar las rampas yo mismo funcionó mejor que el video, porque cuando cambié solo el ángulo y el carrito se hizo más rápido cada vez, pude ver la causa y el efecto con mis propios ojos.\"",
-            "\"La práctica de laboratorio con la papa me hizo entenderlo. Cuando el pedazo se encogió en el agua con sal, por fin entendí que la membrana mueve el agua, no solo lo bloquea.\"",
-            "\"Explicar mi respuesta en voz alta a mi compañero me mostró el hueco en mi razonamiento, y corregirlo es lo que hizo que el concepto se quedara.\""
-          ] }
+          t0: {
+            chip: "Ausente 0%",
+            title: null,
+            lines: [
+              "Ausente: No hay intento de explicar cómo ocurrió el aprendizaje."
+            ]
+          },
+          t1: {
+            chip: "Emergente 55%",
+            title: null,
+            lines: [
+              "Emergente: Hay texto en la respuesta de hoy",
+              "-PERO-",
+              "no agrega una idea sobre cómo ocurrió el aprendizaje",
+              "-PORQUE-",
+              "la respuesta está fuera del tema, copia la pregunta, o no se puede entender",
+              "-O-",
+              "solo da una palabra vaga de proceso como prestar atención o hacer el trabajo, sin nada específico."
+            ],
+            examples: [
+              "Poniendo atención.",
+              "Hice el trabajo.",
+              "Hicimos algo."
+            ]
+          },
+          t2: {
+            chip: "Progresando 65%",
+            title: null,
+            lines: [
+              "Progresando: Hay un intento parcial de explicar cómo ocurrió el aprendizaje",
+              "-PORQUE-",
+              "la respuesta nombra una actividad, fuente o estrategia real de la clase",
+              "-PERO-",
+              "no dice cómo esa actividad ayudó a que la idea tuviera sentido",
+              "-O-",
+              "solo nombra la actividad sin decir qué hizo o qué notó el estudiante."
+            ],
+            examples: [
+              "Hicimos una práctica.",
+              "Tomamos notas.",
+              "Usé la computadora."
+            ]
+          },
+          t3: {
+            chip: "En desarrollo 85%",
+            title: null,
+            lines: [
+              "En desarrollo: Hay un intento sólido de explicar cómo ocurrió el aprendizaje",
+              "-PORQUE-",
+              "la respuesta nombra una actividad o estrategia específica usada en clase",
+              "-Y-",
+              "la respuesta conecta esa actividad con la forma en que la idea se aclaró",
+              "-PERO-",
+              "la conexión es corta, le falta un paso, o se queda en la superficie."
+            ]
+          },
+          t4: {
+            chip: "Refinando 100%",
+            title: null,
+            lines: [
+              "Refinando: Hay un intento fuerte de explicar cómo ocurrió el aprendizaje",
+              "-PORQUE-",
+              "la respuesta nombra una actividad o estrategia específica usada en clase",
+              "-Y-",
+              "la respuesta conecta esa actividad con la forma en que la idea se aclaró",
+              "-Y-",
+              "la respuesta reflexiona sobre por qué esa forma de aprender funcionó, o nombra el momento en que la idea hizo clic."
+            ]
+          }
         }
       },
       {
         q: "¿Qué sigue sin estar claro, o qué te da curiosidad?",
         skill: "Soy capaz de nombrar algo que sigue sin estar claro o una curiosidad, y explicar por qué importa o qué he intentado.",
         tiers: {
-          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No hay intento de nombrar algo sin aclarar o una curiosidad."] },
-          t1: { chip: "Emergente 55%", title: null, lines: [
-            "Emergente: Hay un intento de nombrar algo sin aclarar o una curiosidad",
-            "-PERO-", "la respuesta está en blanco, está fuera del tema, o copia la pregunta",
-            "-O-", "la respuesta dice \"nada\" o \"no sé\" sin agregar ninguna idea."
-          ] },
-          t2: { chip: "Progresando 65%", title: null, lines: [
-            "Progresando: Hay un intento parcial de nombrar algo sin aclarar o una curiosidad",
-            "-PORQUE-", "la respuesta nombra una pregunta o punto de confusión real",
-            "-PERO-", "la respuesta no dice por qué importa o qué ha intentado el estudiante",
-            "-O-", "la pregunta es tan general que se podría hacer en cualquier clase cualquier día."
-          ], examples: [
-            "\"Estoy confundido con la fricción.\"",
-            "\"¿Por qué las células necesitan membranas?\"",
-            "\"No entiendo la matemática de las rampas.\""
-          ] },
-          t3: { chip: "En desarrollo 85%", title: null, lines: [
-            "En desarrollo: Hay un intento sólido de nombrar algo sin aclarar o una curiosidad",
-            "-PORQUE-", "la respuesta nombra una pregunta, confusión o curiosidad específica relacionada con la clase de hoy",
-            "-Y-", "la respuesta dice por qué importa o qué ha intentado ya el estudiante",
-            "-PERO-", "la explicación de por qué importa es corta, le falta un paso, o se aleja un poco de la idea principal."
-          ], examples: [
-            "\"Todavía no estoy seguro de cómo funciona la fricción sobre el hielo, porque solo probamos superficies rugosas, e intenté pensar en mi entrada en el invierno pero no sé si encaja.\"",
-            "\"Me da curiosidad por qué el agua con sal hizo encoger la papa en vez de hacerla crecer, y releí los apuntes pero la palabra 'selectiva' sigue borrosa.\"",
-            "\"No entiendo del todo por qué la rampa más inclinada dio el tiempo más rápido. Intenté hacer una gráfica pero mi línea no se parece a las de los otros grupos.\""
-          ] },
-          t4: { chip: "Refinando 100%", title: null, lines: [
-            "Refinando: Hay un intento fuerte de nombrar algo sin aclarar o una curiosidad",
-            "-PORQUE-", "la respuesta nombra una pregunta, confusión o curiosidad específica relacionada con la clase de hoy",
-            "-Y-", "la respuesta explica por qué importa para entender la idea más grande",
-            "-Y-", "la respuesta muestra qué ha intentado ya el estudiante y propone un próximo paso, una conexión con otra idea, o una forma de comprobarlo."
-          ], examples: [
-            "\"Todavía no estoy seguro de cómo funciona la fricción sobre el hielo, porque nuestros datos solo cubrieron superficies rugosas, y quiero repetir la prueba con una tabla lisa y comparar, ya que la fricción cambiando con la superficie es la idea principal de la unidad.\"",
-            "\"Me da curiosidad si la membrana haría encoger la papa igual en agua con azúcar, y revisé dos fuentes que no estaban de acuerdo, así que mi próximo paso es preguntar qué concentración de soluto usaron.\"",
-            "\"No veo del todo por qué la masa no cambió la aceleración del carrito, porque más pesado se siente como si debería caer más rápido. Quiero hacer la prueba de la rampa con un carrito cargado para comprobar mi propia predicción.\""
-          ] }
+          t0: {
+            chip: "Ausente 0%",
+            title: null,
+            lines: [
+              "Ausente: No hay intento de nombrar algo sin aclarar o una curiosidad."
+            ]
+          },
+          t1: {
+            chip: "Emergente 55%",
+            title: null,
+            lines: [
+              "Emergente: Hay texto en la respuesta de hoy",
+              "-PERO-",
+              "no agrega una idea sobre lo que sigue sin estar claro o la curiosidad",
+              "-PORQUE-",
+              "la respuesta está fuera del tema, copia la pregunta, o no se puede entender",
+              "-O-",
+              "la respuesta dice nada, no sé, o todo sin agregar ninguna idea."
+            ],
+            examples: [
+              "Nada.",
+              "No sé.",
+              "Todo."
+            ]
+          },
+          t2: {
+            chip: "Progresando 65%",
+            title: null,
+            lines: [
+              "Progresando: Hay un intento parcial de nombrar algo sin aclarar o una curiosidad",
+              "-PORQUE-",
+              "la respuesta nombra un tema real o un punto real de confusión",
+              "-PERO-",
+              "no dice qué parte es confusa ni por qué importa",
+              "-O-",
+              "la pregunta es tan general que podría hacerse en cualquier clase cualquier día."
+            ],
+            examples: [
+              "Los circuitos.",
+              "La parte de matemáticas.",
+              "La práctica de los huesos."
+            ]
+          },
+          t3: {
+            chip: "En desarrollo 85%",
+            title: null,
+            lines: [
+              "En desarrollo: Hay un intento sólido de nombrar algo sin aclarar o una curiosidad",
+              "-PORQUE-",
+              "la respuesta nombra una pregunta, confusión o curiosidad específica relacionada con la clase de hoy",
+              "-Y-",
+              "la respuesta dice por qué importa o qué ha intentado ya el estudiante",
+              "-PERO-",
+              "la explicación de por qué importa es corta, le falta un paso, o se aleja un poco de la idea principal."
+            ]
+          },
+          t4: {
+            chip: "Refinando 100%",
+            title: null,
+            lines: [
+              "Refinando: Hay un intento fuerte de nombrar algo sin aclarar o una curiosidad",
+              "-PORQUE-",
+              "la respuesta nombra una pregunta, confusión o curiosidad específica relacionada con la clase de hoy",
+              "-Y-",
+              "la respuesta explica por qué importa para entender la idea más grande",
+              "-Y-",
+              "la respuesta muestra qué ha intentado ya el estudiante y propone un próximo paso, una conexión con otra idea, o una forma de comprobarlo."
+            ]
+          }
         }
       }
     ],
     ladder: [
-      { chip: "Ausente · 0%", text: "No se entregó nada." },
-      { chip: "Emergente · 55%", text: "Se entregó algo, pero la habilidad apenas está comenzando." },
-      { chip: "Progresando · 65%", text: "La habilidad está a medias, con partes importantes que faltan." },
-      { chip: "En desarrollo · 85%", text: "La habilidad está casi completa, con un pequeño hueco restante." },
-      { chip: "Refinando · 100%", text: "La habilidad está claramente presente, y la práctica la mantiene fuerte." }
+      {
+        chip: "Ausente · 0%",
+        text: "No se entregó nada."
+      },
+      {
+        chip: "Emergente · 55%",
+        text: "Escribiste algo, pero todavía no da una idea."
+      },
+      {
+        chip: "Progresando · 65%",
+        text: "Nombrabas el tema o la actividad, pero todavía no lo explicaste."
+      },
+      {
+        chip: "En desarrollo · 85%",
+        text: "Explicaste la idea con tus propias palabras, con un detalle faltante."
+      },
+      {
+        chip: "Refinando · 100%",
+        text: "Explicaste la idea con claridad, con un detalle o ejemplo."
+      }
     ]
   }
-};
+}
 
 /* ============================== LOGIC ============================== */
 
