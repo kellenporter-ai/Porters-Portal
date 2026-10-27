@@ -915,6 +915,25 @@ export const en: Dictionary = {
   // ── Battle feed ──
   'boss.liveBattleFeed': 'Live Battle Feed',
 
+  // ── Boss knockout / medevac (Piece 5) ──
+  'boss.koTitle': 'Regroup at Base Camp',
+  'boss.koBody': "You've been knocked out of this fight — but your progress is preserved and the boss keeps every point of damage you dealt. Study up and come back stronger.",
+  'boss.recoverIn': 'Recovers in {time}',
+  'boss.medevacBtn': 'Medevac · {cost} Flux',
+  'boss.medevacResetAt': 'Cost resets {time}',
+  'boss.medevacShortfall': 'Need {shortfall} more Flux for Medevac',
+  'boss.medevacNext': 'Next Medevac: {cost} Flux · resets in {hours}h',
+  'boss.medevacSuccess': 'Medevac complete — back in the fight!',
+  'boss.medevacFailed': 'Medevac failed',
+  'boss.medevacNoCooldown': 'You are not on a cooldown right now.',
+  'boss.victoryRewards': 'Victory Rewards',
+  'boss.bossClosed': 'This boss has closed',
+  'boss.bossClosedBody': 'This encounter is no longer open. Your results are preserved below.',
+  'boss.bossClosedNeverFought': "This boss has closed. You didn't join this encounter — keep an eye out for the next one.",
+  'boss.yourResults': 'Your Results',
+  'boss.progressKept': 'Your damage to this boss is preserved.',
+  'boss.streakShort': 'Streak: {streak}',
+
   // ── Auth (login) ──
   'auth.welcomeBack': 'Welcome Back',
   'auth.subtitle': "Porter's Physics & Forensics Portal",

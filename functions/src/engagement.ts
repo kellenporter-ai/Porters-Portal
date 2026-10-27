@@ -1596,3 +1596,94 @@ export const awardBehaviorXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, 
   logWithCorrelation('info', 'Behavior XP awarded', correlationId, { studentId, classType, xpAmount, fluxAmount, awardedBy: uid });
   return { success: true, awardId: awardRef.id };
 });
+
+// ==========================================
+// RESPEC SPECIALIZATION (Increment 1, Piece 2)
+// ==========================================
+
+const RESPEC_COST = 250; // Flux
+
+export const respecSpecialization = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const uid = verifyAuth(request.auth);
+  const correlationId = generateCorrelationId();
+  const { specializationId } = request.data;
+  if (!specializationId) {
+    throw new HttpsError("invalid-argument", "Specialization ID required.");
+  }
+  if (!VALID_SPECIALIZATIONS.includes(specializationId)) {
+    throw new HttpsError("invalid-argument", `Unknown specialization: ${specializationId}`);
+  }
+
+  logWithCorrelation("info", "respecSpecialization: invoked", correlationId, { uid, specializationId });
+  const db = admin.firestore();
+  const userRef = db.doc(`users/${uid}`);
+
+  // Fight-in-progress check (pre-transaction, bounded query on userId — single-field
+  // filter, no composite index required). Events are fetched individually for window checks.
+  const progressSnap = await db
+    .collection("boss_event_progress")
+    .where("userId", "==", uid)
+    .limit(25)
+    .get();
+  const now = Date.now();
+  for (const doc of progressSnap.docs) {
+    const p = doc.data() as Record<string, any>;
+    if (typeof p.bossHp === "number" && p.bossHp > 0 && !p.victoryClaimed) {
+      const cd = p.cooldownUntil ? Date.parse(p.cooldownUntil) : 0;
+      const onCooldown = !Number.isNaN(cd) && cd > now;
+      if (!onCooldown) {
+        const eventId = p.eventId;
+        if (eventId) {
+          const evSnap = await db.doc(`boss_events/${eventId}`).get();
+          const ev = (evSnap.data() || {}) as Record<string, any>;
+          const start = ev.scheduledAt ? Date.parse(ev.scheduledAt) : 0;
+          const end = ev.deadline ? Date.parse(ev.deadline) : Number.POSITIVE_INFINITY;
+          const inWindow = (!Number.isNaN(start) && now >= start) && (!Number.isNaN(end) && now <= end);
+          if (ev.isActive && inWindow) {
+            return { error: "FIGHT_IN_PROGRESS", message: "You cannot respec while a boss fight is in progress." };
+          }
+        }
+      }
+    }
+  }
+
+  const txResult = await db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+    const data = userSnap.data()!;
+    const gam = (data.gamification || {}) as Record<string, any>;
+
+    if (!gam.specialization) {
+      return { error: "NO_SPECIALIZATION" as const, message: "You have no specialization to respec." };
+    }
+    if (gam.specialization === specializationId) {
+      return { error: "SAME_SPECIALIZATION" as const, message: "You already have this specialization." };
+    }
+
+    const balance = gam.currency || 0;
+    if (balance < RESPEC_COST) {
+      return { error: "INSUFFICIENT_FLUX" as const, cost: RESPEC_COST, balance };
+    }
+
+    // skillPoints untouched — points are derived, so clearing unlockedSkills refunds them naturally.
+    transaction.update(userRef, {
+      "gamification.currency": balance - RESPEC_COST,
+      "gamification.unlockedSkills": [],
+      "gamification.specialization": specializationId,
+    });
+
+    return {
+      success: true as const,
+      cost: RESPEC_COST,
+      remainingFlux: balance - RESPEC_COST,
+      specialization: specializationId,
+    };
+  });
+
+  if ("error" in txResult && txResult.error) {
+    return txResult;
+  }
+  logWithCorrelation("info", "respecSpecialization: success", correlationId, { uid, specializationId });
+  return txResult;
+});

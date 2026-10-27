@@ -347,16 +347,16 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
 
-      // Distributed damage shards — students need read access for real-time HP
+      // Distributed damage shards — admin-only (shard model is dead in v2)
       // Cloud Functions (admin SDK) handle all writes
       match /shards/{shardId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin();
         allow write: if false; // Admin SDK only
       }
 
-      // Damage log — students can read (leaderboard display)
+      // Damage log — admin-only (carries peer names / damage entries)
       match /damage_log/{entryId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin();
         allow write: if false; // Admin SDK only
       }
     }
@@ -365,22 +365,22 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
 
-      // Distributed damage shards for quiz bosses
+      // Distributed damage shards for quiz bosses — admin-only
       match /shards/{shardId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin();
         allow write: if false; // Admin SDK only
       }
 
-      // Live damage log for battle feed (written by Cloud Function)
+      // Live damage log for battle feed — admin-only
       match /damage_log/{logId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin();
         allow write: if false; // Admin SDK only
       }
     }
 
-    // Boss quiz progress — students can read their own progress
+    // Boss quiz progress — owner-only read (doc carries per-student progress)
     match /boss_quiz_progress/{progressId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || resource.data.userId == request.auth.uid;
       allow write: if false; // Admin SDK only
     }
 
@@ -391,22 +391,24 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
 
-      // Distributed damage shards — students need read access for real-time HP
+      // Distributed damage shards — admin-only (shard model is dead in v2)
       match /shards/{shardId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin();
         allow write: if false; // Admin SDK only
       }
 
-      // Damage log — students can read (leaderboard display)
+      // Damage log — admin-only (carries peer names / damage entries)
       match /damage_log/{entryId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin();
         allow write: if false; // Admin SDK only
       }
     }
 
-    // Boss event progress — students can read their own progress
+    // Boss event progress — owner-only read (doc ID is {uid}_{eventId} and the
+    // doc carries the student's accuracy, damage, streaks, knockouts).
+    // Cloud Functions write `userId` on every progress doc; rules rely on that field.
     match /boss_event_progress/{progressId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || resource.data.userId == request.auth.uid;
       allow write: if false; // Admin SDK only
     }
 
@@ -463,7 +465,8 @@ service cloud.firestore {
     // BOSS QUESTION BANKS
     // ==========================================
     match /boss_question_banks/{bankId} {
-      allow read: if isAuthenticated();
+      // Question banks contain answer keys — admin-only (no teacher predicate exists in this file)
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 

@@ -206,25 +206,6 @@ export const dealBossDamage = onCall({ memory: "512MiB", timeoutSeconds: 120 }, 
   };
 });
 
-// Helper: check if a boss has a modifier of a given type
-function hasMod(mods: { type: string; value?: number }[] | undefined, type: string): boolean {
-  return !!mods?.some((m) => m.type === type);
-}
-function modVal(mods: { type: string; value?: number }[] | undefined, type: string, fallback = 0): number {
-  const m = mods?.find((m) => m.type === type);
-  return m?.value ?? fallback;
-}
-function derivePlayerRole(stats: { tech: number; focus: number; analysis: number; charisma: number }): string {
-  const statMap = [
-    { stat: stats.tech, role: 'VANGUARD' },
-    { stat: stats.focus, role: 'STRIKER' },
-    { stat: stats.analysis, role: 'SENTINEL' },
-    { stat: stats.charisma, role: 'COMMANDER' },
-  ];
-  statMap.sort((a, b) => b.stat - a.stat);
-  return statMap[0].role;
-}
-
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
@@ -236,17 +217,157 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 // UNIFIED BOSS EVENT v2 (attempt-based, topic mastery, new damage formula)
 // ==========================================
 
-const BOSS_EVENT_SHARD_COUNT = 10;
-const BOSS_EVENT_MAX_ATTEMPTS = 3;
+// ==========================================
+// ASYNC BOSS MODEL (Increment 1, Piece 2)
+// Per-student boss HP on boss_event_progress/{uid}_{eventId}.
+// Combat math imported from ./boss-combat.js — do not reimplement.
+// ==========================================
+
+import {
+  computeBossMaxHp,
+  computeCorrectHit,
+  computeBossAttack,
+  computePlayerEhp,
+} from "./boss-combat.js";
+
+const KOOLDOWN_MS = 6 * 60 * 60 * 1000; // knockout cooldown: 6 hours
+const MEDEVAC_WINDOW_MS = 24 * 60 * 60 * 1000; // global medevac escalator window
+
+export const MEDEVAC_COSTS = [50, 100, 150, 250, 400];
+
+/** Pure: cost of the NEXT medevac given how many have been purchased (global counter). */
+export function getMedevacCost(medevacCount: number): number {
+  const idx = Math.min(Math.max(0, Math.floor(medevacCount)), MEDEVAC_COSTS.length - 1);
+  return MEDEVAC_COSTS[idx];
+}
+
+export interface MedevacStateInput {
+  now: number;
+  medevacCount?: number;
+  medevacResetAt?: number | string | null;
+}
+
+export interface MedevacState {
+  nextCount: number;
+  cost: number;
+  /** Epoch ms when the global escalator window resets (undefined = no anchor needed). */
+  resetAt?: number;
+}
 
 /**
- * Unified boss event answer handler.
- * Supports attempt-based progress, topic mastery tracking, and the new Pokemon-style damage formula.
+ * Pure: medevac escalator state for a purchase.
+ * - Fresh user (no count, or window expired/missing): anchor purchase → count 1, cost 50, new 24h window.
+ * - Mid-window: increment count, cost = ladder[count], window NOT extended.
+ */
+export function computeMedevacState(input: MedevacStateInput): MedevacState {
+  const count = typeof input.medevacCount === "number" && input.medevacCount > 0 ? input.medevacCount : 0;
+  const resetAtRaw = typeof input.medevacResetAt === "string" ? Date.parse(input.medevacResetAt) : input.medevacResetAt;
+  const windowActive = typeof resetAtRaw === "number" && !Number.isNaN(resetAtRaw) && input.now < resetAtRaw;
+
+  if (!windowActive) {
+    return { nextCount: 1, cost: getMedevacCost(0), resetAt: input.now + MEDEVAC_WINDOW_MS };
+  }
+  return { nextCount: count + 1, cost: getMedevacCost(count), resetAt: resetAtRaw };
+}
+
+export interface StudentQuestion {
+  id: string;
+  stem: string;
+  options: string[];
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  topicId?: string;
+  damageBonus?: number;
+  [key: string]: unknown;
+}
+
+/** Strip answer keys before a question reaches the client. */
+export function toStudentQuestion(q: Record<string, unknown> | undefined): StudentQuestion | null {
+  if (!q || typeof q !== "object") return null;
+  const { correctAnswer: _ca, explanation: _ex, ...rest } = q as Record<string, unknown>;
+  return {
+    id: String(rest.id ?? ""),
+    stem: String(rest.stem ?? ""),
+    options: Array.isArray(rest.options) ? (rest.options as string[]) : [],
+    difficulty: (rest.difficulty as "EASY" | "MEDIUM" | "HARD") ?? "MEDIUM",
+    ...(rest.topicId !== undefined ? { topicId: rest.topicId as string } : {}),
+    ...(rest.damageBonus !== undefined ? { damageBonus: rest.damageBonus as number } : {}),
+  };
+}
+
+/** Defense in depth for Piece 5: event doc minus questions[].correctAnswer/explanation. */
+export function stripBossEventForClient(event: Record<string, unknown> | undefined | null): Record<string, unknown> | null {
+  if (!event || typeof event !== "object") return null;
+  const out: Record<string, unknown> = { ...event };
+  if (Array.isArray(out.questions)) {
+    out.questions = (out.questions as Record<string, unknown>[]).map((q) => {
+      if (!q || typeof q !== "object") return q;
+      const { correctAnswer: _ca, explanation: _ex, ...rest } = q;
+      return rest;
+    });
+  }
+  return out;
+}
+
+interface BossEventQuestion {
+  id: string;
+  stem: string;
+  options: string[];
+  correctAnswer: number;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  topicId?: string;
+  damageBonus?: number;
+}
+
+interface BossProgress {
+  userId?: string;
+  eventId?: string;
+  bossMaxHp?: number;
+  bossHp?: number;
+  cooldownUntil?: string | null;
+  session?: { id: string; playerHp: number; playerMaxHp: number; streak: number; startedAt: string } | null;
+  victoryClaimed?: boolean;
+  knockoutCount?: number;
+  answeredQuestionIds?: string[];
+  answeredCount?: number;
+  correctCount?: number;
+  // legacy fields (read-only): attempts, totalDamageDealt, participationMet, rewardClaimed
+  attempts?: unknown[];
+  [key: string]: unknown;
+}
+
+function newSessionId(): string {
+  return `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** Shared equipment/stat derivation for the async boss model. */
+function derivePlayerLoadout(userData: FirebaseFirestore.DocumentData, eventClassType: unknown) {
+  const gam = (userData.gamification || {}) as Record<string, any>;
+  const activeClass = (eventClassType as string) || userData.classType || "";
+  const profile = gam.classProfiles?.[activeClass];
+  const equipped = profile?.equipped || gam.equipped || {};
+  const stats = calculateServerStats(equipped);
+  const gearScore = calculateServerGearScore(equipped);
+  const combat = deriveCombatStats(stats);
+  return { gam, activeClass, equipped, stats, gearScore, combat };
+}
+
+function isWindowOpen(event: { scheduledAt?: string; deadline?: string }, now: number): boolean {
+  const start = event.scheduledAt ? Date.parse(event.scheduledAt) : 0;
+  const end = event.deadline ? Date.parse(event.deadline) : Number.POSITIVE_INFINITY;
+  if (!Number.isNaN(start) && now < start) return false;
+  if (!Number.isNaN(end) && now > end) return false;
+  return true;
+}
+
+/**
+ * Async boss answer handler. Per-student boss HP, knockout cooldown, flat victory payout.
+ * Replaces the shared-pool shard model. `timeTakenMs` is accepted for API compatibility
+ * but no longer affects damage (speed bonus deleted).
  */
 export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const correlationId = generateCorrelationId();
-  const { eventId, questionId, answer, timeTakenMs = 30000 } = request.data;
+  const { eventId, questionId, answer, timeTakenMs: _timeTakenMs } = request.data;
   if (!eventId || !questionId || answer === undefined) {
     throw new HttpsError("invalid-argument", "Event ID, question ID, and answer required.");
   }
@@ -256,7 +377,6 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
   const userRef = db.doc(`users/${uid}`);
   const progressRef = db.doc(`boss_event_progress/${uid}_${eventId}`);
 
-  // Initial reads for calculation
   const [eventSnap, userSnap, progressSnap] = await Promise.all([
     eventRef.get(), userRef.get(), progressRef.get(),
   ]);
@@ -264,393 +384,254 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
   if (!eventSnap.exists) throw new HttpsError("not-found", "Event not found.");
   if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
-  const event = eventSnap.data()!;
+  const event = eventSnap.data() as Record<string, any>;
   if (!event.isActive) throw new HttpsError("failed-precondition", "Event is not active.");
 
-  const questions = event.questions || [];
-  const question = questions.find((q: { id: string }) => q.id === questionId);
+  const now = Date.now();
+  if (!isWindowOpen(event, now)) {
+    return { error: "EVENT_CLOSED", message: "This boss event is not currently open." };
+  }
+
+  const questions: BossEventQuestion[] = event.questions || [];
+  const question = questions.find((q) => q.id === questionId);
   if (!question) throw new HttpsError("not-found", "Question not found.");
 
-  // --- Attempt system ---
-  let progress = progressSnap.exists
-    ? progressSnap.data()!
-    : { attempts: [], totalDamageDealt: 0, participationMet: false, rewardClaimed: false };
-
-  if (!progress.attempts) progress.attempts = [];
-
-  let currentAttempt = progress.attempts.find((a: { status: string }) => a.status === 'active');
-  if (!currentAttempt) {
-    if (!event.isTrial && progress.attempts.length >= BOSS_EVENT_MAX_ATTEMPTS) {
-      return {
-        error: 'MAX_ATTEMPTS_REACHED',
-        message: `You have used all ${BOSS_EVENT_MAX_ATTEMPTS} attempts for this boss.`,
-      };
-    }
-    currentAttempt = {
-      attemptNumber: progress.attempts.length + 1,
-      answeredQuestions: [],
-      currentHp: -1,
-      maxHp: 100,
-      combatStats: {
-        totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0,
-        correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
-        incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
-        longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
-        healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
-      },
-      status: 'active',
-      startedAt: new Date().toISOString(),
-      checkpointPhase: event.currentPhase || 0,
-    };
-    progress.attempts.push(currentAttempt);
-  }
-
-  if (currentAttempt.answeredQuestions.includes(questionId)) {
-    return { alreadyAnswered: true, correct: false, damage: 0, newHp: event.currentHp };
-  }
-
-  // --- Player combat stats ---
   const userData = userSnap.data()!;
-  const gam = userData.gamification || {};
-  const activeClass = event.classType || userData.classType || "";
-  const profile = gam.classProfiles?.[activeClass];
-  const equipped = profile?.equipped || gam.equipped || {};
-  const playerAttrStats = calculateServerStats(equipped);
-  const playerGearScore = calculateServerGearScore(equipped);
-  const baseCombat = deriveCombatStats(playerAttrStats);
-  let { maxHp } = baseCombat;
-  let armorPercent = baseCombat.armorPercent;
-  let critChance = baseCombat.critChance;
-  let adjustedCritMultiplier = baseCombat.critMultiplier;
+  const loadout = derivePlayerLoadout(userData, event.classType);
+  const { gam } = loadout;
 
-  const mods: { type: string; value?: number }[] = event.modifiers || [];
-  if (hasMod(mods, "ARMOR_BREAK") || hasMod(mods, "GLASS_CANNON")) armorPercent = 0;
-  if (hasMod(mods, "CRIT_SURGE")) critChance = Math.min(1, critChance + modVal(mods, "CRIT_SURGE", 20) / 100);
-
-  const playerRole = derivePlayerRole(playerAttrStats);
-  if (playerRole === 'STRIKER') {
-    critChance = Math.min(1, critChance + 0.10);
-    adjustedCritMultiplier += 0.5;
+  // Pre-transaction structured rejections (client-renderable)
+  const progress = (progressSnap.exists ? progressSnap.data() : {}) as BossProgress;
+  if (progress.victoryClaimed) {
+    return { error: "ALREADY_VICTORIOUS", message: "You have already defeated this boss." };
   }
-
-  const activeAbilities: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] = event.activeAbilities || [];
-  let silenced = false;
-  let enrageMultiplier = 1;
-  for (const ability of activeAbilities) {
-    if (ability.effect === 'SILENCE' && ability.remainingQuestions > 0) silenced = true;
-    if (ability.effect === 'ENRAGE' && ability.remainingQuestions > 0) enrageMultiplier = 1 + (ability.value / 100);
+  const cooldownUntil = progress.cooldownUntil ? Date.parse(progress.cooldownUntil) : 0;
+  if (!Number.isNaN(cooldownUntil) && cooldownUntil > now) {
+    return {
+      error: "COOLDOWN_ACTIVE",
+      cooldownUntil: progress.cooldownUntil,
+      medevacCost: getMedevacCost(gam.medevacCount || 0),
+    };
   }
-
-  let playerHp = currentAttempt.currentHp >= 0 ? currentAttempt.currentHp : maxHp;
-  if (playerHp <= 0) {
-    return { knockedOut: true, message: "You have been knocked out! Start a new attempt or visit Study Hall." };
+  if ((progress.answeredQuestionIds || []).includes(questionId)) {
+    return { alreadyAnswered: true, correct: false, damage: 0, bossHp: progress.bossHp ?? 0 };
   }
-
-  const cs = currentAttempt.combatStats || {
-    totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0,
-    correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
-    incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
-    longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
-    healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
-  };
-  cs.questionsAttempted++;
 
   const isCorrect = Number(answer) === question.correctAnswer;
-  let damage = 0;
-  let playerDamage = 0;
-  let isCrit = false;
-  let healAmount = 0;
-  let shieldBlocked = false;
-
-  // Pre-compute random values outside transaction
-  const shardId = Math.floor(Math.random() * BOSS_EVENT_SHARD_COUNT).toString();
+  const rand = Math.random();
   const critRoll = Math.random();
 
-  const topicMasteryMap = gam.topicMastery || {};
-  const topicMastery = topicMasteryMap[question.topicId]?.level || 0;
-
-  if (isCorrect) {
-    cs.questionsCorrect++;
-    cs.currentStreak++;
-    if (cs.currentStreak > cs.longestStreak) cs.longestStreak = cs.currentStreak;
-    cs.correctByDifficulty[question.difficulty as "EASY" | "MEDIUM" | "HARD"]++;
-
-    const levelComponent = (2 * (gam.level || 1) / 5 + 2);
-    const power = 10 + (question.difficulty === 'HARD' ? 3 : question.difficulty === 'MEDIUM' ? 2 : 1) * 5;
-    const attack = 50 + topicMastery * 100;
-    const defense = 50 + (question.difficulty === 'HARD' ? 3 : question.difficulty === 'MEDIUM' ? 2 : 1) * 10;
-    let rawDamage = ((levelComponent * power * attack / defense) / 50 + 2);
-
-    let modifier = 1.0;
-    if (topicMastery > 0) modifier *= (1 + 0.1 * topicMastery);
-    if (timeTakenMs < 30000 * 0.5) modifier *= 1.2;
-    if (cs.currentStreak >= 3) modifier *= (1 + 0.1 * Math.min(cs.currentStreak, 10));
-    if (playerRole === 'VANGUARD') modifier *= 1.15;
-    if (playerRole === 'STRIKER') modifier *= 1.05;
-
-    const specId = gam.specialization;
-    const hpPct = (playerHp / maxHp) * 100;
-    if (specId === 'JUGGERNAUT') {
-      if (hpPct > 75) modifier *= 1.08;
-      if (hpPct < 30) modifier *= 1.15;
-    }
-    if (specId === 'BERSERKER') {
-      if (hpPct < 50) modifier *= 1.12;
-      if (hpPct < 40) modifier *= 1.20;
-      if (hpPct < 25) modifier *= 1.35;
-    }
-    if (specId === 'SNIPER') {
-      if (cs.currentStreak >= 3) modifier *= 1.15;
-      if (cs.currentStreak >= 5) modifier *= 1.25;
-      if (cs.currentStreak >= 7) modifier *= 1.30;
-      if (question.difficulty === 'HARD') modifier *= 1.15;
-    }
-    if (specId === 'SPEEDSTER') {
-      if (timeTakenMs < 30000 * 0.5) modifier *= 1.15;
-    }
-    if (specId === 'GUARDIAN') modifier *= 1.05;
-    if (specId === 'CLERIC') modifier *= 1.03;
-    if (specId === 'TACTICIAN') modifier *= 1.05;
-    if (specId === 'SCHOLAR') {
-      if (topicMastery >= 6) modifier *= 1.15;
-      if (topicMastery >= 8) modifier *= 1.25;
-    }
-
-    if (hasMod(mods, 'PLAYER_DAMAGE_BOOST')) rawDamage += modVal(mods, 'PLAYER_DAMAGE_BOOST', 25);
-    if (hasMod(mods, 'DOUBLE_OR_NOTHING') || hasMod(mods, 'GLASS_CANNON')) rawDamage *= 2;
-    if (hasMod(mods, 'LAST_STAND') && playerHp < maxHp * 0.25) rawDamage *= 1.5;
-    if (hasMod(mods, 'STREAK_BONUS') && cs.currentStreak > 1) {
-      rawDamage += modVal(mods, 'STREAK_BONUS', 10) * (cs.currentStreak - 1);
-    }
-
-    const gearBonus = 1 + (playerGearScore / 1000) / (1 + playerGearScore / 2000);
-    modifier *= gearBonus;
-    modifier *= (0.9 + Math.random() * 0.2);
-
-    rawDamage = Math.round(rawDamage * modifier);
-
-    if (!silenced && critRoll < critChance) {
-      isCrit = true;
-      rawDamage = Math.round(rawDamage * adjustedCritMultiplier);
-      cs.criticalHits++;
-    }
-
-    const effectiveMaxHp = event.scaledMaxHp || event.maxHp;
-    const perHitCap = Math.floor(effectiveMaxHp * 0.05);
-    damage = Math.min(rawDamage, perHitCap);
-    damage = Math.max(1, damage);
-
-    if (hasMod(mods, "HEALING_WAVE")) {
-      healAmount = modVal(mods, "HEALING_WAVE", 10);
-      playerHp = Math.min(maxHp, playerHp + healAmount);
-      cs.healingReceived += healAmount;
-    }
-  } else {
-    cs.currentStreak = 0;
-    cs.incorrectByDifficulty[question.difficulty as "EASY" | "MEDIUM" | "HARD"]++;
-
-    const shieldMax = hasMod(mods, "SHIELD_WALL") ? modVal(mods, "SHIELD_WALL", 2) : 0;
-    if (shieldMax > 0 && cs.shieldBlocksUsed < shieldMax) {
-      shieldBlocked = true;
-      cs.shieldBlocksUsed++;
-    } else {
-      let baseBossDamage = question.difficulty === "HARD" ? 30 : question.difficulty === "MEDIUM" ? 20 : 15;
-      if (hasMod(mods, "BOSS_DAMAGE_BOOST")) baseBossDamage += modVal(mods, "BOSS_DAMAGE_BOOST", 15);
-      if (hasMod(mods, "DOUBLE_OR_NOTHING")) baseBossDamage *= 2;
-      baseBossDamage = Math.round(baseBossDamage * enrageMultiplier);
-
-      const rawDamage = baseBossDamage;
-      playerDamage = Math.max(1, Math.round(rawDamage * (1 - armorPercent / 100)));
-      const damageBlocked = rawDamage - playerDamage;
-      cs.damageReduced += Math.max(0, damageBlocked);
-      cs.bossDamageTaken += playerDamage;
-      playerHp = Math.max(0, playerHp - playerDamage);
-    }
-  }
-
-  if (hasMod(mods, "TIME_PRESSURE")) {
-    const tickDmg = modVal(mods, "TIME_PRESSURE", 5);
-    playerHp = Math.max(0, playerHp - tickDmg);
-    cs.bossDamageTaken += tickDmg;
-  }
-
-  // Update attempt
-  currentAttempt.answeredQuestions = [...currentAttempt.answeredQuestions, questionId];
-  currentAttempt.currentHp = playerHp;
-  currentAttempt.maxHp = maxHp;
-  currentAttempt.combatStats = { ...cs, role: playerRole };
-
-  if (playerHp <= 0) {
-    currentAttempt.status = 'abandoned';
-    currentAttempt.endedAt = new Date().toISOString();
-  }
-
-  const baseDamage = damage;
-
-  // === ATOMIC TRANSACTION ===
   const txResult = await db.runTransaction(async (t) => {
     // All reads first
-    const [latestEventDoc, latestProgressDoc, latestUserDoc] = await Promise.all([
-      t.get(eventRef), t.get(progressRef), t.get(userRef),
+    const [latestEventDoc, latestUserDoc, latestProgressDoc] = await Promise.all([
+      t.get(eventRef), t.get(userRef), t.get(progressRef),
     ]);
-
     if (!latestEventDoc.exists) throw new HttpsError("not-found", "Event not found.");
     if (!latestUserDoc.exists) throw new HttpsError("not-found", "User not found.");
 
-    const latestEvent = latestEventDoc.data()!;
+    const latestEvent = latestEventDoc.data() as Record<string, any>;
     if (!latestEvent.isActive) throw new HttpsError("failed-precondition", "Event is not active.");
-
-    const latestProgress = latestProgressDoc.exists ? latestProgressDoc.data()! : { attempts: [] };
-    if (!latestProgress.attempts) latestProgress.attempts = [];
-    const latestAttempt = latestProgress.attempts.find((a: { status: string }) => a.status === 'active');
-    if (latestAttempt?.answeredQuestions?.includes(questionId)) {
-      return { alreadyAnswered: true, correct: false, damage: 0, newHp: latestEvent.currentHp || latestEvent.scaledMaxHp || latestEvent.maxHp };
+    const txNow = Date.now();
+    if (!isWindowOpen(latestEvent, txNow)) {
+      return { error: "EVENT_CLOSED" as const };
     }
 
-    const shardsSnap = await t.get(db.collection(`boss_events/${eventId}/shards`));
-    let totalDamage = 0;
-    shardsSnap.forEach(d => { totalDamage += d.data().damageDealt || 0; });
+    const latestUserData = latestUserDoc.data()!;
+    const latestLoadout = derivePlayerLoadout(latestUserData, latestEvent.classType);
+    const latestGam = latestLoadout.gam;
 
-    // Apply participantCount scaling with latest event data
-    const participantCount = latestEvent.participantCount || 0;
-    const drMultiplier = Math.min(1.0, Math.sqrt(10 / Math.max(10, participantCount + 1)));
-    const bossArmor = Math.min(50, Math.max(0, (participantCount - 10) * 2));
-    const scaledDamage = Math.max(1, Math.round(baseDamage * drMultiplier));
-    const finalDamage = Math.max(1, Math.round(scaledDamage * (1 - bossArmor / 100)));
+    const latestProgress = (latestProgressDoc.exists ? latestProgressDoc.data() : {}) as BossProgress;
 
-    // COMMANDER ally healing — read BEFORE any writes
-    let allies: string[] = [];
-    if (playerRole === 'COMMANDER' && isCorrect) {
-      const allProgressSnap = await t.get(
-        db.collection("boss_event_progress")
-          .where("eventId", "==", eventId)
-          .where("currentHp", ">", 0)
-          .orderBy("currentHp")
-          .limit(10)
-      );
-      allies = allProgressSnap.docs
-        .map(d => d.id)
-        .filter(id => id !== `${uid}_${eventId}`)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 2);
+    // Re-check guards inside the transaction (concurrency-safe)
+    if (latestProgress.victoryClaimed) {
+      return { error: "ALREADY_VICTORIOUS" as const };
+    }
+    const cdUntil = latestProgress.cooldownUntil ? Date.parse(latestProgress.cooldownUntil) : 0;
+    if (!Number.isNaN(cdUntil) && cdUntil > txNow) {
+      return {
+        error: "COOLDOWN_ACTIVE" as const,
+        cooldownUntil: latestProgress.cooldownUntil,
+        medevacCost: getMedevacCost(latestGam.medevacCount || 0),
+      };
+    }
+    if ((latestProgress.answeredQuestionIds || []).includes(questionId)) {
+      return { alreadyAnswered: true as const, correct: false, damage: 0, bossHp: latestProgress.bossHp ?? 0 };
     }
 
-    // Build fresh combatStats inside callback
-    const latestCS = latestAttempt?.combatStats || {
-      totalDamageDealt: 0, criticalHits: 0, damageReduced: 0, bossDamageTaken: 0,
-      correctByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
-      incorrectByDifficulty: { EASY: 0, MEDIUM: 0, HARD: 0 },
-      longestStreak: 0, currentStreak: 0, shieldBlocksUsed: 0,
-      healingReceived: 0, questionsAttempted: 0, questionsCorrect: 0,
-    };
-    const freshCombatStats = {
-      ...latestCS,
-      ...cs,
-      totalDamageDealt: (latestCS.totalDamageDealt || 0) + finalDamage,
-      role: playerRole,
-      ...(allies.length > 0 ? { roleHealingGiven: (latestCS.roleHealingGiven || 0) + (allies.length * 5) } : {}),
-    };
+    // Initialize / migrate progress. Legacy docs (shared-pool era) start the student
+    // at full personal HP — prior shared damage is treated as irrelevant.
+    const isNewProgress = !latestProgressDoc.exists || typeof latestProgress.bossMaxHp !== "number";
+    const bossMaxHp = isNewProgress
+      ? computeBossMaxHp(latestLoadout.gearScore, latestLoadout.stats)
+      : (latestProgress.bossMaxHp as number);
+    const bossHp = isNewProgress ? bossMaxHp : Math.max(0, latestProgress.bossHp as number);
 
-    // All writes after all reads
-    const shardRef = db.doc(`boss_events/${eventId}/shards/${shardId}`);
-    t.set(shardRef, { damageDealt: admin.firestore.FieldValue.increment(finalDamage) }, { merge: true });
+    // Session: reuse the active one, or open a fresh one
+    let session = latestProgress.session || null;
+    if (session && (!session.playerMaxHp || session.playerHp === undefined)) session = null;
+    if (!session) {
+      session = {
+        id: newSessionId(),
+        playerHp: latestLoadout.combat.maxHp,
+        playerMaxHp: latestLoadout.combat.maxHp,
+        streak: 0,
+        startedAt: new Date(txNow).toISOString(),
+      };
+    }
 
-    const logRef = db.collection(`boss_events/${eventId}/damage_log`).doc();
-    t.set(logRef, {
-      userId: uid, userName: userData.name || "Student", damage: finalDamage, isCrit,
-      timestamp: new Date().toISOString(), attemptNumber: currentAttempt.attemptNumber,
-    });
+    let newBossHp = bossHp;
+    let newStreak = session.streak || 0;
+    let playerHp = session.playerHp;
+    let damage = 0;
+    let isCrit = false;
 
-    const xpResult = buildXPUpdates(latestUserDoc.data()!, finalDamage, activeClass);
-    t.update(userRef, xpResult.updates);
+    if (isCorrect) {
+      const hit = computeCorrectHit({
+        gearScore: latestLoadout.gearScore,
+        stats: latestLoadout.stats,
+        difficulty: question.difficulty,
+        streak: session.streak || 0,
+        rand,
+        critRoll,
+        bossMaxHp,
+      });
+      damage = hit.damage;
+      isCrit = hit.isCrit;
+      newBossHp = Math.max(0, bossHp - damage);
+      newStreak = (session.streak || 0) + 1;
+    } else {
+      const ehp = computePlayerEhp({
+        maxHp: session.playerMaxHp || latestLoadout.combat.maxHp,
+        armorPercent: latestLoadout.combat.armorPercent,
+      });
+      const attack = computeBossAttack({ stats: latestLoadout.stats, playerEhp: ehp });
+      damage = attack.damage;
+      playerHp = Math.max(0, (session.playerHp || 0) - attack.damage);
+      newStreak = 0;
+    }
 
-    const isFirstAnswerInTx = !latestAttempt || latestAttempt.answeredQuestions.length === 0;
-    if (isFirstAnswerInTx) {
+    // Knockout
+    let knockedOut = false;
+    let newCooldownUntil: string | null = latestProgress.cooldownUntil || null;
+    let knockoutCount = latestProgress.knockoutCount || 0;
+    let newSession: BossProgress["session"] = session;
+    if (!isCorrect && playerHp <= 0) {
+      knockedOut = true;
+      newSession = null;
+      newCooldownUntil = new Date(txNow + KOOLDOWN_MS).toISOString();
+      knockoutCount += 1;
+    } else {
+      newSession = { ...session, playerHp: playerHp as number, playerMaxHp: session.playerMaxHp || latestLoadout.combat.maxHp, streak: newStreak };
+    }
+
+    // Victory payout (ported from v1 dealBossDamage, per-student, same transaction)
+    let victory = false;
+    let pendingAchievementUnlocks: string[] = [];
+    const userUpdates: Record<string, any> = {};
+    if (newBossHp <= 0 && !latestProgress.victoryClaimed) {
+      victory = true;
+      const rewards = (latestEvent.completionRewards || {}) as Record<string, any>;
+      const rewardXp = rewards.xp || 0;
+      const rewardFlux = rewards.flux || 0;
+      const rewardItemRarity = rewards.itemRarity || null;
+
+      if (rewardXp > 0) {
+        const xpRes = buildXPUpdates(latestUserData, rewardXp, latestLoadout.activeClass);
+        Object.assign(userUpdates, xpRes.updates);
+      }
+      if (rewardFlux > 0) {
+        const baseCurrency = userUpdates["gamification.currency"] ?? (latestGam.currency || 0);
+        userUpdates["gamification.currency"] = baseCurrency + rewardFlux;
+      }
+      if (rewardItemRarity) {
+        const loot = generateLoot(latestGam.level || 1, rewardItemRarity);
+        const bossClass = latestEvent.classType && latestEvent.classType !== "GLOBAL" ? latestEvent.classType : null;
+        const lootClass = bossClass || latestUserData.classType;
+        if (lootClass && lootClass !== "Uncategorized" && latestGam.classProfiles?.[lootClass]) {
+          const inv = latestGam.classProfiles[lootClass].inventory || [];
+          userUpdates[`gamification.classProfiles.${lootClass}.inventory`] = [...inv, loot];
+        } else {
+          const inv = latestGam.inventory || [];
+          userUpdates["gamification.inventory"] = [...inv, loot];
+        }
+      }
+      userUpdates["gamification.bossesDefeated"] = (latestGam.bossesDefeated || 0) + 1;
+      const { rewardUpdates: achievementUpdates, newUnlocks } = checkAndUnlockAchievements(latestUserData, userUpdates);
+      Object.assign(userUpdates, achievementUpdates);
+      userUpdates["gamification.bossesDefeated"] = (latestGam.bossesDefeated || 0) + 1; // guard against achievement-rewrite
+      pendingAchievementUnlocks = newUnlocks;
+    }
+
+    // Plain display counter: increment once per student per event
+    const isFirstAnswer = (latestProgress.answeredQuestionIds || []).length === 0;
+    if (isFirstAnswer) {
       t.update(eventRef, { participantCount: admin.firestore.FieldValue.increment(1) });
     }
 
-    for (const allyProgressId of allies) {
-      const allyRef = db.doc(`boss_event_progress/${allyProgressId}`);
-      t.update(allyRef, { currentHp: admin.firestore.FieldValue.increment(5) });
+    if (Object.keys(userUpdates).length > 0) {
+      t.update(userRef, userUpdates);
     }
 
-    // Merge attempt updates instead of replacing the whole attempt
-    const updatedAttempts = [...latestProgress.attempts];
-    const attemptIdx = updatedAttempts.findIndex((a: { status: string }) => a.status === 'active');
-    if (attemptIdx >= 0) {
-      const existingAttempt = updatedAttempts[attemptIdx];
-      updatedAttempts[attemptIdx] = {
-        ...existingAttempt,
-        answeredQuestions: [...(existingAttempt.answeredQuestions || []), questionId],
-        currentHp: playerHp,
-        maxHp,
-        combatStats: freshCombatStats,
-        status: playerHp <= 0 ? 'abandoned' : existingAttempt.status,
-        ...(playerHp <= 0 ? { endedAt: new Date().toISOString() } : {}),
-      };
-    } else {
-      updatedAttempts.push({
-        ...currentAttempt,
-        combatStats: freshCombatStats,
-      });
-    }
-
+    // Progress write (legacy `attempts` field is no longer written)
+    const answeredQuestionIds = [...(latestProgress.answeredQuestionIds || []), questionId];
     t.set(progressRef, {
-      userId: uid, eventId,
-      attempts: updatedAttempts,
-      totalDamageDealt: (latestProgress.totalDamageDealt || 0) + finalDamage,
-      participationMet: updatedAttempts.some((a: { answeredQuestions: string[]; combatStats: { questionsCorrect: number } }) =>
-        a.answeredQuestions.length >= 5 && (a.combatStats?.questionsCorrect || 0) >= 1
-      ),
+      userId: uid,
+      eventId,
+      bossMaxHp,
+      bossHp: newBossHp,
+      cooldownUntil: newCooldownUntil,
+      session: newSession,
+      victoryClaimed: latestProgress.victoryClaimed || victory,
+      knockoutCount,
+      answeredQuestionIds,
+      answeredCount: (latestProgress.answeredCount || 0) + 1,
+      correctCount: (latestProgress.correctCount || 0) + (isCorrect ? 1 : 0),
     }, { merge: true });
 
-    const effectiveMaxHp = latestEvent.scaledMaxHp || latestEvent.maxHp;
-    const newTotalDamage = totalDamage + finalDamage;
-    const newHp = Math.max(0, effectiveMaxHp - newTotalDamage);
-
-    let phaseTransition: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null = null;
-    const phases = latestEvent.phases || [];
-    const currentPhase = latestEvent.currentPhase || 0;
-
-    if (phases.length > 0) {
-      const hpPercent = (newHp / effectiveMaxHp) * 100;
-      for (let i = phases.length - 1; i > currentPhase; i--) {
-        if (hpPercent <= phases[i].hpThreshold) {
-          phaseTransition = {
-            phase: i, name: phases[i].name, dialogue: phases[i].dialogue,
-            newAppearance: phases[i].bossAppearance,
-          };
-          t.update(eventRef, {
-            currentPhase: i,
-            ...(phases[i].damagePerCorrect ? { damagePerCorrect: phases[i].damagePerCorrect } : {}),
-            lastPhaseTransitionAt: new Date().toISOString(),
-          });
-          break;
-        }
-      }
-    }
-
-    let bossDefeated = false;
-    if (newHp <= 0 && latestEvent.isActive) {
-      t.update(eventRef, { isActive: false, currentHp: 0 });
-      bossDefeated = true;
-    } else {
-      t.update(eventRef, { currentHp: newHp });
-    }
-
-    return { newHp, bossDefeated, phaseTransition, isFirstAnswerForPlayer: isFirstAnswerInTx, damage: finalDamage };
+    return {
+      correct: isCorrect,
+      damage,
+      isCrit,
+      bossHp: newBossHp,
+      bossMaxHp,
+      playerHp: newSession ? newSession.playerHp : 0,
+      playerMaxHp: (newSession ? newSession.playerMaxHp : session.playerMaxHp) || latestLoadout.combat.maxHp,
+      knockedOut,
+      cooldownUntil: newCooldownUntil,
+      victory,
+      streak: newStreak,
+      newUnlocks: pendingAchievementUnlocks,
+    };
   });
 
-  if (txResult.alreadyAnswered) {
+  if ("error" in txResult && txResult.error) {
+    if (txResult.error === "ALREADY_VICTORIOUS") {
+      return { error: "ALREADY_VICTORIOUS", message: "You have already defeated this boss." };
+    }
+    if (txResult.error === "COOLDOWN_ACTIVE") {
+      return txResult;
+    }
+    return { error: "EVENT_CLOSED", message: "This boss event is not currently open." };
+  }
+  if ("alreadyAnswered" in txResult && txResult.alreadyAnswered) {
     return txResult;
   }
 
-  // --- Topic mastery tracking (outside transaction) ---
+  // Achievement notifications AFTER the transaction resolves (no side effects in tx callback)
+  if (txResult.newUnlocks && txResult.newUnlocks.length > 0) {
+    try {
+      await writeAchievementNotifications(db, uid, txResult.newUnlocks);
+    } catch (err) {
+      logWithCorrelation("error", "Failed to write achievement notifications", correlationId, {
+        uid, eventId, error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // Topic mastery tracking (outside transaction, best-effort)
   if (question.topicId) {
     try {
-      const masteryRef = db.doc(`users/${uid}`);
-      const masterySnap = await masteryRef.get();
-      const masteryData = masterySnap.data()?.gamification?.topicMastery || {};
+      const masteryData = gam.topicMastery || {};
       const currentMastery = masteryData[question.topicId] || {
         topicId: question.topicId, topicName: question.topicId,
         level: 0, accuracyHistory: [], currentAccuracy: 0,
@@ -663,51 +644,17 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       currentMastery.currentAccuracy = recent.reduce((a: number, b: number) => a + b, 0) / recent.length;
       currentMastery.level = Math.min(10, Math.floor(currentMastery.currentAccuracy * 10));
       currentMastery.lastUpdated = new Date().toISOString();
-
-      await masteryRef.update({
-        [`gamification.topicMastery.${question.topicId}`]: currentMastery,
-      });
+      await userRef.update({ [`gamification.topicMastery.${question.topicId}`]: currentMastery });
     } catch (err) {
-      logWithCorrelation('error', 'Failed to update topic mastery', correlationId, { uid, eventId, topicId: question.topicId, error: err instanceof Error ? err.message : String(err) });
+      logWithCorrelation("error", "Failed to update topic mastery", correlationId, {
+        uid, eventId, topicId: question.topicId, error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
-  // --- Adaptive difficulty ---
-  const attemptAccuracy = cs.questionsAttempted > 0 ? cs.questionsCorrect / cs.questionsAttempted : 0;
-  let nextDifficulty: 'EASY' | 'MEDIUM' | 'HARD' = question.difficulty;
-  if (attemptAccuracy > 0.85) nextDifficulty = 'HARD';
-  else if (attemptAccuracy < 0.55) nextDifficulty = 'EASY';
-  else nextDifficulty = 'MEDIUM';
-
-  // --- Boss intent for next question ---
-  let nextBossIntent: { type: string; warningText: string; icon: string; targetSubject?: string } | null = null;
-  if (!txResult.bossDefeated && playerHp > 0) {
-    const remainingQuestions = questions.filter((q: { id: string }) => !currentAttempt.answeredQuestions.includes(q.id));
-    if (remainingQuestions.length > 0) {
-      const nextQ = remainingQuestions[0];
-      nextBossIntent = {
-        type: 'channel',
-        warningText: 'Channeling...',
-        icon: '⚡',
-        targetSubject: nextQ.topicId,
-      };
-    }
-  }
-
-  return {
-    correct: isCorrect, damage: txResult.damage, newHp: txResult.newHp, bossDefeated: txResult.bossDefeated,
-    playerDamage, playerHp, playerMaxHp: maxHp,
-    knockedOut: playerHp <= 0,
-    isCrit, healAmount, shieldBlocked,
-    playerRole,
-    attemptNumber: currentAttempt.attemptNumber,
-    attemptsRemaining: BOSS_EVENT_MAX_ATTEMPTS - progress.attempts.filter((a: { status: string }) => a.status !== 'active').length,
-    phaseTransition: txResult.phaseTransition,
-    activeAbilities: activeAbilities.filter((a) => a.remainingQuestions > 0),
-    nextDifficulty,
-    nextBossIntent,
-  };
+  return txResult;
 });
+
 // ==========================================
 // ADAPTIVE QUESTION SELECTION
 // ==========================================
@@ -723,97 +670,250 @@ export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60
   const db = admin.firestore();
   const eventRef = db.doc(`boss_events/${eventId}`);
   const progressRef = db.doc(`boss_event_progress/${uid}_${eventId}`);
-
   const userRef = db.doc(`users/${uid}`);
+
   const [eventSnap, progressSnap, userSnap] = await Promise.all([
     eventRef.get(), progressRef.get(), userRef.get(),
   ]);
 
   if (!eventSnap.exists) throw new HttpsError("not-found", "Event not found.");
   if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-  const event = eventSnap.data()!;
+  const event = eventSnap.data() as Record<string, any>;
   if (!event.isActive) throw new HttpsError("failed-precondition", "Event is not active.");
 
-  // Verify user is participating in this event
-  if (!progressSnap.exists) {
-    throw new HttpsError("permission-denied", "You are not participating in this event.");
+  const now = Date.now();
+  if (!isWindowOpen(event, now)) {
+    return { error: "EVENT_CLOSED", message: "This boss event is not currently open." };
   }
 
-  const questions: Array<{ id: string; stem: string; options: string[]; correctAnswer: number; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; topicId?: string; bankId?: string; damageBonus?: number; distractorTypes?: string[]; explanation?: string }> = event.questions || [];
+  const userData = userSnap.data()!;
+  const loadout = derivePlayerLoadout(userData, event.classType);
+  const gam = loadout.gam;
 
-  // Get current attempt
-  let progress = progressSnap.exists ? progressSnap.data()! : { attempts: [] };
-  if (!progress.attempts) progress.attempts = [];
-  const currentAttempt = progress.attempts.find((a: { status: string }) => a.status === 'active');
+  // Bootstrap the progress doc if missing (cold start) or legacy (no bossMaxHp snapshot).
+  const existing = progressSnap.exists ? (progressSnap.data() as BossProgress) : null;
+  if (!existing || typeof existing.bossMaxHp !== "number") {
+    const bossMaxHp = computeBossMaxHp(loadout.gearScore, loadout.stats);
+    const bootstrap: BossProgress = {
+      userId: uid,
+      eventId,
+      bossMaxHp,
+      bossHp: bossMaxHp,
+      cooldownUntil: null,
+      session: null,
+      victoryClaimed: false,
+      knockoutCount: 0,
+      answeredQuestionIds: [],
+      answeredCount: 0,
+      correctCount: 0,
+    };
+    await progressRef.set(bootstrap, { merge: true });
+    return {
+      question: null,
+      bossHp: bossMaxHp,
+      bossMaxHp,
+      playerHp: loadout.combat.maxHp,
+      playerMaxHp: loadout.combat.maxHp,
+      knockoutCount: 0,
+      victoryClaimed: false,
+      cooldownUntil: null,
+      medevacCost: getMedevacCost(gam.medevacCount || 0),
+      remainingCount: (event.questions || []).length,
+      attemptStats: { accuracy: null, correct: 0, attempted: 0 },
+      message: "Boss encounter initialized.",
+    };
+  }
 
-  const answeredIds = new Set<string>(currentAttempt?.answeredQuestions || []);
-  const remaining = questions.filter(q => !answeredIds.has(q.id));
+  const progress = existing;
+
+  // Cooldown state so the client can render the knockout screen without a second call
+  const cooldownUntil = progress.cooldownUntil ? Date.parse(progress.cooldownUntil) : 0;
+  if (!Number.isNaN(cooldownUntil) && cooldownUntil > now) {
+    return {
+      question: null,
+      cooldownActive: true,
+      cooldownUntil: progress.cooldownUntil,
+      medevacCost: getMedevacCost(gam.medevacCount || 0),
+      bossHp: progress.bossHp ?? 0,
+      bossMaxHp: progress.bossMaxHp,
+      knockoutCount: progress.knockoutCount || 0,
+      victoryClaimed: !!progress.victoryClaimed,
+    };
+  }
+
+  if (progress.victoryClaimed) {
+    return {
+      question: null,
+      complete: true,
+      victoryClaimed: true,
+      message: "You have already defeated this boss!",
+      bossHp: 0,
+      bossMaxHp: progress.bossMaxHp,
+    };
+  }
+
+  const questions: BossEventQuestion[] = event.questions || [];
+  const answeredIds = new Set<string>(progress.answeredQuestionIds || []);
+  const remaining = questions.filter((q) => !answeredIds.has(q.id));
 
   if (remaining.length === 0) {
-    return { complete: true, message: 'All questions answered!' };
+    return {
+      question: null,
+      complete: true,
+      message: "All questions answered!",
+      bossHp: progress.bossHp ?? 0,
+      bossMaxHp: progress.bossMaxHp,
+      victoryClaimed: !!progress.victoryClaimed,
+    };
   }
 
-  // --- Adaptive selection ---
-  const cs = currentAttempt?.combatStats || { questionsCorrect: 0, questionsAttempted: 0 };
-  const accuracy = cs.questionsAttempted > 0 ? cs.questionsCorrect / cs.questionsAttempted : 0.5;
+  // --- Adaptive selection (accuracy band + topic diversity penalty) ---
+  const answeredCount = progress.answeredCount || 0;
+  const correctCount = progress.correctCount || 0;
+  const accuracy = answeredCount > 0 ? correctCount / answeredCount : 0.5;
 
-  // Difficulty bias based on accuracy
-  let targetDifficulties: ('EASY' | 'MEDIUM' | 'HARD')[];
-  if (accuracy > 0.85) targetDifficulties = ['HARD', 'MEDIUM'];
-  else if (accuracy < 0.55) targetDifficulties = ['EASY', 'MEDIUM'];
-  else targetDifficulties = ['MEDIUM', 'EASY', 'HARD'];
+  let targetDifficulties: ("EASY" | "MEDIUM" | "HARD")[];
+  if (accuracy > 0.85) targetDifficulties = ["HARD", "MEDIUM"];
+  else if (accuracy < 0.55) targetDifficulties = ["EASY", "MEDIUM"];
+  else targetDifficulties = ["MEDIUM", "EASY", "HARD"];
 
-  // Topic balance: count recent topics
   const recentTopics: Record<string, number> = {};
-  for (const qid of currentAttempt?.answeredQuestions?.slice(-5) || []) {
-    const q = questions.find((x: { id: string }) => x.id === qid);
+  for (const qid of (progress.answeredQuestionIds || []).slice(-5)) {
+    const q = questions.find((x) => x.id === qid);
     if (q?.topicId) recentTopics[q.topicId] = (recentTopics[q.topicId] || 0) + 1;
   }
 
-  // Score each remaining question
-  const scored = remaining.map(q => {
-    let score = Math.random(); // Base randomness
-
-    // Difficulty match bonus
+  const scored = remaining.map((q) => {
+    let score = Math.random();
     const diffIdx = targetDifficulties.indexOf(q.difficulty);
     if (diffIdx === 0) score += 2.0;
     else if (diffIdx === 1) score += 1.0;
-
-    // Topic diversity bonus (penalize recently seen topics)
     if (q.topicId && recentTopics[q.topicId]) {
       score -= recentTopics[q.topicId] * 0.5;
     }
-
     return { q, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
   const selected = scored[0].q;
 
-  // Boss intent for next-next question
-  const nextRemaining = remaining.filter(q => q.id !== selected.id);
+  const nextRemaining = remaining.filter((q) => q.id !== selected.id);
   let bossIntent = null;
   if (nextRemaining.length > 0) {
     const nextQ = nextRemaining[0];
     bossIntent = {
-      type: 'channel',
-      warningText: 'Channeling...',
-      icon: '⚡',
+      type: "channel",
+      warningText: "Channeling...",
+      icon: "⚡",
       targetSubject: nextQ.topicId,
     };
   }
 
+  const session = progress.session || null;
+
   return {
-    question: selected,
+    question: toStudentQuestion(selected as unknown as Record<string, unknown>),
     bossIntent,
     remainingCount: remaining.length - 1,
+    bossHp: progress.bossHp ?? 0,
+    bossMaxHp: progress.bossMaxHp,
+    playerHp: session ? session.playerHp : loadout.combat.maxHp,
+    playerMaxHp: session ? session.playerMaxHp : loadout.combat.maxHp,
+    streak: session ? session.streak || 0 : 0,
+    cooldownUntil: progress.cooldownUntil || null,
+    medevacCost: getMedevacCost(gam.medevacCount || 0),
     attemptStats: {
       accuracy: Math.round(accuracy * 100),
-      correct: cs.questionsCorrect || 0,
-      attempted: cs.questionsAttempted || 0,
+      correct: correctCount,
+      attempted: answeredCount,
     },
   };
 });
+
+// ==========================================
+// MEDEVAC
+// ==========================================
+
+export const medevacBoss = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const uid = verifyAuth(request.auth);
+  const correlationId = generateCorrelationId();
+  const { eventId } = request.data;
+  if (!eventId) throw new HttpsError("invalid-argument", "Event ID required.");
+
+  const db = admin.firestore();
+  const eventRef = db.doc(`boss_events/${eventId}`);
+  const userRef = db.doc(`users/${uid}`);
+  const progressRef = db.doc(`boss_event_progress/${uid}_${eventId}`);
+
+  const [eventSnap, userSnap, progressSnap] = await Promise.all([
+    eventRef.get(), userRef.get(), progressRef.get(),
+  ]);
+
+  if (!eventSnap.exists) throw new HttpsError("not-found", "Event not found.");
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+  if (!progressSnap.exists) throw new HttpsError("not-found", "No boss progress found for this event.");
+
+  const progress = progressSnap.data() as BossProgress;
+  const now = Date.now();
+  const cooldownUntil = progress.cooldownUntil ? Date.parse(progress.cooldownUntil) : 0;
+  if (Number.isNaN(cooldownUntil) || cooldownUntil <= now) {
+    return { error: "NO_ACTIVE_COOLDOWN", message: "You are not on a knockout cooldown." };
+  }
+
+  const txResult = await db.runTransaction(async (t) => {
+    // All reads first
+    const [latestUserDoc, latestProgressDoc] = await Promise.all([t.get(userRef), t.get(progressRef)]);
+    if (!latestUserDoc.exists) throw new HttpsError("not-found", "User not found.");
+    if (!latestProgressDoc.exists) throw new HttpsError("not-found", "No boss progress found for this event.");
+
+    const latestUserData = latestUserDoc.data()!;
+    const latestGam = (latestUserData.gamification || {}) as Record<string, any>;
+    const latestProgress = latestProgressDoc.data() as BossProgress;
+
+    const txNow = Date.now();
+    const cd = latestProgress.cooldownUntil ? Date.parse(latestProgress.cooldownUntil) : 0;
+    if (Number.isNaN(cd) || cd <= txNow) {
+      return { error: "NO_ACTIVE_COOLDOWN" as const };
+    }
+
+    const state = computeMedevacState({
+      now: txNow,
+      medevacCount: latestGam.medevacCount,
+      medevacResetAt: latestGam.medevacResetAt,
+    });
+
+    const balance = latestGam.currency || 0;
+    if (balance < state.cost) {
+      return { error: "INSUFFICIENT_FLUX" as const, cost: state.cost, balance };
+    }
+
+    // All writes after all reads
+    const userUpdates: Record<string, any> = {
+      "gamification.currency": balance - state.cost,
+      "gamification.medevacCount": state.nextCount,
+    };
+    if (state.resetAt !== undefined) {
+      userUpdates["gamification.medevacResetAt"] = state.resetAt;
+    }
+    t.update(userRef, userUpdates);
+    t.update(progressRef, { cooldownUntil: null });
+
+    return {
+      success: true as const,
+      cost: state.cost,
+      remainingFlux: balance - state.cost,
+      nextCost: getMedevacCost(state.nextCount),
+      resetsAt: state.resetAt !== undefined ? state.resetAt : (latestGam.medevacResetAt ?? null),
+    };
+  });
+
+  if ("error" in txResult && txResult.error) {
+    return txResult;
+  }
+  logWithCorrelation("info", "medevacBoss: success", correlationId, { uid, eventId, cost: txResult.cost });
+  return txResult;
+});
+
 // ==========================================
 // SPECIALIZATION TRIALS
 // ==========================================

@@ -915,6 +915,25 @@ export const es: Dictionary = {
   // ── Feed de batalla ──
   'boss.liveBattleFeed': 'Feed de batalla en vivo',
 
+  // ── Noqueo del jefe / evacuación médica (Piece 5) ──
+  'boss.koTitle': 'Reagruparse en el campamento base',
+  'boss.koBody': 'Has quedado fuera de esta pelea, pero tu progreso se conserva y el jefe mantiene cada punto de daño que le infligiste. Estudia y vuelve más fuerte.',
+  'boss.recoverIn': 'Se recupera en {time}',
+  'boss.medevacBtn': 'Evacuación · {cost} de Flux',
+  'boss.medevacResetAt': 'El costo se restablece {time}',
+  'boss.medevacShortfall': 'Te faltan {shortfall} de Flux para la evacuación',
+  'boss.medevacNext': 'Próxima evacuación: {cost} de Flux · se restablece en {hours}h',
+  'boss.medevacSuccess': '¡Evacuación completada, de vuelta a la pelea!',
+  'boss.medevacFailed': 'La evacuación falló',
+  'boss.medevacNoCooldown': 'No estás en recuperación en este momento.',
+  'boss.victoryRewards': 'Recompensas de la victoria',
+  'boss.bossClosed': 'Este jefe ha cerrado',
+  'boss.bossClosedBody': 'Este encuentro ya no está abierto. Tus resultados se conservan abajo.',
+  'boss.bossClosedNeverFought': 'Este jefe ha cerrado. No participaste en este encuentro; mantente atento al próximo.',
+  'boss.yourResults': 'Tus resultados',
+  'boss.progressKept': 'El daño que infligiste a este jefe se conserva.',
+  'boss.streakShort': 'Racha: {streak}',
+
   // ── Autenticación (login) ──
   'auth.welcomeBack': 'Bienvenido de nuevo',
   'auth.subtitle': 'Portal de Física y Ciencias Forenses de Porter',

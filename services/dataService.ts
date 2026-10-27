@@ -1,6 +1,7 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress } from '../lib/firebase';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress, callMedevacBoss, callRespecSpecialization } from '../lib/firebase';
+import { stripBossEventForClient } from '../lib/bossRedaction';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -1780,17 +1781,24 @@ export const dataService = {
   subscribeToBossEvents: (classType: string, callback: (events: import('../types').BossEvent[]) => void) => {
     const q = query(collection(db, 'boss_events'), where('isActive', '==', true));
     return resilientSnapshot('boss_events', q, (snapshot: any) => {
+      // Redact answer key before any event doc reaches component state (Piece 5).
       const events = snapshot.docs
-        .map((d: any) => ({ id: d.id, ...d.data() } as import('../types').BossEvent))
+        .map((d: any) => stripBossEventForClient({ id: d.id, ...d.data() }) as import('../types').BossEvent | null)
+        .filter((e: import('../types').BossEvent | null): e is import('../types').BossEvent => !!e)
         .filter((e: import('../types').BossEvent) => e.classType === classType || e.classType === 'GLOBAL');
       callback(events);
     });
   },
 
-  subscribeToAllBossEvents: (callback: (events: import('../types').BossEvent[]) => void) => {
+  subscribeToAllBossEvents: (callback: (events: import('../types').BossEvent[]) => void, opts?: { redact?: boolean }) => {
     const q = collection(db, 'boss_events');
+    const redact = opts?.redact !== false; // default: redact (opt out only for teacher editors)
     return onSnapshot(q, (snapshot) => {
-      callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as import('../types').BossEvent)));
+      const events = snapshot.docs.map((d) => {
+        const raw = { id: d.id, ...d.data() } as import('../types').BossEvent;
+        return redact ? (stripBossEventForClient(raw as unknown as Record<string, unknown>) as unknown as import('../types').BossEvent) : raw;
+      });
+      callback(events);
     }, (error: unknown) => reportError(error, { subscription: 'allBossEvents' }));
   },
 
@@ -1814,14 +1822,20 @@ export const dataService = {
   answerBossEvent: async (eventId: string, questionId: string, answer: number, timeTakenMs?: number) => {
     const result = await callAnswerBossEvent({ eventId, questionId, answer, timeTakenMs });
     return result.data as {
-      correct: boolean; damage: number; newHp: number; alreadyAnswered?: boolean;
-      bossDefeated?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number;
-      knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean;
-      attemptNumber?: number; attemptsRemaining?: number;
+      // Soft errors returned as structured payloads (not thrown)
+      error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'EVENT_CLOSED';
+      message?: string;
+      cooldownUntil?: string | null;
+      medevacCost?: number;
+      alreadyAnswered?: boolean;
+      // Combat result
+      correct?: boolean; damage?: number;
+      bossHp?: number; bossMaxHp?: number;
+      playerHp?: number; playerMaxHp?: number;
+      knockedOut?: boolean; victory?: boolean; victoryClaimed?: boolean; streak?: number;
+      isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerDamage?: number;
       phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null;
       activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[];
-      nextDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
-      nextBossIntent?: { type: string; warningText: string; icon: string; targetSubject?: string } | null;
     };
   },
 
@@ -1830,10 +1844,46 @@ export const dataService = {
     return result.data as {
       complete?: boolean;
       message?: string;
-      question?: import('../types').BossQuizQuestion;
+      question?: import('../types').BossQuizQuestion | null;
       bossIntent?: { type: string; warningText: string; icon: string; targetSubject?: string } | null;
       remainingCount?: number;
-      attemptStats?: { accuracy: number; correct: number; attempted: number };
+      attemptStats?: { accuracy: number | null; correct: number; attempted: number };
+      bossHp?: number; bossMaxHp?: number;
+      playerHp?: number; playerMaxHp?: number;
+      streak?: number;
+      cooldownActive?: boolean;
+      cooldownUntil?: string | null;
+      medevacCost?: number;
+      knockoutCount?: number;
+      victoryClaimed?: boolean;
+      error?: 'EVENT_CLOSED';
+    };
+  },
+
+  medevacBoss: async (eventId: string) => {
+    const result = await callMedevacBoss({ eventId });
+    return result.data as {
+      success?: boolean;
+      cost?: number;
+      remainingFlux?: number;
+      nextCost?: number;
+      resetsAt?: number | null;
+      error?: 'INSUFFICIENT_FLUX' | 'NO_ACTIVE_COOLDOWN';
+      balance?: number;
+      message?: string;
+    };
+  },
+
+  respecSpecialization: async (specializationId: string) => {
+    const result = await callRespecSpecialization({ specializationId });
+    return result.data as {
+      success?: boolean;
+      cost?: number;
+      remainingFlux?: number;
+      specialization?: string;
+      error?: 'INSUFFICIENT_FLUX' | 'NO_SPECIALIZATION' | 'SAME_SPECIALIZATION' | 'FIGHT_IN_PROGRESS';
+      balance?: number;
+      message?: string;
     };
   },
 

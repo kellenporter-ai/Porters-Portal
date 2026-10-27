@@ -64,7 +64,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
 
   useEffect(() => {
     const unsubEvents = dataService.subscribeToXPEvents(setEvents);
-    const unsubQuizBosses = dataService.subscribeToAllBossEvents(setQuizBosses);
+    const unsubQuizBosses = dataService.subscribeToAllBossEvents(setQuizBosses, { redact: false }); // teacher editor needs the answer key
     const unsubBanks = dataService.subscribeToBossQuestionBanks(setQuestionBanks);
     const unsubCustomItems = dataService.subscribeToCustomItems(setCustomItems);
     return () => { unsubEvents(); unsubQuizBosses(); unsubBanks(); unsubCustomItems(); };

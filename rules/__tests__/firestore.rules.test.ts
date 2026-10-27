@@ -566,6 +566,149 @@ describe('integrity_reports', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Boss redesign — per-student progress lockdown (Piece 3)
+// ---------------------------------------------------------------------------
+describe('boss redesign: progress + damage_log lockdown', () => {
+  const EVENT = 'event-1';
+  const progressSeed = (uid: string) => ({
+    userId: uid,
+    eventId: EVENT,
+    accuracy: 0.85,
+    damage: 120,
+    streak: 3,
+    knockouts: 1,
+  });
+
+  async function seedProgress(uid: string) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'boss_event_progress', `${uid}_${EVENT}`),
+        progressSeed(uid),
+      );
+    });
+  }
+
+  it('student A CAN read their own boss_event_progress doc', async () => {
+    await seedProgress(STUDENT_A);
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertSucceeds(
+      getDoc(doc(student, 'boss_event_progress', `${STUDENT_A}_${EVENT}`)),
+    );
+  });
+
+  it('student A CANNOT read student B boss_event_progress doc', async () => {
+    await seedProgress(STUDENT_B);
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      getDoc(doc(student, 'boss_event_progress', `${STUDENT_B}_${EVENT}`)),
+    );
+  });
+
+  it('student A CANNOT write any boss_event_progress doc (even their own)', async () => {
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      setDoc(
+        doc(student, 'boss_event_progress', `${STUDENT_A}_${EVENT}`),
+        progressSeed(STUDENT_A),
+      ),
+    );
+  });
+
+  it('admin CAN read any boss_event_progress doc', async () => {
+    await seedProgress(STUDENT_B);
+    const admin = testEnv
+      .authenticatedContext('admin-uid', { admin: true })
+      .firestore();
+    await assertSucceeds(
+      getDoc(doc(admin, 'boss_event_progress', `${STUDENT_B}_${EVENT}`)),
+    );
+  });
+
+  it('student A CANNOT read boss_events/{id}/damage_log entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'boss_events', EVENT, 'damage_log', 'entry-1'),
+        { userId: STUDENT_B, damage: 50 },
+      );
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      getDoc(doc(student, 'boss_events', EVENT, 'damage_log', 'entry-1')),
+    );
+  });
+
+  it('admin CAN read boss_events/{id}/damage_log entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'boss_events', EVENT, 'damage_log', 'entry-1'),
+        { userId: STUDENT_B, damage: 50 },
+      );
+    });
+    const admin = testEnv
+      .authenticatedContext('admin-uid', { admin: true })
+      .firestore();
+    await assertSucceeds(
+      getDoc(doc(admin, 'boss_events', EVENT, 'damage_log', 'entry-1')),
+    );
+  });
+
+  it('student A CANNOT read boss_events/{id}/shards entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'boss_events', EVENT, 'shards', 'shard-1'),
+        { damage: 10 },
+      );
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      getDoc(doc(student, 'boss_events', EVENT, 'shards', 'shard-1')),
+    );
+  });
+
+  it('student A CAN still read the boss_events/{id} parent doc (regression guard)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'boss_events', EVENT), {
+        title: 'Boss Event',
+        status: 'active',
+      });
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertSucceeds(getDoc(doc(student, 'boss_events', EVENT)));
+  });
+
+  it('student CANNOT self-credit gamification.currency on their own user doc', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', STUDENT_A), {
+        classType: 'porter',
+        gamification: { currency: 10 },
+      });
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      updateDoc(doc(student, 'users', STUDENT_A), {
+        'gamification.currency': 999999,
+      }),
+    );
+  });
+
+  it('student CANNOT self-modify gamification.medevacCount or medevacResetAt', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', STUDENT_A), {
+        classType: 'porter',
+        gamification: { currency: 10, medevacCount: 0 },
+      });
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      updateDoc(doc(student, 'users', STUDENT_A), {
+        'gamification.medevacCount': 5,
+        'gamification.medevacResetAt': new Date().toISOString(),
+      }),
+    );
+  });
+});
+
 // Sanity check that the test env is wired to the emulator, not production.
 describe('emulator wiring', () => {
   it('uses the emulator project id', () => {

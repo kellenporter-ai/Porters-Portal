@@ -39,7 +39,6 @@ const TopicMasteryAnalytics = lazyWithRetry(() => import('./dashboard/TopicMaste
 const CalendarView = lazyWithRetry(() => import('./dashboard/CalendarView'));
 const SkillTreePanel = lazyWithRetry(() => import('./xp/SkillTreePanel'));
 const FortuneWheel = lazyWithRetry(() => import('./xp/FortuneWheel'));
-const BossEncounterPanel = lazyWithRetry(() => import('./xp/BossEncounterPanel'));
 const BossQuizPanel = lazyWithRetry(() => import('./xp/BossQuizPanel'));
 const FluxShopPanel = lazyWithRetry(() => import('./xp/FluxShopPanel'));
 
@@ -91,7 +90,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
         break;
       case 'CALENDAR': safeImport(() => import('./dashboard/CalendarView')); break;
       case 'BOSS':
-        safeImport(() => import('./xp/BossEncounterPanel'));
         safeImport(() => import('./xp/BossQuizPanel'));
         break;
       default: break;
@@ -742,11 +740,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
              {activeTab === 'BOSS' && (
                  enabledFeatures.bossFights ? (
                  <div className="space-y-6">
-                     <FeatureErrorBoundary feature="Boss Encounters">
-                       <React.Suspense fallback={<GamificationSkeleton />}>
-                       <BossEncounterPanel userId={user.id} userName={user.name} classType={activeClass} />
-                       </React.Suspense>
-                     </FeatureErrorBoundary>
                      <FeatureErrorBoundary feature="Boss Quiz">
                        <React.Suspense fallback={<GamificationSkeleton />}>
                        <BossQuizPanel userId={user.id} classType={activeClass} userSection={user.classSections?.[activeClass] || user.section} userClassSections={user.classSections} playerStats={playerStats} playerAppearance={classProfile.appearance} playerEquipped={equipped} playerEvolutionLevel={level} userSpecialization={user.gamification?.specialization as import('../types').SpecializationId | undefined} />
