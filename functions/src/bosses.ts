@@ -39,7 +39,58 @@ import {
   computeCorrectHit,
   computeBossAttack,
   computePlayerEhp,
+  HIT_CEILING_FRACTION,
+  evaluateSkillIdentity,
+  computeSkillRank,
+  SKILL_IDENTITY_VERSION,
+  type SkillIdentityId,
 } from "./boss-combat.js";
+
+export interface IdentityModifierInput {
+  specId?: string;
+  unlockedSkills: string[];
+  correct: boolean;
+  streak: number;
+  priorStreak: number;
+  playerHp: number;
+  playerMaxHp: number;
+  bossHp: number;
+  bossMaxHp: number;
+  difficulty: string;
+  isRevision: boolean;
+  healsUsedThisAttempt: number;
+}
+
+/** Resolve unlocked nodes to combat effects; missing/unknown identities stay neutral. */
+export function resolveIdentityModifiers(args: IdentityModifierInput) {
+  const neutral = {
+    damageMultiplier: 1,
+    incomingMultiplier: 1,
+    healApplied: 0,
+    critBonus: 0,
+    rank: 0,
+    identity: null as string | null,
+  };
+  const specId = args.specId as SkillIdentityId | undefined;
+  const rank = specId ? computeSkillRank(specId, args.unlockedSkills) : 0;
+  if (!specId || rank === 0) return neutral;
+
+  const result = evaluateSkillIdentity({
+    ...args,
+    identity: specId,
+    rank,
+    difficulty: args.difficulty as "EASY" | "MEDIUM" | "HARD",
+    isHardestDifficulty: args.difficulty === "HARD",
+  });
+  return {
+    damageMultiplier: result.damageMultiplier,
+    incomingMultiplier: result.incomingMultiplier,
+    healApplied: result.healApplied,
+    critBonus: result.critBonus,
+    rank: result.rank,
+    identity: result.identity,
+  };
+}
 
 const KOOLDOWN_MS = 6 * 60 * 60 * 1000; // knockout cooldown: 6 hours
 const MEDEVAC_WINDOW_MS = 24 * 60 * 60 * 1000; // global medevac escalator window
@@ -160,7 +211,8 @@ export function createBossAttempt(id: string, startedAt: string): BossAttempt {
     answeredCount: 0,
     presentations: [],
     revisionQueue: [],
-  };
+    healsUsedThisAttempt: 0,
+  } as BossAttempt & { healsUsedThisAttempt: number };
 }
 
 export interface PlannedPresentation {
@@ -261,11 +313,12 @@ export function applyAnswerToAttempt(
     attempt: {
       ...attempt,
       answeredCount,
+      healsUsedThisAttempt: (attempt as BossAttempt & { healsUsedThisAttempt?: number }).healsUsedThisAttempt || 0,
       presentations: attempt.presentations.map((p) =>
         p.presentationId === presentationId ? answeredPresentation : p
       ),
       revisionQueue,
-    },
+    } as BossAttempt & { healsUsedThisAttempt?: number },
     presentation: answeredPresentation,
     complete: answeredCount === attempt.targetSize,
   };
@@ -481,6 +534,21 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     if (!graded.valid) throw new HttpsError("invalid-argument", "Invalid displayed answer index.");
     const isCorrect = graded.correct;
     const submittedAttemptId = legacySubmission ? `legacy_${presentationForAnswer.presentationId}` : attempt!.id;
+    const healsBeforeAnswer = (attempt as (BossAttempt & { healsUsedThisAttempt?: number }) | null)?.healsUsedThisAttempt || 0;
+    const identity = resolveIdentityModifiers({
+      specId: latestGam.specialization,
+      unlockedSkills: latestGam.unlockedSkills || [],
+      correct: isCorrect,
+      streak: isCorrect ? (session.streak || 0) + 1 : 0,
+      priorStreak: session.streak || 0,
+      playerHp: session.playerHp,
+      playerMaxHp: session.playerMaxHp || latestLoadout.combat.maxHp,
+      bossHp,
+      bossMaxHp,
+      difficulty: question.difficulty,
+      isRevision: presentationForAnswer.isRevision,
+      healsUsedThisAttempt: healsBeforeAnswer,
+    });
 
     let newBossHp = bossHp;
     let newStreak = session.streak || 0;
@@ -500,16 +568,25 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       });
       damage = hit.damage;
       isCrit = hit.isCrit;
+      if (identity.damageMultiplier !== 1 || identity.critBonus !== 0) {
+        const ceiling = Math.max(1, Math.floor(bossMaxHp * HIT_CEILING_FRACTION));
+        const identityDamage = Math.round(hit.preCeilingDamage * identity.damageMultiplier);
+        damage = Math.max(1, Math.min(identityDamage, ceiling));
+      }
       newBossHp = Math.max(0, bossHp - damage);
       newStreak = (session.streak || 0) + 1;
+      playerHp = Math.min(session.playerMaxHp || latestLoadout.combat.maxHp, playerHp + identity.healApplied);
     } else {
       const ehp = computePlayerEhp({
         maxHp: session.playerMaxHp || latestLoadout.combat.maxHp,
         armorPercent: latestLoadout.combat.armorPercent,
       });
       const attack = computeBossAttack({ stats: latestLoadout.stats, playerEhp: ehp });
-      damage = attack.damage;
-      playerHp = Math.max(0, (session.playerHp || 0) - attack.damage);
+      const incomingDamage = identity.incomingMultiplier === 1
+        ? attack.damage
+        : Math.max(1, Math.round(attack.damage * identity.incomingMultiplier));
+      damage = incomingDamage;
+      playerHp = Math.max(0, (session.playerHp || 0) - incomingDamage);
       newStreak = 0;
     }
 
@@ -570,6 +647,8 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     if (!legacySubmission) {
       const applied = applyAnswerToAttempt(attempt!, presentationId, { correct: isCorrect, damage });
       if (applied.status !== "answered") return { error: "STALE_PRESENTATION" as const };
+      (applied.attempt as BossAttempt & { healsUsedThisAttempt?: number }).healsUsedThisAttempt =
+        healsBeforeAnswer + identity.healApplied;
       attemptComplete = applied.complete;
       completedAttempt = applied.complete ? applied.attempt : null;
       attempt = applied.complete ? null : applied.attempt;
@@ -596,6 +675,13 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       isRevision: presentationForAnswer.isRevision,
       difficulty: question.difficulty,
       answeredAt: new Date(txNow).toISOString(),
+      skillIdentityVersion: SKILL_IDENTITY_VERSION,
+      skillIdentity: identity.identity,
+      skillRank: identity.rank,
+      skillDamageMultiplier: identity.damageMultiplier,
+      skillIncomingMultiplier: identity.incomingMultiplier,
+      skillCritBonus: identity.critBonus,
+      skillHealingApplied: identity.healApplied,
     });
 
     // Progress write (legacy `attempts` field is no longer written)
