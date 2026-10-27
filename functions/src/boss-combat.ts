@@ -150,3 +150,195 @@ export function computeBossAttack(input: BossAttackInput): BossAttackResult {
   const absorbed = Math.max(0, Math.round(rawAttack) - damage);
   return { rawAttack: Math.round(rawAttack), absorbed, damage };
 }
+
+// Skill identities (increment 3). Kept standalone like the rest of this module;
+// node ids mirror lib/specializations.ts without importing frontend code.
+export type SkillIdentityId =
+  | 'JUGGERNAUT' | 'BERSERKER' | 'SNIPER' | 'SPEEDSTER'
+  | 'GUARDIAN' | 'CLERIC' | 'TACTICIAN' | 'SCHOLAR';
+
+export const SKILL_IDENTITY_VERSION = 1;
+export const MAX_SKILL_RANK = 6;
+export const HEAL_CAP_PER_ANSWER = 4;
+export const HEAL_CAP_PER_ATTEMPT = 8;
+
+/** Map of specialization -> its 6 valid node ids, in tier order. */
+export const SKILL_NODE_IDS: Record<SkillIdentityId, readonly string[]> = {
+  JUGGERNAUT: ['jug_1', 'jug_2', 'jug_3', 'jug_4', 'jug_5', 'jug_6'],
+  BERSERKER: ['ber_1', 'ber_2', 'ber_3', 'ber_4', 'ber_5', 'ber_6'],
+  SNIPER: ['sni_1', 'sni_2', 'sni_3', 'sni_4', 'sni_5', 'sni_6'],
+  SPEEDSTER: ['spd_1', 'spd_2', 'spd_3', 'spd_4', 'spd_5', 'spd_6'],
+  GUARDIAN: ['grd_1', 'grd_2', 'grd_3', 'grd_4', 'grd_5', 'grd_6'],
+  CLERIC: ['clr_1', 'clr_2', 'clr_3', 'clr_4', 'clr_5', 'clr_6'],
+  TACTICIAN: ['tac_1', 'tac_2', 'tac_3', 'tac_4', 'tac_5', 'tac_6'],
+  SCHOLAR: ['sch_1', 'sch_2', 'sch_3', 'sch_4', 'sch_5', 'sch_6'],
+};
+
+function isSkillIdentity(value: unknown): value is SkillIdentityId {
+  return typeof value === 'string' &&
+    Object.prototype.hasOwnProperty.call(SKILL_NODE_IDS, value);
+}
+
+export function computeSkillRank(
+  identity: SkillIdentityId,
+  unlockedSkills: readonly string[]
+): number {
+  if (!isSkillIdentity(identity) || !Array.isArray(unlockedSkills)) {
+    return 0;
+  }
+
+  const validIds = new Set(SKILL_NODE_IDS[identity]);
+  const distinctUnlocked = new Set(unlockedSkills);
+  let rank = 0;
+  for (const id of distinctUnlocked) {
+    if (typeof id === 'string' && validIds.has(id)) {
+      rank++;
+    }
+  }
+  return Math.min(rank, MAX_SKILL_RANK);
+}
+
+export interface IdentityEvalInput {
+  identity: SkillIdentityId;
+  rank: number;
+  correct: boolean;
+  streak: number;
+  priorStreak: number;
+  playerHp: number;
+  playerMaxHp: number;
+  bossHp: number;
+  bossMaxHp: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  isHardestDifficulty: boolean;
+  isRevision: boolean;
+  healsUsedThisAttempt: number;
+}
+
+export interface IdentityEvalResult {
+  damageMultiplier: number;
+  incomingMultiplier: number;
+  healApplied: number;
+  critBonus: number;
+  identity: SkillIdentityId;
+  rank: number;
+}
+
+function neutralIdentityResult(
+  identity: SkillIdentityId,
+  rank: number
+): IdentityEvalResult {
+  return {
+    damageMultiplier: 1,
+    incomingMultiplier: 1,
+    healApplied: 0,
+    critBonus: 0,
+    identity,
+    rank,
+  };
+}
+
+function isNonNegativeFinite(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}
+
+/** Pure, deterministic identity effect evaluation. Malformed input is neutral. */
+export function evaluateSkillIdentity(input: IdentityEvalInput): IdentityEvalResult {
+  if (!input || typeof input !== 'object') {
+    return neutralIdentityResult('JUGGERNAUT', 0);
+  }
+
+  const identity = isSkillIdentity(input.identity) ? input.identity : 'JUGGERNAUT';
+  const valid = isSkillIdentity(input.identity) &&
+    Number.isFinite(input.rank) && input.rank >= 0 && input.rank <= MAX_SKILL_RANK &&
+    typeof input.correct === 'boolean' &&
+    Number.isInteger(input.streak) && input.streak >= 0 &&
+    Number.isInteger(input.priorStreak) && input.priorStreak >= 0 &&
+    isNonNegativeFinite(input.playerHp) &&
+    Number.isFinite(input.playerMaxHp) && input.playerMaxHp > 0 &&
+    isNonNegativeFinite(input.bossHp) &&
+    Number.isFinite(input.bossMaxHp) && input.bossMaxHp > 0 &&
+    Object.prototype.hasOwnProperty.call(DIFFICULTY_MOD, input.difficulty) &&
+    typeof input.isHardestDifficulty === 'boolean' &&
+    typeof input.isRevision === 'boolean' &&
+    Number.isInteger(input.healsUsedThisAttempt) && input.healsUsedThisAttempt >= 0;
+
+  if (!valid || input.rank === 0) {
+    return neutralIdentityResult(identity, 0);
+  }
+
+  const rank = input.rank;
+  const w = rank / MAX_SKILL_RANK;
+  const result = neutralIdentityResult(identity, rank);
+  let requestedHeal = 0;
+
+  if (input.correct) {
+    switch (identity) {
+      case 'JUGGERNAUT': {
+        const hpRatio = input.playerHp / input.playerMaxHp;
+        if (hpRatio < 0.26) {
+          result.damageMultiplier = 1 + w * 0.18;
+        } else if (hpRatio < 0.51) {
+          result.damageMultiplier = 1 + w * 0.12;
+        } else if (hpRatio < 0.76) {
+          result.damageMultiplier = 1 + w * 0.06;
+        }
+        break;
+      }
+      case 'BERSERKER': {
+        const bossRatio = input.bossHp / input.bossMaxHp;
+        if (bossRatio <= 0.25) {
+          result.damageMultiplier = 1 + w * 0.24;
+        } else if (bossRatio <= 0.51) {
+          result.damageMultiplier = 1 + w * 0.12;
+        }
+        break;
+      }
+      case 'SNIPER':
+        if (input.bossHp >= input.bossMaxHp) {
+          result.damageMultiplier = 1 + w * 0.24;
+        }
+        break;
+      case 'SPEEDSTER':
+        result.damageMultiplier = 1 + w * 0.06 * Math.min(Math.max(input.streak - 1, 0), 4);
+        break;
+      case 'GUARDIAN':
+        if (input.playerHp >= input.playerMaxHp * 0.99) {
+          requestedHeal = Math.round(w * HEAL_CAP_PER_ANSWER);
+        }
+        break;
+      case 'CLERIC':
+        if (input.priorStreak === 0 && input.playerHp < input.playerMaxHp) {
+          requestedHeal = Math.round(w * HEAL_CAP_PER_ANSWER);
+        }
+        break;
+      case 'TACTICIAN':
+        if (input.isRevision) {
+          result.damageMultiplier = 1 + w * 0.24;
+        }
+        break;
+      case 'SCHOLAR':
+        if (input.isHardestDifficulty) {
+          result.damageMultiplier = 1 + w * 0.24;
+        }
+        break;
+    }
+  }
+
+  const attemptRemaining = Math.max(0, HEAL_CAP_PER_ATTEMPT - input.healsUsedThisAttempt);
+  result.healApplied = Math.max(0, Math.min(
+    requestedHeal,
+    HEAL_CAP_PER_ANSWER,
+    attemptRemaining
+  ));
+
+  // Guardian's full-HP effect is a shield, so it may exceed current missing HP.
+  // Ordinary healing (Cleric) is additionally limited to the player's missing HP.
+  if (identity !== 'GUARDIAN') {
+    result.healApplied = Math.min(
+      result.healApplied,
+      Math.max(0, input.playerMaxHp - input.playerHp)
+    );
+  }
+
+  return result;
+}
