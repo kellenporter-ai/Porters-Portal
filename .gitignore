@@ -12,3 +12,6 @@ dist/
 
 firestore-debug.log
 firestore-debug.log.*
+
+# Data snapshots (not source) — legacy collection archives
+archives/

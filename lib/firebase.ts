@@ -134,7 +134,6 @@ export const callUnlockSkill = httpsCallable(functions, 'unlockSkill');
 export const callAddSocket = httpsCallable(functions, 'addSocket');
 export const callSocketGem = httpsCallable(functions, 'socketGem');
 export const callUnsocketGem = httpsCallable(functions, 'unsocketGem');
-export const callDealBossDamage = httpsCallable(functions, 'dealBossDamage');
 export const callAnswerBossEvent = httpsCallable(functions, 'answerBossEvent');
 export const callGetNextBossQuestion = httpsCallable(functions, 'getNextBossQuestion');
 export const callMedevacBoss = httpsCallable(functions, 'medevacBoss');
@@ -163,7 +162,6 @@ export const callSaveRubricGrade = httpsCallable(functions, 'saveRubricGrade');
 // One-time admin utilities
 export const callBackfillAssignmentDates = httpsCallable(functions, 'backfillAssignmentDates');
 export const callBackfillWordCount = httpsCallable(functions, 'backfillWordCount');
-export const callScaleBossHp = httpsCallable(functions, 'scaleBossHp');
 export const callMigrateBossesToEvents = httpsCallable(functions, 'migrateBossesToEvents');
 export const callMigrateBossQuizProgress = httpsCallable(functions, 'migrateBossQuizProgress');
 

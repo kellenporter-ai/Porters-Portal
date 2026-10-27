@@ -1,6 +1,6 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callDealBossDamage, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callScaleBossHp, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress, callMedevacBoss, callRespecSpecialization } from '../lib/firebase';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress, callMedevacBoss, callRespecSpecialization } from '../lib/firebase';
 import { stripBossEventForClient } from '../lib/bossRedaction';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -1615,13 +1615,6 @@ export const dataService = {
 
   // --- BOSS ENCOUNTERS (Distributed Counter Pattern) ---
 
-  subscribeToBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
-    const q = query(collection(db, 'boss_encounters'), where('isActive', '==', true));
-    return resilientSnapshot('boss_encounters', q, (snapshot: any) => {
-      callback(snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() } as BossEncounter)));
-    });
-  },
-
   // Admin: subscribe to ALL boss encounters (including inactive), capped at 50
   subscribeToAllBossEncounters: (callback: (bosses: BossEncounter[]) => void) => {
     const q = query(collection(db, 'boss_encounters'), limit(50));
@@ -1648,38 +1641,6 @@ export const dataService = {
     await deleteDoc(ref);
   },
 
-  // Subscribe to a boss's distributed damage shards for real-time HP aggregation
-  subscribeToBossShards: (bossId: string, callback: (totalDamage: number) => void) => {
-    const shardsRef = collection(db, `boss_encounters/${bossId}/shards`);
-    return onSnapshot(shardsRef, (snapshot) => {
-      let totalDamage = 0;
-      snapshot.forEach((d) => { totalDamage += d.data().damageDealt || 0; });
-      callback(totalDamage);
-    }, (error: unknown) => reportError(error, { subscription: 'bossShards', bossId }));
-  },
-
-  // Subscribe to a boss's damage log subcollection for the leaderboard
-  subscribeToBossDamageLog: (bossId: string, callback: (log: { userId: string; userName: string; damage: number; timestamp: string }[]) => void) => {
-    const logRef = collection(db, `boss_encounters/${bossId}/damage_log`);
-    return onSnapshot(logRef, (snapshot) => {
-      const entries = snapshot.docs.map((d) => d.data() as { userId: string; userName: string; damage: number; timestamp: string });
-      callback(entries);
-    }, (error: unknown) => reportError(error, { subscription: 'bossDamageLog', bossId }));
-  },
-
-  dealBossDamage: async (bossId: string, userName: string, classType: string) => {
-    const result = await callDealBossDamage({ bossId, userName, classType });
-    return result.data as {
-      newHp: number;
-      damageDealt: number;
-      isCrit: boolean;
-      xpEarned: number;
-      bossDefeated: boolean;
-      leveledUp: boolean;
-      stats: { tech: number; focus: number; analysis: number; charisma: number };
-      gearScore: number;
-    };
-  },
 
   // --- BOSS QUIZ (Distributed Counter Pattern) ---
 
@@ -1711,10 +1672,6 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'bossQuizDamageLog', quizId }));
   },
 
-  scaleBossHp: async (quizId: string) => {
-    const result = await callScaleBossHp({ quizId });
-    return result.data as { scaledMaxHp: number; originalMaxHp: number };
-  },
 
   // Admin: subscribe to ALL quiz bosses (including inactive)
   subscribeToAllBossQuizzes: (callback: (quizzes: BossQuizEvent[]) => void) => {
