@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BossEvent, BossQuestionBank, DIFFICULTY_TIER_DEFS } from '../../types';
+import { BossEvent, BossQuestionBank } from '../../types';
 import { Brain, Trash2, Pencil, Plus, Swords, Database, BarChart3, Copy } from 'lucide-react';
 
 interface BossOpsTabProps {
@@ -116,40 +116,6 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                       <span className="text-[11.5px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
                         {quiz.classType}
                       </span>
-                      {quiz.modifiers?.length ? (
-                        <span className="text-[11.5px] font-bold text-pink-600 dark:text-pink-400 bg-pink-900/30 px-2 py-0.5 rounded border border-pink-500/20">
-                          {quiz.modifiers.length} Modifiers
-                        </span>
-                      ) : null}
-                      {quiz.difficultyTier && quiz.difficultyTier !== 'NORMAL' && (
-                        <span className={`text-[11.5px] font-bold px-2 py-0.5 rounded border ${
-                          quiz.difficultyTier === 'HARD' ? 'text-amber-600 dark:text-amber-400 bg-amber-900/30 border-amber-500/20' :
-                          quiz.difficultyTier === 'NIGHTMARE' ? 'text-red-600 dark:text-red-400 bg-red-900/30 border-red-500/20' :
-                          'text-purple-600 dark:text-purple-400 bg-purple-900/30 border-purple-500/20'
-                        }`}>
-                          {DIFFICULTY_TIER_DEFS[quiz.difficultyTier].name}
-                        </span>
-                      )}
-                      {quiz.autoScale?.enabled && (
-                        <span className="text-[11.5px] font-bold text-orange-600 dark:text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">
-                          Auto-Scale
-                        </span>
-                      )}
-                      {quiz.phases && quiz.phases.length > 0 && (
-                        <span className="text-[11.5px] font-bold text-orange-600 dark:text-orange-400 bg-orange-900/30 px-2 py-0.5 rounded border border-orange-500/20">
-                          {quiz.phases.length} Phases
-                        </span>
-                      )}
-                      {quiz.bossAbilities && quiz.bossAbilities.length > 0 && (
-                        <span className="text-[11.5px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded border border-cyan-500/20">
-                          {quiz.bossAbilities.length} Abilities
-                        </span>
-                      )}
-                      {quiz.lootTable && quiz.lootTable.length > 0 && (
-                        <span className="text-[11.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-500/20">
-                          {quiz.lootTable.length} Loot Items
-                        </span>
-                      )}
                       {quiz.targetSections?.length ? (
                         <span className="text-[11.5px] font-bold text-purple-600 dark:text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">
                           {quiz.targetSections.join(', ')}

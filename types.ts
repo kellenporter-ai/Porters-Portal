@@ -819,17 +819,24 @@ export interface BossEvent {
   rewards: { xp: number; flux: number; itemRarity?: ItemRarity };
   targetSections?: string[];
   bossAppearance?: BossAppearance;
+  /** @deprecated Retained for backward compatibility; the quiz engine ignores modifiers. */
   modifiers?: BossModifier[];
+  /** @deprecated Retained for backward compatibility; HP uses per-student gear scaling. */
   difficultyTier?: DifficultyTier;
+  /** @deprecated Retained for backward compatibility; there is no shared HP pool to scale. */
   autoScale?: AutoScaleConfig;
   // Phase system (v2)
+  /** @deprecated Retained for backward compatibility; phases are not run by the quiz engine. */
   phases?: BossPhase[];
   currentPhase?: number;
+  /** @deprecated Retained for backward compatibility; abilities are not run by the quiz engine. */
   bossAbilities?: BossAbility[];
   activeAbilities?: ActiveBossAbility[];
   triggeredAbilityIds?: string[];
+  /** @deprecated Retained for backward compatibility; boss loot tables are never rolled. */
   lootTable?: BossLootEntry[];
   // Visual & UX (v2)
+  /** @deprecated Retained for backward compatibility; segmented break bars are unused. */
   breakBarConfig?: BreakBarConfig;
   subjectTheme?: 'physics' | 'forensics' | 'chemistry' | 'biology' | 'default';
   // Trial

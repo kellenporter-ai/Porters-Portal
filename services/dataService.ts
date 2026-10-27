@@ -1892,7 +1892,7 @@ export const dataService = {
 
   saveBossEvent: async (event: import('../types').BossEvent) => {
     const ref = doc(db, 'boss_events', event.id);
-    await setDoc(ref, event);
+    await setDoc(ref, event, { merge: true });
   },
 
   toggleBossEventActive: async (eventId: string, isActive: boolean) => {
