@@ -758,7 +758,7 @@ export interface SkillNode {
   tier: number; // 1-4 (depth in tree)
   cost: number; // Skill points required
   prerequisites: string[]; // Skill node IDs that must be unlocked first
-  effect: {
+  effect?: {
     type: 'STAT_BOOST' | 'XP_MULTIPLIER' | 'FLUX_DISCOUNT' | 'CRAFT_BONUS' | 'STREAK_BONUS' | 'QUEST_BONUS' |
           'DAMAGE_BOOST_TOPIC' | 'ARMOR_BOOST_TOPIC' | 'CRIT_BOOST_TOPIC' | 'HINT_EFFECTIVENESS' |
           'CONSUMABLE_EFFICIENCY' | 'PHASE_CHECKPOINT' | 'REVIVE_CHANCE' | 'SPEED_BOOST' |

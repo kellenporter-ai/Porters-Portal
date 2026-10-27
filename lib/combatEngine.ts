@@ -204,8 +204,9 @@ export function deriveEffectiveStats(
 
   // Apply skill tree effects
   for (const skill of unlockedSkills) {
-    if (skill.effect.type === 'STAT_BOOST' && skill.effect.stat) {
-      (stats as Record<string, number>)[skill.effect.stat] += skill.effect.value;
+    const effect = skill.effect;
+    if (effect?.type === 'STAT_BOOST' && effect.stat) {
+      (stats as Record<string, number>)[effect.stat] += effect.value;
     }
   }
 

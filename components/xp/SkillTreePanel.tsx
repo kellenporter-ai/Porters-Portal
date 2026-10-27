@@ -9,6 +9,9 @@ import {
   specIsInSynergyV2,
   SPEC_COLORS_V2,
   SPECIALIZATIONS,
+  SPECIALIZATION_IDENTITY,
+  getSkillIdentityEffect,
+  getSkillRank,
   getTrialBossForSpec,
 } from '../../lib/specializations';
 import { dataService } from '../../services/dataService';
@@ -16,7 +19,7 @@ import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
 import { useT, useInterpolate } from '../../lib/i18n';
-import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles, Sword, Shield, Crosshair, Brain } from 'lucide-react';
+import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles } from 'lucide-react';
 
 // ========================================
 // COMPONENT
@@ -99,6 +102,14 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
   const specDef = SPECIALIZATIONS[activeSpec];
   const isLocked = hasChosen && specialization !== activeSpec;
   const canChoose = !hasChosen && level >= specDef.unlockLevel;
+  const skillRank = getSkillRank(unlockedSkills, activeSpec);
+  const identity = SPECIALIZATION_IDENTITY[activeSpec];
+  const formatIdentityEffect = (rank: number): string => {
+    const value = getSkillIdentityEffect(activeSpec, rank);
+    return identity.kind === 'HEAL'
+      ? interpolate('skill.effectHeal', { value, attempt: value * 2 })
+      : interpolate('skill.effectDamage', { value: value.toFixed(2) });
+  };
 
   return (
     <div className="space-y-6">
@@ -195,24 +206,23 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
         })}
       </div>
 
-      {/* Active synergy panel */}
+      {/* Active synergy milestones */}
       {activeSynergies.length > 0 && (
         <div className="p-3 bg-white/5 border border-white/10 rounded-xl space-y-2">
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-3.5 h-3.5 text-white/60" />
-            <span className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest">Active Synergies</span>
+            <span className="text-[11.5px] font-mono text-[var(--text-muted)] uppercase tracking-widest">Active Connections</span>
           </div>
           {activeSynergies.map(syn => (
             <div
               key={syn.label}
-              className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10"
+              className="px-2 py-1.5 rounded-lg bg-white/5 border border-white/10"
             >
               <span className="text-[11px] font-semibold text-[var(--text-secondary)]">{syn.label}</span>
-              <span className={`text-[11px] font-bold whitespace-nowrap ${syn.color}`}>{syn.bonus}</span>
             </div>
           ))}
           <p className="text-[11.5px] text-[var(--text-muted)] mt-1 leading-relaxed">
-            Synergy bonuses are earned by having unlocked skills in multiple specializations. Bonuses are display-only and informational.
+            These milestones connect specialization themes. Combat effects come only from the rank header below.
           </p>
         </div>
       )}
@@ -227,7 +237,6 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
               <span>{SKILL_TREES_V2[activeSpec].icon}</span>
               {SKILL_TREES_V2[activeSpec].name}
             </h4>
-            <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1">{specDef.description}</p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${SPEC_COLORS_V2[activeSpec].bg} ${SPEC_COLORS_V2[activeSpec].text} border border-current opacity-60`}>
@@ -236,23 +245,35 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
           </div>
         </div>
 
-        {/* Base bonuses */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {specDef.bonuses.map((bonus, i) => (
-            <div key={i} className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${SPEC_COLORS_V2[activeSpec].bg} border border-current opacity-40`}>
-              {bonus.type === 'DAMAGE_BOOST' && <Sword className="w-3 h-3" />}
-              {bonus.type === 'ARMOR_BOOST' && <Shield className="w-3 h-3" />}
-              {bonus.type === 'CRIT_BOOST' && <Crosshair className="w-3 h-3" />}
-              {bonus.type === 'HEALING_BOOST' && <Crosshair className="w-3 h-3" />}
-              {bonus.type === 'HINT_BOOST' && <Brain className="w-3 h-3" />}
-              {bonus.type === 'SPEED_BOOST' && <Zap className="w-3 h-3" />}
-              <span className={`text-[11px] font-bold ${SPEC_COLORS_V2[activeSpec].text}`}>
-                {bonus.type.replace('_', ' ')} {bonus.value > 0 && bonus.value < 1 ? `+${(bonus.value * 100).toFixed(0)}%` : `+${bonus.value}`}
-              </span>
-              <span className="text-[10px] text-[var(--text-muted)]">({bonus.condition})</span>
-            </div>
-          ))}
-        </div>
+        <section
+          aria-label={interpolate('skill.rankHeader', { rank: skillRank })}
+          className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] p-3 space-y-2"
+        >
+          <h5 className="text-sm font-bold text-[var(--text-primary)]">
+            {interpolate('skill.rankHeader', { rank: skillRank })}
+          </h5>
+          <p className="text-[11.5px] text-[var(--text-secondary)]">{t(identity.triggerKey)}</p>
+          {skillRank === 0 ? (
+            <p className="text-[11.5px] text-[var(--text-tertiary)]">{t('skill.rankZero')}</p>
+          ) : (
+            <dl className="grid grid-cols-1 gap-2 text-[11.5px] sm:grid-cols-[auto_1fr] sm:gap-x-3">
+              <dt className="font-bold text-[var(--text-secondary)]">
+                {interpolate('skill.current', { rank: skillRank })}
+              </dt>
+              <dd className="text-[var(--text-primary)]">{formatIdentityEffect(skillRank)}</dd>
+              {skillRank < 6 && (
+                <>
+                  <dt className="font-bold text-[var(--text-secondary)]">
+                    {interpolate('skill.next', { rank: skillRank + 1 })}
+                  </dt>
+                  <dd className="text-[var(--text-primary)]">{formatIdentityEffect(skillRank + 1)}</dd>
+                </>
+              )}
+              <dt className="font-bold text-[var(--text-secondary)]">{t('skill.max')}</dt>
+              <dd className="text-[var(--text-primary)]">{formatIdentityEffect(6)}</dd>
+            </dl>
+          )}
+        </section>
 
         {/* Trial boss info (only when not yet chosen) */}
         {!hasChosen && canChoose && (
@@ -340,15 +361,16 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                       </div>
                       <p className="text-[11.5px] text-[var(--text-tertiary)]">{node.description}</p>
                       {!isUnlocked && (
-                        <div className="mt-1 flex items-center gap-2">
+                        <div className="mt-1 space-y-1">
                           <span className="text-[11.5px] font-mono text-[var(--text-muted)]">
                             {interpolate('skills.cost', { cost: node.cost })}
                           </span>
-                          {node.effect.condition && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-glass-heavy)] text-[var(--text-muted)]">
-                              {node.effect.condition}
-                            </span>
-                          )}
+                          <p className="text-[11px] text-[var(--text-secondary)]">
+                            {interpolate('skill.nodeAdvance', {
+                              spec: SKILL_TREES_V2[activeSpec].name,
+                              rank: skillRank + 1,
+                            })}
+                          </p>
                         </div>
                       )}
                       {unlocking === node.id && (

@@ -101,97 +101,98 @@ export const SPECIALIZATIONS: Record<SpecializationId, Specialization> = {
 // ========================================
 
 export const SKILL_TREES_V2: Record<SpecializationId, { name: string; description: string; color: string; icon: string }> = {
-  JUGGERNAUT:  { name: 'Juggernaut',  description: 'Unstoppable endurance and raw power', color: 'red',    icon: '🛡️' },
-  BERSERKER:   { name: 'Berserker',   description: 'Risk-fueled rage and crit damage',   color: 'orange', icon: '⚔️' },
-  SNIPER:      { name: 'Sniper',      description: 'Precision strikes and streak mastery', color: 'green',  icon: '🎯' },
-  SPEEDSTER:   { name: 'Speedster',   description: 'Lightning reflexes and evasion',     color: 'cyan',   icon: '⚡' },
-  GUARDIAN:    { name: 'Guardian',    description: 'Ally protection and damage soaking', color: 'blue',   icon: '🛡️' },
-  CLERIC:      { name: 'Cleric',      description: 'Healing and team empowerment',       color: 'emerald',icon: '✨' },
-  TACTICIAN:   { name: 'Tactician',   description: 'Boss debuffs and strategic windows', color: 'purple', icon: '🧠' },
-  SCHOLAR:     { name: 'Scholar',     description: 'Topic mastery and knowledge power',  color: 'indigo', icon: '📚' },
+  JUGGERNAUT:  { name: 'Juggernaut',  description: 'Endurance forged through challenge', color: 'red',    icon: '🛡️' },
+  BERSERKER:   { name: 'Berserker',   description: 'Courage shaped by risk',             color: 'orange', icon: '⚔️' },
+  SNIPER:      { name: 'Sniper',      description: 'Focus sharpened through practice',   color: 'green',  icon: '🎯' },
+  SPEEDSTER:   { name: 'Speedster',   description: 'Curiosity in swift motion',          color: 'cyan',   icon: '⚡' },
+  GUARDIAN:    { name: 'Guardian',    description: 'Steadfast care and resolve',         color: 'blue',   icon: '🛡️' },
+  CLERIC:      { name: 'Cleric',      description: 'Renewal through compassion',         color: 'emerald',icon: '✨' },
+  TACTICIAN:   { name: 'Tactician',   description: 'Insight developed through strategy', color: 'purple', icon: '🧠' },
+  SCHOLAR:     { name: 'Scholar',     description: 'Knowledge gathered through study',   color: 'indigo', icon: '📚' },
 };
 
 export const SKILL_NODES_V2: SkillNode[] = [
-  // ═══════════════════════════════════════════════════
-  // JUGGERNAUT — Tank / Sustained Damage
-  // ═══════════════════════════════════════════════════
-  { id: 'jug_1', name: 'Iron Skin', description: '+15% Armor from all sources', specialization: 'JUGGERNAUT', tier: 1, cost: 1, prerequisites: [], effect: { type: 'ARMOR_BOOST_TOPIC', value: 0.15 }, icon: '🛡️' },
-  { id: 'jug_2', name: 'Heavy Strikes', description: '+8% damage when HP is above 75%', specialization: 'JUGGERNAUT', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.08, condition: 'hp_above_75' }, icon: '👊' },
-  { id: 'jug_3', name: 'Thick Hide', description: '+20% max HP', specialization: 'JUGGERNAUT', tier: 2, cost: 2, prerequisites: ['jug_1'], effect: { type: 'STAT_BOOST', stat: 'charisma', value: 15 }, icon: '🐻' },
-  { id: 'jug_4', name: 'Momentum', description: '+10% damage, stacking +2% per correct answer (max +20%)', specialization: 'JUGGERNAUT', tier: 2, cost: 2, prerequisites: ['jug_2'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.10, condition: 'stacks_on_hit' }, icon: '📈' },
-  { id: 'jug_5', name: 'Unstoppable', description: 'Below 30% HP: +25% armor, +15% damage', specialization: 'JUGGERNAUT', tier: 3, cost: 3, prerequisites: ['jug_3', 'jug_4'], effect: { type: 'BONUS_DAMAGE_LOW_HP', value: 0.15, condition: 'hp_below_30' }, icon: '🔥' },
-  { id: 'jug_6', name: 'Colossus', description: '+30% armor, +20% max HP, immune to stun', specialization: 'JUGGERNAUT', tier: 4, cost: 5, prerequisites: ['jug_5'], effect: { type: 'BOSS_DAMAGE_RESIST', value: 0.30 }, icon: '🏔️' },
-
-  // ═══════════════════════════════════════════════════
-  // BERSERKER — High Risk / High Reward
-  // ═══════════════════════════════════════════════════
-  { id: 'ber_1', name: 'Bloodlust', description: '+12% damage when HP < 50%', specialization: 'BERSERKER', tier: 1, cost: 1, prerequisites: [], effect: { type: 'BONUS_DAMAGE_LOW_HP', value: 0.12, condition: 'hp_below_50' }, icon: '🩸' },
-  { id: 'ber_2', name: 'Reckless Assault', description: '+10% damage, -5% armor', specialization: 'BERSERKER', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.10, condition: 'trade_armor' }, icon: '💀' },
-  { id: 'ber_3', name: 'Crimson Rage', description: 'HP < 40%: +20% crit chance', specialization: 'BERSERKER', tier: 2, cost: 2, prerequisites: ['ber_1'], effect: { type: 'CRIT_BOOST_TOPIC', value: 0.20, condition: 'hp_below_40' }, icon: '😤' },
-  { id: 'ber_4', name: 'Adrenaline Surge', description: 'Wrong answers deal 50% reduced damage TO YOU', specialization: 'BERSERKER', tier: 2, cost: 2, prerequisites: ['ber_2'], effect: { type: 'BOSS_DAMAGE_RESIST', value: 0.50, condition: 'on_wrong_answer' }, icon: '⚡' },
-  { id: 'ber_5', name: 'Execute', description: 'Bosses below 15% HP take +25% damage from you', specialization: 'BERSERKER', tier: 3, cost: 3, prerequisites: ['ber_3', 'ber_4'], effect: { type: 'EXECUTE_THRESHOLD', value: 0.25, condition: 'boss_hp_below_15' }, icon: '☠️' },
-  { id: 'ber_6', name: 'Rampage', description: '+35% damage when HP < 25%, lifesteal 10%', specialization: 'BERSERKER', tier: 4, cost: 5, prerequisites: ['ber_5'], effect: { type: 'LIFESTEAL', value: 0.10, condition: 'hp_below_25' }, icon: '🐺' },
-
-  // ═══════════════════════════════════════════════════
-  // SNIPER — Precision / Streak Mastery
-  // ═══════════════════════════════════════════════════
-  { id: 'sni_1', name: 'Steady Aim', description: '+15% damage on streak >= 3', specialization: 'SNIPER', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.15, condition: 'streak_3' }, icon: '🎯' },
-  { id: 'sni_2', name: 'Quick Draw', description: '+12% damage on fast answers (< 50% time)', specialization: 'SNIPER', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.12, condition: 'fast_answer' }, icon: '⏱️' },
-  { id: 'sni_3', name: 'Focus Fire', description: 'Streak >= 5: +25% crit chance', specialization: 'SNIPER', tier: 2, cost: 2, prerequisites: ['sni_1'], effect: { type: 'CRIT_BOOST_TOPIC', value: 0.25, condition: 'streak_5' }, icon: '🔥' },
-  { id: 'sni_4', name: 'Headshot', description: 'Fast answers have +20% crit chance', specialization: 'SNIPER', tier: 2, cost: 2, prerequisites: ['sni_2'], effect: { type: 'CRIT_BOOST_TOPIC', value: 0.20, condition: 'fast_answer' }, icon: '🧠' },
-  { id: 'sni_5', name: 'Perfect Shot', description: 'Streak >= 7: +30% damage, answers < 3s get +20%', specialization: 'SNIPER', tier: 3, cost: 3, prerequisites: ['sni_3', 'sni_4'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.30, condition: 'streak_7' }, icon: '💎' },
-  { id: 'sni_6', name: 'One Shot', description: 'First correct answer each attempt deals +50% damage', specialization: 'SNIPER', tier: 4, cost: 5, prerequisites: ['sni_5'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.50, condition: 'first_hit' }, icon: '🔫' },
-
-  // ═══════════════════════════════════════════════════
-  // SPEEDSTER — Evasion / Fast Answers
-  // ═══════════════════════════════════════════════════
-  { id: 'spd_1', name: 'Nimble', description: '+20% chance to dodge boss retaliation', specialization: 'SPEEDSTER', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DODGE_CHANCE', value: 0.20 }, icon: '🌪️' },
-  { id: 'spd_2', name: 'Rapid Fire', description: '+10% damage, -10% answer time required for "fast" bonus', specialization: 'SPEEDSTER', tier: 1, cost: 1, prerequisites: [], effect: { type: 'SPEED_BOOST', value: 0.10 }, icon: '🔫' },
-  { id: 'spd_3', name: 'Blur', description: '+30% dodge chance', specialization: 'SPEEDSTER', tier: 2, cost: 2, prerequisites: ['spd_1'], effect: { type: 'DODGE_CHANCE', value: 0.30 }, icon: '💨' },
-  { id: 'spd_4', name: 'Haste', description: 'Fast answers give +15% damage AND +5 HP heal', specialization: 'SPEEDSTER', tier: 2, cost: 2, prerequisites: ['spd_2'], effect: { type: 'LIFESTEAL', value: 0.15, condition: 'fast_answer' }, icon: '⚡' },
-  { id: 'spd_5', name: 'Phase Shift', description: 'Dodge refreshes: after dodging, next answer +25% damage', specialization: 'SPEEDSTER', tier: 3, cost: 3, prerequisites: ['spd_3', 'spd_4'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.25, condition: 'after_dodge' }, icon: '👻' },
-  { id: 'spd_6', name: 'Time Warp', description: '+50% dodge, all fast answers +25% damage, +20% speed', specialization: 'SPEEDSTER', tier: 4, cost: 5, prerequisites: ['spd_5'], effect: { type: 'SPEED_BOOST', value: 0.20 }, icon: '⏳' },
-
-  // ═══════════════════════════════════════════════════
-  // GUARDIAN — Ally Protection / Party Tank
-  // ═══════════════════════════════════════════════════
-  { id: 'grd_1', name: 'Aegis', description: '+10% armor, nearby allies +5% armor', specialization: 'GUARDIAN', tier: 1, cost: 1, prerequisites: [], effect: { type: 'ARMOR_BOOST_TOPIC', value: 0.10, condition: 'aura' }, icon: '🛡️' },
-  { id: 'grd_2', name: 'Taunt', description: 'Bosses target you +15% more often (if role-based targeting)', specialization: 'GUARDIAN', tier: 1, cost: 1, prerequisites: [], effect: { type: 'BOSS_DAMAGE_RESIST', value: 0.15, condition: 'taunt' }, icon: '📢' },
-  { id: 'grd_3', name: 'Bulwark', description: '+20% armor, reflect 10% damage to boss', specialization: 'GUARDIAN', tier: 2, cost: 2, prerequisites: ['grd_1'], effect: { type: 'REFLECT_DAMAGE', value: 0.10 }, icon: '🏰' },
-  { id: 'grd_4', name: 'Rescue', description: 'When ally drops below 25% HP, they get +15 armor for 10s', specialization: 'GUARDIAN', tier: 2, cost: 2, prerequisites: ['grd_2'], effect: { type: 'SHIELD_ALLY', value: 0.15, condition: 'ally_low_hp' }, icon: '🚁' },
-  { id: 'grd_5', name: 'Fortress', description: 'All allies +15% armor, you +25%', specialization: 'GUARDIAN', tier: 3, cost: 3, prerequisites: ['grd_3', 'grd_4'], effect: { type: 'ARMOR_BOOST_TOPIC', value: 0.25, condition: 'self_and_allies' }, icon: '🏔️' },
-  { id: 'grd_6', name: 'Immortal', description: 'Once per attempt, survive a lethal hit at 1 HP', specialization: 'GUARDIAN', tier: 4, cost: 5, prerequisites: ['grd_5'], effect: { type: 'REVIVE_CHANCE', value: 1.0, condition: 'once_per_attempt' }, icon: '💀' },
-
-  // ═══════════════════════════════════════════════════
-  // CLERIC — Healing / Team Support
-  // ═══════════════════════════════════════════════════
-  { id: 'clr_1', name: 'First Aid', description: 'Correct answers heal +5 HP', specialization: 'CLERIC', tier: 1, cost: 1, prerequisites: [], effect: { type: 'LIFESTEAL', value: 5, condition: 'on_correct' }, icon: '💊' },
-  { id: 'clr_2', name: 'Inspiration', description: 'Correct answers give nearest ally +3% damage (stacks 3x)', specialization: 'CLERIC', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BUFF_ALLY', value: 0.03, condition: 'on_correct' }, icon: '✨' },
-  { id: 'clr_3', name: 'Renewal', description: 'Heal +10 HP on correct, +3 HP to lowest ally', specialization: 'CLERIC', tier: 2, cost: 2, prerequisites: ['clr_1'], effect: { type: 'AREA_HEAL', value: 3, condition: 'on_correct' }, icon: '🌿' },
-  { id: 'clr_4', name: 'Blessing', description: 'Allies within aura get +10% of your heal', specialization: 'CLERIC', tier: 2, cost: 2, prerequisites: ['clr_2'], effect: { type: 'HEALING_BOOST', value: 0.10, condition: 'aura' }, icon: '🙏' },
-  { id: 'clr_5', name: 'Sanctuary', description: 'All party members heal +8 HP per correct answer', specialization: 'CLERIC', tier: 3, cost: 3, prerequisites: ['clr_3', 'clr_4'], effect: { type: 'AREA_HEAL', value: 8, condition: 'party' }, icon: '⛪' },
-  { id: 'clr_6', name: 'Divine Intervention', description: 'Once per attempt, fully heal all allies when any hits 0 HP', specialization: 'CLERIC', tier: 4, cost: 5, prerequisites: ['clr_5'], effect: { type: 'AREA_HEAL', value: 1.0, condition: 'once_per_attempt_full' }, icon: '👼' },
-
-  // ═══════════════════════════════════════════════════
-  // TACTICIAN — Debuffs / Strategic Windows
-  // ═══════════════════════════════════════════════════
-  { id: 'tac_1', name: 'Scan Weakness', description: '+10% damage after boss phase transition', specialization: 'TACTICIAN', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.10, condition: 'phase_transition' }, icon: '🔍' },
-  { id: 'tac_2', name: 'Prepared Mind', description: '+15% hint effectiveness', specialization: 'TACTICIAN', tier: 1, cost: 1, prerequisites: [], effect: { type: 'HINT_EFFECTIVENESS', value: 0.15 }, icon: '📖' },
-  { id: 'tac_3', name: 'Exploit', description: 'First answer in new phase +25% damage', specialization: 'TACTICIAN', tier: 2, cost: 2, prerequisites: ['tac_1'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.25, condition: 'first_in_phase' }, icon: '💥' },
-  { id: 'tac_4', name: 'Cooldown Reduction', description: 'Consumable cooldowns -20%', specialization: 'TACTICIAN', tier: 2, cost: 2, prerequisites: ['tac_2'], effect: { type: 'COOLDOWN_REDUCTION', value: 0.20 }, icon: '⏱️' },
-  { id: 'tac_5', name: 'Vulnerability Scan', description: 'All party +15% damage for 15s after you answer correctly', specialization: 'TACTICIAN', tier: 3, cost: 3, prerequisites: ['tac_3', 'tac_4'], effect: { type: 'DAMAGE_BUFF_ALLY', value: 0.15, condition: 'on_correct_party_buff' }, icon: '📡' },
-  { id: 'tac_6', name: 'Checkmate', description: 'Boss below 20% HP: all party +30% damage', specialization: 'TACTICIAN', tier: 4, cost: 5, prerequisites: ['tac_5'], effect: { type: 'DAMAGE_BUFF_ALLY', value: 0.30, condition: 'boss_hp_below_20' }, icon: '♟️' },
-
-  // ═══════════════════════════════════════════════════
-  // SCHOLAR — Topic Mastery / Knowledge Power
-  // ═══════════════════════════════════════════════════
-  { id: 'sch_1', name: 'Deep Study', description: 'Topic mastery advances +20% faster', specialization: 'SCHOLAR', tier: 1, cost: 1, prerequisites: [], effect: { type: 'TOPIC_MASTERY_XP', value: 0.20 }, icon: '📚' },
-  { id: 'sch_2', name: 'Applied Knowledge', description: '+15% damage when topic mastery >= 0.6', specialization: 'SCHOLAR', tier: 1, cost: 1, prerequisites: [], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.15, condition: 'mastery_above_60' }, icon: '🧠' },
-  { id: 'sch_3', name: 'Mastery Surge', description: 'Topic mastery >= 0.8: +25% damage', specialization: 'SCHOLAR', tier: 2, cost: 2, prerequisites: ['sch_1'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.25, condition: 'mastery_above_80' }, icon: '📈' },
-  { id: 'sch_4', name: 'Cross-Domain', description: 'Skills from 2+ trees unlocked: +10% all damage', specialization: 'SCHOLAR', tier: 2, cost: 2, prerequisites: ['sch_2'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.10, condition: 'multi_tree' }, icon: '🔗' },
-  { id: 'sch_5', name: 'Expertise', description: 'Max mastery in a topic: +35% damage on that topic', specialization: 'SCHOLAR', tier: 3, cost: 3, prerequisites: ['sch_3', 'sch_4'], effect: { type: 'DAMAGE_BOOST_TOPIC', value: 0.35, condition: 'max_mastery' }, icon: '🎓' },
-  { id: 'sch_6', name: 'Omniscient', description: 'All topic mastery caps raised. +20% damage, +20% hint effectiveness', specialization: 'SCHOLAR', tier: 4, cost: 5, prerequisites: ['sch_5'], effect: { type: 'HINT_EFFECTIVENESS', value: 0.20 }, icon: '🔮' },
+  { id: 'jug_1', name: 'Iron Skin', description: 'Hardened through repetition.', specialization: 'JUGGERNAUT', tier: 1, cost: 1, prerequisites: [], icon: '🛡️' },
+  { id: 'jug_2', name: 'Heavy Strikes', description: 'Resolve sharpened by adversity.', specialization: 'JUGGERNAUT', tier: 1, cost: 1, prerequisites: [], icon: '👊' },
+  { id: 'jug_3', name: 'Thick Hide', description: 'Momentum born from persistence.', specialization: 'JUGGERNAUT', tier: 2, cost: 2, prerequisites: ['jug_1'], icon: '🐻' },
+  { id: 'jug_4', name: 'Momentum', description: 'A will that refuses to yield.', specialization: 'JUGGERNAUT', tier: 2, cost: 2, prerequisites: ['jug_2'], icon: '📈' },
+  { id: 'jug_5', name: 'Unstoppable', description: 'Presence forged through endurance.', specialization: 'JUGGERNAUT', tier: 3, cost: 3, prerequisites: ['jug_3', 'jug_4'], icon: '🔥' },
+  { id: 'jug_6', name: 'Colossus', description: 'The underworld answers a steadfast call.', specialization: 'JUGGERNAUT', tier: 4, cost: 5, prerequisites: ['jug_5'], icon: '🏔️' },
+  { id: 'ber_1', name: 'Bloodlust', description: 'Energy kindled by a steady rhythm.', specialization: 'BERSERKER', tier: 1, cost: 1, prerequisites: [], icon: '🩸' },
+  { id: 'ber_2', name: 'Reckless Assault', description: 'A rhythm that refuses to break.', specialization: 'BERSERKER', tier: 1, cost: 1, prerequisites: [], icon: '💀' },
+  { id: 'ber_3', name: 'Crimson Rage', description: 'Intensity sustained through practice.', specialization: 'BERSERKER', tier: 2, cost: 2, prerequisites: ['ber_1'], icon: '😤' },
+  { id: 'ber_4', name: 'Adrenaline Surge', description: 'Confidence carried from one challenge to the next.', specialization: 'BERSERKER', tier: 2, cost: 2, prerequisites: ['ber_2'], icon: '⚡' },
+  { id: 'ber_5', name: 'Execute', description: 'Focus burning at its brightest.', specialization: 'BERSERKER', tier: 3, cost: 3, prerequisites: ['ber_3', 'ber_4'], icon: '☠️' },
+  { id: 'ber_6', name: 'Rampage', description: 'The spirit of competition unleashed.', specialization: 'BERSERKER', tier: 4, cost: 5, prerequisites: ['ber_5'], icon: '🐺' },
+  { id: 'sni_1', name: 'Steady Aim', description: 'Attention narrowed to a single point.', specialization: 'SNIPER', tier: 1, cost: 1, prerequisites: [], icon: '🎯' },
+  { id: 'sni_2', name: 'Quick Draw', description: 'Precision shaped by deliberate practice.', specialization: 'SNIPER', tier: 1, cost: 1, prerequisites: [], icon: '⏱️' },
+  { id: 'sni_3', name: 'Focus Fire', description: 'A wider view refined into clear focus.', specialization: 'SNIPER', tier: 2, cost: 2, prerequisites: ['sni_1'], icon: '🔥' },
+  { id: 'sni_4', name: 'Headshot', description: 'Patterns revealed through careful observation.', specialization: 'SNIPER', tier: 2, cost: 2, prerequisites: ['sni_2'], icon: '🧠' },
+  { id: 'sni_5', name: 'Perfect Shot', description: 'Preparation meeting the decisive moment.', specialization: 'SNIPER', tier: 3, cost: 3, prerequisites: ['sni_3', 'sni_4'], icon: '💎' },
+  { id: 'sni_6', name: 'One Shot', description: 'Quiet precision beneath a silver sky.', specialization: 'SNIPER', tier: 4, cost: 5, prerequisites: ['sni_5'], icon: '🔫' },
+  { id: 'spd_1', name: 'Nimble', description: 'Decisiveness practiced with care.', specialization: 'SPEEDSTER', tier: 1, cost: 1, prerequisites: [], icon: '🌪️' },
+  { id: 'spd_2', name: 'Rapid Fire', description: 'Fluency built one response at a time.', specialization: 'SPEEDSTER', tier: 1, cost: 1, prerequisites: [], icon: '🔫' },
+  { id: 'spd_3', name: 'Blur', description: 'Familiar ideas rising quickly to mind.', specialization: 'SPEEDSTER', tier: 2, cost: 2, prerequisites: ['spd_1'], icon: '💨' },
+  { id: 'spd_4', name: 'Haste', description: 'A steady mind inside a fleeting moment.', specialization: 'SPEEDSTER', tier: 2, cost: 2, prerequisites: ['spd_2'], icon: '⚡' },
+  { id: 'spd_5', name: 'Phase Shift', description: 'Knowledge carried forward with momentum.', specialization: 'SPEEDSTER', tier: 3, cost: 3, prerequisites: ['spd_3', 'spd_4'], icon: '👻' },
+  { id: 'spd_6', name: 'Time Warp', description: 'A swift step along the path of discovery.', specialization: 'SPEEDSTER', tier: 4, cost: 5, prerequisites: ['spd_5'], icon: '⏳' },
+  { id: 'grd_1', name: 'Aegis', description: 'Care extended to every attempt.', specialization: 'GUARDIAN', tier: 1, cost: 1, prerequisites: [], icon: '🛡️' },
+  { id: 'grd_2', name: 'Taunt', description: 'Reassurance found in steady progress.', specialization: 'GUARDIAN', tier: 1, cost: 1, prerequisites: [], icon: '📢' },
+  { id: 'grd_3', name: 'Bulwark', description: 'Resilience built on patient practice.', specialization: 'GUARDIAN', tier: 2, cost: 2, prerequisites: ['grd_1'], icon: '🏰' },
+  { id: 'grd_4', name: 'Rescue', description: 'A calm foundation for new challenges.', specialization: 'GUARDIAN', tier: 2, cost: 2, prerequisites: ['grd_2'], icon: '🚁' },
+  { id: 'grd_5', name: 'Fortress', description: 'Steadfastness renewed through effort.', specialization: 'GUARDIAN', tier: 3, cost: 3, prerequisites: ['grd_3', 'grd_4'], icon: '🏔️' },
+  { id: 'grd_6', name: 'Immortal', description: 'A welcoming flame that endures.', specialization: 'GUARDIAN', tier: 4, cost: 5, prerequisites: ['grd_5'], icon: '💀' },
+  { id: 'clr_1', name: 'First Aid', description: 'Gentle attention to each step forward.', specialization: 'CLERIC', tier: 1, cost: 1, prerequisites: [], icon: '💊' },
+  { id: 'clr_2', name: 'Inspiration', description: 'A fresh beginning after every challenge.', specialization: 'CLERIC', tier: 1, cost: 1, prerequisites: [], icon: '✨' },
+  { id: 'clr_3', name: 'Renewal', description: 'Encouragement woven into the journey.', specialization: 'CLERIC', tier: 2, cost: 2, prerequisites: ['clr_1'], icon: '🌿' },
+  { id: 'clr_4', name: 'Blessing', description: 'Composure cultivated through kindness.', specialization: 'CLERIC', tier: 2, cost: 2, prerequisites: ['clr_2'], icon: '🙏' },
+  { id: 'clr_5', name: 'Sanctuary', description: 'Hope sustained by persistent effort.', specialization: 'CLERIC', tier: 3, cost: 3, prerequisites: ['clr_3', 'clr_4'], icon: '⛪' },
+  { id: 'clr_6', name: 'Divine Intervention', description: 'Compassion at the heart of growth.', specialization: 'CLERIC', tier: 4, cost: 5, prerequisites: ['clr_5'], icon: '👼' },
+  { id: 'tac_1', name: 'Scan Weakness', description: 'A thoughtful approach to every challenge.', specialization: 'TACTICIAN', tier: 1, cost: 1, prerequisites: [], icon: '🔍' },
+  { id: 'tac_2', name: 'Prepared Mind', description: 'Ideas arranged with purpose.', specialization: 'TACTICIAN', tier: 1, cost: 1, prerequisites: [], icon: '📖' },
+  { id: 'tac_3', name: 'Exploit', description: 'A fresh angle on a familiar problem.', specialization: 'TACTICIAN', tier: 2, cost: 2, prerequisites: ['tac_1'], icon: '💥' },
+  { id: 'tac_4', name: 'Cooldown Reduction', description: 'Strategy strengthened through rehearsal.', specialization: 'TACTICIAN', tier: 2, cost: 2, prerequisites: ['tac_2'], icon: '⏱️' },
+  { id: 'tac_5', name: 'Vulnerability Scan', description: 'Small choices joined into a larger vision.', specialization: 'TACTICIAN', tier: 3, cost: 3, prerequisites: ['tac_3', 'tac_4'], icon: '📡' },
+  { id: 'tac_6', name: 'Checkmate', description: 'Insight earned through careful study.', specialization: 'TACTICIAN', tier: 4, cost: 5, prerequisites: ['tac_5'], icon: '♟️' },
+  { id: 'sch_1', name: 'Deep Study', description: 'Curiosity given a regular place to grow.', specialization: 'SCHOLAR', tier: 1, cost: 1, prerequisites: [], icon: '📚' },
+  { id: 'sch_2', name: 'Applied Knowledge', description: 'New ideas gathered with every page.', specialization: 'SCHOLAR', tier: 1, cost: 1, prerequisites: [], icon: '🧠' },
+  { id: 'sch_3', name: 'Mastery Surge', description: 'Understanding layered through exploration.', specialization: 'SCHOLAR', tier: 2, cost: 2, prerequisites: ['sch_1'], icon: '📈' },
+  { id: 'sch_4', name: 'Cross-Domain', description: 'Lessons connected across many subjects.', specialization: 'SCHOLAR', tier: 2, cost: 2, prerequisites: ['sch_2'], icon: '🔗' },
+  { id: 'sch_5', name: 'Expertise', description: 'A broader view shaped by learning.', specialization: 'SCHOLAR', tier: 3, cost: 3, prerequisites: ['sch_3', 'sch_4'], icon: '🎓' },
+  { id: 'sch_6', name: 'Omniscient', description: 'Knowledge shining through careful study.', specialization: 'SCHOLAR', tier: 4, cost: 5, prerequisites: ['sch_5'], icon: '🔮' },
 ];
+
+
+export const SKILL_NODE_IDS: Record<SpecializationId, string[]> = {
+  JUGGERNAUT: SKILL_NODES_V2.filter(node => node.specialization === 'JUGGERNAUT').map(node => node.id),
+  BERSERKER: SKILL_NODES_V2.filter(node => node.specialization === 'BERSERKER').map(node => node.id),
+  SNIPER: SKILL_NODES_V2.filter(node => node.specialization === 'SNIPER').map(node => node.id),
+  SPEEDSTER: SKILL_NODES_V2.filter(node => node.specialization === 'SPEEDSTER').map(node => node.id),
+  GUARDIAN: SKILL_NODES_V2.filter(node => node.specialization === 'GUARDIAN').map(node => node.id),
+  CLERIC: SKILL_NODES_V2.filter(node => node.specialization === 'CLERIC').map(node => node.id),
+  TACTICIAN: SKILL_NODES_V2.filter(node => node.specialization === 'TACTICIAN').map(node => node.id),
+  SCHOLAR: SKILL_NODES_V2.filter(node => node.specialization === 'SCHOLAR').map(node => node.id),
+};
+
+/** Mirrors computeSkillRank in functions/src/boss-combat.ts without importing server code. */
+export function getSkillRank(unlockedSkills: unknown, spec: SpecializationId): number {
+  if (!Array.isArray(unlockedSkills) || !SKILL_NODE_IDS[spec]) return 0;
+  const validIds = new Set(SKILL_NODE_IDS[spec]);
+  const distinctUnlocked = new Set(unlockedSkills);
+  let rank = 0;
+  distinctUnlocked.forEach(id => {
+    if (typeof id === 'string' && validIds.has(id)) rank += 1;
+  });
+  return Math.min(rank, 6);
+}
+
+/** The per-rank values displayed by the skill panel, mirrored from the combat engine. */
+export function getSkillIdentityEffect(spec: SpecializationId, rank: number): number {
+  const clampedRank = Math.max(0, Math.min(6, Math.trunc(rank)));
+  const identity = SPECIALIZATION_IDENTITY[spec];
+  if (identity.kind === 'HEAL') return Math.round(4 * clampedRank / 6);
+  return Math.round((1 + (identity.rank6Max - 1) * clampedRank / 6) * 100) / 100;
+}
 
 // ========================================
 // HELPERS
@@ -325,7 +326,29 @@ export const getTrialBossForSpec = (specId: SpecializationId): TrialBoss | undef
   TRIAL_BOSSES.find(t => t.specializationId === specId);
 
 // ========================================
-// SYNERGIES (cross-spec bonuses)
+// SERVER-MIRRORED RANK METADATA (display only)
+// ========================================
+
+export interface SpecializationIdentity {
+  rank6Max: number;
+  kind: 'DAMAGE' | 'HEAL';
+  triggerKey: string;
+}
+
+/** Display metadata only. Values mirror the authoritative combat identities. */
+export const SPECIALIZATION_IDENTITY: Record<SpecializationId, SpecializationIdentity> = {
+  JUGGERNAUT: { rank6Max: 1.18, kind: 'DAMAGE', triggerKey: 'skill.identity.JUGGERNAUT.desc' },
+  BERSERKER: { rank6Max: 1.24, kind: 'DAMAGE', triggerKey: 'skill.identity.BERSERKER.desc' },
+  SNIPER: { rank6Max: 1.24, kind: 'DAMAGE', triggerKey: 'skill.identity.SNIPER.desc' },
+  SPEEDSTER: { rank6Max: 1.24, kind: 'DAMAGE', triggerKey: 'skill.identity.SPEEDSTER.desc' },
+  GUARDIAN: { rank6Max: 4, kind: 'HEAL', triggerKey: 'skill.identity.GUARDIAN.desc' },
+  CLERIC: { rank6Max: 4, kind: 'HEAL', triggerKey: 'skill.identity.CLERIC.desc' },
+  TACTICIAN: { rank6Max: 1.24, kind: 'DAMAGE', triggerKey: 'skill.identity.TACTICIAN.desc' },
+  SCHOLAR: { rank6Max: 1.24, kind: 'DAMAGE', triggerKey: 'skill.identity.SCHOLAR.desc' },
+};
+
+// ========================================
+// SYNERGIES (legacy display metadata; not mechanical rank bonuses)
 // ========================================
 
 export interface SpecSynergy {
