@@ -709,6 +709,91 @@ describe('boss redesign: progress + damage_log lockdown', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Boss event answers — append-only answer audit trail (Piece 4)
+// ---------------------------------------------------------------------------
+describe('boss redesign: answer record lockdown', () => {
+  const EVENT = 'event-1';
+  const PRESENTATION = 'presentation-1';
+  const answerSeed = (uid: string) => ({
+    uid,
+    eventId: EVENT,
+    attemptId: 'attempt-1',
+    presentationId: PRESENTATION,
+    questionId: 'question-1',
+    correct: true,
+    isRevision: false,
+    difficulty: 'medium',
+    answeredAt: new Date(),
+  });
+
+  async function seedAnswer(uid: string) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'boss_event_answers', `${uid}_${PRESENTATION}`),
+        answerSeed(uid),
+      );
+    });
+  }
+
+  it('student A CAN read their own boss_event_answers record', async () => {
+    await seedAnswer(STUDENT_A);
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertSucceeds(
+      getDoc(doc(student, 'boss_event_answers', `${STUDENT_A}_${PRESENTATION}`)),
+    );
+  });
+
+  it('student A CANNOT read student B boss_event_answers record', async () => {
+    await seedAnswer(STUDENT_B);
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      getDoc(doc(student, 'boss_event_answers', `${STUDENT_B}_${PRESENTATION}`)),
+    );
+  });
+
+  it('student A CANNOT create a boss_event_answers record (even their own)', async () => {
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      setDoc(
+        doc(student, 'boss_event_answers', `${STUDENT_A}_${PRESENTATION}`),
+        answerSeed(STUDENT_A),
+      ),
+    );
+  });
+
+  it('student A CANNOT update or delete their own boss_event_answers record', async () => {
+    await seedAnswer(STUDENT_A);
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    const record = doc(student, 'boss_event_answers', `${STUDENT_A}_${PRESENTATION}`);
+    await assertFails(updateDoc(record, { correct: false }));
+    await assertFails(deleteDoc(record));
+  });
+
+  it('admin CAN read any boss_event_answers record', async () => {
+    await seedAnswer(STUDENT_B);
+    const admin = testEnv
+      .authenticatedContext('admin-uid', { admin: true })
+      .firestore();
+    await assertSucceeds(
+      getDoc(doc(admin, 'boss_event_answers', `${STUDENT_B}_${PRESENTATION}`)),
+    );
+  });
+
+  it('student CANNOT read an admin-injected boss_event_answers record without uid', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), 'boss_event_answers', `orphan_${PRESENTATION}`),
+        { eventId: EVENT, presentationId: PRESENTATION },
+      );
+    });
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      getDoc(doc(student, 'boss_event_answers', `orphan_${PRESENTATION}`)),
+    );
+  });
+});
+
 // Sanity check that the test env is wired to the emulator, not production.
 describe('emulator wiring', () => {
   it('uses the emulator project id', () => {

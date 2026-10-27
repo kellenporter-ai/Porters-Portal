@@ -412,6 +412,14 @@ service cloud.firestore {
       allow write: if false; // Admin SDK only
     }
 
+    // Boss answer records — append-only audit trail of graded presentations.
+    // Clients never write these; Cloud Functions (admin SDK) do, inside the
+    // answer transaction. Deterministic doc ID {uid}_{presentationId}.
+    match /boss_event_answers/{recordId} {
+      allow read: if isAdmin() || resource.data.uid == request.auth.uid;
+      allow write: if false; // Admin SDK only
+    }
+
     // ==========================================
     // DAILY CHALLENGES
     // ==========================================
