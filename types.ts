@@ -1683,3 +1683,21 @@ export function isValidSubmission(data: unknown): data is Submission {
     typeof data.status === 'string'
   );
 }
+
+export interface BossPresentationView {
+  presentationId: string;
+  stem: string;
+  options: string[];
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  isRevision: boolean;
+  attemptAnsweredCount: number;
+  attemptSize: number;
+}
+
+export interface BossAttemptState {
+  attemptId: string;
+  answeredCount: number;
+  targetSize: number;
+  complete: boolean;
+  revisionsPending: number;
+}
