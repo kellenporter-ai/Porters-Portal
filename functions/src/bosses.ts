@@ -13,6 +13,18 @@ import {
 } from "./core";
 import { checkAndUnlockAchievements, writeAchievementNotifications } from "./achievements";
 import { generateLoot } from "./gamification-items";
+import { randomInt, randomUUID } from "node:crypto";
+import {
+  BOSS_ATTEMPT_SIZE,
+  MAX_REVISIONS_PER_ATTEMPT,
+  REVISION_COOLDOWN_ANSWERS,
+  type BossAttempt,
+  type BossPresentation,
+  type Rng,
+  shuffleOptions,
+  toDisplayedOptions,
+  gradeByDisplayedIndex,
+} from "./boss-presentation.js";
 
 // ==========================================
 // DAILY LOGIN REWARD
@@ -330,6 +342,8 @@ interface BossProgress {
   answeredQuestionIds?: string[];
   answeredCount?: number;
   correctCount?: number;
+  activeAttempt?: BossAttempt | null;
+  lastCompletedAttempt?: BossAttempt | null;
   // legacy fields (read-only): attempts, totalDamageDealt, participationMet, rewardClaimed
   attempts?: unknown[];
   [key: string]: unknown;
@@ -337,6 +351,125 @@ interface BossProgress {
 
 function newSessionId(): string {
   return `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createBossAttempt(id: string, startedAt: string): BossAttempt {
+  return {
+    id,
+    startedAt,
+    targetSize: BOSS_ATTEMPT_SIZE,
+    answeredCount: 0,
+    presentations: [],
+    revisionQueue: [],
+  };
+}
+
+export interface PlannedPresentation {
+  attempt: BossAttempt;
+  presentation: BossPresentation;
+}
+
+/** Pure attempt planner. The pending presentation always wins, making reloads idempotent. */
+export function planNextPresentation(
+  attempt: BossAttempt,
+  availableQuestionIds: string[],
+  rng: Rng,
+  preferredQuestionId?: string,
+): PlannedPresentation | null {
+  const pending = attempt.presentations[attempt.presentations.length - 1];
+  if (pending?.status === "pending") return { attempt, presentation: pending };
+  if (
+    attempt.answeredCount >= attempt.targetSize ||
+    attempt.presentations.length >= attempt.targetSize
+  ) return null;
+
+  const available = new Set(availableQuestionIds);
+  const answered = new Set(
+    attempt.presentations.filter((p) => p.status === "answered").map((p) => p.questionId),
+  );
+  const revision = attempt.revisionQueue.find((item) =>
+    item.eligibleAfterAnswered <= attempt.answeredCount &&
+    item.failedCount < MAX_REVISIONS_PER_ATTEMPT &&
+    available.has(item.questionId)
+  );
+  let questionId = revision?.questionId;
+  if (!questionId) {
+    const candidates = availableQuestionIds.filter((id) => !answered.has(id));
+    questionId = preferredQuestionId && candidates.includes(preferredQuestionId)
+      ? preferredQuestionId
+      : candidates[0];
+  }
+  if (!questionId) return null;
+
+  const presentation: BossPresentation = {
+    presentationId: `${attempt.id}_${attempt.answeredCount}_${questionId}`,
+    questionId,
+    optionOrder: [],
+    status: "pending",
+    isRevision: !!revision,
+  };
+  return {
+    attempt: { ...attempt, presentations: [...attempt.presentations, presentation] },
+    presentation,
+  };
+}
+
+export interface AppliedAttemptAnswer {
+  status: "answered" | "cached" | "stale";
+  attempt: BossAttempt;
+  presentation?: BossPresentation;
+  complete: boolean;
+}
+
+/** Pure, idempotent answer application; combat and persistence stay in the callable. */
+export function applyAnswerToAttempt(
+  attempt: BossAttempt,
+  presentationId: string,
+  result: { correct: boolean; damage: number },
+): AppliedAttemptAnswer {
+  const presentation = attempt.presentations.find((p) => p.presentationId === presentationId);
+  if (!presentation) return { status: "stale", attempt, complete: attempt.answeredCount >= attempt.targetSize };
+  if (presentation.status === "answered") {
+    return {
+      status: "cached",
+      attempt,
+      presentation,
+      complete: attempt.answeredCount >= attempt.targetSize,
+    };
+  }
+
+  const answeredCount = attempt.answeredCount + 1;
+  const answeredPresentation: BossPresentation = {
+    ...presentation,
+    status: "answered",
+    result: { correct: result.correct, damage: result.damage },
+  };
+  let revisionQueue = attempt.revisionQueue.filter((item) => item.questionId !== presentation.questionId);
+  if (!result.correct) {
+    const previous = attempt.revisionQueue.find((item) => item.questionId === presentation.questionId);
+    const failedCount = (previous?.failedCount || 0) + 1;
+    if (failedCount < MAX_REVISIONS_PER_ATTEMPT) {
+      revisionQueue = [...revisionQueue, {
+        questionId: presentation.questionId,
+        failedCount,
+        eligibleAfterAnswered: answeredCount + REVISION_COOLDOWN_ANSWERS,
+      }];
+    }
+  }
+
+  return {
+    status: "answered",
+    attempt: {
+      ...attempt,
+      answeredCount,
+      presentations: attempt.presentations.map((p) =>
+        p.presentationId === presentationId ? answeredPresentation : p
+      ),
+      revisionQueue,
+    },
+    presentation: answeredPresentation,
+    complete: answeredCount === attempt.targetSize,
+  };
 }
 
 /** Shared equipment/stat derivation for the async boss model. */
@@ -367,9 +500,14 @@ function isWindowOpen(event: { scheduledAt?: string; deadline?: string }, now: n
 export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   const uid = verifyAuth(request.auth);
   const correlationId = generateCorrelationId();
-  const { eventId, questionId, answer, timeTakenMs: _timeTakenMs } = request.data;
-  if (!eventId || !questionId || answer === undefined) {
-    throw new HttpsError("invalid-argument", "Event ID, question ID, and answer required.");
+  const { eventId, questionId, answer, presentationId, displayedIndex, timeTakenMs: _timeTakenMs } = request.data;
+  const legacySubmission = !presentationId && !!questionId && answer !== undefined;
+  const newSubmission = !!presentationId && displayedIndex !== undefined;
+  if (!eventId || (!legacySubmission && !newSubmission)) {
+    throw new HttpsError("invalid-argument", "Event ID and presentation answer required.");
+  }
+  if (legacySubmission) {
+    logWithCorrelation("warn", "answerBossEvent: legacy submission shape", correlationId, { uid, eventId });
   }
 
   const db = admin.firestore();
@@ -393,7 +531,13 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
   }
 
   const questions: BossEventQuestion[] = event.questions || [];
-  const question = questions.find((q) => q.id === questionId);
+  const initialProgress = (progressSnap.exists ? progressSnap.data() : {}) as BossProgress;
+  const initialPresentation = presentationId
+    ? [...(initialProgress.activeAttempt?.presentations || []), ...(initialProgress.lastCompletedAttempt?.presentations || [])]
+      .find((p) => p.presentationId === presentationId)
+    : undefined;
+  const resolvedQuestionId = questionId || initialPresentation?.questionId;
+  const question = questions.find((q) => q.id === resolvedQuestionId);
   if (!question) throw new HttpsError("not-found", "Question not found.");
 
   const userData = userSnap.data()!;
@@ -401,7 +545,7 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
   const { gam } = loadout;
 
   // Pre-transaction structured rejections (client-renderable)
-  const progress = (progressSnap.exists ? progressSnap.data() : {}) as BossProgress;
+  const progress = initialProgress;
   if (progress.victoryClaimed) {
     return { error: "ALREADY_VICTORIOUS", message: "You have already defeated this boss." };
   }
@@ -413,11 +557,6 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       medevacCost: getMedevacCost(gam.medevacCount || 0),
     };
   }
-  if ((progress.answeredQuestionIds || []).includes(questionId)) {
-    return { alreadyAnswered: true, correct: false, damage: 0, bossHp: progress.bossHp ?? 0 };
-  }
-
-  const isCorrect = Number(answer) === question.correctAnswer;
   const rand = Math.random();
   const critRoll = Math.random();
 
@@ -454,10 +593,6 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
         medevacCost: getMedevacCost(latestGam.medevacCount || 0),
       };
     }
-    if ((latestProgress.answeredQuestionIds || []).includes(questionId)) {
-      return { alreadyAnswered: true as const, correct: false, damage: 0, bossHp: latestProgress.bossHp ?? 0 };
-    }
-
     // Initialize / migrate progress. Legacy docs (shared-pool era) start the student
     // at full personal HP — prior shared damage is treated as irrelevant.
     const isNewProgress = !latestProgressDoc.exists || typeof latestProgress.bossMaxHp !== "number";
@@ -465,6 +600,59 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       ? computeBossMaxHp(latestLoadout.gearScore, latestLoadout.stats)
       : (latestProgress.bossMaxHp as number);
     const bossHp = isNewProgress ? bossMaxHp : Math.max(0, latestProgress.bossHp as number);
+
+    let attempt = latestProgress.activeAttempt || null;
+    if (!legacySubmission) {
+      if (!attempt) {
+        return { error: "STALE_PRESENTATION" as const };
+      }
+      const pending = attempt.presentations.find((p) => p.presentationId === presentationId);
+      if (!pending) {
+        const completed = latestProgress.lastCompletedAttempt;
+        const cached = completed?.presentations.find((p) => p.presentationId === presentationId);
+        if (completed && cached?.status === "answered" && cached.result) {
+          const cachedSession = latestProgress.session;
+          return {
+            correct: cached.result.correct,
+            damage: cached.result.damage,
+            isCrit: false,
+            bossHp: latestProgress.bossHp ?? 0,
+            bossMaxHp: latestProgress.bossMaxHp ?? 0,
+            playerHp: cachedSession?.playerHp || 0,
+            playerMaxHp: cachedSession?.playerMaxHp || latestLoadout.combat.maxHp,
+            knockedOut: !cachedSession,
+            cooldownUntil: latestProgress.cooldownUntil || null,
+            victory: !!latestProgress.victoryClaimed,
+            streak: cachedSession?.streak || 0,
+            newUnlocks: [] as string[],
+            alreadyAnswered: true as const,
+            attemptComplete: true,
+          };
+        }
+        return { error: "STALE_PRESENTATION" as const };
+      }
+      const applied = applyAnswerToAttempt(attempt, presentationId, { correct: false, damage: 0 });
+      if (applied.status === "stale") return { error: "STALE_PRESENTATION" as const };
+      if (applied.status === "cached" && applied.presentation?.result) {
+        const cachedSession = latestProgress.session;
+        return {
+          correct: applied.presentation.result.correct,
+          damage: applied.presentation.result.damage,
+          isCrit: false,
+          bossHp: latestProgress.bossHp ?? 0,
+          bossMaxHp: latestProgress.bossMaxHp ?? 0,
+          playerHp: cachedSession?.playerHp || 0,
+          playerMaxHp: cachedSession?.playerMaxHp || latestLoadout.combat.maxHp,
+          knockedOut: !cachedSession,
+          cooldownUntil: latestProgress.cooldownUntil || null,
+          victory: !!latestProgress.victoryClaimed,
+          streak: cachedSession?.streak || 0,
+          newUnlocks: [] as string[],
+          alreadyAnswered: true as const,
+          attemptComplete: applied.complete,
+        };
+      }
+    }
 
     // Session: reuse the active one, or open a fresh one
     let session = latestProgress.session || null;
@@ -478,6 +666,22 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
         startedAt: new Date(txNow).toISOString(),
       };
     }
+
+    const presentationForAnswer: BossPresentation = legacySubmission
+      ? {
+          presentationId: `legacy_${randomUUID()}`,
+          questionId,
+          optionOrder: shuffleOptions(question.options.length, randomInt),
+          status: "pending",
+          isRevision: false,
+        }
+      : attempt!.presentations.find((p) => p.presentationId === presentationId)!;
+    const graded = legacySubmission
+      ? { valid: true, correct: Number(answer) === question.correctAnswer, canonicalIndex: Number(answer) }
+      : gradeByDisplayedIndex(question, presentationForAnswer.optionOrder, Number(displayedIndex));
+    if (!graded.valid) throw new HttpsError("invalid-argument", "Invalid displayed answer index.");
+    const isCorrect = graded.correct;
+    const submittedAttemptId = legacySubmission ? `legacy_${presentationForAnswer.presentationId}` : attempt!.id;
 
     let newBossHp = bossHp;
     let newStreak = session.streak || 0;
@@ -562,6 +766,16 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       pendingAchievementUnlocks = newUnlocks;
     }
 
+    let attemptComplete = false;
+    let completedAttempt: BossAttempt | null = null;
+    if (!legacySubmission) {
+      const applied = applyAnswerToAttempt(attempt!, presentationId, { correct: isCorrect, damage });
+      if (applied.status !== "answered") return { error: "STALE_PRESENTATION" as const };
+      attemptComplete = applied.complete;
+      completedAttempt = applied.complete ? applied.attempt : null;
+      attempt = applied.complete ? null : applied.attempt;
+    }
+
     // Plain display counter: increment once per student per event
     const isFirstAnswer = (latestProgress.answeredQuestionIds || []).length === 0;
     if (isFirstAnswer) {
@@ -572,8 +786,21 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       t.update(userRef, userUpdates);
     }
 
+    const answerRecordRef = db.doc(`boss_event_answers/${uid}_${presentationForAnswer.presentationId}`);
+    t.set(answerRecordRef, {
+      uid,
+      eventId,
+      attemptId: submittedAttemptId,
+      presentationId: presentationForAnswer.presentationId,
+      questionId: question.id,
+      correct: isCorrect,
+      isRevision: presentationForAnswer.isRevision,
+      difficulty: question.difficulty,
+      answeredAt: new Date(txNow).toISOString(),
+    });
+
     // Progress write (legacy `attempts` field is no longer written)
-    const answeredQuestionIds = [...(latestProgress.answeredQuestionIds || []), questionId];
+    const answeredQuestionIds = [...(latestProgress.answeredQuestionIds || []), question.id];
     t.set(progressRef, {
       userId: uid,
       eventId,
@@ -586,6 +813,10 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       answeredQuestionIds,
       answeredCount: (latestProgress.answeredCount || 0) + 1,
       correctCount: (latestProgress.correctCount || 0) + (isCorrect ? 1 : 0),
+      ...(legacySubmission ? {} : {
+        activeAttempt: attempt,
+        ...(attemptComplete ? { lastCompletedAttempt: completedAttempt } : {}),
+      }),
     }, { merge: true });
 
     return {
@@ -601,6 +832,7 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       victory,
       streak: newStreak,
       newUnlocks: pendingAchievementUnlocks,
+      ...(legacySubmission ? {} : { attemptComplete, presentationId }),
     };
   });
 
@@ -611,6 +843,7 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     if (txResult.error === "COOLDOWN_ACTIVE") {
       return txResult;
     }
+    if (txResult.error === "STALE_PRESENTATION") return { error: "STALE_PRESENTATION" };
     return { error: "EVENT_CLOSED", message: "This boss event is not currently open." };
   }
   if ("alreadyAnswered" in txResult && txResult.alreadyAnswered) {
@@ -637,9 +870,9 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
         level: 0, accuracyHistory: [], currentAccuracy: 0,
         questionsAnswered: 0, questionsCorrect: 0, lastUpdated: new Date().toISOString(),
       };
-      currentMastery.accuracyHistory = [...(currentMastery.accuracyHistory || []), isCorrect ? 1 : 0].slice(-20);
+      currentMastery.accuracyHistory = [...(currentMastery.accuracyHistory || []), txResult.correct ? 1 : 0].slice(-20);
       currentMastery.questionsAnswered = (currentMastery.questionsAnswered || 0) + 1;
-      if (isCorrect) currentMastery.questionsCorrect = (currentMastery.questionsCorrect || 0) + 1;
+      if (txResult.correct) currentMastery.questionsCorrect = (currentMastery.questionsCorrect || 0) + 1;
       const recent = currentMastery.accuracyHistory;
       currentMastery.currentAccuracy = recent.reduce((a: number, b: number) => a + b, 0) / recent.length;
       currentMastery.level = Math.min(10, Math.floor(currentMastery.currentAccuracy * 10));
@@ -753,8 +986,7 @@ export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60
   }
 
   const questions: BossEventQuestion[] = event.questions || [];
-  const answeredIds = new Set<string>(progress.answeredQuestionIds || []);
-  const remaining = questions.filter((q) => !answeredIds.has(q.id));
+  const remaining = questions;
 
   if (remaining.length === 0) {
     return {
@@ -810,11 +1042,40 @@ export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60
   }
 
   const session = progress.session || null;
-
-  return {
-    question: toStudentQuestion(selected as unknown as Record<string, unknown>),
-    bossIntent,
-    remainingCount: remaining.length - 1,
+  const attemptResult = await db.runTransaction(async (t) => {
+    const latestProgressDoc = await t.get(progressRef);
+    const latestProgress = (latestProgressDoc.exists ? latestProgressDoc.data() : progress) as BossProgress;
+    let attempt = latestProgress.activeAttempt ||
+      (latestProgress.lastCompletedAttempt &&
+        latestProgress.lastCompletedAttempt.answeredCount === latestProgress.lastCompletedAttempt.targetSize
+        ? latestProgress.lastCompletedAttempt
+        : createBossAttempt(
+            `a_${Date.now().toString(36)}_${randomUUID()}`,
+            new Date().toISOString(),
+          ));
+    const completed = attempt.answeredCount >= attempt.targetSize;
+    const planned = completed ? null : planNextPresentation(
+      attempt,
+      remaining.map((q) => q.id),
+      randomInt,
+      selected.id,
+    );
+    if (planned && planned.presentation.status === "pending" && planned.presentation !== attempt.presentations[attempt.presentations.length - 1]) {
+      const selectedQuestion = questions.find((q) => q.id === planned!.presentation.questionId);
+      if (!selectedQuestion) return { error: "STALE_PRESENTATION" as const, attempt };
+      planned.presentation.optionOrder = shuffleOptions(selectedQuestion.options.length, randomInt);
+      attempt = planned.attempt;
+      await Promise.resolve();
+      t.set(progressRef, { activeAttempt: attempt }, { merge: true });
+    }
+    const presentation = attempt.presentations[attempt.presentations.length - 1];
+    return { attempt, presentation };
+  });
+  if ("error" in attemptResult && attemptResult.error) return { error: attemptResult.error };
+  const currentAttempt = attemptResult.attempt;
+  const presentation = attemptResult.presentation;
+  const selectedQuestion = presentation ? questions.find((q) => q.id === presentation.questionId) : undefined;
+  const common = {
     bossHp: progress.bossHp ?? 0,
     bossMaxHp: progress.bossMaxHp,
     playerHp: session ? session.playerHp : loadout.combat.maxHp,
@@ -822,6 +1083,45 @@ export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60
     streak: session ? session.streak || 0 : 0,
     cooldownUntil: progress.cooldownUntil || null,
     medevacCost: getMedevacCost(gam.medevacCount || 0),
+    knockoutCount: progress.knockoutCount || 0,
+    victoryClaimed: !!progress.victoryClaimed,
+  };
+  if (!presentation || !selectedQuestion || currentAttempt.answeredCount >= currentAttempt.targetSize) {
+    return {
+      ...common,
+      presentation: null,
+      complete: true,
+      attemptState: {
+        attemptId: currentAttempt.id,
+        answeredCount: currentAttempt.answeredCount,
+        targetSize: currentAttempt.targetSize,
+        complete: true,
+        revisionsPending: currentAttempt.revisionQueue.length,
+      },
+    };
+  }
+
+  return {
+    ...common,
+    presentation: {
+      presentationId: presentation.presentationId,
+      stem: selectedQuestion.stem,
+      options: toDisplayedOptions(selectedQuestion.options, presentation.optionOrder),
+      difficulty: selectedQuestion.difficulty,
+      isRevision: presentation.isRevision,
+      attemptAnsweredCount: currentAttempt.answeredCount,
+      attemptSize: currentAttempt.targetSize,
+    },
+    attemptState: {
+      attemptId: currentAttempt.id,
+      answeredCount: currentAttempt.answeredCount,
+      targetSize: currentAttempt.targetSize,
+      complete: false,
+      revisionsPending: currentAttempt.revisionQueue.length,
+    },
+    complete: false,
+    bossIntent,
+    remainingCount: remaining.length - 1,
     attemptStats: {
       accuracy: Math.round(accuracy * 100),
       correct: correctCount,
