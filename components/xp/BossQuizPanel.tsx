@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BossEvent, BossEventProgress, BossQuizQuestion, BossIntent, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, SpecializationId } from '../../types';
+import { BossEvent, BossEventProgress, BossIntent, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, SpecializationId } from '../../types';
 import { dataService } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
@@ -278,7 +278,7 @@ const QuizBossCard: React.FC<{
   quiz: BossEvent;
   userId: string;
   onAnswer: (quizId: string, questionId: string, answer: number, callbacks: {
-    onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
+    onResult: (result: { correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
   }) => void;
   playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
   playerAppearance?: BossQuizPanelProps['playerAppearance'];
@@ -305,11 +305,20 @@ const QuizBossCard: React.FC<{
   }, [playerStats]);
 
   // Per-card state — initialized from persisted progress once it loads
-  const [currentQuestionData, setCurrentQuestionData] = useState<BossQuizQuestion | null>(null);
+  const [presentation, setPresentation] = useState<{
+    presentationId: string;
+    stem: string;
+    options: string[];
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+    isRevision: boolean;
+    attemptAnsweredCount: number;
+    attemptSize: number;
+  } | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [attemptAnsweredCount, setAttemptAnsweredCount] = useState(0);
   const [bossIntent, setBossIntent] = useState<BossIntent | null>(null);
   const [questionLoading, setQuestionLoading] = useState(false);
   const [questionsComplete, setQuestionsComplete] = useState(false);
-  const [attemptStats, setAttemptStats] = useState<{ accuracy: number | null; correct: number; attempted: number } | null>(null);
   const [playerHp, setPlayerHp] = useState<number>(-1);
   const [playerMaxHp, setPlayerMaxHp] = useState<number>(derivedMaxHp);
   const [bossHp, setBossHp] = useState<number>(effectiveMaxHp);
@@ -324,7 +333,7 @@ const QuizBossCard: React.FC<{
   const [victoryClaimed, setVictoryClaimed] = useState(false);
   const [eventClosed, setEventClosed] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
+  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
   const [showPhaseTransition, setShowPhaseTransition] = useState<{ phase: number; name: string; dialogue?: string } | null>(null);
   const [showAbility, setShowAbility] = useState<{ name: string; effect: string; value: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -336,6 +345,7 @@ const QuizBossCard: React.FC<{
 
   // Timer + unmount safety
   const isMounted = useIsMounted();
+  const answeringRef = useRef(false);
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const safeTimeout = (fn: () => void, ms: number) => {
     const id = setTimeout(() => { if (isMounted()) fn(); }, ms);
@@ -364,17 +374,16 @@ const QuizBossCard: React.FC<{
       }
       if (result.medevacCost !== undefined) setMedevacCost(result.medevacCost);
       if (result.victoryClaimed !== undefined) setVictoryClaimed(result.victoryClaimed);
-      if (result.complete) {
+      if (result.streak !== undefined) setStreak(result.streak);
+      if (result.attemptState) setAttemptAnsweredCount(result.attemptState.answeredCount);
+      if (result.complete || result.attemptState?.complete) {
         setQuestionsComplete(true);
-        setCurrentQuestionData(null);
+        setPresentation(null);
         setBossIntent(null);
       } else {
-        setCurrentQuestionData(result.question || null);
+        setPresentation(result.presentation || null);
         setBossIntent((result.bossIntent as BossIntent) || null);
         setQuestionsComplete(false);
-      }
-      if (result.attemptStats) {
-        setAttemptStats(result.attemptStats);
       }
     } catch (err) {
       console.error('Failed to fetch next question:', err);
@@ -386,7 +395,7 @@ const QuizBossCard: React.FC<{
   // Once progress loads, initialize HP from server state and fetch first question
   useEffect(() => {
     if (!progressLoaded) return;
-    if (currentQuestionData !== null || questionsComplete) return; // already initialized
+    if (presentation !== null || questionsComplete) return; // already initialized
 
     if (progress) {
       // Restore HP — use server value if valid, otherwise derive from stats
@@ -418,7 +427,7 @@ const QuizBossCard: React.FC<{
   const playerHpPercent = playerMaxHp > 0 ? ((playerHp === -1 ? playerMaxHp : playerHp) / playerMaxHp) * 100 : 100;
   const hpPercent = bossMaxHp > 0 ? Math.max(0, (bossHp / bossMaxHp) * 100) : 0;
 
-  const question = currentQuestionData;
+  const question = presentation;
   const allAnswered = questionsComplete;
   const bossDefeated = bossHp <= 0;
 
@@ -527,13 +536,15 @@ const QuizBossCard: React.FC<{
     }
   };
 
-  const handleLocalAnswer = async (quizId: string, questionId: string, answer: number) => {
-    if (submitting || knockedOut) return;
+  const handleLocalAnswer = async (quizId: string, presentationId: string, answer: number) => {
+    if (answeringRef.current || knockedOut) return;
+    answeringRef.current = true;
     setSubmitting(true);
     setSelectedAnswer(answer);
-    onAnswer(quizId, questionId, answer, {
+    onAnswer(quizId, presentationId, answer, {
       onResult: (result) => {
         if (!isMounted()) return;
+        answeringRef.current = false;
         if (result.error === 'COOLDOWN_ACTIVE') {
           setCooldownUntil(result.cooldownUntil ?? null);
           if (result.medevacCost !== undefined) setMedevacCost(result.medevacCost);
@@ -543,6 +554,13 @@ const QuizBossCard: React.FC<{
         }
         if (result.error === 'ALREADY_VICTORIOUS') { setVictoryClaimed(true); setSubmitting(false); return; }
         if (result.error === 'EVENT_CLOSED') { setEventClosed(true); setSubmitting(false); return; }
+        if (result.error === 'STALE_PRESENTATION') {
+          setSelectedAnswer(null);
+          setAnswerResult(null);
+          setSubmitting(false);
+          void fetchNextQuestion();
+          return;
+        }
         if (result.playerHp !== undefined) setPlayerHp(result.playerHp);
         if (result.playerMaxHp !== undefined) setPlayerMaxHp(result.playerMaxHp);
         if (result.bossHp !== undefined) setBossHp(result.bossHp);
@@ -572,6 +590,7 @@ const QuizBossCard: React.FC<{
         }
 
         setAnswerResult(result);
+        if (result.streak !== undefined) setStreak(result.streak);
 
         // Phase transition — show overlay for 3 seconds then dismiss
         if (result.phaseTransition) {
@@ -585,7 +604,14 @@ const QuizBossCard: React.FC<{
           safeTimeout(() => setShowAbility(null), 3000);
         }
 
-        if (!result.knockedOut) {
+        if (result.attemptComplete) {
+          setAttemptAnsweredCount(prev => prev + 1);
+          setQuestionsComplete(true);
+          setPresentation(null);
+          setBossIntent(null);
+          setSelectedAnswer(null);
+          setAnswerResult(null);
+        } else if (!result.knockedOut) {
           safeTimeout(() => {
             setSelectedAnswer(null);
             setAnswerResult(null);
@@ -815,10 +841,16 @@ const QuizBossCard: React.FC<{
               onCommit={handleCommit}
             />
           ) : allAnswered ? (
-            <div className="text-center py-8">
-              <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-300">{t('boss.allAnswered')}</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">{t('boss.comeBackTomorrow')}</p>
+            <div className="text-center py-6 space-y-3 rounded-xl border border-green-500/20 bg-green-500/5">
+              <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto" />
+              <h5 className="text-lg font-black text-green-600 dark:text-green-400">{t('boss.attemptCompleteTitle')}</h5>
+              <div className="space-y-1 text-sm text-[var(--text-secondary)]">
+                <p>{interpolate('boss.attemptAnswered', { count: attemptAnsweredCount })}</p>
+                <p>{interpolate('boss.attemptStreak', { streak })}</p>
+              </div>
+              <button type="button" onClick={() => { setAttemptAnsweredCount(0); void fetchNextQuestion(); }} disabled={questionLoading} className="px-6 py-2.5 bg-amber-600/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-xl text-sm font-bold hover:bg-amber-600/30 transition disabled:opacity-50">
+                {t('boss.nextAttempt')}
+              </button>
             </div>
           ) : questionLoading ? (
             <div className="text-center py-8">
@@ -834,13 +866,13 @@ const QuizBossCard: React.FC<{
           ) : question ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>{interpolate('boss.questionProgress', { n: (attemptStats?.attempted || 0) + 1, total: quiz.questions?.length || '?' })}</span>
+                <span>{interpolate('boss.attemptProgress', { n: question.attemptAnsweredCount + 1, total: question.attemptSize })}</span>
                 <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${getDifficultyClasses(question.difficulty)}`}>
                   {question.difficulty}
-                  {question.damageBonus ? interpolate('boss.dmgBonus', { bonus: question.damageBonus }) : ''}
                 </span>
               </div>
 
+              {question.isRevision && <span className="inline-block text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)]">{t('boss.revisionBadge')}</span>}
               <p className="text-base text-white font-semibold leading-relaxed">{question.stem}</p>
 
               <div className="space-y-2.5" role="radiogroup" aria-label={t('boss.answerOptions')}>
@@ -854,7 +886,7 @@ const QuizBossCard: React.FC<{
                       key={idx}
                       role="radio"
                       aria-checked={isSelected}
-                      onClick={() => handleLocalAnswer(quiz.id, question.id, idx)}
+                      onClick={() => handleLocalAnswer(quiz.id, question.presentationId, idx)}
                       disabled={submitting || !!answerResult || knockedOut}
                       className={`w-full text-left p-4 rounded-xl border text-base transition-all ${
                         showResult && isCorrect ? 'border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400' :
@@ -982,7 +1014,7 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     quizId: string,
     questionId: string,
     answer: number,
-    callbacks: { onResult: (result: { correct: boolean; damage: number; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
+    callbacks: { onResult: (result: { correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
   ) => {
     try {
       const result = await dataService.answerBossEvent(quizId, questionId, answer);
@@ -997,6 +1029,10 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
       }
       if (result.error === 'EVENT_CLOSED') {
         callbacks.onResult({ correct: false, damage: 0, error: 'EVENT_CLOSED' });
+        return;
+      }
+      if (result.error === 'STALE_PRESENTATION') {
+        callbacks.onResult({ correct: false, damage: 0, error: 'STALE_PRESENTATION' });
         return;
       }
       if (result.alreadyAnswered) {

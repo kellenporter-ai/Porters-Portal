@@ -1776,17 +1776,17 @@ export const dataService = {
     }, (error: unknown) => reportError(error, { subscription: 'bossEventDamageLog', eventId }));
   },
 
-  answerBossEvent: async (eventId: string, questionId: string, answer: number, timeTakenMs?: number) => {
-    const result = await callAnswerBossEvent({ eventId, questionId, answer, timeTakenMs });
+  answerBossEvent: async (eventId: string, presentationId: string, displayedIndex: number) => {
+    const result = await callAnswerBossEvent({ eventId, presentationId, displayedIndex });
     return result.data as {
       // Soft errors returned as structured payloads (not thrown)
-      error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'EVENT_CLOSED';
+      error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED';
       message?: string;
       cooldownUntil?: string | null;
       medevacCost?: number;
       alreadyAnswered?: boolean;
       // Combat result
-      correct?: boolean; damage?: number;
+      correct?: boolean; damage?: number; attemptComplete?: boolean;
       bossHp?: number; bossMaxHp?: number;
       playerHp?: number; playerMaxHp?: number;
       knockedOut?: boolean; victory?: boolean; victoryClaimed?: boolean; streak?: number;
@@ -1801,7 +1801,22 @@ export const dataService = {
     return result.data as {
       complete?: boolean;
       message?: string;
-      question?: import('../types').BossQuizQuestion | null;
+      presentation?: {
+        presentationId: string;
+        stem: string;
+        options: string[];
+        difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+        isRevision: boolean;
+        attemptAnsweredCount: number;
+        attemptSize: number;
+      } | null;
+      attemptState?: {
+        attemptId: string;
+        answeredCount: number;
+        targetSize: number;
+        complete: boolean;
+        revisionsPending: boolean;
+      };
       bossIntent?: { type: string; warningText: string; icon: string; targetSubject?: string } | null;
       remainingCount?: number;
       attemptStats?: { accuracy: number | null; correct: number; attempted: number };
