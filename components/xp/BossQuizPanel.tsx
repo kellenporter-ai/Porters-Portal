@@ -566,6 +566,10 @@ const QuizBossCard: React.FC<{
         if (result.bossHp !== undefined) setBossHp(result.bossHp);
         if (result.bossMaxHp !== undefined) setBossMaxHp(result.bossMaxHp);
         if (result.victoryClaimed) setVictoryClaimed(true);
+        if (result.cooldownUntil) setCooldownUntil(result.cooldownUntil);
+        // The knockout response carries the Medevac price. Without this the button
+        // stays hidden until a reload, because it renders only when cost is known.
+        if (result.medevacCost !== undefined) setMedevacCost(result.medevacCost);
         if (result.knockedOut) setKnockedOut(true);
 
         if (result.correct) {

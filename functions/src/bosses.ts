@@ -106,6 +106,27 @@ const MEDEVAC_WINDOW_MS = 24 * 60 * 60 * 1000; // global medevac escalator windo
 
 export const MEDEVAC_COSTS = [50, 100, 150, 250, 400];
 
+/**
+ * Pure: resolve a boss event's victory payout.
+ *
+ * v2 documents store the payout under `rewards`; `completionRewards` is the
+ * deprecated v1 BossEncounter field. Reading only the v1 name made every real
+ * victory pay 0 XP, 0 Flux and no item, so this helper exists to be importable
+ * by tests rather than duplicated there.
+ */
+export function resolveVictoryRewards(event: Record<string, unknown> | undefined): {
+  xp: number;
+  flux: number;
+  itemRarity: string | null;
+} {
+  const src = (event?.rewards ?? event?.completionRewards ?? {}) as Record<string, unknown>;
+  return {
+    xp: Number(src.xp) || 0,
+    flux: Number(src.flux) || 0,
+    itemRarity: (src.itemRarity as string) || null,
+  };
+}
+
 /** Pure: cost of the NEXT medevac given how many have been purchased (global counter). */
 export function getMedevacCost(medevacCount: number): number {
   const idx = Math.min(Math.max(0, Math.floor(medevacCount)), MEDEVAC_COSTS.length - 1);
@@ -619,10 +640,11 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     const userUpdates: Record<string, any> = {};
     if (newBossHp <= 0 && !latestProgress.victoryClaimed) {
       victory = true;
-      const rewards = (latestEvent.completionRewards || {}) as Record<string, any>;
-      const rewardXp = rewards.xp || 0;
-      const rewardFlux = rewards.flux || 0;
-      const rewardItemRarity = rewards.itemRarity || null;
+      // v2 events store the payout under `rewards`. `completionRewards` is the
+      // deprecated v1 BossEncounter field and is undefined on v2 documents, so
+      // reading it made every victory pay 0 XP, 0 Flux and no item.
+      const { xp: rewardXp, flux: rewardFlux, itemRarity: rewardItemRarity } =
+        resolveVictoryRewards(latestEvent);
 
       if (rewardXp > 0) {
         const xpRes = buildXPUpdates(latestUserData, rewardXp, latestLoadout.activeClass);
@@ -723,6 +745,10 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       playerMaxHp: (newSession ? newSession.playerMaxHp : session.playerMaxHp) || latestLoadout.combat.maxHp,
       knockedOut,
       cooldownUntil: newCooldownUntil,
+      // Always surface the current Medevac price so the knockout screen can offer
+      // an instant revive. Omitting it here left the client's medevacCost null and
+      // hid the button until the student reloaded the page.
+      medevacCost: getMedevacCost(latestGam.medevacCount || 0),
       victory,
       streak: newStreak,
       newUnlocks: pendingAchievementUnlocks,
@@ -940,14 +966,19 @@ export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60
   const attemptResult = await db.runTransaction(async (t) => {
     const latestProgressDoc = await t.get(progressRef);
     const latestProgress = (latestProgressDoc.exists ? latestProgressDoc.data() : progress) as BossProgress;
+    const isNewAttempt = !latestProgress.activeAttempt;
     let attempt = latestProgress.activeAttempt ||
-      (latestProgress.lastCompletedAttempt &&
-        latestProgress.lastCompletedAttempt.answeredCount === latestProgress.lastCompletedAttempt.targetSize
-        ? latestProgress.lastCompletedAttempt
-        : createBossAttempt(
-            `a_${Date.now().toString(36)}_${randomUUID()}`,
-            new Date().toISOString(),
-          ));
+      createBossAttempt(
+        `a_${Date.now().toString(36)}_${randomUUID()}`,
+        new Date().toISOString(),
+      );
+    // A freshly created attempt must be persisted even if planning below fails,
+    // otherwise the next call would mint another new attempt and progress would
+    // never accumulate. lastCompletedAttempt is read-only history and is never
+    // resumed as the active attempt.
+    if (isNewAttempt) {
+      t.set(progressRef, { activeAttempt: attempt }, { merge: true });
+    }
     const completed = attempt.answeredCount >= attempt.targetSize;
     const planned = completed ? null : planNextPresentation(
       attempt,
