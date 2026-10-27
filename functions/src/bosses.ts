@@ -24,6 +24,15 @@ import {
   gradeByDisplayedIndex,
 } from "./boss-presentation.js";
 
+/** Returns a safe topicMastery key, or null when no meaningful topic exists. */
+export function sanitizeTopicKey(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.toLowerCase() === "undefined" || trimmed.toLowerCase() === "null") return null;
+  const sanitized = trimmed.replace(/\s+/g, "_").replace(/[.[\]*\/~]/g, "_").trim();
+  return sanitized || null;
+}
+
 // ==========================================
 // UNIFIED BOSS EVENT v2 (attempt-based, topic mastery, new damage formula)
 // ==========================================
@@ -747,11 +756,12 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
   }
 
   // Topic mastery tracking (outside transaction, best-effort)
-  if (question.topicId) {
+  const topicKey = sanitizeTopicKey(question.topicId);
+  if (topicKey !== null) {
     try {
       const masteryData = gam.topicMastery || {};
-      const currentMastery = masteryData[question.topicId] || {
-        topicId: question.topicId, topicName: question.topicId,
+      const currentMastery = masteryData[topicKey] || {
+        topicId: topicKey, topicName: topicKey,
         level: 0, accuracyHistory: [], currentAccuracy: 0,
         questionsAnswered: 0, questionsCorrect: 0, lastUpdated: new Date().toISOString(),
       };
@@ -762,10 +772,10 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       currentMastery.currentAccuracy = recent.reduce((a: number, b: number) => a + b, 0) / recent.length;
       currentMastery.level = Math.min(10, Math.floor(currentMastery.currentAccuracy * 10));
       currentMastery.lastUpdated = new Date().toISOString();
-      await userRef.update({ [`gamification.topicMastery.${question.topicId}`]: currentMastery });
+      await userRef.update({ [`gamification.topicMastery.${topicKey}`]: currentMastery });
     } catch (err) {
       logWithCorrelation("error", "Failed to update topic mastery", correlationId, {
-        uid, eventId, topicId: question.topicId, error: err instanceof Error ? err.message : String(err),
+        uid, eventId, topicId: topicKey, error: err instanceof Error ? err.message : String(err),
       });
     }
   }

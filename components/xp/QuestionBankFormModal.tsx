@@ -19,6 +19,7 @@ interface BankQuestion {
   correctAnswer: number;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   damageBonus: number;
+  topicId?: string;
 }
 
 interface BankFormState {
@@ -34,6 +35,14 @@ const emptyForm: BankFormState = {
   description: '',
   questions: [],
 };
+
+export function slugifyBankTopicId(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'general';
+}
+
+export function resolveBankTopicId(topicId: unknown, bankName: string): string {
+  return typeof topicId === 'string' && topicId.trim() ? topicId.trim() : slugifyBankTopicId(bankName);
+}
 
 const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, onClose, editingBank }) => {
   const toast = useToast();
@@ -102,6 +111,7 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
         correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
         difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty as string) ? q.difficulty : 'MEDIUM') as 'EASY' | 'MEDIUM' | 'HARD',
         damageBonus: typeof q.damageBonus === 'number' ? q.damageBonus : 0,
+        ...(typeof q.topicId === 'string' && q.topicId.trim() ? { topicId: q.topicId.trim() } : {}),
       }));
       const skipped = parsed.length - valid.length;
       setBankForm(prev => ({ ...prev, questions: [...prev.questions, ...imported] }));
@@ -126,6 +136,7 @@ const QuestionBankFormModal: React.FC<QuestionBankFormModalProps> = ({ isOpen, o
         questions: bankForm.questions.map(q => ({
           id: q.id, stem: q.stem, options: q.options.filter(o => o.trim()),
           correctAnswer: q.correctAnswer, difficulty: q.difficulty,
+          topicId: resolveBankTopicId(q.topicId, bankForm.name),
           ...(q.damageBonus > 0 ? { damageBonus: q.damageBonus } : {}),
         })),
         createdAt: editingBank?.createdAt || now,

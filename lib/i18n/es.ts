@@ -1163,6 +1163,10 @@ export const es: Dictionary = {
   'public.syllabus.materials.item4': 'Calculadora (puede ser la del teléfono)',
   'public.syllabus.materials.item5': 'Chromebook cargado',
 
+  // ── Topic mastery analytics ──
+  'mastery.emptyTitle': 'Aún no hay datos de temas',
+  'mastery.emptyBody': 'Termina una batalla de jefe para empezar a registrar tus fortalezas por tema.',
+
   // ── Bulk XP Adjustment modal (bulk award tab) ──
   'xp.bulk.allClasses': 'Todas las clases',
   'xp.bulk.allSections': 'Todas las secciones',

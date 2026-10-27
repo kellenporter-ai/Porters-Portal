@@ -1163,6 +1163,10 @@ export const en: Dictionary = {
   'public.syllabus.materials.item4': 'Calculator (phone calculator works)',
   'public.syllabus.materials.item5': 'Charged Chromebook',
 
+  // ── Topic mastery analytics ──
+  'mastery.emptyTitle': 'No topic data yet',
+  'mastery.emptyBody': 'Finish a boss fight to start tracking strengths by topic.',
+
   // ── Bulk XP Adjustment modal (bulk award tab) ──
   'xp.bulk.allClasses': 'All Classes',
   'xp.bulk.allSections': 'All Sections',

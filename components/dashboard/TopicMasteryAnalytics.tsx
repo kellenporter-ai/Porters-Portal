@@ -1,6 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { TopicMastery } from '../../types';
+import { useT } from '../../lib/i18n';
 import { normalizeTopicMastery } from '../../lib/gamification';
 import { TrendingUp, Target, BookOpen, Award, AlertTriangle } from 'lucide-react';
 
@@ -9,7 +10,20 @@ interface TopicMasteryAnalyticsProps {
 }
 
 const TopicMasteryAnalytics: React.FC<TopicMasteryAnalyticsProps> = ({ topicMastery: rawTopicMastery }) => {
-  const topicMastery = normalizeTopicMastery(rawTopicMastery);
+  const t = useT();
+  const topicMastery = useMemo(() => {
+    const validKey = (key: unknown) => {
+      const trimmed = typeof key === 'string' ? key.trim() : '';
+      return trimmed !== '' && trimmed.toLowerCase() !== 'undefined' && trimmed.toLowerCase() !== 'null';
+    };
+    if (Array.isArray(rawTopicMastery)) {
+      return normalizeTopicMastery(rawTopicMastery).filter(topic => validKey(topic?.topicId));
+    }
+    if (rawTopicMastery && typeof rawTopicMastery === 'object') {
+      return Object.entries(rawTopicMastery).filter(([key]) => validKey(key)).map(([, topic]) => topic);
+    }
+    return [];
+  }, [rawTopicMastery]);
   const stats = useMemo(() => {
     const total = topicMastery.length;
     const avgAccuracy = total > 0
@@ -38,9 +52,9 @@ const TopicMasteryAnalytics: React.FC<TopicMasteryAnalyticsProps> = ({ topicMast
     return (
       <div className="p-8 text-center">
         <BookOpen className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3" />
-        <p className="text-sm font-bold text-[var(--text-primary)]">No Topic Data Yet</p>
+        <p className="text-sm font-bold text-[var(--text-primary)]">{t('mastery.emptyTitle')}</p>
         <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1">
-          Complete boss fights and quizzes to build your topic mastery profile.
+          {t('mastery.emptyBody')}
         </p>
       </div>
     );
