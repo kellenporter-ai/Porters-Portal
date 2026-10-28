@@ -73,6 +73,9 @@ const CLEAN_URL_REWRITES = new Set([
   "/generator-investigations",
   "/rubbing-balloons",
   "/evidence-types",
+  "/outage-waterfront",
+  "/cart-04",
+  "/case-file-0829",
 ]);
 
 /**

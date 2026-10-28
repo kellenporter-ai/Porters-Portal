@@ -192,6 +192,28 @@ const SEED_ITEMS: SeedItem[] = [
     suggestedCategory: 'Practice',
     sourceFingerprint: '/ap1-q1-review/',
   },
+  {
+    title: 'Outage at the Waterfront',
+    description: 'Two-stage review activity for Energy Flow from Earth\u2019s Systems. Students wire a power strip so unplugging any one device leaves the rest working, then build the path from a power plant to the clinic for coal, nuclear, hydro, and solar. Runs on Chromebooks with no teacher present and ends in a printable PDF permit students submit to Google Classroom.',
+    url: '/outage-waterfront',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Physics',
+    tags: ['physics', 'energy', 'circuits', 'power-strip', 'generator', 'electricity', 'texas-blackout', 'openscied', 'bilingual', 'activity', 'review'],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/outage-waterfront.html',
+  },
+  {
+    title: 'Case File 0829 \u2014 Defense Suppression Audit',
+    description: 'Five-part forensic review for What is Forensic Science? Students work a 1982 cold case as a defense auditor: sequence the scene log, route physical evidence to the right branch, run presumptive spot-plate tests on an unknown powder, compare latent prints, and commit findings on which evidence the defense would move to suppress and why. Bilingual, Chromebook-friendly, ends in a downloadable three-page suppression report for Google Classroom.',
+    url: '/case-file-0829',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: ['forensic-science', 'evidence-types', 'crime-scene', 'seven-ss', 'chain-of-custody', 'latent-prints', 'fingerprints', 'presumptive-tests', 'powders', 'case-study', 'bilingual', 'activity', 'review'],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/case-file-0829.html',
+  },
 ];
 
 async function main() {

@@ -1,0 +1,3097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outage at the Waterfront · Apagón en la Costa</title>
+<style>
+:root{
+  --paper:#F4F3EF; --ink:#1A1A1A;
+  --ink-soft:rgba(26,26,26,.62); --ink-faint:rgba(26,26,26,.38);
+  --accent:#FF4D26;
+  --dash:1px dashed rgba(26,26,26,.34);
+  --ok:#1E7F3C; --err:#C22F2F; --warn:#B47000;
+  --card:#FFFFFF;
+  --hot:#C22F2F; --neu:#3B6EA5; --gnd:#1E7F3C;
+  --hdr:66px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  font-size:15px; line-height:1.45;
+  padding-bottom:40px;
+}
+h1,h2,h3,h4{margin:0; letter-spacing:-0.02em;}
+.display{font-weight:800; letter-spacing:-0.03em;}
+.eyebrow{font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft);}
+button,select,input,textarea{font:inherit; color:var(--ink);}
+button{
+  background:transparent; border:var(--dash); border-radius:9px;
+  padding:10px 15px; cursor:pointer; min-height:44px; min-width:44px;
+  font-weight:600;
+}
+button:hover:not(:disabled){border-color:var(--accent); color:var(--accent);}
+button:disabled{opacity:.42; cursor:not-allowed;}
+button.primary{background:var(--accent); border:1px solid var(--accent); color:#fff;}
+button.primary:hover:not(:disabled){filter:brightness(1.07); color:#fff;}
+button.ghost{font-weight:600;}
+button.small{min-height:44px; min-width:44px; padding:6px 11px; font-size:13px;}
+textarea{width:100%; min-height:64px; resize:vertical; background:#fff; border:var(--dash); border-radius:9px; padding:10px;}
+select{min-height:44px; background:#fff; border:var(--dash); border-radius:9px; padding:8px 10px;}
+input[type=text]{min-height:44px; background:#fff; border:var(--dash); border-radius:9px; padding:8px 10px; width:100%;}
+input[type=range]{width:100%; accent-color:var(--accent); min-height:44px;}
+a{color:var(--accent);}
+
+/* ---------- header ---------- */
+header{
+  position:sticky; top:0; z-index:60; height:var(--hdr);
+  display:flex; align-items:center; gap:12px; padding:0 14px;
+  background:var(--paper); border-bottom:var(--dash);
+}
+header .brand{font-weight:800; font-size:16px; letter-spacing:-0.02em; white-space:nowrap;}
+header .who{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); min-width:0;}
+header .who input,header .who select{min-height:44px; padding:4px 8px; font-size:12.5px; border-radius:7px; width:auto;}
+header .who input{width:120px;}
+header .spacer{flex:1;}
+.langtog{display:inline-flex; border:var(--dash); border-radius:8px; overflow:hidden;}
+.langtog button{border:none; border-radius:0; min-height:44px; min-width:44px; padding:4px 10px; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+.langtog button.active{background:var(--accent); color:#fff;}
+#permitBtn{font-size:13px;}
+
+/* ---------- stage nav ---------- */
+nav.stages{
+  position:sticky; top:var(--hdr); z-index:55;
+  display:flex; gap:6px; padding:8px 12px; overflow-x:auto;
+  background:var(--paper); border-bottom:var(--dash);
+}
+nav.stages button{
+  display:flex; align-items:center; gap:7px; white-space:nowrap;
+  min-height:44px; padding:6px 12px; font-size:12.5px; border-radius:999px;
+}
+nav.stages button.active{border:1px solid var(--accent); color:var(--accent); font-weight:700;}
+nav.stages .num{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:999px; background:rgba(26,26,26,.08); font-size:11px; font-weight:800;}
+nav.stages button.done .num{background:var(--ok); color:#fff;}
+nav.stages button.active .num{background:var(--accent); color:#fff;}
+
+/* ---------- layout ---------- */
+main{max-width:1120px; margin:0 auto; padding:16px 14px 60px;}
+.stage{display:none;}
+.stage.active{display:block;}
+.card{background:var(--card); border:var(--dash); border-radius:12px; padding:14px;}
+.card + .card{margin-top:12px;}
+.card h3{font-size:15px; margin-bottom:2px;}
+.sub{font-size:12.5px; color:var(--ink-soft); margin:2px 0 10px;}
+.muted{color:var(--ink-soft); font-size:13px;}
+.tiny{font-size:11.5px; color:var(--ink-faint);}
+.row{display:flex; gap:12px; flex-wrap:wrap;}
+.col{display:flex; flex-direction:column; gap:12px; min-width:0;}
+.grow{flex:1 1 320px; min-width:0;}
+.stack-tight{display:flex; flex-direction:column; gap:8px;}
+section.lead{margin-bottom:14px;}
+section.lead h2{font-size:22px; margin-bottom:3px;}
+section.lead p{margin:0; font-size:13.5px; color:var(--ink-soft); max-width:720px;}
+
+/* ---------- generic interaction bits ---------- */
+.traybox{background:#faf9f6; border:var(--dash); border-radius:10px; padding:10px; min-height:84px;}
+.traybox .trayhead{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
+.chips{display:flex; flex-wrap:wrap; gap:8px;}
+.chip{
+  border:var(--dash); background:#fff; border-radius:999px; padding:8px 13px;
+  font-size:12.5px; font-weight:600; cursor:grab; min-height:44px;
+  display:inline-flex; align-items:center; user-select:none;
+}
+.chip:active{cursor:grabbing;}
+.chip.sel{border:1px solid var(--accent); color:var(--accent); background:#fff5f2;}
+.chip.placed{opacity:.45;}
+.chip.num{min-width:44px; justify-content:center; border-radius:10px;}
+.narration{border-left:3px solid var(--ink); background:#f7f6f1; padding:10px 12px; border-radius:0 10px 10px 0; font-size:13px; margin-top:10px;}
+.narration.bad{border-left-color:var(--err);}
+.narration.good{border-left-color:var(--ok);}
+.narration.warn{border-left-color:var(--warn);}
+.narration strong{font-weight:800;}
+svg{display:block; max-width:100%;}
+svg text{font-family:'Inter',-apple-system,'Segoe UI',Arial,sans-serif;}
+/* Presentation attributes are duplicated inline on the SVG nodes themselves,
+   because the permit PDF rasterises a clone of these SVGs and a clone carries
+   no stylesheet. Anything painted only by these classes would go black. */
+.dz{fill:rgba(255,77,38,.05); stroke:rgba(26,26,26,.32); stroke-width:1.5; stroke-dasharray:6 5; cursor:pointer;}
+.dz.hover{fill:rgba(255,77,38,.16); stroke:var(--accent);}
+.dz.filled{fill:rgba(255,77,38,.06); stroke-width:1.5; stroke-dasharray:none; stroke:rgba(26,26,26,.34);}
+.dz-label{font-size:10.5px; fill:rgba(26,26,26,.45); font-weight:700; text-anchor:middle; pointer-events:none;}
+.dz-val{font-size:11px; font-weight:800; text-anchor:middle; pointer-events:none;}
+.logitem{font-size:12.5px; border-top:1px dashed rgba(26,26,26,.2); padding:7px 0;}
+.logitem:first-child{border-top:none;}
+.logitem .when{font-weight:800; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint);}
+.pdfnote{font-size:11.5px; color:var(--ink-faint); margin-top:8px;}
+.btnrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;}
+
+/* ---------- stage 2 ---------- */
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-soft); margin-bottom:8px;}
+.legend i{display:inline-block; width:18px; height:4px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+.devlist{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.devtag{font-size:11.5px; border:var(--dash); border-radius:999px; padding:3px 9px;}
+.devtag.off{opacity:.4;}
+
+/* ---------- stage 3 ---------- */
+.pinrow{display:flex; flex-wrap:wrap; gap:8px;}
+table.ledger{width:100%; border-collapse:collapse; font-size:12.5px;}
+table.ledger th{font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-soft); text-align:left; border-bottom:1.5px solid var(--ink); padding:6px 6px;}
+table.ledger td{border-bottom:1px dashed rgba(26,26,26,.22); padding:7px 6px; vertical-align:top;}
+table.ledger td select{min-height:40px; font-size:12px; width:100%; min-width:150px;}
+table.ledger tr.active td{background:#fff5f2;}
+
+/* ---------- stage 4 ---------- */
+.srcrow{display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px dashed rgba(26,26,26,.2);}
+.srcrow:first-child{border-top:none;}
+.srcrow .nm{flex:0 0 132px; font-weight:700; font-size:13px;}
+.srcrow .meta{flex:0 0 172px; font-size:11px; color:var(--ink-soft); line-height:1.3;}
+.srcrow input[type=range]{flex:1 1 120px; min-width:110px;}
+.srcrow .pct{flex:0 0 52px; text-align:right; font-weight:800; font-size:13px;}
+.bar{height:14px; border-radius:7px; background:#eeece6; display:flex; overflow:hidden; border:var(--dash);}
+.bar span{display:block; height:100%;}
+.outrow{display:flex; align-items:baseline; gap:8px; font-size:13px; margin-top:4px;}
+.outrow b{font-size:18px; font-weight:800;}
+.nodelist{display:flex; flex-wrap:wrap; gap:8px;}
+.gauge{font-size:22px; font-weight:800;}
+
+/* ---------- stage 5 ---------- */
+.predgrid{display:grid; grid-template-columns:1fr; gap:10px;}
+@media(min-width:720px){.predgrid{grid-template-columns:repeat(3,1fr);}}
+.predcard{border:var(--dash); border-radius:10px; padding:10px;}
+.predcard .q{font-size:12.5px; font-weight:700; margin-bottom:8px; min-height:34px;}
+.optrow{display:flex; flex-direction:column; gap:6px;}
+.optrow button{min-height:44px; font-size:12.5px; text-align:left; border-radius:8px;}
+.optrow button.picked{border:1.5px solid var(--accent); color:var(--accent); background:#fff5f2;}
+.chargepanel{display:flex; gap:16px; flex-wrap:wrap;}
+
+/* ---------- permit ---------- */
+#permitBtn.ready{background:var(--accent); border-color:var(--accent); color:#fff;}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed; inset:0; z-index:200; display:none; align-items:flex-start; justify-content:center; background:rgba(26,26,26,.42); padding:24px 14px; overflow:auto;}
+.overlay.open{display:flex;}
+.modal{background:var(--paper); border-radius:14px; width:min(880px,100%); padding:18px; box-shadow:0 20px 60px rgba(0,0,0,.24); margin:auto;}
+.modal h3{font-size:18px; margin-bottom:6px;}
+.modal .close{align-self:flex-end;}
+.modal .sheet{background:#fff; border:var(--dash); border-radius:10px; padding:16px; font-size:12.5px;}
+.modal .sheet h4{font-size:14px; margin:14px 0 4px;}
+.modal .sheet h4:first-child{margin-top:0;}
+.modal .sheet table{width:100%; border-collapse:collapse; margin:6px 0 4px;}
+.modal .sheet th{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); text-align:left; border-bottom:1.5px solid var(--ink); padding:5px 5px;}
+.modal .sheet td{border-bottom:1px dashed rgba(26,26,26,.25); padding:5px 5px; vertical-align:top;}
+.modal .sheet .note{white-space:pre-wrap;}
+.modal .sheet img{max-width:100%; border:var(--dash); border-radius:8px;}
+
+/* ---------- PDF fallback panel ---------- */
+#pdfPanel{position:fixed; right:16px; bottom:16px; z-index:300; width:min(94vw,420px);
+  background:var(--card); border:1px solid rgba(26,26,26,.3); border-radius:14px; padding:15px 16px;
+  box-shadow:0 14px 44px rgba(0,0,0,.2); display:none;}
+#pdfPanel.show{display:block;}
+#pdfPanel .pp-msg{font-size:13px; line-height:1.5; margin:0 0 12px;}
+#pdfPanel .pp-actions{display:flex; gap:9px; flex-wrap:wrap; align-items:center;}
+#pdfPanel a.pp-dl{display:inline-flex; align-items:center; min-height:44px; background:var(--accent); color:#fff; border-radius:999px; padding:8px 18px; font-size:13px; font-weight:700; text-decoration:none;}
+#pdfPanel a.pp-tab{display:inline-flex; align-items:center; min-height:44px; background:#fff; color:var(--ink); border:1.5px solid rgba(26,26,26,.3); border-radius:999px; padding:7px 16px; font-size:13px; font-weight:600; text-decoration:none;}
+#pdfPanel button.pp-close{margin-left:auto; border:1.5px solid rgba(26,26,26,.3); border-radius:999px; color:var(--ink-soft); min-width:44px; min-height:44px; font-size:15px; padding:0;}
+#pdfPanel .pp-err{color:var(--err); font-weight:700;}
+
+/* ---------- reference drawer ---------- */
+#drawer{position:fixed; top:0; right:0; bottom:0; z-index:250; width:min(430px,94vw);
+  background:var(--paper); border-left:var(--dash); box-shadow:-12px 0 40px rgba(0,0,0,.14);
+  transform:translateX(102%); transition:transform .24s ease; display:flex; flex-direction:column;}
+#drawer.open{transform:translateX(0);}
+#drawer .dhead{display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:var(--dash);}
+#drawer .dhead h3{font-size:15px; flex:1;}
+#drawer .dbody{flex:1; overflow:auto; padding:14px; font-size:13px;}
+#drawer .dbody ul{margin:6px 0 12px; padding-left:18px;}
+#drawer .dbody li{margin:5px 0;}
+#drawer .dbody .blk{border:var(--dash); border-radius:10px; padding:10px; background:#fff; margin-bottom:10px;}
+#drawer .dbody .blk b{display:block; font-size:12.5px; margin-bottom:3px;}
+
+/* ---------- toast ---------- */
+#toast{position:fixed; left:50%; bottom:18px; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:#fff; border-radius:999px; padding:10px 20px; font-size:13px;
+  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:320; max-width:90vw; text-align:center;}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+@media(max-width:760px){
+  header .brand{display:none;}
+  header .who input{width:96px;}
+}
+
+/* Hero band: establishing image only. No interaction lives here. */
+.hero{position:relative; margin:0 0 18px; border-bottom:1px solid var(--line);}
+.hero img{display:block; width:100%; height:210px; object-fit:cover; object-position:center 62%;}
+.hero .heroCap{position:absolute; left:14px; bottom:10px; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:#fff; opacity:.92; text-shadow:0 1px 3px rgba(0,0,0,.65);}
+@media (max-width:760px){ .hero img{height:150px;} }
+
+.leadline{font-size:13.5px; line-height:1.55;}
+.leadgap{height:7px;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand" data-i18n="appTitle"></span>
+  <div class="who">
+    <input id="nameInput" type="text" autocomplete="off" data-i18n-ph="namePh" aria-label="Name">
+    <select id="classSel" aria-label="Class">
+      <option value="Period 1">Period 1</option>
+      <option value="Period 2">Period 2</option>
+      <option value="Period 3">Period 3</option>
+      <option value="Period 4">Period 4</option>
+      <option value="Period 5">Period 5</option>
+      <option value="Period 6">Period 6</option>
+    </select>
+  </div>
+  <span class="spacer"></span>
+  <div class="langtog" role="group" aria-label="Language">
+    <button id="langEn" class="active" data-l="en">EN</button>
+    <button id="langEs" data-l="es">ES</button>
+  </div>
+  <button id="permitBtn" class="ghost" disabled data-i18n="permitBtn"></button>
+</header>
+
+<nav class="stages" id="stageNav" aria-label="Stages"></nav>
+
+<main>
+<div class="hero" id="heroBand">
+  <img id="heroImg" alt="" decoding="async">
+</div>
+
+
+
+<!-- ============ STAGE 2 ============ -->
+<section class="stage active" id="stage2">
+  <div class="lead">
+    <div class="eyebrow" data-i18n="s2Eyebrow"></div>
+    <h2 class="display" data-i18n="s2Title"></h2>
+    <p data-i18n="s2Lead" data-i18n-block></p>
+  </div>
+
+  <div class="card">
+    <div class="btnrow" style="margin-top:0;">
+      <span class="eyebrow" data-i18n="s2Layout"></span>
+      <button class="small ghost" id="s2Clear" data-i18n="s2Clear"></button>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div class="col grow">
+        <div class="legend">
+          <span><i style="background:var(--hot)"></i><span data-i18n="wireHot"></span></span>
+          <span><i style="background:var(--neu)"></i><span data-i18n="wireNeu"></span></span>
+          <span><i style="background:var(--gnd)"></i><span data-i18n="wireGnd"></span></span>
+        </div>
+        <svg id="s2Canvas" viewBox="0 0 760 400" role="img" aria-label="Clinic wall wiring">
+          <g id="s2Base"></g>
+          <g id="s2Wires"></g>
+          <g id="s2Terms"></g>
+          <g id="s2Fx"></g>
+        </svg>
+        <div class="devlist" id="s2DevTags"></div>
+      </div>
+
+      <div class="col" style="flex:0 0 268px;">
+        <div class="card" style="padding:10px;">
+          <div class="eyebrow" data-i18n="s2Tool"></div>
+          <div class="sub" style="margin:4px 0 8px;" data-i18n="s2ToolSub"></div>
+          <div class="stack-tight">
+            <div class="chip" id="s2CurHot" data-w="hot" style="cursor:pointer;"><span data-i18n="wireHot"></span></div>
+            <div class="chip" id="s2CurNeu" data-w="neutral" style="cursor:pointer;"><span data-i18n="wireNeu"></span></div>
+            <div class="chip" id="s2CurGnd" data-w="ground" style="cursor:pointer;"><span data-i18n="wireGnd"></span></div>
+            <div class="chip" id="s2CurErase" data-w="erase" style="cursor:pointer;"><span data-i18n="toolErase"></span></div>
+          </div>
+          <div class="tiny" style="margin-top:8px;" data-i18n="s2ToolHint"></div>
+        </div>
+        <div class="card" style="padding:10px;">
+          <div class="eyebrow" data-i18n="s2Flips"></div>
+          <div id="s2Flips" style="margin-top:6px;"></div>
+        </div>
+        <div class="card" style="padding:10px;">
+          <div class="eyebrow" data-i18n="s2Plug"></div>
+          <div class="stack-tight" id="s2PlugBtns" style="margin-top:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <button class="primary" id="s2Flip" data-i18n="s2Flip"></button>
+    </div>
+    <div id="s2Narr"></div>
+
+    <label style="display:block;margin-top:12px;font-size:12px;font-weight:700;" data-i18n="s2WhyLabel" for="s2Why"></label>
+    <textarea id="s2Why" data-i18n-ph="s2WhyPh"></textarea>
+    <div class="pdfnote" data-i18n="s2PdfNote"></div>
+  </div>
+</section>
+
+<!-- ============ STAGE 4 ============ -->
+<section class="stage" id="stage4">
+  <div class="lead">
+    <div class="eyebrow" data-i18n="s4Eyebrow"></div>
+    <h2 class="display" data-i18n="s4Title"></h2>
+    <p data-i18n="s4Lead" data-i18n-block></p>
+  </div>
+
+  <div class="card">
+    <h3 data-i18n="s4bTitle"></h3>
+    <div class="sub" data-i18n="s4bSub"></div>
+    <div id="s4Plants" style="margin-bottom:10px;">
+      <div class="eyebrow" data-i18n="s4Plant"></div>
+      <div class="chips" id="s4PlantChips" style="margin-top:6px;"></div>
+    </div>
+    <div class="traybox">
+      <div class="trayhead">
+        <span class="eyebrow" data-i18n="s4Tray"></span>
+        <button class="small ghost" id="s4ClearChain" data-i18n="clearTray"></button>
+      </div>
+      <div class="chips" id="s4Tray"></div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <div class="col grow">
+        <svg id="s4Canvas" viewBox="0 0 860 260" role="img" aria-label="Generator chain">
+          <g id="s4Base"></g>
+          <g id="s4Zones"></g>
+          <g id="s4Vals"></g>
+          <g id="s4Fx"></g>
+        </svg>
+      </div>
+      <div class="col" style="flex:0 0 250px;">
+        <div class="card" style="padding:10px;">
+          <div class="outrow"><span class="muted" data-i18n="s4Out"></span> <b id="s4Out">0</b> <span class="muted">W</span></div>
+        </div>
+        <button class="primary" id="s4RunChain" data-i18n="s4RunChain"></button>
+      </div>
+    </div>
+    <div id="s4Narr"></div>
+    <label id="s4ReflectLabel" style="display:block;margin-top:14px;font-size:12px;font-weight:700;" data-i18n="s4ReflectLabel" for="s4Reflect"></label>
+    <textarea id="s4Reflect" data-i18n-ph="s4ReflectPh" style="min-height:84px;"></textarea>
+    <div class="pdfnote" data-i18n="s4PdfNote"></div>
+  </div>
+</section>
+
+
+</main>
+
+<!-- ============ REFERENCE DRAWER ============ -->
+<aside id="drawer" aria-hidden="true" aria-label="Reference">
+  <div class="dhead">
+    <h3 data-i18n="drawerTitle"></h3>
+    <button class="small" id="drawerClose" aria-label="Close">×</button>
+  </div>
+  <div class="dbody" id="drawerBody"></div>
+</aside>
+
+<!-- ============ PERMIT MODAL ============ -->
+<div class="overlay" id="permitOverlay">
+  <div class="modal">
+    <div style="display:flex; align-items:flex-start; gap:12px;">
+      <div style="flex:1;">
+        <h3 data-i18n="permitTitle"></h3>
+        <div class="muted" data-i18n="permitSub" style="margin-bottom:4px;"></div>
+      </div>
+      <button class="small close" id="permitClose" aria-label="Close">×</button>
+    </div>
+    <div class="btnrow" style="margin-bottom:12px;">
+      <button class="primary" id="permitExport" data-i18n="permitExport"></button>
+      <button class="ghost" id="permitPrint" data-i18n="permitPrint"></button>
+    </div>
+    <div class="sheet" id="permitSheet"></div>
+    <div class="pdfnote" data-i18n="permitFoot"></div>
+  </div>
+</div>
+
+<!-- ============ PDF FALLBACK PANEL ============ -->
+<div id="pdfPanel" role="dialog" aria-live="polite">
+  <p class="pp-msg" id="pdfPanelMsg"></p>
+  <div class="pp-actions">
+    <a class="pp-dl" id="pdfPanelDl" href="#" download></a>
+    <a class="pp-tab" id="pdfPanelTab" href="#" target="_blank" rel="noopener"></a>
+    <button class="pp-close" id="pdfPanelClose" aria-label="Close">×</button>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+/* ==========================================================================
+   OUTAGE AT THE WATERFRONT
+   Review activity for CP Physics / Physics. No score, no grade, no timer.
+   Single script scope on purpose: everything lives here so no function is
+   orphaned between blocks.
+   ========================================================================== */
+(function () {
+'use strict';
+
+/* -------------------------------------------------------------------------
+   1. I18N TABLE (built up front, every student-facing string)
+   ------------------------------------------------------------------------- */
+var T = {
+  en: {
+    n_coal_burn: 'Coal burns for heat',
+    n_fission: 'Fission makes heat',
+    n_water_fall: 'Water falls',
+    n_sunlight: 'Sunlight hits cell',
+    n_water_boil: 'Water boils to steam',
+    n_blades: 'Water turns the runner',
+    n_cell_current: 'Cell makes current',
+    n_turbine_spin: 'Turbine spins magnet',
+    n_magnet_current: 'Spinning magnet induces current',
+    n_output: 'Power to clinic',
+    n_none: 'No step needed',
+    s4Plant: 'Which plant feeds the generator?',
+    pl_coal: 'Coal plant',
+    pl_nuclear: 'Nuclear plant',
+    pl_hydro: 'Hydroelectric dam',
+    pl_solar: 'Solar array',
+    n_output: 'Output to the clinic',
+    pl_coal_ok: 'Coal burns, heats water into steam, the steam turns the blades, and the spinning magnet makes current.',
+    pl_nuclear_ok: 'Fission makes heat, the heat makes steam, the steam turns the blades, and the spinning magnet makes current.',
+    pl_hydro_ok: 'Falling water turns the blades directly, the shaft spins the magnet, and that makes current.',
+    pl_solar_ok: 'Sunlight hits the panel and the cells make current directly. Nothing spins.',
+    s1UpgHead: 'Upgrades',
+    s1UpgSub: 'Pick two. Each one costs you something.',
+    s1UpgFull: 'You have both upgrades. Run a stress test.',
+    s1ShedAsk: 'Load shedding drops one load. Which one?',
+    up_buried: 'Buried line',
+    up_battery: 'Battery backup',
+    up_shed: 'Load shedding',
+    ld_heater: 'Space heater',
+    ld_fridge: 'Vaccine fridge',
+    ld_bank: 'Charging bank',
+    ld_lamp: 'Exam lamp',
+    s1UnitAmps: 'A',
+    s1UnitKwh: 'kWh',
+    s1StressPass: '{s} passed. It held at {n} {u}.',
+    s1FailLine: 'Ice Storm took the overhead line down for 12 hours. You needed {n} {u} of backup and had {h}.',
+    s1FailStrip: 'Peak Demand pulled {n} {u} through a {h} A strip. Something has to come off the strip.',
+    s1FailBattery: 'Wind Drop cut the supply for 3 hours. You needed {n} {u} of backup and had {h}.',
+    s3LblService: 'SERVICE ENTRY',
+    s3LblOutlet: 'OUTLET',
+    s3LblNeutralReturn: 'neutral return',
+    s3LblGround: 'ground run',
+    appTitle: 'Outage at the Waterfront',
+    namePh: 'Your name',
+    permitBtn: 'Permit',
+    permitBtnDraft: 'Permit (draft)',
+    teacherName: 'Mr. Porter',
+    permitBtnReady: 'Permit ready',
+    stageWord: 'Stage',
+    clearTray: 'Clear',
+    openDrawer: 'Reference drawer',
+    toolErase: 'Erase',
+    clearMarks: 'Clear marks',
+    wireHot: 'Hot (black)',
+    wireNeu: 'Neutral (white)',
+    wireGnd: 'Ground (green)',
+
+    /* stage 1 */
+    s1Nav: 'Trace the power',
+    s1Eyebrow: 'Stage 1',
+    s1Title: 'Trace the Power',
+    s1Lead: 'Your job: build the power path, then spend two upgrades to make it survive a stress it could not survive before.\n\nYou are done when all three are true:\n1. Your model runs clean with no gap in the path.\n2. A stress test broke your model, and after you spent upgrades the same stress passed.\n3. Your written revision says what you changed and what you gave up.\n\nEvery upgrade costs something. There is no build that survives all three stresses, so you have to choose which risk to accept.',
+    s1Tray: 'Parts',
+    s1TraySub: 'Only some of these carry power to the building. The rest belong to a different system, and the model will not run on them.',
+    s1StressHead: 'Stress runs',
+    s1StressSub: 'Run one after the model first runs clean.',
+    s1LogHead: 'Model log',
+    s1Run: 'Run the model',
+    s1Revise: 'Save as revision',
+    s1NoteLabel: 'What did you change, and why?',
+    s1NotePh: 'What I changed and what I gave up...',
+    s1PdfNote: 'The permit gets your first model, the first stress run that broke it, and your revision.',
+    s1NoLog: 'Nothing logged yet.',
+    s1EmptyZone: 'Empty',
+    s1ZoneSource: 'Source',
+    s1ZonePath: 'Transfer path',
+    s1ZoneDevice: 'Device',
+    s1DrawMode: 'Drawing arrows: tap one anchor, then tap the next.',
+    s1SelectMode: 'Tap an anchor, then tap an empty spot to place it.',
+    s1NeedMore: 'Place at least two parts before running the model.',
+    s1FirstRunOk: 'Energy reaches every device. The clinic lights come on. Now stress it.',
+    s1AnchorsReady: 'Model runs. Stress runs are unlocked.',
+    s1NeedPlaced: 'Place the parts first, then run the model.',
+    s1NeedFirst: 'Run the model once before stressing it.',
+    s1StressIce: 'Ice Storm',
+    s1StressDemand: 'Peak Demand',
+    s1StressWind: 'Wind Drop',
+    s1StressIceOk: 'The heavier line carries the load. Nothing drops out.',
+    s1StressDemandOk: 'The clinic holds through the doubled load.',
+    s1StressWindOk: 'The battery bank covers the drop in source output.',
+    s1ReviseFirst: 'Run the model first, then change it, then save the revision.',
+    s1ReviseNoNote: 'Write one line about what you changed before saving the revision.',
+    s1ReviseSaved: 'Revision saved.',
+    s1LogFirst: 'First model',
+    s1LogStress: 'Broke it',
+    s1LogRevise: 'Revision',
+    s1LogNote: 'Note',
+    s1ModelGap: 'Your model has no path between {a} and {b}, so the clinic lights stay dark.',
+    s1ModelReversed: 'Your model sends energy from {a} back toward the street. Nothing reaches the clinic.',
+    s1ModelDecoy: 'Your model leans on {x}, which is not part of this system. The clinic cannot run on it.',
+    s1ModelGood: 'Your model carries energy from {a} through {b} to {c}. The clinic lights come on.',
+    s1WarnIce: 'The ice load breaks {x}. Everything past it goes dark.',
+    s1WarnDemand: 'The doubled device count overloads {x}. The breaker trips.',
+    s1WarnWind: 'The source output cuts out at {x}. Everything past it goes dark.',
+    s1OutWarn: 'The model still breaks under {s}: {d}',
+    s1OutOk: 'The model survives {s}. {d}',
+
+    /* parts */
+    p_source_grid: 'City source: substation feed',
+    p_transfer_path: 'Transmission line to the block',
+    p_breaker_panel: 'Breaker panel',
+    p_device_strip: 'Clinic device strip',
+    p_d_road: 'Road salt storage tank',
+    p_d_sprinkler: 'Sprinkler riser',
+    p_d_dish: 'Satellite dish on the roof',
+
+    /* stage 2 */
+    s2Nav: 'One source, many rooms',
+    s2PanelTag: 'PANEL',
+    s2StripTag: 'STRIP',
+    s2Eyebrow: 'Stage 1',
+    s2Title: 'One Source, Many Rooms',
+    s2Lead: 'Your job: wire the clinic so that unplugging any one device leaves the other three working.\n\nYou are done when the main switch is on, every device is lit, and you can unplug any single device without the others going dark.\n\nIf unplugging one device kills the rest, or the breaker pops when you flip the switch, your wiring has a problem. Read the result, change the wiring, and flip again.',
+    s2Layout: 'Starting layout',
+    s2LaySeries: 'Layout A',
+    s2LayChain: 'Layout B',
+    s2Clear: 'Clear wiring',
+    s2Tool: 'Wire tool',
+    s2ToolSub: 'Pick a wire, then tap two terminals.',
+    s2ToolHint: 'Tap the same terminal twice to cancel the first pick.',
+    s2Flips: 'Main switch',
+    s2Plug: 'Unplug a device',
+    s2PlugSub: 'Test the wall with one device pulled out.',
+    s2Flip: 'Flip the main switch',
+    s2NeedWires: 'Wire at least three connections before the switch will close.',
+    s2BreakerPopped: 'The breaker has popped. Clear the problem wiring, then flip again.',
+    s2FirstTerm: 'First terminal picked. Tap the second one.',
+    s2Plugged: 'Plugged back in.',
+    s2Ok: 'Every device runs. The heater gets its own full share of the supply.',
+    s2OkUnplug: 'You pulled the {d}. The other three keep running, because each device has its own path back to the panel.',
+    s2Series: 'The {d} went dark when the {x} was unplugged. Every device sits on one path, so pulling one opens the path for all of them.',
+    s2Short: 'The breaker popped and the whole wall went black. A wire runs straight from hot back to the panel with no device in between.',
+    s2Open: 'The wall stays dead. Hot never reaches the devices, so no path is complete.',
+    s2NoGnd: 'Current flows, but there is no ground path. The metal cases on this wall are not protected.',
+    s2WhyLabel: 'Why did your first layout fail, or what made it work?',
+    s2WhyPh: 'My first layout put every device on one path, so...',
+    s2PdfNote: 'The permit gets your final wiring diagram and this explanation.',
+    dev_heater: 'Space heater',
+    dev_fridge: 'Vaccine fridge',
+    dev_bank: 'Charging bank',
+    dev_lamp: 'Exam lamp',
+
+    /* stage 3 */
+    s3Nav: 'Fault ledger',
+    s3Eyebrow: 'Stage 3',
+    s3Title: 'The Fault Ledger',
+    s3Lead: 'Your job: inspect the utility room and decide which parts are actually faulty.\n\nYou are done when every pin is placed, every pin has a fault label, every fault is marked as a danger to people or to the grid, and you have run the live-current simulation.\n\nNot everything in the room is broken. Placing a pin on a sound part is itself a finding, and the simulation will tell you when a call did not match what happens.',
+    s3Pins: 'Inspection pins',
+    s3Status: 'Progress',
+    s3DrawerHead: 'Stuck?',
+    s3DrawerSub: 'Open the reference drawer for plain descriptions of what each fault looks like.',
+    s3PinPlaced: '{n} of 5 pins placed',
+    s3Labelled: '{n} of 5 rows labeled',
+    s3NeedAll: 'Place all five pins and fill in all five rows.',
+    s3PickChip: 'Choose the wrong part from the list.',
+    s3RoomTag: 'UTILITY ROOM',
+    s3PanelTag: 'BREAKER PANEL',
+    s3CaseTag: 'METAL CASE',
+    s3StripTag: 'STRIP WITH FIVE LOADS',
+    s3JunctionTag: 'JUNCTION BOX',
+    s3ColPin: 'Pin',
+    s3ColWrong: 'What is wrong',
+    s3ColEndangers: 'Who it endangers',
+    s3Run: 'Simulate live current',
+    s3Revise: 'Save revision',
+    s3NoteLabel: 'What did you change on the second pass?',
+    s3NotePh: 'I first marked the broken neutral as a danger to people, then...',
+    s3PdfNote: 'The permit gets the ledger, the consequence annotations, and your revision note.',
+    s3FirstPass: 'First pass',
+    s3Revised: 'Revision',
+    s3None: 'Not labeled yet',
+    s3EmptyRow: 'Place pin {n} on the scene to unlock this row.',
+    s3RowReady: 'Pin {n} placed. Label it.',
+    s3Saved: 'Revision saved.',
+    s3ReviseNeed: 'Rewrite the ledger first, then save the revision.',
+    s3ConsequencePeople: 'Near miss. Live metal is reachable right here.',
+    s3ConsequenceGrid: 'Cascading outage. Everything downstream of this point drops.',
+    s3Mismatch: 'Your call for pin {n} does not match what happened here. Pin {n} is not the correct label. Revise the ledger and run it again.',
+    s3AllMatch: 'Every danger call matches what happened at that spot. Nothing else to revise.',
+    s3AllPlaced: 'Every pin is on the scene.',
+    s3Danger: 'Who it endangers',
+    s3WhoPeople: 'People',
+    s3WhoGrid: 'The grid',
+    f_missing_ground: 'Missing ground connection',
+    f_bypassed_breaker: 'Bypassed breaker',
+    f_frayed_short: 'Frayed cord with a short',
+    f_overloaded_strip: 'Overloaded strip',
+    f_broken_neutral: 'Broken neutral',
+
+    /* stage 4 */
+    s4Nav: 'The generator',
+    s4Eyebrow: 'Stage 2',
+    s4Title: 'The Generator',
+    s4Lead: 'Your job: pick a power plant and build the chain that brings electricity to the clinic.\n\nYou are done when your chain runs in the right order and you have answered the reflection.\n\nWatch how the boiler plants and the dam share their last steps, while the solar array never spins anything.',
+    s4aTitle: 'Part A. Source mix',
+    s4aSub: 'Set a share for each source. The shares must add up to 100 percent.',
+    s4Even: 'Even split',
+    s4Run: 'Run February Freeze',
+    s4TradeLabel: 'Explain your tradeoff.',
+    s4TradePh: 'I kept a large share on the battery bank because...',
+    s4Sum: 'Total: {n} percent',
+    s4SumBad: 'Total: {n} percent. Make it add up to 100.',
+    s4aNoRun: 'Run the freeze test before the permit can use this.',
+    s4aShort: 'The mix falls short. {n} of 5 rooms lose heat and the vaccine fridge runs on its own backup.',
+    s4aShortWhy: 'Shortfall of {n} units at freeze demand.',
+    s4aMet: 'The mix holds through the freeze. No room goes cold.',
+    s4aMetWhy: 'Freeze output was {o} against a demand of {d}.',
+    s4aShares: 'Shares',
+    s4aOut: 'Freeze output',
+    s4aDemand: 'Freeze demand',
+    s4aRooms: 'Rooms with heat',
+    s4bTitle: 'Generator chain',
+    s4bSub: 'Pick a plant, place the steps in order, then run the chain.',
+    s4Tray: 'Parts',
+    s4ReflectLabel: 'You built the {plant}. Which steps are shared with the other plants, and which are unique to it?',
+    s4ReflectPh: 'In the {plant}, the step that is unique is... The steps it shares are...',
+    s4Out: 'Output',
+    s4RunChain: 'Run the chain',
+    s4PdfNote: 'The permit gets your chain and your reflection.',
+    s4ChainNeed: 'Fill all four slots and save the chain before the permit can use it.',
+    s4ChainSaved: 'Chain saved.',
+    s4OrderOk: 'Motion turns the turbine, the shaft spins, the magnet and coil convert that motion into current, and the output feeds the clinic.',
+    s4OrderBad: 'Motion stops being converted at {label}. Nothing downstream of that point produces electricity, so the output stays at zero.',
+    s4SpinSaved: 'Spin saved.',
+    n_spin: 'Shaft spins',
+    n_output: 'Output to the clinic',
+    m_gas: 'Natural gas',
+    m_wind: 'Wind',
+    m_solar: 'Solar',
+    m_battery: 'Battery bank',
+    m_gas_meta: 'Cost: low. Steady day and night. Carbon heavy. 20 units.',
+    m_wind_meta: 'Cost: none for fuel. Output depends on weather. 8 units.',
+    m_solar_meta: 'Cost: none for fuel. Nothing at night. 4 units.',
+    m_battery_meta: 'Cost: high. Fast response. Charged hours earlier. 10 units.',
+
+    /* stage 5 */
+    o_toward: 'Moves toward',
+    o_apart: 'Moves apart',
+    o_none: 'No change',
+    o_unpicked: 'Not chosen',
+    pr_curtain: 'Another curtain panel on a cart',
+    pr_tank: 'The metal oxygen tank',
+    pr_person: 'A neutral person walking past',
+    act_curtain_toward: 'the panel swings toward the curtain',
+    act_curtain_apart: 'the panel is pushed away from the curtain',
+    act_curtain_none: 'the panel does not move',
+    act_tank_toward: 'the tank rolls toward the curtain',
+    act_tank_apart: 'the tank is pushed away',
+    act_tank_none: 'the tank does not move',
+    act_person_toward: 'the person is pulled toward the curtain',
+    act_person_apart: 'the person is pushed away from the curtain',
+    act_person_none: 'nothing happens to the person',
+
+    /* permit */
+    permitTitle: 'Electrical Inspection Permit',
+    permitSub: 'Review complete, one page per stage. Nothing here is graded.',
+    permitExport: 'Download PDF',
+    permitPrint: 'Print this page',
+    permitFoot: '{teacher} issues this permit. If the PDF does not download, use Print this page and choose Save as PDF.',
+    permitIssued: 'Issued by {teacher}',
+    permitStudent: 'Student',
+    permitClass: 'Class',
+    permitDate: 'Date',
+    permitNoName: 'Name not entered',
+    permitPermitId: 'Permit number',
+    permitStage1: '',
+    permitStage2: 'Page 1. One Source, Many Rooms',
+    permitPlant: 'Plant built',
+    permitStep: 'Step',
+    permitPart: 'Part',
+    permitStage3: '',
+    permitStage4: 'Page 2. The Generator',
+    permitFirstModel: 'First model',
+    permitStressLog: 'Stress run that broke it',
+    permitRevision: 'Revision',
+    permitRevisionNote: 'Revision note',
+    permitWiring: 'Final wiring',
+    permitFlipCount: 'Switch flips',
+    permitFailure: 'Why the layout failed',
+    permitLedger: 'Fault ledger',
+    permitConsequence: 'Consequence',
+    permitMix: 'Source mix',
+    permitSource: 'Source',
+    permitShare: 'Share',
+    permitFreeze: 'February Freeze',
+    permitRationale: 'Tradeoff rationale',
+    permitChain: 'Generator chain',
+    permitChainImg: 'Your chain, drawn',
+    permitChainNote: 'Chain note',
+    permitSpin: 'Spin rate',
+    permitPredictions: 'Predictions and outcomes',
+    permitNone: '(not filled in)',
+    permitExportOk: 'PDF built.',
+    permitExportFail: 'The PDF did not export. Use the download link in the panel, or Print this page.',
+    permitExportTry: 'If nothing downloaded, use one of these:',
+    permitDownload: 'Download PDF',
+    permitOpenTab: 'Open in new tab',
+    permitPrintBtn: 'Print',
+    permitEndMarker: 'END OF PERMIT',
+    permitCloseAria: 'Close',
+    drawerTitle: 'Reference drawer',
+    drawerP2: 'Page 2. The opened power strip',
+    drawerP2a: 'Inside the strip, three brass bars run end to end. Hot, neutral, ground.',
+    drawerP2b: 'Every outlet clips onto all three bars. That is why an empty outlet does not stop the others.',
+    drawerP2c: 'A device with no path back to the panel gets no current, even if its own cord is fine.',
+    drawerP2d: 'A wire from hot straight to the panel, with no device in between, is a short. The breaker opens.',
+    drawerP4: 'Page 4. Source mix and the chain',
+    drawerP4b: 'Motion moves to electricity in order: steam turns the turbine, the shaft spins, the coil sweeps past the field, the output feeds the clinic.',
+    classLabel: 'Class',
+    toastSaved: 'Saved',
+    resetAll: 'Reset activity'
+  },
+
+  es: {
+    n_coal_burn: 'Carbón da calor',
+    n_fission: 'Fisión da calor',
+    n_water_fall: 'El agua cae',
+    n_sunlight: 'Luz toca la celda',
+    n_water_boil: 'El agua hierve',
+    n_blades: 'Agua gira el rodete',
+    n_cell_current: 'Celda hace corriente',
+    n_turbine_spin: 'Turbina gira imán',
+    n_magnet_current: 'Imán girando induce corriente',
+    n_output: 'Energía a clínica',
+    n_none: 'Sin paso extra',
+    s4Plant: '¿Qué planta alimenta el generador?',
+    pl_coal: 'Planta de carbón',
+    pl_nuclear: 'Planta nuclear',
+    pl_hydro: 'Represa hidroeléctrica',
+    pl_solar: 'Panel solar',
+    n_output: 'Salida a la clínica',
+    pl_coal_ok: 'El carbón se quema, calienta agua a vapor, el vapor mueve las aspas y el imán que gira produce corriente.',
+    pl_nuclear_ok: 'La fisión da calor, el calor hace vapor, el vapor mueve las aspas y el imán que gira produce corriente.',
+    pl_hydro_ok: 'El agua que cae mueve las aspas directamente, el eje gira el imán y eso produce corriente.',
+    pl_solar_ok: 'La luz llega al panel y las celdas producen corriente directamente. Nada gira.',
+    s1UpgHead: 'Mejoras',
+    s1UpgSub: 'Elige dos. Cada una te cuesta algo.',
+    s1UpgFull: 'Ya tienes las dos mejoras. Corre una prueba de esfuerzo.',
+    s1ShedAsk: 'El corte de carga suelta una carga. ¿Cuál?',
+    up_buried: 'Línea enterrada',
+    up_battery: 'Batería de respaldo',
+    up_shed: 'Corte de carga',
+    ld_heater: 'Calentador',
+    ld_fridge: 'Refrigerador de vacunas',
+    ld_bank: 'Banco de carga',
+    ld_lamp: 'Lámpara de examen',
+    s1UnitAmps: 'A',
+    s1UnitKwh: 'kWh',
+    s1StressPass: '{s} pasó. Se sostuvo en {n} {u}.',
+    s1FailLine: 'La tormenta de hielo tumbó la línea aérea por 12 horas. Necesitabas {n} {u} de respaldo y tenías {h}.',
+    s1FailStrip: 'La demanda pico pasó {n} {u} por una regleta de {h} A. Algo tiene que salir de la regleta.',
+    s1FailBattery: 'La caída de viento cortó el suministro por 3 horas. Necesitabas {n} {u} de respaldo y tenías {h}.',
+    s3LblService: 'ENTRADA DE SERVICIO',
+    s3LblOutlet: 'TOMACORRIENTE',
+    s3LblNeutralReturn: 'retorno de neutro',
+    s3LblGround: 'línea de tierra',
+    appTitle: 'Apagón en la Costa',
+    namePh: 'Tu nombre',
+    permitBtn: 'Permiso',
+    permitBtnDraft: 'Permiso (borrador)',
+    teacherName: 'Sr. Porter',
+    permitBtnReady: 'Permiso listo',
+    stageWord: 'Etapa',
+    clearTray: 'Limpiar',
+    openDrawer: 'Cajón de referencia',
+    toolErase: 'Borrar',
+    clearMarks: 'Borrar marcas',
+    wireHot: 'Vivo (negro)',
+    wireNeu: 'Neutro (blanco)',
+    wireGnd: 'Tierra (verde)',
+
+    s1Nav: 'Traza la energía',
+    s1Eyebrow: 'Etapa 1',
+    s1Title: 'Traza la Energía',
+    s1Lead: 'Tu tarea: armar el camino de la energía y luego gastar dos mejoras para que sobreviva un esfuerzo que antes no resistía.\n\nTerminas cuando se cumplen las tres cosas:\n1. Tu modelo corre limpio, sin huecos en el camino.\n2. Una prueba de esfuerzo rompió tu modelo y, después de gastar mejoras, la misma prueba pasó.\n3. Tu revisión escrita dice qué cambiaste y a qué renunciaste.\n\nCada mejora cuesta algo. No hay una configuración que resista las tres pruebas, así que tienes que elegir qué riesgo aceptar.',
+    s1Tray: 'Partes',
+    s1TraySub: 'Solo algunas de estas llevan energía al edificio. Las demás pertenecen a otro sistema y el modelo no funciona con ellas.',
+    s1StressHead: 'Pruebas de esfuerzo',
+    s1StressSub: 'Corre una después de que el modelo funcione sin fallas.',
+    s1LogHead: 'Registro del modelo',
+    s1Run: 'Correr el modelo',
+    s1Revise: 'Guardar como revisión',
+    s1NoteLabel: '¿Qué cambiaste y por qué?',
+    s1NotePh: 'Qué cambié y a qué renuncié...',
+    s1PdfNote: 'El permiso lleva tu primer modelo, la primera prueba que lo rompió y tu revisión.',
+    s1NoLog: 'Todavía no hay nada registrado.',
+    s1EmptyZone: 'Vacío',
+    s1ZoneSource: 'Fuente',
+    s1ZonePath: 'Ruta de transferencia',
+    s1ZoneDevice: 'Dispositivo',
+    s1DrawMode: 'Dibujando flechas: toca un ancla y luego la siguiente.',
+    s1SelectMode: 'Toca un ancla y luego un espacio vacío para colocarla.',
+    s1NeedMore: 'Coloca por lo menos dos partes antes de correr el modelo.',
+    s1FirstRunOk: 'La energía llega a cada dispositivo. Las luces de la clínica se encienden. Ahora somételo a una prueba.',
+    s1AnchorsReady: 'El modelo corre. Las pruebas de esfuerzo están activas.',
+    s1NeedPlaced: 'Coloca las partes primero y después corre el modelo.',
+    s1NeedFirst: 'Corre el modelo una vez antes de someterlo a prueba.',
+    s1StressIce: 'Tormenta de hielo',
+    s1StressDemand: 'Demanda pico',
+    s1StressWind: 'Caída de viento',
+    s1StressIceOk: 'La línea más pesada aguanta la carga. Nada se cae.',
+    s1StressDemandOk: 'La clínica resiste la carga duplicada.',
+    s1StressWindOk: 'El banco de baterías cubre la caída de la fuente.',
+    s1ReviseFirst: 'Corre el modelo primero, luego cámbialo y guarda la revisión.',
+    s1ReviseNoNote: 'Escribe una línea sobre lo que cambiaste antes de guardar la revisión.',
+    s1ReviseSaved: 'Revisión guardada.',
+    s1LogFirst: 'Primer modelo',
+    s1LogStress: 'Lo rompió',
+    s1LogRevise: 'Revisión',
+    s1LogNote: 'Nota',
+    s1ModelGap: 'Tu modelo no tiene ruta entre {a} y {b}, así que las luces de la clínica quedan apagadas.',
+    s1ModelReversed: 'Tu modelo manda energía de {a} de vuelta hacia la calle. Nada llega a la clínica.',
+    s1ModelDecoy: 'Tu modelo se apoya en {x}, que no es parte de este sistema. La clínica no puede funcionar con eso.',
+    s1ModelGood: 'Tu modelo lleva energía de {a} por {b} hasta {c}. Las luces de la clínica se encienden.',
+    s1WarnIce: 'La carga del hielo rompe {x}. Todo lo que está después se apaga.',
+    s1WarnDemand: 'El doble de dispositivos sobrecarga {x}. El interruptor se dispara.',
+    s1WarnWind: 'La fuente se corta en {x}. Todo lo que está después se apaga.',
+    s1OutWarn: 'El modelo sigue fallando con {s}: {d}',
+    s1OutOk: 'El modelo aguanta {s}. {d}',
+
+    p_source_grid: 'Fuente de la ciudad: subestación',
+    p_transfer_path: 'Línea de transmisión a la cuadra',
+    p_breaker_panel: 'Panel de interruptores',
+    p_device_strip: 'Regleta de la clínica',
+    p_d_road: 'Tanque de sal de la carretera',
+    p_d_sprinkler: 'Tubería de rociadores',
+    p_d_dish: 'Antena satelital en el techo',
+
+    s2Nav: 'Una fuente, muchos cuartos',
+    s2PanelTag: 'PANEL',
+    s2StripTag: 'REGLETA',
+    s2Eyebrow: 'Etapa 1',
+    s2Title: 'Una Fuente, Muchos Cuartos',
+    s2Lead: 'Tu tarea: cablear la clínica para que desconectar cualquier aparato deje funcionando a los otros tres.\n\nTerminas cuando el interruptor principal está arriba, todos los aparatos están encendidos, y puedes desconectar cualquier aparato sin que los demás se apaguen.\n\nSi desconectar uno apaga el resto, o el interruptor salta al subirlo, tu cableado tiene un problema. Lee el resultado, cambia el cableado y súbelo otra vez.',
+    s2Layout: 'Diseño inicial',
+    s2LaySeries: 'Diseño A',
+    s2LayChain: 'Diseño B',
+    s2Clear: 'Borrar cableado',
+    s2Tool: 'Herramienta de cable',
+    s2ToolSub: 'Elige un cable y toca dos terminales.',
+    s2ToolHint: 'Toca la misma terminal dos veces para cancelar la primera elección.',
+    s2Flips: 'Interruptor principal',
+    s2Plug: 'Desconectar un dispositivo',
+    s2PlugSub: 'Prueba la pared con un dispositivo desconectado.',
+    s2Flip: 'Subir el interruptor principal',
+    s2NeedWires: 'Conecta por lo menos tres uniones antes de que el interruptor cierre.',
+    s2BreakerPopped: 'El interruptor se disparó. Limpia el cableado con problema y vuelve a subirlo.',
+    s2FirstTerm: 'Primera terminal elegida. Toca la segunda.',
+    s2Plugged: 'Vuelto a conectar.',
+    s2Ok: 'Todos los dispositivos funcionan. El calentador recibe su parte completa del suministro.',
+    s2OkUnplug: 'Desconectaste el {d}. Los otros tres siguen funcionando, porque cada dispositivo tiene su propia ruta al panel.',
+    s2Series: 'El {d} se apagó cuando se desconectó el {x}. Todos los dispositivos están en una sola ruta, así que quitar uno abre la ruta para todos.',
+    s2Short: 'El interruptor se disparó y toda la pared quedó a oscuras. Un cable va del vivo al panel sin ningún dispositivo en medio.',
+    s2Open: 'La pared queda muerta. El vivo nunca llega a los dispositivos, así que no hay una ruta completa.',
+    s2NoGnd: 'La corriente fluye, pero no hay ruta de tierra. Las cajas metálicas de esta pared no están protegidas.',
+    s2WhyLabel: '¿Por qué falló tu primer diseño, o qué lo hizo funcionar?',
+    s2WhyPh: 'Mi primer diseño ponía todos los dispositivos en una sola ruta, así que...',
+    s2PdfNote: 'El permiso lleva tu diagrama final de cableado y esta explicación.',
+    dev_heater: 'Calentador de espacio',
+    dev_fridge: 'Refrigerador de vacunas',
+    dev_bank: 'Banco de carga',
+    dev_lamp: 'Lámpara de examen',
+
+    s3Nav: 'Registro de fallas',
+    s3Eyebrow: 'Etapa 3',
+    s3Title: 'El Registro de Fallas',
+    s3Lead: 'Tu tarea: inspeccionar el cuarto de servicio y decidir qué piezas están realmente defectuosas.\n\nTerminas cuando cada pin está colocado, cada pin tiene su etiqueta de falla, cada falla está marcada como peligro para las personas o para la red, y corriste la simulación de corriente.\n\nNo todo en el cuarto está roto. Poner un pin en una pieza en buen estado también es un hallazgo, y la simulación te dirá cuándo una decisión no coincide con lo que pasa.',
+    s3Pins: 'Pines de inspección',
+    s3Status: 'Progreso',
+    s3DrawerHead: '¿Atascado?',
+    s3DrawerSub: 'Abre el cajón de referencia para ver descripciones simples de cada falla.',
+    s3PinPlaced: '{n} de 5 pines colocados',
+    s3Labelled: '{n} de 5 filas etiquetadas',
+    s3NeedAll: 'Coloca los cinco pines y llena las cinco filas.',
+    s3PickChip: 'Elige la parte dañada de la lista.',
+    s3RoomTag: 'CUARTO DE SERVICIO',
+    s3PanelTag: 'PANEL DE INTERRUPTORES',
+    s3CaseTag: 'CAJA METÁLICA',
+    s3StripTag: 'REGLETA CON CINCO CARGAS',
+    s3JunctionTag: 'CAJA DE EMPALME',
+    s3ColPin: 'Pin',
+    s3ColWrong: 'Qué está mal',
+    s3ColEndangers: 'A quién pone en peligro',
+    s3Run: 'Simular corriente',
+    s3Revise: 'Guardar revisión',
+    s3NoteLabel: '¿Qué cambiaste en el segundo intento?',
+    s3NotePh: 'Primero marqué el neutro roto como peligro para las personas, luego...',
+    s3PdfNote: 'El permiso lleva el registro, las anotaciones de consecuencia y tu nota de revisión.',
+    s3FirstPass: 'Primer intento',
+    s3Revised: 'Revisión',
+    s3None: 'Sin etiqueta todavía',
+    s3EmptyRow: 'Coloca el pin {n} en la escena para abrir esta fila.',
+    s3RowReady: 'Pin {n} colocado. Etiquétalo.',
+    s3Saved: 'Revisión guardada.',
+    s3ReviseNeed: 'Reescribe el registro primero y luego guarda la revisión.',
+    s3ConsequencePeople: 'Casi accidente. Hay metal vivo al alcance justo aquí.',
+    s3ConsequenceGrid: 'Apagón en cascada. Todo lo que está después de este punto se cae.',
+    s3Mismatch: 'Tu respuesta para el pin {n} no coincide con lo que pasó aquí. El pin {n} no es la etiqueta correcta. Corrige el registro y córrelo otra vez.',
+    s3AllMatch: 'Todas tus respuestas coinciden con lo que pasó en ese punto. No hay nada más que corregir.',
+    s3AllPlaced: 'Todos los pines están en la escena.',
+    s3Danger: 'A quién pone en peligro',
+    s3WhoPeople: 'Personas',
+    s3WhoGrid: 'La red',
+    f_missing_ground: 'Falta la conexión a tierra',
+    f_bypassed_breaker: 'Interruptor puenteado',
+    f_frayed_short: 'Cable pelado con cortocircuito',
+    f_overloaded_strip: 'Regleta sobrecargada',
+    f_broken_neutral: 'Neutro roto',
+
+    s4Nav: 'El generador',
+    s4Eyebrow: 'Etapa 2',
+    s4Title: 'El Generador',
+    s4Lead: 'Tu tarea: elegir una planta de energía y armar la cadena que lleva electricidad a la clínica.\n\nTerminas cuando tu cadena corre en el orden correcto y respondiste la reflexión.\n\nObserva cómo las plantas de caldera y la represa comparten los últimos pasos, mientras que el panel solar no hace girar nada.',
+    s4aTitle: 'Parte A. Mezcla de fuentes',
+    s4aSub: 'Asigna una parte a cada fuente. Las partes deben sumar 100 por ciento.',
+    s4Even: 'Reparto igual',
+    s4Run: 'Correr congelación de febrero',
+    s4TradeLabel: 'Explica tu decisión.',
+    s4TradePh: 'Dejé una parte grande en el banco de baterías porque...',
+    s4Sum: 'Total: {n} por ciento',
+    s4SumBad: 'Total: {n} por ciento. Haz que sume 100.',
+    s4aNoRun: 'Corre la prueba de congelación antes de que el permiso use esto.',
+    s4aShort: 'La mezcla no alcanza. {n} de 5 cuartos pierden calor y el refrigerador de vacunas pasa a su respaldo.',
+    s4aShortWhy: 'Faltan {n} unidades para la demanda de congelación.',
+    s4aMet: 'La mezcla aguanta la congelación. Ningún cuarto se enfría.',
+    s4aMetWhy: 'La salida en congelación fue {o} contra una demanda de {d}.',
+    s4aShares: 'Reparto',
+    s4aOut: 'Salida en congelación',
+    s4aDemand: 'Demanda en congelación',
+    s4aRooms: 'Cuartos con calor',
+    s4bTitle: 'Cadena del generador',
+    s4bSub: 'Elige una planta, coloca los pasos en orden y corre la cadena.',
+    s4Tray: 'Partes',
+    s4ReflectLabel: 'Armaste: {plant}. ¿Qué pasos comparte con las otras plantas y cuáles son solo suyos?',
+    s4ReflectPh: 'En {plant}, el paso único es... Los pasos que comparte son...',
+    s4Out: 'Salida',
+    s4RunChain: 'Correr la cadena',
+    s4PdfNote: 'El permiso lleva la tabla de mezcla, el resultado de congelación, tu razonamiento y el diagrama de la cadena.',
+    s4ChainNeed: 'Llena los cuatro espacios y guarda la cadena antes de que el permiso use esto.',
+    s4ChainSaved: 'Cadena guardada.',
+    s4OrderOk: 'El movimiento hace girar la turbina, el eje gira, la bobina barre el campo y la salida alimenta la clínica.',
+    s4OrderBad: 'El movimiento deja de convertirse en {label}. Nada después de ese punto produce electricidad, así que la salida queda en cero.',
+    s4SpinSaved: 'Giro guardado.',
+    n_spin: 'El eje gira',
+    n_output: 'Salida a la clínica',
+    m_gas: 'Gas natural',
+    m_wind: 'Viento',
+    m_solar: 'Solar',
+    m_battery: 'Banco de baterías',
+    m_gas_meta: 'Costo: bajo. Constante de día y de noche. Mucho carbono. 20 unidades.',
+    m_wind_meta: 'Costo: sin combustible. Depende del clima. 8 unidades.',
+    m_solar_meta: 'Costo: sin combustible. Nada de noche. 4 unidades.',
+    m_battery_meta: 'Costo: alto. Respuesta rápida. Cargado horas antes. 10 unidades.',
+    o_toward: 'Se acerca',
+    o_apart: 'Se separa',
+    o_none: 'No cambia',
+    o_unpicked: 'Sin elegir',
+    pr_curtain: 'Otro panel de cortina en un carrito',
+    pr_tank: 'El tanque de oxígeno de metal',
+    pr_person: 'Una persona neutral que pasa',
+    act_curtain_toward: 'el panel se mece hacia la cortina',
+    act_curtain_apart: 'el panel es empujado lejos de la cortina',
+    act_curtain_none: 'el panel no se mueve',
+    act_tank_toward: 'el tanque rueda hacia la cortina',
+    act_tank_apart: 'el tanque es empujado lejos',
+    act_tank_none: 'el tanque no se mueve',
+    act_person_toward: 'la persona es atraída hacia la cortina',
+    act_person_apart: 'la persona es empujada lejos de la cortina',
+    act_person_none: 'no le pasa nada a la persona',
+
+    permitTitle: 'Permiso de Inspección Eléctrica',
+    permitSub: 'Revisión completa, una hoja por etapa. Nada de esto tiene nota.',
+    permitExport: 'Descargar PDF',
+    permitPrint: 'Imprimir esta página',
+    permitFoot: 'Sr. Porter emite este permiso. Si el PDF no se descarga, usa Imprimir esta página y elige Guardar como PDF.',
+    permitIssued: 'Emitido por el Sr. Porter',
+    permitStudent: 'Estudiante',
+    permitClass: 'Clase',
+    permitDate: 'Fecha',
+    permitNoName: 'Nombre no escrito',
+    permitPermitId: 'Número de permiso',
+    permitStage1: '',
+    permitStage2: 'Página 1. Una Fuente, Muchos Cuartos',
+    permitPlant: 'Planta armada',
+    permitStep: 'Paso',
+    permitPart: 'Parte',
+    permitStage3: '',
+    permitStage4: 'Página 2. El Generador',
+    permitFirstModel: 'Primer modelo',
+    permitStressLog: 'Prueba que lo rompió',
+    permitRevision: 'Revisión',
+    permitRevisionNote: 'Nota de revisión',
+    permitWiring: 'Cableado final',
+    permitFlipCount: 'Veces que se subió el interruptor',
+    permitFailure: 'Por qué falló el diseño',
+    permitLedger: 'Registro de fallas',
+    permitConsequence: 'Consecuencia',
+    permitMix: 'Mezcla de fuentes',
+    permitSource: 'Fuente',
+    permitShare: 'Parte',
+    permitFreeze: 'Congelación de febrero',
+    permitRationale: 'Razonamiento',
+    permitChain: 'Cadena del generador',
+    permitChainImg: 'Tu cadena, dibujada',
+    permitChainNote: 'Nota de la cadena',
+    permitSpin: 'Velocidad de giro',
+    permitPredictions: 'Predicciones y resultados',
+    permitNone: '(sin llenar)',
+    permitExportOk: 'PDF creado.',
+    permitExportFail: 'El PDF no se exportó. Usa el enlace de descarga del panel o Imprimir esta página.',
+    permitExportTry: 'Si no se descargó nada, usa una de estas opciones:',
+    permitDownload: 'Descargar PDF',
+    permitOpenTab: 'Abrir en otra pestaña',
+    permitPrintBtn: 'Imprimir',
+    permitEndMarker: 'FIN DEL PERMISO',
+    permitCloseAria: 'Cerrar',
+    drawerTitle: 'Cajón de referencia',
+    drawerP2: 'Hoja 2. La regleta abierta',
+    drawerP2a: 'Dentro de la regleta corren tres barras de latón de punta a punta. Vivo, neutro, tierra.',
+    drawerP2b: 'Cada toma se engancha a las tres barras. Por eso una toma vacía no detiene a las demás.',
+    drawerP2c: 'Un dispositivo sin ruta de regreso al panel no recibe corriente, aunque su propio cable esté bien.',
+    drawerP2d: 'Un cable del vivo directo al panel, sin dispositivo en medio, es un cortocircuito. El interruptor se abre.',
+    drawerP4: 'Hoja 4. Mezcla de fuentes y la cadena',
+    drawerP4b: 'El movimiento pasa a electricidad en orden: el vapor hace girar la turbina, el eje gira, la bobina barre el campo y la salida alimenta la clínica.',
+    classLabel: 'Clase',
+    toastSaved: 'Guardado',
+    resetAll: 'Reiniciar actividad'
+  }
+};
+
+/* -------------------------------------------------------------------------
+   2. HELPERS
+   ------------------------------------------------------------------------- */
+var LANG = 'en';
+function t(key) {
+  var pack = T[LANG] || T.en;
+  var v = Object.prototype.hasOwnProperty.call(pack, key) ? pack[key] : T.en[key];
+  if (v == null) {
+    /* A missing key is a build bug. Make it loud in the console and render
+       nothing rather than leaking an identifier into student copy. */
+    try { console.warn('i18n missing key:', key); } catch (e) {}
+    return '';
+  }
+  return v;
+}
+function fmt(key, vars) {
+  var s = t(key);
+  if (!vars) return s;
+  Object.keys(vars).forEach(function (k) {
+    s = s.split('{' + k + '}').join(String(vars[k]));
+  });
+  return s;
+}
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, txt) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (txt != null) n.textContent = txt;
+  return n;
+}
+function svgEl(tag, attrs) {
+  var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  if (attrs) Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+  return n;
+}
+function clearNode(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
+
+/* Fisher-Yates, in place. Used for every option list, chip list, and pin
+   placement so no load reproduces the previous arrangement. */
+function shuffle(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+function shuffledCopy(arr) { return shuffle(arr.slice()); }
+/* Break a label into two balanced lines on a word boundary, never mid-word. */
+function splitTwoLines(str) {
+  var w = str.split(' ');
+  if (w.length < 2) return [str];
+  var best = 1, bestDiff = Infinity;
+  for (var i = 1; i < w.length; i++) {
+    var a = w.slice(0, i).join(' ').length;
+    var b = w.slice(i).join(' ').length;
+    var d = Math.abs(a - b);
+    if (d < bestDiff) { bestDiff = d; best = i; }
+  }
+  return [w.slice(0, best).join(' '), w.slice(best).join(' ')];
+}
+
+var toastTimer = null;
+function toast(msg) {
+  var n = $('toast');
+  n.textContent = msg;
+  n.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { n.classList.remove('show'); }, 2400);
+}
+
+function todayStr() {
+  var d = new Date();
+  var m = String(d.getMonth() + 1);
+  var day = String(d.getDate());
+  if (m.length < 2) m = '0' + m;
+  if (day.length < 2) day = '0' + day;
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+
+/* -------------------------------------------------------------------------
+   3. CONTENT (only what was taught)
+   ------------------------------------------------------------------------- */
+var PARTS = [
+  { id: 'p_source_grid', role: 'source' },
+  { id: 'p_transfer_path', role: 'transfer' },
+  { id: 'p_breaker_panel', role: 'transfer' },
+  { id: 'p_device_strip', role: 'device' },
+  { id: 'p_d_road', role: 'decoy' },
+  { id: 'p_d_sprinkler', role: 'decoy' },
+  { id: 'p_d_dish', role: 'decoy' },
+  /* Stage 1 upgrades. Spending two of these is what makes a stress survivable. */
+  { id: 'up_buried', role: 'upgrade' },
+  { id: 'up_battery', role: 'upgrade' },
+  { id: 'up_shed', role: 'upgrade' }
+];
+
+/* Zone coordinates on the stage 1 canvas (700 x 400). */
+var ZONES = [
+  { key: 'source', x: 70, y: 250, w: 132, h: 92, label: 's1ZoneSource' },
+  { key: 'transfer', x: 250, y: 250, w: 132, h: 92, label: 's1ZonePath' },
+  { key: 'transfer2', x: 430, y: 250, w: 132, h: 92, label: 's1ZonePath' },
+  { key: 'device', x: 250, y: 70, w: 312, h: 92, label: 's1ZoneDevice' }
+];
+
+var STRESS = [
+  { key: 'ice', label: 's1StressIce', warn: 's1WarnIce', ok: 's1StressIceOk' },
+  { key: 'demand', label: 's1StressDemand', warn: 's1WarnDemand', ok: 's1StressDemandOk' },
+  { key: 'wind', label: 's1StressWind', warn: 's1WarnWind', ok: 's1StressWindOk' }
+];
+
+/* Stage 2 objects. Terminals are addressed as objectId + ':' + terminalKey. */
+var S2_OBJECTS = [
+  { id: 'panel', x: 40, y: 120, w: 130, h: 170, terms: [[105, 148], [105, 205], [105, 262]], keys: ['hot', 'neutral', 'ground'] },
+  { id: 'strip', x: 262, y: 196, w: 236, h: 74, terms: [[300, 218], [300, 235], [300, 252]], keys: ['hot', 'neutral', 'ground'] },
+  /* Every device gets a full three-terminal plug, H/N/G stacked, on its left
+     edge. A device with only a hot terminal has no return path, so the old
+     drawing showed a circuit that cannot exist. */
+  { id: 'heater', x: 560, y: 30, w: 160, h: 86, terms: [[560, 49], [560, 67], [560, 85]], keys: ['hot', 'neutral', 'ground'] },
+  { id: 'fridge', x: 560, y: 126, w: 160, h: 86, terms: [[560, 145], [560, 163], [560, 181]], keys: ['hot', 'neutral', 'ground'] },
+  { id: 'bank', x: 560, y: 222, w: 160, h: 86, terms: [[560, 241], [560, 259], [560, 277]], keys: ['hot', 'neutral', 'ground'] },
+  { id: 'lamp', x: 560, y: 318, w: 160, h: 70, terms: [[560, 337], [560, 355], [560, 373]], keys: ['hot', 'neutral', 'ground'] }
+];
+var S2_DEVICE_KEYS = [
+  { id: 'heater', label: 'dev_heater' },
+  { id: 'fridge', label: 'dev_fridge' },
+  { id: 'bank', label: 'dev_bank' },
+  { id: 'lamp', label: 'dev_lamp' }
+];
+
+var FAULTS = [
+  { id: 'f_missing_ground', who: 'people' },
+  { id: 'f_bypassed_breaker', who: 'people' },
+  { id: 'f_frayed_short', who: 'people' },
+  { id: 'f_overloaded_strip', who: 'grid' },
+  { id: 'f_broken_neutral', who: 'grid' }
+];
+/* Fixed fault positions inside the utility room. Pin numbers are assigned per
+   load, so a given number is never tied to a fixed spot. */
+var S3_SPOTS = [
+  { cx: 118, cy: 236 }, { cx: 258, cy: 128 }, { cx: 372, cy: 250 },
+  { cx: 560, cy: 126 }, { cx: 628, cy: 258 }
+];
+
+var SOURCES = [
+  { id: 'gas', label: 'm_gas', meta: 'm_gas_meta', cap: 20, color: '#9C6B4A' },
+  { id: 'wind', label: 'm_wind', meta: 'm_wind_meta', cap: 8, color: '#4E8FA8' },
+  { id: 'solar', label: 'm_solar', meta: 'm_solar_meta', cap: 4, color: '#B47000' },
+  { id: 'battery', label: 'm_battery', meta: 'm_battery_meta', cap: 10, color: '#5A5A8C' }
+];
+var FREEZE_DEMAND = 30;
+
+/* Each power plant has its OWN path to electricity. The shared truth is the
+   last two steps: something spins a magnet past a coil, and that makes output.
+   Solar is deliberately the odd one out: no turbine, no spinning. */
+/* Each plant is its own path to electricity, built from five steps.
+   Boiler plants and the dam share the final three; the solar array shares
+   none of them, because nothing in a panel spins. */
+var PLANTS = {
+  coal: {
+    label: 'pl_coal',
+    chain: ['n_coal_burn', 'n_water_boil', 'n_turbine_spin', 'n_magnet_current', 'n_output'],
+    spare: ['n_water_fall', 'n_cell_current'],
+    ok: 'pl_coal_ok'
+  },
+  nuclear: {
+    label: 'pl_nuclear',
+    chain: ['n_fission', 'n_water_boil', 'n_turbine_spin', 'n_magnet_current', 'n_output'],
+    spare: ['n_water_fall', 'n_cell_current'],
+    ok: 'pl_nuclear_ok'
+  },
+  hydro: {
+    label: 'pl_hydro',
+    chain: ['n_water_fall', 'n_blades', 'n_turbine_spin', 'n_magnet_current', 'n_output'],
+    spare: ['n_coal_burn', 'n_water_boil'],
+    ok: 'pl_hydro_ok'
+  },
+  solar: {
+    label: 'pl_solar',
+    chain: ['n_sunlight', 'n_cell_current', 'n_output', 'n_none', 'n_none'],
+    spare: ['n_water_boil', 'n_turbine_spin'],
+    ok: 'pl_solar_ok'
+  }
+};
+
+var CHAIN_NODES = [
+  { id: 'n_coal_burn',      order: 1 },
+  { id: 'n_fission',        order: 1 },
+  { id: 'n_water_fall',     order: 1 },
+  { id: 'n_sunlight',       order: 1 },
+  { id: 'n_water_boil',     order: 2 },
+  { id: 'n_blades',         order: 2 },
+  { id: 'n_cell_current',   order: 2 },
+  { id: 'n_turbine_spin',   order: 3 },
+  { id: 'n_magnet_current', order: 4 },
+  { id: 'n_output',         order: 5 },
+  { id: 'n_none',           order: 5 }
+];
+
+var PRED_OBJECTS = [
+  { id: 'curtain', key: 'pr_curtain' },
+  { id: 'tank', key: 'pr_tank' },
+  { id: 'person', key: 'pr_person' }
+];
+var PRED_OPTIONS = ['o_toward', 'o_apart', 'o_none'];
+/* What actually happens. Derived from the charge model, then reported without
+   naming the rule. */
+var PRED_ACTUAL = {
+  curtain: 'apart',
+  tank: 'toward',
+  person: 'toward'
+};
+var ACT_KEY = {
+  curtain: { toward: 'act_curtain_toward', apart: 'act_curtain_apart', none: 'act_curtain_none' },
+  tank: { toward: 'act_tank_toward', apart: 'act_tank_apart', none: 'act_tank_none' },
+  person: { toward: 'act_person_toward', apart: 'act_person_apart', none: 'act_person_none' }
+};
+
+/* -------------------------------------------------------------------------
+   4. STATE
+   ------------------------------------------------------------------------- */
+var S = {
+  stage: 1,
+  student: { name: '', cls: '' },
+  s1: { placements: {}, wires: [], committed: false, stressed: false, revNote: '', log: [], narr: '', narrCls: '', upgrades: [], shedLoad: null, stressPassed: null },
+  s2: { edges: [], flips: 0, committed: false, ok: false, plugState: null, narr: '', narrCls: '', why: '' },
+  s3: { plan: [], placed: {}, labels: {}, run: false, pass1: null, revisionNote: '' },
+  s4: { shares: {}, mixRun: null, trade: '', chain: {}, chainCommitted: false, spin: 60, spinCommitted: false, narr: '', narrCls: '' }
+};
+
+/* -------------------------------------------------------------------------
+   5. LOCAL PERSISTENCE (Chromebook friendly, silent on failure)
+   ------------------------------------------------------------------------- */
+var LS_KEY = 'outageWaterfront:v1';
+function saveAll() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      student: S.student, lang: LANG,
+      s1: S.s1, s2: S.s2, s3: S.s3, s4: S.s4, stage: S.stage
+    }));
+  } catch (e) { /* storage full or blocked: the activity still works */ }
+}
+function loadAll() {
+  var raw = null;
+  try { raw = localStorage.getItem(LS_KEY); } catch (e) { return; }
+  if (!raw) return;
+  var d;
+  try { d = JSON.parse(raw); } catch (e) { return; }
+  if (!d || typeof d !== 'object') return;
+  try {
+    if (d.student) { S.student.name = d.student.name || ''; S.student.cls = d.student.cls || ''; }
+    if (d.lang === 'es' || d.lang === 'en') LANG = d.lang;
+    ['s1', 's2', 's3', 's4'].forEach(function (k) {
+      if (d[k] && typeof d[k] === 'object') {
+        Object.keys(d[k]).forEach(function (f) { S[k][f] = d[k][f]; });
+      }
+    });
+    if (typeof d.stage === 'number') S.stage = d.stage;
+  } catch (e) { /* corrupt payload: run on defaults */ }
+}
+
+/* -------------------------------------------------------------------------
+   6. LANGUAGE APPLICATION
+   ------------------------------------------------------------------------- */
+function applyLang() {
+  document.documentElement.lang = LANG;
+  var nodes = document.querySelectorAll('[data-i18n]');
+  for (var i = 0; i < nodes.length; i++) {
+    var key = nodes[i].getAttribute('data-i18n');
+    var val = t(key);
+    if (nodes[i].hasAttribute('data-i18n-block')) {
+      /* goals and done-when lists keep their line structure */
+      nodes[i].innerHTML = '';
+      val.split('\n').forEach(function (line) {
+        var trimmed = line.replace(/\s+$/, '');
+        if (!trimmed) { nodes[i].appendChild(el('div', 'leadgap', '')); return; }
+        nodes[i].appendChild(el('div', 'leadline', trimmed));
+      });
+    } else {
+      nodes[i].textContent = val;
+    }
+  }
+  var phs = document.querySelectorAll('[data-i18n-ph]');
+  for (var j = 0; j < phs.length; j++) {
+    phs[j].setAttribute('placeholder', t(phs[j].getAttribute('data-i18n-ph')));
+  }
+  $('langEn').classList.toggle('active', LANG === 'en');
+  $('langEs').classList.toggle('active', LANG === 'es');
+  retranslatePdfPanel();
+  drawNav();
+  renderStage2();
+  renderStage4Chain();
+  refreshPermitBtn();
+}
+
+/* -------------------------------------------------------------------------
+   7. NAV + PERMIT GATE
+   ------------------------------------------------------------------------- */
+var STAGES = [
+  { n: 1, key: 's2Nav' },
+  { n: 2, key: 's4Nav' }
+];
+function stageCommitted(n) {
+  if (n === 1) return S.s2.committed;          /* One Source, Many Rooms */
+  if (n === 2) return !!(S.s4.chainCommitted);
+  return false;
+}
+function committedCount() {
+  var c = 0;
+  for (var i = 1; i <= 2; i++) if (stageCommitted(i)) c++;
+  return c;
+}
+function drawNav() {
+  var nav = $('stageNav');
+  clearNode(nav);
+  STAGES.forEach(function (s) {
+    var b = el('button', S.stage === s.n ? 'active' : '');
+    b.setAttribute('type', 'button');
+    if (stageCommitted(s.n)) b.classList.add('done');
+    var num = el('span', 'num', String(s.n));
+    b.appendChild(num);
+    b.appendChild(el('span', null, t(s.key)));
+    b.addEventListener('click', function () { goStage(s.n); });
+    nav.appendChild(b);
+  });
+}
+function goStage(n) {
+  n = Math.min(Math.max(1, n), 2);
+  S.stage = n;
+  /* Only two stages survive the 8am cut; their DOM ids kept the original
+     numbering, so map position -> element id explicitly. */
+  var SEC = { 1: 'stage2', 2: 'stage4' };
+  for (var i = 1; i <= 2; i++) {
+    var sec = $(SEC[i]);
+    if (sec) sec.classList.toggle('active', i === n);
+  }
+  drawNav();
+  saveAll();
+  window.scrollTo(0, 0);
+}
+function refreshPermitBtn() {
+  var btn = $('permitBtn');
+  if (!btn) return;
+  /* No gate. A student may export at any time, with any part blank: the sheet
+     prints "(not filled in)" and Mr. Porter can read what was attempted. */
+  var c = committedCount();
+  var need = STAGES.length;
+  btn.disabled = false;
+  btn.removeAttribute('aria-disabled');
+  btn.removeAttribute('title');
+  btn.classList.toggle('ready', c >= need);
+  btn.textContent = c >= need ? t('permitBtnReady') : t('permitBtnDraft');
+}
+
+/* -------------------------------------------------------------------------
+   8. STAGE 1: TRACE THE POWER
+   ------------------------------------------------------------------------- */
+var s1SelectedChip = null;
+
+function s1PartsInZone(zoneKey) {
+  var out = [];
+  Object.keys(S.s1.placements).forEach(function (z) {
+    if (z === zoneKey) {
+      var p = PARTS.filter(function (x) { return x.id === S.s1.placements[z]; })[0];
+      if (p) out.push(p);
+    }
+  });
+  return out;
+}
+function s1ZoneOfPart(partId) {
+  var found = null;
+  Object.keys(S.s1.placements).forEach(function (z) {
+    if (S.s1.placements[z] === partId) found = z;
+  });
+  return found;
+}
+function s1ZoneCenter(zoneKey) {
+  var z = ZONES.filter(function (x) { return x.key === zoneKey; })[0];
+  return z ? { x: z.x + z.w / 2, y: z.y + z.h / 2 } : { x: 350, y: 200 };
+}
+function s1NearestZone(px, py) {
+  var best = null, bestD = 1e9;
+  ZONES.forEach(function (z) {
+    var cx = z.x + z.w / 2, cy = z.y + z.h / 2;
+    var d = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+    if (d < bestD) { bestD = d; best = z; }
+  });
+  return best;
+}
+function s1ZoneFree(zoneKey) {
+  if (!S.s1.placements[zoneKey]) return true;
+  return false;
+}
+function s1FirstFreeZone(preferred) {
+  var order = [preferred.indexOf('source') >= 0 ? 'source' : null,
+               'transfer', 'transfer2', 'device', 'source'];
+  for (var i = 0; i < order.length; i++) {
+    if (order[i] && s1ZoneFree(order[i])) return order[i];
+  }
+  return null;
+}
+
+/* ---- Stage 1 upgrade bay: pick two, each costs something ---- */
+
+
+
+
+
+
+function onZoneClick(zoneKey, ev) {
+  if (s1SelectedChip) {
+    var partId = s1SelectedChip;
+    var existingZone = s1ZoneOfPart(partId);
+    if (existingZone) delete S.s1.placements[existingZone];
+    /* drop whatever was already in the target zone back into the tray */
+    if (S.s1.placements[zoneKey]) delete S.s1.placements[zoneKey];
+    S.s1.placements[zoneKey] = partId;
+    s1SelectedChip = null;
+    S.s1.committed = false; S.s1.stressed = false;
+    renderStage1(); drawNav(); refreshPermitBtn(); saveAll();
+    return;
+  }
+  /* otherwise: wire drawing mode, tap zone to start or end an arrow */
+  if (!S.s1.placements[zoneKey] && !s1WiringFrom) return;
+  if (!s1WiringFrom) {
+    s1WiringFrom = zoneKey;
+    highlightZone(zoneKey);
+    return;
+  }
+  if (s1WiringFrom === zoneKey) {
+    s1WiringFrom = null;
+      return;
+  }
+  var exists = S.s1.wires.some(function (w) {
+    return (w[0] === s1WiringFrom && w[1] === zoneKey) || (w[0] === zoneKey && w[1] === s1WiringFrom);
+  });
+  if (!exists) S.s1.wires.push([s1WiringFrom, zoneKey]);
+  s1WiringFrom = null;
+  S.s1.committed = false; S.s1.stressed = false;
+  renderStage1(); drawNav(); refreshPermitBtn(); saveAll();
+}
+var s1WiringFrom = null;
+function highlightZone(zoneKey) {
+  var rects = $('s1Zones').querySelectorAll('rect');
+  for (var i = 0; i < rects.length; i++) {
+    if (rects[i].getAttribute('data-zone') === zoneKey) rects[i].setAttribute('stroke', '#FF4D26');
+  }
+}
+
+/* --- the model itself. Consequences only, never a corrected diagram. --- */
+function evaluateModel(state) {
+  var placements = state.placements, wires = state.wires;
+  var parts = Object.keys(placements).map(function (z) {
+    var p = PARTS.filter(function (x) { return x.id === placements[z]; })[0];
+    return { zone: z, part: p };
+  }).filter(function (o) { return !!o.part; });
+
+  if (parts.length < 2) {
+    return { ok: false, reason: 'needmore', txt: t('s1NeedMore') };
+  }
+  var decoy = parts.filter(function (o) { return o.part.role === 'decoy'; })[0];
+  if (decoy) {
+    return { ok: false, reason: 'decoy', zone: decoy.zone, txt: fmt('s1ModelDecoy', { x: t(decoy.part.id) }) };
+  }
+
+  /* Get the left to right sequence of modules that are wired in order. */
+  var seq = orderedChain(wires);
+  var labels = seq.map(function (z) { return zonePartLabel(placements[z]); });
+
+  var hasSource = parts.some(function (o) { return o.part.role === 'source'; });
+  var deviceZones = parts.filter(function (o) { return o.part.role === 'device'; }).map(function (o) { return o.zone; });
+
+  if (!hasSource) {
+    var firstGap = gapBetween(wires, parts);
+    return { ok: false, reason: 'gap', gap: firstGap, txt: fmt('s1ModelGap', { a: '?', b: '?' }) };
+  }
+  if (seq.length < 2) {
+    var g = gapBetween(wires, parts);
+    return { ok: false, reason: 'gap', gap: g,
+      txt: fmt('s1ModelGap', { a: g && g[0] ? zonePartLabel(placements[g[0]]) : '?', b: g && g[1] ? zonePartLabel(placements[g[1]]) : '?' }) };
+  }
+
+  /* direction: does the chain start at the source? */
+  var first = seq[0], last = seq[seq.length - 1];
+  var reversed = (placements[first]);
+  var firstPart = PARTS.filter(function (x) { return x.id === placements[first]; })[0];
+  if (firstPart && firstPart.role === 'device') {
+    return { ok: false, reason: 'reversed',
+      txt: fmt('s1ModelReversed', { a: t(firstPart.id) }) };
+  }
+
+  /* chain must reach a device zone */
+  var reachesDevice = deviceZones.some(function (z) { return seq.indexOf(z) >= 0; });
+  if (!reachesDevice) {
+    var gap2 = gapBetween(wires, parts, seq);
+    return { ok: false, reason: 'gap', gap: gap2,
+      txt: fmt('s1ModelGap', {
+        a: gap2 && gap2[0] ? zonePartLabel(placements[gap2[0]]) : '?',
+        b: gap2 && gap2[1] ? zonePartLabel(placements[gap2[1]]) : '?'
+      }) };
+  }
+
+  return {
+    ok: true, seq: seq,
+    txt: fmt('s1ModelGood', {
+      a: zonePartLabel(placements[seq[0]]),
+      b: zonePartLabel(placements[seq[1]] || placements[seq[0]]),
+      c: zonePartLabel(placements[seq[seq.length - 1]])
+    })
+  };
+}
+function zonePartLabel(partId) {
+  if (!partId) return '?';
+  return t(partId);
+}
+function partAtZone(zoneKey) {
+  return S.s1.placements[zoneKey] || null;
+}
+function orderedChain(wires) {
+  /* Build a simple left-to-right ordering from the wire graph, using the
+     zone's horizontal center as the natural sort key. */
+  var adj = {};
+  wires.forEach(function (w) {
+    (adj[w[0]] = adj[w[0]] || []).push(w[1]);
+    (adj[w[1]] = adj[w[1]] || []).push(w[0]);
+  });
+  var hubs = Object.keys(adj);
+  if (!hubs.length) return [];
+  /* longest simple path by DFS, cheap because the graph is tiny */
+  var best = [];
+  function dfs(node, path) {
+    if (path.length > best.length) best = path.slice();
+    (adj[node] || []).forEach(function (nx) {
+      if (path.indexOf(nx) >= 0) return;
+      path.push(nx); dfs(nx, path); path.pop();
+    });
+  }
+  hubs.forEach(function (h) { dfs(h, [h]); });
+  /* orient the path so it runs from the source side toward the device side */
+  if (best.length > 1) {
+    var a = best[0], b = best[best.length - 1];
+    if (isDeviceZone(a) && !isDeviceZone(b)) best.reverse();
+  }
+  return best;
+}
+function isDeviceZone(z) {
+  var p = partAtZone(z);
+  if (!p) return false;
+  var part = PARTS.filter(function (x) { return x.id === p; })[0];
+  return part && part.role === 'device';
+}
+function gapBetween(wires, parts, seq) {
+  /* Report the pair of placed modules that has no wire between them. */
+  var zones = parts.map(function (o) { return o.zone; });
+  if (!wires.length && zones.length >= 2) return [zones[0], zones[1]];
+  for (var i = 0; i < zones.length; i++) {
+    for (var j = i + 1; j < zones.length; j++) {
+      var linked = wires.some(function (w) {
+        return (w[0] === zones[i] && w[1] === zones[j]) || (w[0] === zones[j] && w[1] === zones[i]);
+      });
+      if (!linked) return [zones[i], zones[j]];
+    }
+  }
+  return zones.length ? [zones[0], zones[1] || zones[0]] : null;
+}
+
+function runModel() {
+  var res = evaluateModel(S.s1);
+  S.s1.committed = true;
+  S.s1.narr = res.txt;
+  S.s1.narrCls = res.ok ? 'good' : 'bad';
+  /* Record the first model output specifically; keep a running log too. */
+  if (!S.s1.firstModel) {
+    S.s1.firstModel = { ok: res.ok, txt: res.txt, placements: JSON.parse(JSON.stringify(S.s1.placements)), wires: JSON.parse(JSON.stringify(S.s1.wires)) };
+  }
+  animateFlow(res);
+  if (res.ok && !S.s1.firstRunLabel) {
+    S.s1.firstRunLabel = 's1AnchorsReady';
+    S.s1.narr = t('s1FirstRunOk');
+  }
+  S.s1.currentOk = res.ok;
+  renderStage1Log();
+  renderStage1Narr();
+  /* the stress buttons re-enable themselves on their own render pass */
+  var stressBtns = $('s1StressBtns').querySelectorAll('button');
+  for (var si = 0; si < stressBtns.length; si++) stressBtns[si].disabled = false;
+  drawNav();
+  refreshPermitBtn();
+  saveAll();
+}
+
+/* ------------------------------------------------------------------
+   Stage 1 resilience. Real numbers, a real pass/fail, and no single
+   build that survives everything. Breaking the base model is the first
+   step, not the goal: the goal is surviving a stress that broke it.
+   ------------------------------------------------------------------ */
+var S1_LOADS = [
+  { id: 'ld_heater', kw: 1.2 },
+  { id: 'ld_fridge', kw: 0.2 },
+  { id: 'ld_bank',   kw: 0.4 },
+  { id: 'ld_lamp',   kw: 0.1 }
+];
+var S1_BATTERY_KWH = 10;
+var S1_STRIP_AMPS = 15;
+var S1_VOLTS = 120;
+
+function s1SheddedKw() {
+  /* the student picks which single load load-shedding drops */
+  var shed = S.s1.shedLoad;
+  if (!shed) return 0;
+  var l = S1_LOADS.filter(function (x) { return x.id === shed; })[0];
+  return l ? l.kw : 0;
+}
+function s1ActiveKw() {
+  var total = 0;
+  for (var i = 0; i < S1_LOADS.length; i++) total += S1_LOADS[i].kw;
+  return Math.max(0, total - s1SheddedKw());
+}
+function s1Amps() { return s1ActiveKw() * 1000 / S1_VOLTS; }
+function s1HasUpgrade(id) { return (S.s1.upgrades || []).indexOf(id) >= 0; }
+
+/* returns {pass:bool, need:number, have:number, where:string} */
+function s1StressOutcome(key) {
+  var kw = s1ActiveKw();
+  var base = evaluateModel(S.s1);
+  if (!base.ok) return { pass: false, where: 'model', need: 0, have: 0 };
+
+  if (key === 'ice') {
+    /* overhead line down 12 h; a buried line is immune, otherwise the battery
+       has to carry the clinic for the whole outage */
+    if (s1HasUpgrade('up_buried')) return { pass: true, where: 'buried', need: 0, have: 0 };
+    if (!s1HasUpgrade('up_battery')) return { pass: false, where: 'line', need: kw * 12, have: 0 };
+    return { pass: S1_BATTERY_KWH >= kw * 12, where: 'battery', need: kw * 12, have: S1_BATTERY_KWH };
+  }
+  if (key === 'demand') {
+    /* every load on at once; only shedding reduces the draw */
+    var amps = s1Amps();
+    return { pass: amps <= S1_STRIP_AMPS, where: 'strip', need: amps, have: S1_STRIP_AMPS };
+  }
+  /* wind drop: supply gone 3 h */
+  if (!s1HasUpgrade('up_battery')) return { pass: false, where: 'supply', need: kw * 3, have: 0 };
+  return { pass: S1_BATTERY_KWH >= kw * 3, where: 'battery', need: kw * 3, have: S1_BATTERY_KWH };
+}
+
+function runStress(str) {
+  if (!S.s1.committed) { toast(t('s1NeedFirst')); return; }
+  var res = evaluateModel(S.s1);
+  var out = s1StressOutcome(str.key);
+  var detail;
+
+  if (!res.ok) {
+    detail = res.txt;
+  } else if (out.pass) {
+    detail = fmt('s1StressPass', {
+      s: t(str.label),
+      n: (out.where === 'strip' ? out.need.toFixed(1) : out.have.toFixed(1)),
+      u: (out.where === 'strip' ? t('s1UnitAmps') : t('s1UnitKwh'))
+    });
+  } else if (out.where === 'line') {
+    detail = fmt('s1FailLine', { n: out.need.toFixed(1), u: t('s1UnitKwh'), h: out.have.toFixed(1) });
+  } else if (out.where === 'strip') {
+    detail = fmt('s1FailStrip', { n: out.need.toFixed(1), u: t('s1UnitAmps'), h: out.have.toFixed(0) });
+  } else {
+    detail = fmt('s1FailBattery', { n: out.need.toFixed(1), u: t('s1UnitKwh'), h: out.have.toFixed(1) });
+  }
+
+  S.s1.stressed = true;
+  S.s1.stressResult = {
+    stress: str.key, stressLabel: str.label, ok: out.pass, detail: detail,
+    need: out.need, have: out.have, where: out.where,
+    placements: JSON.parse(JSON.stringify(S.s1.placements)),
+    wires: JSON.parse(JSON.stringify(S.s1.wires))
+  };
+  S.s1.stressPassed = S.s1.stressPassed || (out.pass ? str.key : null);
+  if (out.pass) S.s1.stressPassed = str.key;
+  S.s1.narr = detail;
+  S.s1.narrCls = out.pass ? 'good' : 'bad';
+  S.s1.currentOk = res.ok;
+  animateFlow(res, out.pass ? null : str.key);
+  renderStage1Log();
+  renderStage1Narr();
+  $('s1Revise').disabled = false;
+  drawNav(); refreshPermitBtn(); saveAll();
+}
+
+/* One animation token at a time. Without this, every Run click starts another
+   requestAnimationFrame loop while the previous one keeps writing to the same
+   nodes, so repeated clicks make the dots stutter or travel at the wrong speed. */
+var s1AnimToken = 0;
+
+
+
+
+
+
+/* -------------------------------------------------------------------------
+   9. STAGE 2: ONE SOURCE, MANY ROOMS
+   ------------------------------------------------------------------------- */
+var s2WireTool = 'hot';
+var s2FirstTerm = null;
+
+function termId(objId, k) { return objId + ':' + k; }
+function hasEdge(a, b) {
+  return S.s2.edges.some(function (e) {
+    return (e[0] === a && e[1] === b) || (e[0] === b && e[1] === a);
+  });
+}
+function addEdge(a, b, w) {
+  if (a === b) return false;
+  if (hasEdge(a, b)) return false;
+  S.s2.edges.push([a, b, w]);
+  return true;
+}
+function termPoint(id) {
+  var parts = id.split(':');
+  var obj = S2_OBJECTS.filter(function (o) { return o.id === parts[0]; })[0];
+  if (!obj) return { x: 0, y: 0 };
+  var idx = obj.keys.indexOf(parts[1]);
+  var p = obj.terms[idx === -1 ? 0 : idx];
+  return { x: p[0], y: p[1] };
+}
+function termWireType(id) {
+  return id.split(':')[1];
+}
+function layoutSeries() {
+  /* Layout A: one loop that runs through every device in turn. The strip is
+     cut into one bar so the devices share a single path. */
+  S.s2.edges = [];
+  addEdge('panel:hot', 'heater:hot', 'hot');
+  addEdge('heater:hot', 'fridge:hot', 'hot');
+  addEdge('fridge:hot', 'bank:hot', 'hot');
+  addEdge('bank:hot', 'lamp:hot', 'hot');
+  addEdge('lamp:hot', 'panel:neutral', 'hot');
+  addEdge('panel:hot', 'strip:hot', 'hot');
+  addEdge('panel:neutral', 'strip:neutral', 'neutral');
+  addEdge('panel:ground', 'strip:ground', 'ground');
+  S.s2.preset = 'series';
+  S.s2.committed = false; S.s2.ok = false;
+}
+function layoutChain() {
+  /* Layout B: panel to strip on hot, neutral and ground, plus a bare jumper
+     from strip hot straight back to the panel neutral. That is a dead short.
+     The devices have no link to the strip at all. */
+  S.s2.edges = [];
+  addEdge('panel:hot', 'strip:hot', 'hot');
+  addEdge('panel:neutral', 'strip:neutral', 'neutral');
+  addEdge('panel:ground', 'strip:ground', 'ground');
+  addEdge('strip:hot', 'panel:neutral', 'hot');
+  S.s2.preset = 'chain';
+  S.s2.committed = false; S.s2.ok = false;
+}
+
+function renderStage2() {
+  $('s2CurHot').classList.toggle('sel', s2WireTool === 'hot');
+  $('s2CurNeu').classList.toggle('sel', s2WireTool === 'neutral');
+  $('s2CurGnd').classList.toggle('sel', s2WireTool === 'ground');
+  $('s2CurErase').classList.toggle('sel', s2WireTool === 'erase');
+  drawStage2Canvas();
+
+  var tags = $('s2DevTags');
+  clearNode(tags);
+  S2_DEVICE_KEYS.forEach(function (d) {
+    var plugged = !(S.s2.plugState === d.id);
+    var tag = el('span', 'devtag' + (plugged ? '' : ' off'), t(d.label));
+    tags.appendChild(tag);
+  });
+
+  var plug = $('s2PlugBtns');
+  clearNode(plug);
+  S2_DEVICE_KEYS.forEach(function (d) {
+    var isOut = S.s2.plugState === d.id;
+    var b = el('button', 'small', isOut ? '↺ ' + t(d.label) : '⏻ ' + t(d.label));
+    b.type = 'button';
+    b.addEventListener('click', function () {
+      S.s2.plugState = isOut ? null : d.id;
+      $('s2Narr').innerHTML = '';
+      runStage2WireCheck();
+    });
+    plug.appendChild(b);
+  });
+
+  var flips = $('s2Flips');
+  clearNode(flips);
+  flips.appendChild(el('div', null, fmt('s2Flips', {}) + ': ' + S.s2.flips));
+
+  var wh = $('s2Why');
+  if (wh) wh.value = S.s2.why || '';
+
+  renderStage2Narr();
+}
+
+function drawStage2Canvas() {
+  var base = $('s2Base'), wires = $('s2Wires'), terms = $('s2Terms'), fx = $('s2Fx');
+  clearNode(base); clearNode(wires); clearNode(terms); clearNode(fx);
+
+  /* strip casing */
+  S2_OBJECTS.forEach(function (o) {
+    var fill = o.id === 'panel' ? '#e9e7e0' : (o.id === 'strip' ? '#dedbd2' : '#ffffff');
+    base.appendChild(svgEl('rect', {
+      x: o.x, y: o.y, width: o.w, height: o.h, rx: 10,
+      fill: fill, stroke: 'rgba(26,26,26,.30)', 'stroke-width': 1.5
+    }));
+  });
+  /* strip bus bars, three thin rails, drawn quietly */
+  /* Anatomy of a real power strip: two flat outer blades (hot, neutral) with the
+     round ground pin running down the CENTRE. Ground is never an outer rail. */
+  /* Three parallel buses. They never touch, and no two input terminals of
+     different conductors may sit on the same bar. */
+  base.appendChild(svgEl('line', { x1: 286, y1: 218, x2: 486, y2: 218, stroke: '#1A1A1A', 'stroke-width': 4, opacity: 0.85 }));
+  base.appendChild(svgEl('line', { x1: 286, y1: 235, x2: 486, y2: 235, stroke: '#6B6B6B', 'stroke-width': 6, opacity: 0.9 }));
+  base.appendChild(svgEl('line', { x1: 286, y1: 235, x2: 486, y2: 235, stroke: '#FFFFFF', 'stroke-width': 4, opacity: 1 }));
+  base.appendChild(svgEl('line', { x1: 286, y1: 252, x2: 486, y2: 252, stroke: '#1F7A3A', 'stroke-width': 4, opacity: 0.9 }));
+
+  /* labels */
+  function label(x, y, txt, size, weight, color) {
+    var n = svgEl('text', { x: x, y: y, 'font-size': size || 11.5, 'font-weight': weight || 600, fill: color || '#1A1A1A' });
+    n.textContent = txt;
+    base.appendChild(n);
+    return n;
+  }
+  label(46, 138, t('s2Tool') === '' ? '' : '', 10);
+  label(46, 144, t('s2PanelTag'), 10.5, 800, 'rgba(26,26,26,.55)');
+  label(262, 268, t('s2StripTag'), 10, 800, 'rgba(26,26,26,.55)');
+  S2_DEVICE_KEYS.forEach(function (d) {
+    var o = S2_OBJECTS.filter(function (x) { return x.id === d.id; })[0];
+    var nm = svgEl('text', { x: o.x + 18, y: o.y + 22, 'font-size': 13, 'font-weight': 800, fill: '#1A1A1A' });
+    nm.textContent = t(d.label);
+    base.appendChild(nm);
+    var st = S.s2.lastResult;
+    var off = S.s2.plugState === d.id || (st && st.dark && st.dark.indexOf(d.id) >= 0);
+    if (off) {
+      base.appendChild(svgEl('rect', { x: o.x, y: o.y, width: o.w, height: o.h, rx: 10, fill: '#1A1A1A', opacity: 0.12 }));
+      var offT = svgEl('text', { x: o.x + 12, y: o.y + 44, 'font-size': 10.5, 'font-weight': 700, fill: '#C22F2F' });
+      offT.textContent = '✕';
+      base.appendChild(offT);
+    }
+  });
+
+  /* wires under terminals */
+  S.s2.edges.forEach(function (e, idx) {
+    var a = termPoint(e[0]), b = termPoint(e[1]);
+    var col = e[2] === 'hot' ? '#1A1A1A' : (e[2] === 'neutral' ? '#8A8A8A' : '#1F7A3A');
+    /* Offset parallel conductors so hot, neutral and ground never sit on top
+       of one another when they run between the same two components. */
+    var off = e[2] === 'hot' ? -5 : (e[2] === 'neutral' ? 0 : 5);
+    var mx = (a.x + b.x) / 2 + off;
+    wires.appendChild(svgEl('path', {
+      d: 'M' + a.x + ' ' + a.y + ' L' + mx + ' ' + a.y + ' L' + mx + ' ' + b.y + ' L' + b.x + ' ' + b.y,
+      stroke: col, 'stroke-width': 3.5, fill: 'none',
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: 0.95
+    }));
+  });
+
+  /* terminals */
+  S2_OBJECTS.forEach(function (o) {
+    o.terms.forEach(function (pt, i) {
+      var k = o.keys[i];
+      var col = k === 'hot' ? '#1A1A1A' : (k === 'neutral' ? '#8A8A8A' : '#1F7A3A');
+      var id = termId(o.id, k);
+      var c = svgEl('circle', {
+        cx: pt[0], cy: pt[1], r: 8, fill: s2FirstTerm === id ? '#FF4D26' : col,
+        stroke: '#fff', 'stroke-width': 2, style: 'cursor:pointer'
+      });
+      c.setAttribute('data-term', id);
+      var hit = svgEl('circle', {
+        cx: pt[0], cy: pt[1], r: 13, fill: 'transparent', style: 'cursor:pointer'
+      });
+      hit.addEventListener('click', function (ev) { ev.stopPropagation(); onTerminalClick(id); });
+      terms.appendChild(hit);
+      c.addEventListener('click', function (ev) { ev.stopPropagation(); onTerminalClick(id); });
+      terms.appendChild(c);
+      if (o.id === 'strip' || o.id === 'panel') {
+        /* Label sits to the LEFT of the dot on the strip (dots are stacked at
+           the left end) and to the RIGHT on the panel, never underneath it,
+           and at 13px so it is readable on a Chromebook. */
+        var lab = svgEl('text', {
+          x: pt[0] + (o.id === 'panel' ? 14 : -16),
+          y: pt[1] + 4.5,
+          'font-size': 13, 'font-weight': 800, fill: '#1A1A1A',
+          'text-anchor': o.id === 'panel' ? 'start' : 'end'
+        });
+        lab.textContent = k === 'hot' ? 'H' : (k === 'neutral' ? 'N' : 'G');
+        lab.setAttribute('pointer-events', 'none');
+        terms.appendChild(lab);
+      }
+      if (o.id !== 'panel' && o.id !== 'strip') {
+        var plugT = svgEl('text', {
+          x: pt[0] - 16, y: pt[1] + 4.5, 'font-size': 12, 'font-weight': 800,
+          fill: '#1A1A1A', 'text-anchor': 'end'
+        });
+        plugT.textContent = k === 'hot' ? 'H' : (k === 'neutral' ? 'N' : 'G');
+        plugT.setAttribute('pointer-events', 'none');
+        terms.appendChild(plugT);
+      }
+    });
+  });
+}
+
+function onTerminalClick(id) {
+  if (s2WireTool === 'erase') {
+    S.s2.edges = S.s2.edges.filter(function (e) { return e[0] !== id && e[1] !== id; });
+    s2FirstTerm = null;
+    S.s2.committed = false; S.s2.ok = false;
+    drawStage2Canvas(); saveAll();
+    return;
+  }
+  if (!s2FirstTerm) {
+    s2FirstTerm = id;
+    toast(t('s2FirstTerm'));
+    drawStage2Canvas();
+    return;
+  }
+  if (s2FirstTerm === id) { s2FirstTerm = null; drawStage2Canvas(); return; }
+  var w = s2WireTool;
+  var added = addEdge(s2FirstTerm, id, w);
+  s2FirstTerm = null;
+  if (!added) { drawStage2Canvas(); return; }
+  S.s2.committed = false; S.s2.ok = false;
+  S.s2.preset = null;
+  drawStage2Canvas(); saveAll();
+}
+
+/* --- the wall check. Consequences, never an auto-corrected diagram. --- */
+function leadingLabel() {
+  var out = t('dev_heater');
+  return out;
+}
+function runStage2WireCheck() {
+  var narr = $('s2Narr');
+  clearNode(narr);
+
+  var flips = S.s2.flips;
+  var edges = S.s2.edges;
+  var result = { kind: 'open', dark: [], text: '', cls: 'bad' };
+
+  /* direct hot to panel with no device in between is a short */
+  var shorted = edges.some(function (e) {
+    var a = e[0], b = e[1];
+    if (e[2] !== 'hot') return false;
+    var touchesHot = (a === 'panel:hot' && b === 'panel:neutral') || (a === 'panel:neutral' && b === 'panel:hot');
+    if (touchesHot) return true;
+    if (a === 'strip:hot' && b === 'panel:neutral') return true;
+    if (b === 'strip:hot' && a === 'panel:neutral') return true;
+    return false;
+  });
+  /* hot reaches the strip or the devices at all? */
+  var hotReaches = edges.some(function (e) {
+    var a = e[0], b = e[1];
+    if (e[2] !== 'hot') return false;
+    if (a === 'players') return false;
+    return (a === 'panel:hot' || b === 'panel:hot') && (a !== 'panel:neutral' && b !== 'panel:neutral');
+  });
+
+  if (shorted) {
+    result.kind = 'short';
+    result.text = t('s2Short');
+    result.dark = ['heater', 'fridge', 'bank', 'lamp'];
+  } else if (!hotReaches) {
+    result.kind = 'open';
+    result.text = t('s2Open');
+    result.dark = ['heater', 'fridge', 'bank', 'lamp'];
+  } else {
+    /* Which devices have their own hot path back to the panel through the
+       strip bars? Series-style skipping (device to device with no strip) has
+       no such path. */
+    var onStrip = {};
+    S2_DEVICE_KEYS.forEach(function (d) {
+      var hasStripLink = edges.some(function (e) {
+        var t1 = e[0], t2 = e[1];
+        var dPlug = termId(d.id, 'hot');
+        return (t1 === dPlug && (t2 === 'strip:hot')) || (t2 === dPlug && (t1 === 'strip:hot'));
+      });
+      /* a device also counts as parallel if the strip is wired hot and it has
+         a link to the strip or to the panel that is not a pass-through chain */
+      var linkedToBus = edges.some(function (e) {
+        var t1 = e[0], t2 = e[1];
+        var dPlug = termId(d.id, 'hot');
+        var other = (t1 === dPlug) ? t2 : ((t2 === dPlug) ? t1 : null);
+        if (!other) return false;
+        return other === 'strip:hot' || other === 'panel:hot';
+      });
+      onStrip[d.id] = linkedToBus;
+    });
+    var parallelCount = Object.keys(onStrip).filter(function (k) { return onStrip[k]; }).length;
+    var stripHotToPanel = edges.some(function (e) {
+      return (e[0] === 'strip:hot' && e[1] === 'panel:hot' && e[2] === 'hot') ||
+             (e[1] === 'strip:hot' && e[0] === 'panel:hot' && e[2] === 'hot');
+    });
+    var hasGround = edges.some(function (e) {
+      return e[2] === 'ground' && ((e[0] === 'panel:ground' && e[1] === 'strip:ground') || (e[1] === 'panel:ground' && e[0] === 'strip:ground'));
+    });
+
+    if (parallelCount >= 3 && stripHotToPanel) {
+      result.kind = 'parallel';
+      if (hasGround) {
+        result.text = t('s2Ok');
+        result.cls = 'good';
+      } else {
+        result.text = t('s2NoGnd');
+        result.cls = 'warn';
+      }
+      if (S.s2.plugState) {
+        var dn = t('dev_' + S.s2.plugState);
+        result.text = fmt('s2OkUnplug', { d: dn });
+        if (!hasGround) result.text = result.text + ' ' + t('s2NoGnd');
+      }
+      /* every device is alive unless it is unplugged */
+      result.dark = S.s2.plugState ? [S.s2.plugState] : [];
+    } else {
+      result.kind = 'series';
+      var firstDark = null;
+      var victimName = null;
+      if (S.s2.plugState) {
+        firstDark = S.s2.plugState;
+        victimName = t('dev_' + S.s2.plugState);
+      } else {
+        firstDark = 'fridge';
+        victimName = t('dev_fridge');
+      }
+      var culpritName = null;
+      /* name what the devices pass through, so the sentence is concrete */
+      S2_DEVICE_KEYS.forEach(function (d) {
+        var dPlug = termId(d.id, 'hot');
+        var toOther = edges.some(function (e) {
+          var t1 = e[0], t2 = e[1];
+          var other = (t1 === dPlug) ? t2 : ((t2 === dPlug) ? t1 : null);
+          if (!other) return false;
+          return /^heater:|^fridge:|^bank:|^lamp:/.test(other) && other.split(':')[0] !== d.id;
+        });
+        if (toOther && !culpritName && d.id !== (S.s2.plugState || 'fridge')) culpritName = t(d.label);
+      });
+      if (!culpritName) culpritName = t('dev_heater');
+      result.text = fmt('s2Series', { d: victimName, x: culpritName });
+      result.dark = ['heater', 'fridge', 'bank', 'lamp'];
+    }
+  }
+
+  /* An unplug that leaves everything running is the parallel signal. In a
+     series layout, the unplug kills the wall, so the dark set widens. */
+  S.s2.lastResult = result;
+  S.s2.narr = result.text;
+  S.s2.narrCls = result.cls;
+  S.s2.ok = result.kind === 'parallel';
+  renderStage2Narr();
+  drawStage2Canvas();
+}
+
+function renderStage2Narr() {
+  var n = $('s2Narr');
+  clearNode(n);
+  if (!S.s2.narr) return;
+  var d = el('div', 'narration ' + (S.s2.narrCls || ''));
+  d.textContent = S.s2.narr;
+  n.appendChild(d);
+}
+
+function flipMainSwitch() {
+  if (S.s2.edges.length < 3) { toast(t('s2NeedWires')); return; }
+  if (S.s2.breakerPopped) {
+    /* clearing happens when the short is removed and the switch is flipped again */
+    toast(t('s2BreakerPopped'));
+  }
+  S.s2.plugState = null;
+  S.s2.flips += 1;
+  S.s2.committed = true;
+  S.s2.lastResult = null;
+  runStage2WireCheck();
+  if (S.s2.lastResult.kind === 'short') S.s2.breakerPopped = true;
+  else S.s2.breakerPopped = false;
+  renderStage2();
+  drawNav(); refreshPermitBtn(); saveAll();
+}
+
+/* -------------------------------------------------------------------------
+   10. STAGE 3: THE FAULT LEDGER
+   ------------------------------------------------------------------------- */
+var s3DragPin = null;
+
+
+
+function s3FaultById(id) { return FAULTS.filter(function (f) { return f.id === id; })[0]; }
+function s3SpotForPin(num) { return S.s3.plan.filter(function (p) { return p.num === num; })[0]; }
+
+
+
+
+
+
+
+
+
+
+
+/* --- simulate: consequences fire in pin order. No correct labels are shown. --- */
+function runStage3() {
+  var placedN = Object.keys(S.s3.placed).length;
+  var labelledN = S.s3.plan.filter(function (p) {
+    var l = S.s3.labels[p.num];
+    return S.s3.placed[p.num] && l && l.wrong && l.who;
+  }).length;
+  if (placedN < 5 || labelledN < 5) { toast(t('s3NeedAll')); return; }
+
+  var results = [];
+  var mismatches = [];
+  S.s3.plan.slice().sort(function (a, b) { return a.num - b.num; }).forEach(function (p) {
+    var label = S.s3.labels[p.num];
+    var fault = s3FaultById(p.faultId);
+    var isPeople = fault.who === 'people';
+    var actualText = isPeople ? t('s3ConsequencePeople') : t('s3ConsequenceGrid');
+    var match = label.who === fault.who;
+    if (!match) mismatches.push(p.num);
+    results.push({ num: p.num, who: label.who, faultId: p.faultId, text: actualText, match: match, people: isPeople });
+  });
+
+  S.s3.results = results;
+  S.s3.mismatches = mismatches;
+  S.s3.run = true;
+
+  if (S.s3.pass1 === null) {
+    S.s3.pass1 = {
+      labelled: JSON.parse(JSON.stringify(S.s3.labels)),
+      mismatches: mismatches.slice(),
+      results: results.map(function (r) { return { num: r.num, who: r.who, text: r.text }; })
+    };
+  }
+
+  if (mismatches.length) {
+    S.s3.narr = mismatches.map(function (n) { return fmt('s3Mismatch', { n: n }); }).join(' ');
+    S.s3.narrCls = 'bad';
+  } else {
+    S.s3.narr = t('s3AllMatch');
+    S.s3.narrCls = 'good';
+  }
+  animateFaults(results);
+  drawNav(); refreshPermitBtn(); saveAll();
+}
+
+function animateFaults(results) {
+  var g = $('s3Fx');
+  clearNode(g);
+  results.forEach(function (r, idx) {
+    var p = s3SpotForPin(r.num);
+    if (!p) return;
+    setTimeout(function () {
+      if (r.people) {
+        g.appendChild(svgEl('circle', { cx: p.cx, cy: p.cy, r: 26, fill: 'none', stroke: '#C22F2F', 'stroke-width': 3, opacity: 0.9 }));
+        var txt = svgEl('text', { x: p.cx, y: p.cy - 26, 'font-size': 10, 'font-weight': 800, fill: '#C22F2F', 'text-anchor': 'middle' });
+        txt.textContent = '⚡';
+        g.appendChild(txt);
+      } else {
+        g.appendChild(svgEl('circle', { cx: p.cx, cy: p.cy, r: 26, fill: 'none', stroke: '#3B6EA5', 'stroke-width': 3, opacity: 0.7 }));
+      }
+    }, 260 * idx);
+  });
+}
+
+/* -------------------------------------------------------------------------
+   11. STAGE 4: SOURCE MIX AND THE GENERATOR
+   ------------------------------------------------------------------------- */
+/* four chain slots; what goes IN each one depends on the chosen plant */
+var s4ChainNodes = ['a', 'b', 'c', 'd', 'e'];
+var s4DragNode = null;
+
+function s4ShareTotal() {
+  var tot = 0;
+  SOURCES.forEach(function (s) { tot += (S.s4.shares[s.id] || 0); });
+  return tot;
+}
+
+function updateShareSum() {
+  var tot = s4ShareTotal();
+  var msg = tot === 100 ? fmt('s4Sum', { n: tot }) : fmt('s4SumBad', { n: tot });
+  var n = $('s4Sum');
+  n.textContent = msg;
+  n.style.color = tot === 100 ? '' : 'var(--err)';
+  n.style.fontWeight = tot === 100 ? '400' : '700';
+}
+function renderS4Result() {
+  var box = $('s4Result');
+  clearNode(box);
+  if (!S.s4.mixRun) {
+    box.appendChild(el('div', 'tiny', t('s4aNoRun')));
+    return;
+  }
+  var m = S.s4.mixRun;
+  var d = el('div', 'narration ' + (m.met ? 'good' : 'bad'));
+  d.textContent = m.met ? t('s4aMet') : fmt('s4aShort', { n: 5 - m.rooms });
+  box.appendChild(d);
+  var rr = el('div', 'narration');
+  rr.appendChild(el('div', null, t('s4aOut') + ': ' + m.output));
+  rr.appendChild(el('div', null, t('s4aDemand') + ': ' + FREEZE_DEMAND));
+  rr.appendChild(el('div', null, t('s4aRooms') + ': ' + m.rooms + ' / 5'));
+  rr.appendChild(el('div', 'tiny', m.why));
+  box.appendChild(rr);
+}
+
+function runFreeze() {
+  var tot = s4ShareTotal();
+  if (tot !== 100) { toast(fmt('s4SumBad', { n: tot })); return; }
+  var output = 0;
+  SOURCES.forEach(function (s) {
+    var share = S.s4.shares[s.id] || 0;
+    output += (share / 100) * s.cap;
+  });
+  output = Math.round(output * 10) / 10;
+  var met = output >= FREEZE_DEMAND;
+  var rooms = met ? 5 : Math.max(0, Math.round((output / FREEZE_DEMAND) * 5));
+  S.s4.mixRun = {
+    output: output, met: met, rooms: rooms,
+    shares: JSON.parse(JSON.stringify(S.s4.shares)),
+    why: met ? fmt('s4aMetWhy', { o: output, d: FREEZE_DEMAND }) : fmt('s4aShortWhy', { n: Math.round((FREEZE_DEMAND - output) * 10) / 10 })
+  };
+  renderS4Result();
+  drawNav(); refreshPermitBtn(); saveAll();
+}
+
+function renderStage4Plants() {
+  var host = $('s4PlantChips');
+  if (!host) return;
+  clearNode(host);
+  Object.keys(PLANTS).forEach(function (k) {
+    var on = (S.s4.plant || 'coal') === k;
+    var b = el('button', 'chip' + (on ? ' sel' : ''), t(PLANTS[k].label));
+    b.type = 'button';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.addEventListener('click', function () {
+      var cur = S.s4.plant || 'coal';
+      if (cur === k) return;
+      /* stash what the student built for this plant before switching away,
+         so returning to it restores their work instead of an empty board */
+      S.s4.chains = S.s4.chains || {};
+      S.s4.chains[cur] = S.s4.chain;
+      S.s4.done = S.s4.done || {};
+      S.s4.done[cur] = !!S.s4.chainCommitted;
+      S.s4.narrs = S.s4.narrs || {};
+      S.s4.narrs[cur] = S.s4.narr;
+
+      S.s4.plant = k;
+      S.s4.chain = (S.s4.chains[k] || {});
+      S.s4.chainCommitted = !!(S.s4.done[k]);
+      S.s4.narr = S.s4.narrs[k] || '';
+      s4DragNode = null;
+      renderStage4Chain(); renderStage4Narr(); drawNav(); refreshPermitBtn(); saveAll();
+    });
+    host.appendChild(b);
+  });
+}
+
+function renderStage4Chain() {
+  renderStage4Plants();
+  var tray = $('s4Tray');
+  clearNode(tray);
+  /* a step used in N slots needs N cards taken out of the tray */
+  var placedCount = {};
+  s4ChainNodes.forEach(function (k) {
+    var v = S.s4.chain[k];
+    if (v) placedCount[v] = (placedCount[v] || 0) + 1;
+  });
+  var want = activePlant().chain;
+  var FILLER = 'n_none';
+  /* the correct parts, plus parts from the other plants and two filler cards,
+     so the student has to know which route this plant actually takes. Every
+     plant gets the fillers, so their presence does not give solar away. */
+  var fillerCount = want.filter(function (x) { return x === FILLER; }).length;
+  var wantBase = want.filter(function (x) { return x !== FILLER; });
+  var pool = CHAIN_NODES.filter(function (n) {
+    return n.id !== FILLER &&
+      (wantBase.indexOf(n.id) >= 0 || activePlant().spare.indexOf(n.id) >= 0);
+  });
+  for (var f = 0; f < Math.max(fillerCount, 2); f++) {
+    pool.push({ id: FILLER, order: 5 });
+  }
+  /* a plant that needs the same filler twice must get two copies */
+  var checked = {};
+  var expanded = [];
+  pool.forEach(function (n) {
+    var need = wantBase.filter(function (x) { return x === n.id; }).length || 1;
+    for (var c = 0; c < need; c++) expanded.push(n);
+  });
+  shuffledCopy(expanded).forEach(function (n) {
+    var used = placedCount[n.id] || 0;
+    if (used > 0) { placedCount[n.id] = used - 1; return; }
+    var b = el('button', 'chip' + (s4DragNode === n.id ? ' sel' : ''), t(n.id));
+    b.type = 'button';
+    b.addEventListener('click', function () {
+      s4DragNode = (s4DragNode === n.id) ? null : n.id;
+      renderStage4Chain();
+    });
+    tray.appendChild(b);
+  });
+  if (!tray.firstChild) tray.appendChild(el('span', 'tiny', t('s3AllPlaced')));
+
+  drawStage4Canvas();
+  var rf = $('s4Reflect');
+  var plantName = t(activePlant().label);
+  var lbl = $('s4ReflectLabel');
+  if (lbl) lbl.textContent = t('s4ReflectLabel').replace('{plant}', plantName);
+  if (rf) {
+    rf.setAttribute('placeholder', t('s4ReflectPh').replace('{plant}', plantName));
+    S.s4.reflections = S.s4.reflections || {};
+    if (rf.value !== (S.s4.reflections[S.s4.plant || 'coal'] || '')) {
+      rf.value = S.s4.reflections[S.s4.plant || 'coal'] || '';
+    }
+  }
+  updateS4Output();
+}
+
+function drawStage4Canvas() {
+  var base = $('s4Base'), zones = $('s4Zones'), vals = $('s4Vals');
+  clearNode(base); clearNode(zones); clearNode(vals);
+  var w = 148, gap = 20, x0 = 20, y = 74, h = 110;
+  s4ChainNodes.forEach(function (k, i) {
+    var x = x0 + i * (w + gap);
+    var hasNode = !!S.s4.chain[k];
+    var rect = svgEl('rect', {
+      x: x, y: y, width: w, height: h, rx: 12,
+      fill: hasNode ? 'rgba(255,77,38,.06)' : 'rgba(255,77,38,.05)',
+      stroke: 'rgba(26,26,26,.34)', 'stroke-width': 1.5,
+      'stroke-dasharray': hasNode ? 'none' : '6 5',
+      style: 'cursor:pointer'
+    });
+    rect.setAttribute('data-slot', k);
+    rect.addEventListener('click', function () { onChainSlotClick(k); });
+    zones.appendChild(rect);
+    if (!hasNode) {
+      var lab = svgEl('text', {
+        x: x + w / 2, y: y + h / 2 + 4,
+        'font-size': 10.5, 'font-weight': 700, 'text-anchor': 'middle',
+        fill: 'rgba(26,26,26,.45)', 'pointer-events': 'none'
+      });
+      lab.textContent = t('s1EmptyZone');
+      zones.appendChild(lab);
+    }
+    if (hasNode) {
+      var words = t(S.s4.chain[k]).split('(')[0].trim();
+      /* Wrap onto two lines. A single line ran past the box edge on the longer
+         part names, which clipped them at 1366 wide. */
+      var lines = words.length > 16 ? splitTwoLines(words) : [words];
+      var v = svgEl('text', {
+        x: x + w / 2, y: y + h / 2 + 4 - (lines.length - 1) * 7,
+        'font-size': 11.5, 'font-weight': 800, 'text-anchor': 'middle',
+        fill: '#1A1A1A', 'pointer-events': 'none'
+      });
+      lines.forEach(function (line, li) {
+        var ts = svgEl('tspan', { x: x + w / 2, dy: li === 0 ? 0 : 14 });
+        ts.textContent = line;
+        v.appendChild(ts);
+      });
+      zones.appendChild(v);
+      var rmc = svgEl('circle', { cx: x + w - 14, cy: y + 14, r: 9, fill: 'rgba(26,26,26,.10)', style: 'cursor:pointer' });
+      rmc.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        delete S.s4.chain[k];
+        S.s4.chainCommitted = false;
+        renderStage4Chain(); drawNav(); refreshPermitBtn(); saveAll();
+      });
+      zones.appendChild(rmc);
+      var rmT = svgEl('text', {
+        x: x + w - 14, y: y + 18,
+        'font-size': 11, 'font-weight': 800, 'text-anchor': 'middle',
+        fill: 'rgba(26,26,26,.55)', 'pointer-events': 'none'
+      });
+      rmT.textContent = '×';
+      zones.appendChild(rmT);
+    }
+    if (i < s4ChainNodes.length - 1) {
+      base.appendChild(svgEl('path', {
+        d: 'M' + (x + w + 3) + ' ' + (y + h / 2) + ' L ' + (x + w + gap - 6) + ' ' + (y + h / 2),
+        stroke: 'rgba(26,26,26,.35)', 'stroke-width': 2, 'marker-end': 'url(#s4Arrow)'
+      }));
+    }
+  });
+  var defs = svgEl('defs');
+  var mk = svgEl('marker', { id: 's4Arrow', markerWidth: 8, markerHeight: 8, refX: 6, refY: 3, orient: 'auto' });
+  mk.appendChild(svgEl('path', { d: 'M0,0 L6,3 L0,6 z', fill: 'rgba(26,26,26,.45)' }));
+  defs.appendChild(mk);
+  base.insertBefore(defs, base.firstChild);
+}
+
+function onChainSlotClick(slot) {
+  if (!s4DragNode) {
+    if (S.s4.chain[slot]) {
+      delete S.s4.chain[slot];
+      S.s4.chainCommitted = false;
+      renderStage4Chain(); drawNav(); refreshPermitBtn(); saveAll();
+    }
+    return;
+  }
+  /* Move ONE copy of the tapped part into this slot. Clearing every slot that
+     held the same id wiped the first copy when a plant needed the same step
+     twice, which is why solar could never hold two fillers. */
+  S.s4.chain[slot] = s4DragNode;
+  s4DragNode = null;
+  S.s4.chainCommitted = false;
+  renderStage4Chain(); drawNav(); refreshPermitBtn(); saveAll();
+}
+
+function activePlant() {
+  return PLANTS[S.s4.plant || 'coal'] || PLANTS.coal;
+}
+function chainOrderOk() {
+  var want = activePlant().chain;
+  for (var i = 0; i < s4ChainNodes.length; i++) {
+    /* every slot must be filled, and it must match the plant exactly.
+       This keeps 'no step needed' from being dropped in mid-chain. */
+    if (S.s4.chain[s4ChainNodes[i]] !== want[i]) return false;
+  }
+  return true;
+}
+function updateS4Output() {
+  var out = 0;
+  if (chainOrderOk()) out = 720;   /* a complete correct chain runs */
+  $('s4Out').textContent = String(out);
+}
+function renderStage4Narr() {
+  var n = $('s4Narr');
+  clearNode(n);
+  if (!S.s4.narr) return;
+  n.appendChild(el('div', 'narration ' + (S.s4.narrCls || ''), S.s4.narr));
+}
+function runChain() {
+  var filled = s4ChainNodes.filter(function (k) { return !!S.s4.chain[k]; });
+  if (filled.length < 4) { toast(t('s4ChainNeed')); return; }
+  if (chainOrderOk()) {
+    S.s4.narr = t(activePlant().ok);
+    S.s4.narrCls = 'good';
+    S.s4.chainCommitted = true;
+  } else {
+    /* name the first slot whose occupant is out of order */
+    var badIdx = -1;
+    for (var i = 0; i < 4; i++) {
+      var node = CHAIN_NODES.filter(function (n) { return n.id === S.s4.chain[s4ChainNodes[i]]; })[0];
+      if (!node || node.order !== i + 1) { badIdx = i; break; }
+    }
+    var label = badIdx >= 0 ? t(S.s4.chain[s4ChainNodes[badIdx]]) : t('n_output');
+    S.s4.narr = fmt('s4OrderBad', { label: label });
+    S.s4.narrCls = 'bad';
+    S.s4.chainCommitted = false;
+  }
+  updateS4Output();
+  renderStage4Narr();
+  drawNav(); refreshPermitBtn(); saveAll();
+}
+
+function studentName() {
+  return (S.student.name || '').trim();
+}
+function permitNumber() {
+  var nm = studentName() || 'x';
+  var h = 0;
+  for (var i = 0; i < nm.length; i++) h = (h * 31 + nm.charCodeAt(i)) % 100000;
+  return String(h).padStart(5, '0');
+}
+function buildPermitSheet() {
+  var sheet = $('permitSheet');
+  clearNode(sheet);
+
+  var head = el('div');
+  head.appendChild(el('h3', null, t('permitTitle')));
+  head.appendChild(el('div', 'tiny', t('permitSub')));
+  sheet.appendChild(head);
+
+  var meta = el('table');
+  var mt = el('tbody');
+  function metaRow(k, v) {
+    var tr = el('tr');
+    tr.appendChild(el('th', null, k));
+    tr.appendChild(el('td', null, v));
+    mt.appendChild(tr);
+  }
+  metaRow(t('permitStudent'), studentName() || t('permitNoName'));
+  metaRow(t('permitClass'), S.student.cls || '');
+  metaRow(t('permitDate'), todayStr());
+  metaRow(t('permitPermitId'), permitNumber());
+  metaRow(fmt('permitIssued', { teacher: t('teacherName') }), t('teacherName'));
+  meta.appendChild(mt);
+  sheet.appendChild(meta);
+
+  /* Page 1: One Source, Many Rooms */
+  sheet.appendChild(el('h4', null, t('permitStage2')));
+  if (S.s2.snapshotUrl) {
+    var im2 = document.createElement('img');
+    im2.src = S.s2.snapshotUrl;
+    im2.alt = t('permitWiring');
+    sheet.appendChild(im2);
+  } else {
+    sheet.appendChild(el('div', 'note', t('permitNone')));
+  }
+  sheet.appendChild(el('div', 'note', t('permitFlipCount') + ': ' + S.s2.flips));
+  if (S.s2.narr) sheet.appendChild(el('div', 'note', S.s2.narr));
+  sheet.appendChild(el('div', 'note', t('permitFailure') + ': ' + (S.s2.why || t('permitNone'))));
+
+  /* Page 2: The Generator. Name the plant, then the chain the student built. */
+  sheet.appendChild(el('h4', null, t('permitStage4')));
+  sheet.appendChild(el('div', 'note', t('permitPlant') + ': ' + t(activePlant().label)));
+  var chainTbl = el('table');
+  var cth = el('thead'); var ctr = el('tr');
+  ctr.appendChild(el('th', null, t('permitStep')));
+  ctr.appendChild(el('th', null, t('permitPart')));
+  cth.appendChild(ctr); chainTbl.appendChild(cth);
+  var ctb = el('tbody');
+  s4ChainNodes.forEach(function (k, i) {
+    var row = el('tr');
+    row.appendChild(el('td', null, String(i + 1)));
+    row.appendChild(el('td', null, S.s4.chain[k] ? t(S.s4.chain[k]) : t('permitNone')));
+    ctb.appendChild(row);
+  });
+  chainTbl.appendChild(ctb);
+  sheet.appendChild(chainTbl);
+  if (S.s4.chainImgUrl) {
+    var im4 = document.createElement('img');
+    im4.src = S.s4.chainImgUrl;
+    im4.alt = t('permitChain');
+    sheet.appendChild(im4);
+  }
+  if (S.s4.narr) sheet.appendChild(el('div', 'note', S.s4.narr));
+  var refl = (S.s4.reflections || {})[S.s4.plant || 'coal'] || '';
+  sheet.appendChild(el('div', 'note', t('s4ReflectLabel').replace('{plant}', t(activePlant().label)) + ' ' + (refl || t('permitNone'))));
+
+  sheet.appendChild(el('div', 'tiny', t('permitEndMarker')));
+}
+
+/* SVG to raster data URL, so the PDF embeds a picture in every browser.
+   A cloned SVG carries no stylesheet, so computed styles are copied onto the
+   clone node by node before serialising. Without this every class-painted
+   shape comes out black. */
+function snapshotSvg(svgNode, cb, opts) {
+  opts = opts || {};
+  var outW = opts.width || 900;
+  try {
+    var clone = svgNode.cloneNode(true);
+    var srcNodes = svgNode.querySelectorAll('*');
+    var dstNodes = clone.querySelectorAll('*');
+    for (var i = 0; i < srcNodes.length && i < dstNodes.length; i++) {
+      var cs = window.getComputedStyle(srcNodes[i]);
+      var target = dstNodes[i];
+      ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap',
+       'font-size', 'font-weight', 'font-family', 'text-anchor', 'opacity'].forEach(function (prop) {
+        var v = cs.getPropertyValue(prop);
+        if (v && v !== 'none' && v !== 'normal' && v !== 'auto') {
+          if (prop === 'opacity' && (v === '1' || v === '')) return;
+          target.setAttribute(prop, v);
+        } else if (prop === 'fill' || prop === 'stroke') {
+          if (v) target.setAttribute(prop, v);
+        }
+      });
+    }
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    var vb = (svgNode.getAttribute('viewBox') || '0 0 700 400').split(/\s+/).map(Number);
+    var ratio = vb.length === 4 && vb[2] ? vb[3] / vb[2] : 0.5;
+    var outH = Math.round(outW * ratio);
+    clone.setAttribute('width', String(outW));
+    clone.setAttribute('height', String(outH));
+    var data = new XMLSerializer().serializeToString(clone);
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var cv = document.createElement('canvas');
+        cv.width = outW;
+        cv.height = outH;
+        var cx = cv.getContext('2d');
+        cx.fillStyle = '#ffffff';
+        cx.fillRect(0, 0, cv.width, cv.height);
+        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        cb(cv.toDataURL('image/jpeg', 0.82));
+      } catch (e) { cb(null); }
+    };
+    img.onerror = function () { cb(null); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data);
+  } catch (e) { cb(null); }
+}
+
+function captureAllSnapshots() {
+  return new Promise(function (resolve) {
+    var jobs = [];
+    jobs.push(new Promise(function (res) {
+      snapshotSvg($('s1Canvas'), function (u) { S.s1.ridModelUrl = u; res(); });
+    }));
+    jobs.push(new Promise(function (res) {
+      snapshotSvg($('s2Canvas'), function (u) { S.s2.snapshotUrl = u; res(); });
+    }));
+    jobs.push(new Promise(function (res) {
+      snapshotSvg($('s4Canvas'), function (u) { S.s4.chainImgUrl = u; res(); });
+    }));
+    Promise.all(jobs).then(function () { resolve(); });
+  });
+}
+
+function exportPermitPdf() {
+  var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDFCtor) { showPdfPanel(null, '', true); return; }
+
+  var doc;
+  try {
+    doc = new jsPDFCtor({ unit: 'pt', format: 'letter' });
+  } catch (e) {
+    showPdfPanel(null, '', true);
+    return;
+  }
+  var M = 48, W = 612, CW = W - M * 2, BOTTOM = 792 - M, y = M;
+  var header = t('permitTitle');
+
+  function newPage() {
+    doc.addPage();
+    y = M;
+  }
+  function ensure(h) { if (y + h > BOTTOM) newPage(); }
+  function printLines(lines, x, lineH) {
+    for (var i = 0; i < lines.length; i++) {
+      if (y + lineH > BOTTOM) newPage();
+      doc.text(lines[i], x, y);
+      y += lineH;
+    }
+  }
+  function heading(text, size, color) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(size);
+    doc.setTextColor(color[0], color[1], color[2]);
+    var lines = doc.splitTextToSize(text, CW);
+    printLines(lines, M, size + 3);
+    y += 5;
+  }
+  function label(text) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(110, 110, 110);
+    printLines(doc.splitTextToSize(text, CW), M, 13);
+    y += 1;
+  }
+  function body(text, indent) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(26, 26, 26);
+    var x = M + (indent || 0);
+    printLines(doc.splitTextToSize(text, CW - (indent || 0)), x, 13.5);
+    y += 6;
+  }
+  function rule() {
+    ensure(8);
+    doc.setDrawColor(200, 198, 190);
+    doc.setLineWidth(0.8);
+    doc.line(M, y, W - M, y);
+    y += 11;
+  }
+  function imgBlock(url, caption, aspect) {
+    label(caption);
+    if (!url) { body(t('permitNone'), 10); return; }
+    var w = Math.min(400, CW - 20);
+    var h = w * (aspect || 0.5);
+    ensure(h + 14);
+    try { doc.addImage(url, 'JPEG', M + 10, y, w, h); }
+    catch (e) {
+      try { console.error('permit pdf: image embed failed', e); } catch (e2) {}
+      body(t('permitNone'), 10);
+      return;
+    }
+    y += h + 10;
+  }
+  /* One page per stage: each section opens a fresh page, so a short section
+     never leaves a half-empty sheet and the page count is predictable.
+     The first section shares page 1 with the header block. */
+  var sectionCount = 0;
+  function startSection() {
+    sectionCount++;
+    if (sectionCount > 1) newPage();
+  }
+
+  /* header block */
+  doc.setFillColor(26, 26, 26);
+  doc.rect(0, 0, W, 96, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(244, 243, 239);
+  doc.text(header, M, 44);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text(t('appTitle'), M, 66);
+  doc.setTextColor(255, 77, 38);
+  doc.setFont('helvetica', 'bold');
+  doc.text(t('teacherName'), W - M, 44, { align: 'right' });
+  doc.setTextColor(26, 26, 26);
+  y = 126;
+
+  body(t('permitStudent') + ': ' + (studentName() || t('permitNoName')));
+  body(t('permitClass') + ': ' + (S.student.cls || '') + '     ' + t('permitDate') + ': ' + todayStr() + '     ' + t('permitPermitId') + ': ' + permitNumber());
+  rule();
+
+  /* page 1: One Source, Many Rooms */
+  startSection();
+  heading(t('permitStage2'), 14, [255, 77, 38]);
+  imgBlock(S.s2.snapshotUrl, t('permitWiring'), 400 / 760);
+  body(t('permitFlipCount') + ': ' + S.s2.flips, 10);
+  if (S.s2.narr) body(S.s2.narr, 10);
+  label(t('permitFailure'));
+  body(S.s2.why || t('permitNone'), 10);
+
+  /* page 2: the plant the student built and the chain they assembled */
+  startSection();
+  heading(t('permitStage4'), 14, [255, 77, 38]);
+  label(t('permitPlant'));
+  body(t(activePlant().label), 11);
+  label(t('permitChain'));
+  s4ChainNodes.forEach(function (k, i) {
+    ensure(18);
+    var part = S.s4.chain[k] ? t(S.s4.chain[k]) : t('permitNone');
+    body((i + 1) + '.  ' + part, 10);
+  });
+  imgBlock(S.s4.chainImgUrl, t('permitChainImg'), 400 / 860);
+  if (S.s4.narr) body(S.s4.narr, 10);
+  label(t('s4ReflectLabel').replace('{plant}', t(activePlant().label)));
+  body(((S.s4.reflections || {})[S.s4.plant || 'coal'] || t('permitNone')), 10);
+
+  /* Tail marker. Drawn at a fixed distance above the footer on the LAST page,
+     and forced onto its own page when the content above it runs long, so the
+     marker is always present in a complete document. */
+  if (y > 792 - 92) newPage();
+  var tailY = 792 - 62;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(26, 26, 26);
+  doc.text(t('permitEndMarker'), M, tailY);
+  doc.setDrawColor(26, 26, 26);
+  doc.setLineWidth(1);
+  doc.line(M, tailY + 8, W - M, tailY + 8);
+
+  /* footers */
+  var total = doc.getNumberOfPages();
+  for (var pg = 1; pg <= total; pg++) {
+    doc.setPage(pg);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(110, 110, 110);
+    doc.text(t('permitTitle') + '  |  ' + (studentName() || t('permitNoName')) + '  |  ' + pg + ' / ' + total, W / 2, 792 - 26, { align: 'center' });
+  }
+
+  var safeName = (studentName() || 'student').replace(/[^\w \-]+/g, '').replace(/\s+/g, '-').slice(0, 40) || 'student';
+  var fname = 'Permit-' + safeName + '-Outage-At-The-Waterfront.pdf';
+
+  var blob;
+  try {
+    blob = doc.output('blob');
+  } catch (e) {
+    showPdfPanel(null, fname, true);
+    return;
+  }
+  var url;
+  try { url = URL.createObjectURL(blob); } catch (e) { url = null; }
+  if (!url) { showPdfPanel(null, fname, true); return; }
+
+  /* Auto-download attempt, DOM-attached anchor. Some browsers block this
+     silently, which is why the panel below always appears. */
+  var clicked = false;
+  try {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    clicked = true;
+  } catch (e) { clicked = false; }
+
+  showPdfPanel(url, fname, !clicked);
+}
+
+function showPdfPanel(url, fname, failed) {
+  var panel = $('pdfPanel');
+  var msg = $('pdfPanelMsg');
+  var dl = $('pdfPanelDl');
+  var tab = $('pdfPanelTab');
+
+  if (window.__pdfPanelUrl) {
+    try { URL.revokeObjectURL(window.__pdfPanelUrl); } catch (e) {}
+    window.__pdfPanelUrl = null;
+  }
+
+  if (!url) {
+    msg.textContent = t('permitExportFail');
+    msg.className = 'pp-msg pp-err';
+    dl.style.display = 'none';
+    tab.style.display = 'none';
+    panel.classList.add('show');
+    return;
+  }
+
+  msg.className = 'pp-msg';
+  msg.textContent = failed ? t('permitExportFail') : t('permitExportTry');
+  dl.style.display = '';
+  tab.style.display = '';
+  dl.href = url;
+  dl.setAttribute('download', fname);
+  dl.textContent = t('permitDownload');
+  tab.href = url;
+  tab.textContent = t('permitOpenTab');
+  window.__pdfPanelUrl = url;
+  window.__pdfPanelName = fname;
+  window.__pdfPanelFailed = failed;
+  panel.classList.add('show');
+}
+
+/* Re-render the panel's copy on a language switch, keeping the same blob so
+   a student does not have to export again to change language. */
+function retranslatePdfPanel() {
+  var dl = $('pdfPanelDl');
+  var tab = $('pdfPanelTab');
+  dl.textContent = t('permitDownload');
+  tab.textContent = t('permitOpenTab');
+  $('pdfPanelClose').setAttribute('aria-label', t('permitCloseAria'));
+  if (window.__pdfPanelUrl) {
+    $('pdfPanelMsg').textContent = window.__pdfPanelFailed ? t('permitExportFail') : t('permitExportTry');
+  } else if ($('pdfPanel').classList.contains('show')) {
+    $('pdfPanelMsg').textContent = t('permitExportFail');
+  }
+}
+
+/* -------------------------------------------------------------------------
+   14. REFERENCE DRAWER
+   ------------------------------------------------------------------------- */
+function openDrawer(anchorStage) {
+  var body = $('drawerBody');
+  clearNode(body);
+  body.appendChild(el('div', 'tiny', t('s1Nav') === '' ? '' : ''));
+
+  var sections = [
+    /* Only the two surviving stages. The drawer used to explain five. */
+    { id: 'p2', head: 'drawerP2', items: ['drawerP2a', 'drawerP2b', 'drawerP2c', 'drawerP2d'], stage: 1 },
+    { id: 'p4', head: 'drawerP4', items: ['drawerP4b'], stage: 2 }
+  ];
+  /* the stage the student is on rises to the top, the rest stay available */
+  sections.sort(function (a, b) {
+    if (a.stage === anchorStage) return -1;
+    if (b.stage === anchorStage) return 1;
+    return a.stage - b.stage;
+  });
+  sections.forEach(function (s) {
+    var blk = el('div', 'blk');
+    blk.appendChild(el('b', null, t(s.head)));
+    var ul = el('ul');
+    s.items.forEach(function (k) { ul.appendChild(el('li', null, t(k))); });
+    blk.appendChild(ul);
+    body.appendChild(blk);
+  });
+
+  var drawer = $('drawer');
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+}
+function closeDrawer() {
+  var drawer = $('drawer');
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+}
+
+/* -------------------------------------------------------------------------
+   15. WIRING
+   ------------------------------------------------------------------------- */
+function wireEvents() {
+  /* language */
+  $('langEn').addEventListener('click', function () { switchLang('en'); });
+  $('langEs').addEventListener('click', function () { switchLang('es'); });
+
+  /* student */
+  var nameInput = $('nameInput');
+  nameInput.value = S.student.name || '';
+  nameInput.addEventListener('input', function () {
+    S.student.name = nameInput.value;
+    saveAll();
+  });
+  var clsSel = $('classSel');
+  if (S.student.cls) clsSel.value = S.student.cls;
+  clsSel.addEventListener('change', function () {
+    S.student.cls = clsSel.value;
+    saveAll();
+  });
+
+  /* permit */
+  $('permitBtn').addEventListener('click', function () { openPermit(); });
+  $('permitClose').addEventListener('click', function () {
+    $('permitOverlay').classList.remove('open');
+  });
+  $('permitOverlay').addEventListener('click', function (ev) {
+    if (ev.target === $('permitOverlay')) $('permitOverlay').classList.remove('open');
+  });
+  $('permitExport').addEventListener('click', function () {
+    var btn = this;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    captureAllSnapshots().then(function () {
+      buildPermitSheet();
+      exportPermitPdf();
+      /* Close the sheet so the result panel is not hidden behind it and the
+         nav stays reachable. The panel carries the real download links. */
+      $('permitOverlay').classList.remove('open');
+    }).catch(function (e) {
+      try { console.error('permit export failed', e); } catch (e2) {}
+      showPdfPanel(null, '', true);
+      $('permitOverlay').classList.remove('open');
+    }).finally(function () { btn.disabled = false; });
+  });
+  $('permitPrint').addEventListener('click', function () {
+    buildPermitSheet();
+    try { window.print(); } catch (e) { toast(t('permitExportFail')); }
+  });
+  /* Escape always closes the permit sheet and the reference drawer, so a
+     student is never trapped behind an overlay. */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      $('permitOverlay').classList.remove('open');
+      closeDrawer();
+    }
+  });
+  $('pdfPanelClose').addEventListener('click', function () {
+    $('pdfPanel').classList.remove('show');
+    if (window.__pdfPanelUrl) {
+      try { URL.revokeObjectURL(window.__pdfPanelUrl); } catch (e) {}
+      window.__pdfPanelUrl = null;
+    }
+  });
+
+  /* drawer */
+  $('drawerClose').addEventListener('click', closeDrawer);
+  /* Wire-tool selector. These listeners were lost when the stage 3 block was
+     cut, which left 'hot' permanently selected and made neutral, ground and
+     erase dead. */
+  [['s2CurHot', 'hot'], ['s2CurNeu', 'neutral'], ['s2CurGnd', 'ground'], ['s2CurErase', 'erase']].forEach(function (pair) {
+    var el = $(pair[0]);
+    if (!el) return;
+    el.addEventListener('click', function () {
+      s2WireTool = pair[1];
+      s2FirstTerm = null;
+      renderStage2();
+    });
+  });
+  var clr = $('s2Clear');
+  if (clr) clr.addEventListener('click', function () {
+    S.s2.edges = []; S.s2.narr = ''; S.s2.committed = false; S.s2.ok = false;
+    S.s2.flips = 0; S.s2.plugState = null; S.s2.breakerPopped = false;
+    s2FirstTerm = null;
+    renderStage2(); drawNav(); refreshPermitBtn(); saveAll();
+  });
+  $('s2Flip').addEventListener('click', flipMainSwitch);
+  $('s2Why').addEventListener('input', function () { S.s2.why = this.value; saveAll(); });
+
+  /* stage 3 */
+  $('s4ClearChain').addEventListener('click', function () {
+    S.s4.chain = {}; S.s4.chainCommitted = false; S.s4.narr = ''; s4DragNode = null;
+    renderStage4Chain(); drawNav(); refreshPermitBtn(); saveAll();
+  });
+  $('s4Reflect').addEventListener('input', function () {
+    S.s4.reflections = S.s4.reflections || {};
+    S.s4.reflections[S.s4.plant || 'coal'] = this.value;
+    S.s4.reflect = this.value;
+    drawNav(); refreshPermitBtn(); saveAll();
+  });
+  $('s4RunChain').addEventListener('click', function () {
+      runChain();
+    toast(t('s4ChainSaved'));
+  });
+
+  window.addEventListener('beforeunload', saveAll);
+}
+
+function switchLang(lang) {
+  LANG = lang;
+  applyLang();
+  retranslatePdfPanel();
+  $('permitSheet') && buildPermitSheet();
+  if ($('permitOverlay').classList.contains('open')) buildPermitSheet();
+  saveAll();
+}
+
+function openPermit() {
+  /* Always opens. Blank parts print as "(not filled in)". */
+  $('permitOverlay').classList.add('open');
+  buildPermitSheet();
+}
+
+/* -------------------------------------------------------------------------
+   16. BOOT
+   ------------------------------------------------------------------------- */
+function boot() {
+  loadAll();
+  if (!S.student.cls) S.student.cls = 'Period 1';
+  wireEvents();
+  applyLang();
+  goStage(1);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+<script type="application/json" id="heroData">{"src": "data:image/webp;base64,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", "en": "A waterfront community center at dusk during a winter power outage. The building windows are dark.", "es": "Un centro comunitario junto al puerto al atardecer durante un apag\u00f3n de invierno. Las ventanas del edificio est\u00e1n a oscuras."}</script>
+<script>
+(function(){
+  var el = document.getElementById('heroData');
+  if (!el) return;
+  var d;
+  try { d = JSON.parse(el.textContent); } catch (e) { return; }
+  var img = document.getElementById('heroImg');
+  if (!img) return;
+  /* assign lazily so first paint is not blocked by a large base64 string */
+  var setAlt = function(){
+    var lang = (document.documentElement.lang === 'es') ? 'es' : 'en';
+    img.alt = (lang === 'es') ? d.es : d.en;
+  };
+  img.src = d.src;
+  img.addEventListener('load', setAlt);
+  setAlt();
+  /* keep alt text in step with the language toggle */
+  new MutationObserver(setAlt).observe(document.documentElement, {attributes:true, attributeFilter:['lang']});
+})();
+</script>
+</body>
+
+
+
+
+
+</html>

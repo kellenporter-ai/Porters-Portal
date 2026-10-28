@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T21:33:14.848Z",
+  "generatedAt": "2026-10-28T12:55:18.072Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -29,7 +29,10 @@
     "/evidence-types": "/evidence-types/index.html",
     "/evidence-types/": "/evidence-types/index.html",
     "/ap1-q1-review": "/ap1-q1-review/index.html",
-    "/ap1-q1-review/": "/ap1-q1-review/index.html"
+    "/ap1-q1-review/": "/ap1-q1-review/index.html",
+    "/outage-waterfront": "/outage-waterfront.html",
+    "/cart-04": "/cart-04-corrupted-lab.html",
+    "/case-file-0829": "/case-file-0829.html"
   },
   "dirs": [
     "/ap1-q1-review",

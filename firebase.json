@@ -212,6 +212,18 @@
         "destination": "/ap1-q1-review/index.html"
       },
       {
+        "source": "/outage-waterfront",
+        "destination": "/outage-waterfront.html"
+      },
+      {
+        "source": "/cart-04",
+        "destination": "/cart-04-corrupted-lab.html"
+      },
+      {
+        "source": "/case-file-0829",
+        "destination": "/case-file-0829.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

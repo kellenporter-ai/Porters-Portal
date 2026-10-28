@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T21:33:14.808Z",
+  "generatedAt": "2026-10-28T12:55:18.033Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -25,6 +25,16 @@
       "path": "/break-in-evidence-rubric.html",
       "fingerprint": "/break-in-evidence-rubric.html",
       "sizeBytes": 57219
+    },
+    {
+      "path": "/cart-04-corrupted-lab.html",
+      "fingerprint": "/cart-04-corrupted-lab.html",
+      "sizeBytes": 236469
+    },
+    {
+      "path": "/case-file-0829.html",
+      "fingerprint": "/case-file-0829.html",
+      "sizeBytes": 207565
     },
     {
       "path": "/circuit-diagram-builder.html",
@@ -135,6 +145,11 @@
       "path": "/openscied-hub.html",
       "fingerprint": "/openscied-hub.html",
       "sizeBytes": 18056
+    },
+    {
+      "path": "/outage-waterfront.html",
+      "fingerprint": "/outage-waterfront.html",
+      "sizeBytes": 159080
     },
     {
       "path": "/power-line-lab.html",
