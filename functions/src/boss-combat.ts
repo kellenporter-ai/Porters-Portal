@@ -174,6 +174,35 @@ export const SKILL_NODE_IDS: Record<SkillIdentityId, readonly string[]> = {
   SCHOLAR: ['sch_1', 'sch_2', 'sch_3', 'sch_4', 'sch_5', 'sch_6'],
 };
 
+/**
+ * Skill point cost per node. Every specialization uses the same ladder
+ * (1,1,2,2,3,5 = 14 points to max a tree), mirrored from SKILL_NODES_V2 in
+ * lib/specializations.ts. Needed server-side so a respec can refund exactly what
+ * was spent: skillPoints is a stored counter, not a derived value.
+ */
+export const SKILL_NODE_COSTS: Record<string, number> = Object.fromEntries(
+  Object.values(SKILL_NODE_IDS)
+    .flat()
+    .map((id) => {
+      const tier = Number(id.split('_')[1]);
+      const ladder: Record<number, number> = { 1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 5 };
+      return [id, ladder[tier] ?? 0];
+    }),
+);
+
+/** Total points a student has invested in their currently unlocked nodes. */
+export function sumSpentSkillPoints(unlockedSkills: readonly string[] | undefined): number {
+  if (!Array.isArray(unlockedSkills)) return 0;
+  const seen = new Set<string>();
+  let total = 0;
+  for (const id of unlockedSkills) {
+    if (typeof id !== 'string' || seen.has(id)) continue; // duplicates never double-refund
+    seen.add(id);
+    total += SKILL_NODE_COSTS[id] ?? 0; // unknown ids refund nothing
+  }
+  return total;
+}
+
 function isSkillIdentity(value: unknown): value is SkillIdentityId {
   return typeof value === 'string' &&
     Object.prototype.hasOwnProperty.call(SKILL_NODE_IDS, value);

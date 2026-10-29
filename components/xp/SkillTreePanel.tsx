@@ -338,7 +338,9 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                 )}
               </div>
               <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1 line-clamp-2">{spec.description}</p>
-              {isSelected && (
+              {/* Show the profile on the hovered/selected card AND on the current
+                  specialization, since a locked choice can never be selected. */}
+              {(isSelected || specialization === key) && (
                 <div className="mt-1.5 space-y-0.5">
                   <p className="text-[10.5px] text-[var(--text-secondary)]">
                     <span className="font-bold">{t('skills.triggerLabel')}</span> {SPEC_PROFILES[key].trigger}
@@ -409,6 +411,24 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
             {interpolate('skill.rankHeader', { rank: skillRank })}
           </h5>
           <p className="text-[11.5px] text-[var(--text-secondary)]">{t(identity.triggerKey)}</p>
+          {/* Strengths and weaknesses belong on the header card. The spec grid
+              only shows profile text on the currently selected (usually locked)
+              card, so it was effectively unreachable once a spec was chosen. */}
+          <div className="rounded-md bg-[var(--surface-raised)] p-2 space-y-1">
+            <p className="text-[11px] text-[var(--text-secondary)]">
+              <span className="font-bold">{t('skills.triggerLabel')}</span>{' '}
+              {SPEC_PROFILES[activeSpec].trigger}
+            </p>
+            <p className="text-[11px] text-green-600 dark:text-green-400">
+              <span className="font-bold">+ </span>{SPEC_PROFILES[activeSpec].strength}
+            </p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400">
+              <span className="font-bold">- </span>{SPEC_PROFILES[activeSpec].weakness}
+            </p>
+            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide">
+              {t(`skills.diff.${SPEC_PROFILES[activeSpec].difficulty}`)}
+            </p>
+          </div>
           {skillRank === 0 ? (
             <p className="text-[11.5px] text-[var(--text-tertiary)]">{t('skill.rankZero')}</p>
           ) : (

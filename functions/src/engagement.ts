@@ -22,6 +22,7 @@ import {
   FLUX_COSTS,
   pick,
 } from "./gamification-items";
+import { sumSpentSkillPoints } from "./boss-combat";
 import { LootItem } from "./core";
 import { checkAndUnlockAchievements } from "./achievements";
 
@@ -1666,17 +1667,23 @@ export const respecSpecialization = onCall({ memory: "256MiB", timeoutSeconds: 6
       return { error: "INSUFFICIENT_FLUX" as const, cost: RESPEC_COST, balance };
     }
 
-    // skillPoints untouched — points are derived, so clearing unlockedSkills refunds them naturally.
+    // Refund every point spent on nodes before clearing them. skillPoints is a
+    // stored counter decremented on each unlock, NOT derived, so clearing
+    // unlockedSkills alone silently destroyed the player's investment.
+    const refund = sumSpentSkillPoints(gam.unlockedSkills);
+
     transaction.update(userRef, {
       "gamification.currency": balance - RESPEC_COST,
       "gamification.unlockedSkills": [],
       "gamification.specialization": specializationId,
+      "gamification.skillPoints": (gam.skillPoints || 0) + refund,
     });
 
     return {
       success: true as const,
       cost: RESPEC_COST,
       remainingFlux: balance - RESPEC_COST,
+      refundedSkillPoints: refund,
       specialization: specializationId,
     };
   });
