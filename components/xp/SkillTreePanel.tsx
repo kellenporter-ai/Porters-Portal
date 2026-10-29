@@ -19,7 +19,7 @@ import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../ConfirmDialog';
 import { useT, useInterpolate } from '../../lib/i18n';
-import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles } from 'lucide-react';
+import { Lock, CheckCircle2, Zap, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
 
 // ========================================
 // COMPONENT
@@ -31,6 +31,20 @@ interface SkillTreePanelProps {
   unlockedSkills: string[];
   level?: number;
   onStartTrial?: (specId: SpecializationId) => void;
+  /** Respec callable. Returns the server payload (soft errors, never throws). */
+  onRespec?: (specId: SpecializationId) => Promise<{
+    success?: boolean;
+    cost?: number;
+    remainingFlux?: number;
+    specialization?: string;
+    error?: 'INSUFFICIENT_FLUX' | 'NO_SPECIALIZATION' | 'SAME_SPECIALIZATION' | 'FIGHT_IN_PROGRESS';
+    balance?: number;
+    message?: string;
+  } | void>;
+  /** Flux cost of a respec, mirrored from the server constant. */
+  respecCost?: number;
+  /** Current Flux balance, for the "can I afford this" hint. */
+  fluxBalance?: number;
 }
 
 const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
@@ -39,6 +53,9 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
   unlockedSkills,
   level = 1,
   onStartTrial,
+  onRespec,
+  respecCost = 250,
+  fluxBalance = 0,
 }) => {
   const [selectedSpec, setSelectedSpec] = useState<SpecializationId | null>(
     (specialization && SKILL_TREES_V2[specialization]) ? specialization : null
@@ -99,6 +116,52 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
     onStartTrial(specId);
   };
 
+  const [respecTarget, setRespecTarget] = useState<SpecializationId | null>(null);
+  const [respecBusy, setRespecBusy] = useState(false);
+
+  const handleRespec = async (specId: SpecializationId) => {
+    if (respecBusy || !onRespec) return;
+    if (specId === specialization) {
+      toast.info(t('skills.respecSame'));
+      return;
+    }
+    const specName = SKILL_TREES_V2[specId].name;
+    const confirmed = await confirm({
+      title: t('skills.respecTitle'),
+      message: interpolate('skills.respecMsg', { cost: respecCost, spec: specName }),
+      confirmLabel: interpolate('skills.respecConfirm', { cost: respecCost }),
+      cancelLabel: t('skills.goBack'),
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+
+    setRespecBusy(true);
+    try {
+      const result = await onRespec(specId);
+      if (result?.error) {
+        if (result.error === 'FIGHT_IN_PROGRESS') {
+          toast.error(t('skills.respecFight'));
+        } else if (result.error === 'INSUFFICIENT_FLUX') {
+          toast.error(interpolate('skills.respecShort', { shortfall: (result.cost || respecCost) - (result.balance || 0) }));
+        } else if (result.error === 'SAME_SPECIALIZATION') {
+          toast.info(t('skills.respecSame'));
+        } else {
+          toast.error(t('skills.respecFailed'));
+        }
+        return;
+      }
+      setSelectedSpec(specId);
+      setRespecTarget(null);
+      if (result?.success) {
+        toast.success(interpolate('skills.respecDone', { spec: specName }));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('skills.respecFailed'));
+    } finally {
+      setRespecBusy(false);
+    }
+  };
+
   const specDef = SPECIALIZATIONS[activeSpec];
   const isLocked = hasChosen && specialization !== activeSpec;
   const canChoose = !hasChosen && level >= specDef.unlockLevel;
@@ -129,14 +192,16 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
         </div>
       </div>
 
-      {/* Permanence warning banner */}
+      {/* Permanence warning banner — respec now exists, so the copy must not
+          claim the choice is permanent. */}
       {!hasChosen && (
         <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-amber-300">Choose Carefully</p>
             <p className="text-[11px] text-amber-600 dark:text-amber-400/70 mt-0.5">
-              Selecting a specialization is <span className="font-bold text-amber-300">permanent</span>. Once you unlock your first skill, you will not be able to change your specialization. Browse all eight trees before deciding.
+              Your first choice is free. If you change your mind later you can respec for{' '}
+              <span className="font-bold text-amber-300">{respecCost} Flux</span>, and you keep every skill point you earned.
             </p>
           </div>
         </div>
@@ -144,14 +209,69 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
 
       {/* Locked specialization indicator */}
       {hasChosen && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
-          <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-          <span className="text-xs text-[var(--text-secondary)]">
-            Specialization locked:{" "}
-            <span className="font-bold text-[var(--text-primary)]">
-              {SKILL_TREES_V2[specialization!].icon} {SKILL_TREES_V2[specialization!].name}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
+            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-xs text-[var(--text-secondary)]">
+              Current specialization:{" "}
+              <span className="font-bold text-[var(--text-primary)]">
+                {SKILL_TREES_V2[specialization!].icon} {SKILL_TREES_V2[specialization!].name}
+              </span>
             </span>
-          </span>
+          </div>
+
+          {/* Respec — only rendered when the caller wired the callable */}
+          {onRespec && (
+            <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl">
+              <RefreshCw className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+              <span className="text-xs text-[var(--text-secondary)] flex-1 min-w-[12rem]">
+                {interpolate('skills.respecHint', { cost: respecCost })}
+                {fluxBalance < respecCost && (
+                  <span className="text-red-600 dark:text-red-400 font-bold ml-1">
+                    {interpolate('skills.respecShort', { shortfall: respecCost - fluxBalance })}
+                  </span>
+                )}
+              </span>
+              <button
+                type="button"
+                disabled={respecBusy}
+                onClick={() => setRespecTarget(respecTarget ? null : activeSpec)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-600/20 border border-cyan-500/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-600/30 transition disabled:opacity-50"
+              >
+                {t('skills.respecOpen')}
+              </button>
+            </div>
+          )}
+
+          {respecTarget && onRespec && (
+            <div className="p-3 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-2">
+              <p className="text-xs font-bold text-cyan-700 dark:text-cyan-400">
+                {interpolate('skills.respecPick', { cost: respecCost })}
+              </p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                {(Object.entries(SKILL_TREES_V2) as [SpecializationId, typeof SKILL_TREES_V2[SpecializationId]][])
+                  .filter(([key]) => key !== specialization)
+                  .map(([key, spec]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={respecBusy}
+                      onClick={() => void handleRespec(key)}
+                      className="px-2 py-2 rounded-lg text-[11px] font-bold bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] hover:border-cyan-500/50 transition disabled:opacity-50"
+                    >
+                      {spec.icon} {spec.name}
+                    </button>
+                  ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setRespecTarget(null)}
+                className="text-[11px] text-[var(--text-muted)] underline"
+              >
+                {t('skills.goBack')}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

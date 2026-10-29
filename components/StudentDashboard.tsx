@@ -638,6 +638,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                                toast.error(err instanceof Error ? err.message : 'Failed to start trial');
                              }
                            }}
+                           onRespec={async (specId) => {
+                             // Returns the server payload; soft errors are rendered by the panel.
+                             return await dataService.respecSpecialization(specId);
+                           }}
+                           respecCost={250}
+                           fluxBalance={user.gamification?.currency || 0}
                        />
                        </React.Suspense>
                      </FeatureErrorBoundary>
