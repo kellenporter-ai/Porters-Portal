@@ -23,6 +23,7 @@ export const BOSS_HP_EXPONENT = 0.80;
 export const HIT_CEILING_FRACTION = 0.45;
 export const BOSS_ATTACK_BASE = 42;
 export const BOSS_ATTACK_EXPONENT = 0.72;
+export const MIN_MISS_DAMAGE = 22;
 
 export const DIFFICULTY_MOD: Record<'EASY' | 'MEDIUM' | 'HARD', number> = {
   EASY: 0.85,
@@ -91,6 +92,12 @@ export interface HitInput {
   critRoll: number;
   /** This student's boss instance max. */
   bossMaxHp: number;
+  /** Skill-node bonus to crit chance; the combined chance is capped at 0.65. */
+  critBonus?: number;
+  /** Skill-node override that forces a crit independently of the roll. */
+  guaranteedCrit?: boolean;
+  /** Skill-node multiplier, clamped to 1..1.30 and applied before the ceiling. */
+  damageMultiplier?: number;
 }
 
 export interface HitResult {
@@ -116,10 +123,14 @@ export function computeCorrectHit(input: HitInput): HitResult {
     100 * ppi * DIFFICULTY_MOD[input.difficulty] * (0.95 + 0.1 * rand) * streakMultiplier
   );
 
-  const isCrit = critRoll < combat.critChance;
+  const critChance = Math.min(combat.critChance + (input.critBonus ?? 0), 0.65);
+  const isCrit = input.guaranteedCrit === true || critRoll < critChance;
   if (isCrit) {
     preCeilingDamage = Math.round(preCeilingDamage * combat.critMultiplier);
   }
+
+  const damageMultiplier = Math.min(Math.max(input.damageMultiplier ?? 1, 1), 1.30);
+  preCeilingDamage = Math.round(preCeilingDamage * damageMultiplier);
 
   const ceiling = Math.max(1, Math.floor(input.bossMaxHp * HIT_CEILING_FRACTION));
   const damage = Math.max(1, Math.min(preCeilingDamage, ceiling));
@@ -648,4 +659,277 @@ export function evaluateSkillNodes(input: SkillNodeEvalInput): SkillNodeEvalResu
     input.playerMaxHp - input.playerHp
   ));
   return result;
+}
+
+export interface BossTurnState {
+  bossHp: number;
+  bossMaxHp: number;
+  playerHp: number;
+  playerMaxHp: number;
+  streak: number;
+  healsUsedThisAttempt: number;
+  attemptDamageReduction: number;
+  lethalSaveUsed: boolean;
+  shieldHp: number;
+  isFirstOfAttempt: boolean;
+  isFirstMissOfAttempt: boolean;
+}
+
+export interface BossTurnAnswer {
+  correct: boolean;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  isRevision: boolean;
+  rand: number;
+  critRoll: number;
+  gearScore: number;
+  stats: PlayerStats;
+}
+
+export interface BossTurnResult {
+  bossHp: number;
+  playerHp: number;
+  streak: number;
+  healsUsedThisAttempt: number;
+  attemptDamageReduction: number;
+  lethalSaveUsed: boolean;
+  shieldHp: number;
+  damageDealt: number;
+  damageTaken: number;
+  healApplied: number;
+  knockback: boolean;
+  knockout: boolean;
+  victory: boolean;
+  executed: boolean;
+  lethalSaveConsumed: boolean;
+  isCrit: boolean;
+  appliedKeys: string[];
+}
+
+function unchangedBossTurn(state: BossTurnState | null | undefined): BossTurnResult {
+  return {
+    bossHp: state?.bossHp ?? 0,
+    playerHp: state?.playerHp ?? 0,
+    streak: state?.streak ?? 0,
+    healsUsedThisAttempt: state?.healsUsedThisAttempt ?? 0,
+    attemptDamageReduction: state?.attemptDamageReduction ?? 0,
+    lethalSaveUsed: state?.lethalSaveUsed ?? false,
+    shieldHp: state?.shieldHp ?? 0,
+    damageDealt: 0,
+    damageTaken: 0,
+    healApplied: 0,
+    knockback: false,
+    knockout: false,
+    victory: false,
+    executed: false,
+    lethalSaveConsumed: false,
+    isCrit: false,
+    appliedKeys: [],
+  };
+}
+
+function validStats(stats: PlayerStats): boolean {
+  return typeof stats === 'object' && stats !== null &&
+    isNonNegativeFinite(stats.tech) &&
+    isNonNegativeFinite(stats.focus) &&
+    isNonNegativeFinite(stats.analysis) &&
+    isNonNegativeFinite(stats.charisma);
+}
+
+function validBossTurnInput(
+  identity: SkillIdentityId | null,
+  ownedNodeIds: readonly string[],
+  state: BossTurnState,
+  answer: BossTurnAnswer,
+): boolean {
+  return (identity === null || isSkillIdentity(identity)) &&
+    Array.isArray(ownedNodeIds) &&
+    ownedNodeIds.every((id) => typeof id === 'string') &&
+    typeof state === 'object' && state !== null &&
+    isNonNegativeFinite(state.bossHp) &&
+    Number.isFinite(state.bossMaxHp) && state.bossMaxHp > 0 &&
+    state.bossHp <= state.bossMaxHp &&
+    isNonNegativeFinite(state.playerHp) &&
+    Number.isFinite(state.playerMaxHp) && state.playerMaxHp > 0 &&
+    state.playerHp <= state.playerMaxHp &&
+    Number.isInteger(state.streak) && state.streak >= 0 &&
+    Number.isInteger(state.healsUsedThisAttempt) &&
+    state.healsUsedThisAttempt >= 0 && state.healsUsedThisAttempt <= HEAL_CAP_PER_ATTEMPT &&
+    isNonNegativeFinite(state.attemptDamageReduction) &&
+    state.attemptDamageReduction <= SKILL_ATTEMPT_DAMAGE_REDUCTION_CAP &&
+    typeof state.lethalSaveUsed === 'boolean' &&
+    isNonNegativeFinite(state.shieldHp) && state.shieldHp <= 20 &&
+    typeof state.isFirstOfAttempt === 'boolean' &&
+    typeof state.isFirstMissOfAttempt === 'boolean' &&
+    typeof answer === 'object' && answer !== null &&
+    typeof answer.correct === 'boolean' &&
+    Object.prototype.hasOwnProperty.call(DIFFICULTY_MOD, answer.difficulty) &&
+    typeof answer.isRevision === 'boolean' &&
+    Number.isFinite(answer.rand) &&
+    Number.isFinite(answer.critRoll) &&
+    isNonNegativeFinite(answer.gearScore) &&
+    validStats(answer.stats);
+}
+
+/**
+ * Resolve one answer without I/O or RNG. Legacy attempt fields are normalized by
+ * the caller-facing wrapper below; all other malformed inputs are a no-op.
+ */
+function resolveNormalizedBossTurn(
+  identity: SkillIdentityId | null,
+  ownedNodeIds: readonly string[],
+  state: BossTurnState,
+  answer: BossTurnAnswer,
+): BossTurnResult {
+  if (!validBossTurnInput(identity, ownedNodeIds, state, answer)) {
+    return unchangedBossTurn(state);
+  }
+  if (identity !== null && !isSkillIdentity(identity)) {
+    return resolveNormalizedBossTurn(null, [], state, answer);
+  }
+
+  const priorStreak = state.streak;
+  const tentativeStreak = answer.correct ? priorStreak + 1 : 0;
+  const nodes = evaluateSkillNodes({
+    identity: identity ?? 'JUGGERNAUT',
+    ownedNodeIds: identity === null ? [] : ownedNodeIds,
+    correct: answer.correct,
+    streak: tentativeStreak,
+    priorStreak,
+    playerHp: state.playerHp,
+    playerMaxHp: state.playerMaxHp,
+    bossHp: state.bossHp,
+    bossMaxHp: state.bossMaxHp,
+    difficulty: answer.difficulty,
+    isRevision: answer.isRevision,
+    healsUsedThisAttempt: state.healsUsedThisAttempt,
+    isFirstOfAttempt: state.isFirstOfAttempt,
+    isFirstMissOfAttempt: state.isFirstMissOfAttempt,
+  });
+  const finalStreak = !answer.correct && nodes.keepStreakOnMiss
+    ? priorStreak
+    : tentativeStreak;
+
+  let nextBossHp = state.bossHp;
+  let nextPlayerHp = state.playerHp;
+  let nextAttemptDR = state.attemptDamageReduction;
+  let nextLethalSaveUsed = state.lethalSaveUsed;
+  let nextShieldHp = state.shieldHp;
+  let damageDealt = 0;
+  let damageTaken = 0;
+  let knockback = false;
+  let knockout = false;
+  let victory = false;
+  let executed = false;
+  let lethalSaveConsumed = false;
+  let isCrit = false;
+
+  if (answer.correct) {
+    const hit = computeCorrectHit({
+      gearScore: answer.gearScore,
+      stats: answer.stats,
+      difficulty: answer.difficulty,
+      streak: priorStreak,
+      rand: answer.rand,
+      critRoll: answer.critRoll,
+      bossMaxHp: state.bossMaxHp,
+      critBonus: nodes.critBonus,
+      guaranteedCrit: nodes.guaranteedCrit,
+      damageMultiplier: nodes.damageMultiplier,
+    });
+    isCrit = hit.isCrit;
+    nextBossHp = Math.max(0, state.bossHp - hit.damage);
+    damageDealt = state.bossHp - nextBossHp;
+    if (nextBossHp > 0 && nextBossHp / state.bossMaxHp <= 0.12 && nodes.execute) {
+      nextBossHp = 0;
+      executed = true;
+    }
+    victory = nextBossHp <= 0;
+  } else {
+    nextAttemptDR = Math.min(
+      SKILL_ATTEMPT_DAMAGE_REDUCTION_CAP,
+      state.attemptDamageReduction + nodes.attemptDamageReduction,
+    );
+    const combat = deriveCombatStats(answer.stats);
+    const playerEhp = computePlayerEhp({
+      maxHp: state.playerMaxHp,
+      armorPercent: combat.armorPercent,
+    });
+    const attack = computeBossAttack({ stats: answer.stats, playerEhp });
+    const combined = nodes.damageTakenMultiplier * (1 - nextAttemptDR);
+    const mitigatedDamage = Math.max(
+      MIN_MISS_DAMAGE,
+      Math.round(attack.damage * combined),
+    );
+    const absorbed = Math.min(state.shieldHp, mitigatedDamage);
+    nextShieldHp = state.shieldHp - absorbed;
+    damageTaken = mitigatedDamage - absorbed;
+    nextPlayerHp = state.playerHp - damageTaken;
+
+    if (nextPlayerHp <= 0) {
+      knockback = true;
+      if (nodes.lethalSave && !state.lethalSaveUsed) {
+        nextPlayerHp = 1;
+        nextLethalSaveUsed = true;
+        lethalSaveConsumed = true;
+      }
+    }
+    knockout = nextPlayerHp <= 0;
+    nextPlayerHp = Math.max(0, nextPlayerHp);
+  }
+
+  const healApplied = nextPlayerHp > 0
+    ? Math.max(0, Math.min(
+        nodes.heal,
+        HEAL_CAP_PER_ANSWER,
+        HEAL_CAP_PER_ATTEMPT - state.healsUsedThisAttempt,
+        state.playerMaxHp - nextPlayerHp,
+      ))
+    : 0;
+  nextPlayerHp = Math.min(state.playerMaxHp, Math.max(0, nextPlayerHp + healApplied));
+  if (answer.correct) nextShieldHp = Math.min(20, nextShieldHp + nodes.shield);
+
+  return {
+    bossHp: nextBossHp,
+    playerHp: nextPlayerHp,
+    streak: finalStreak,
+    healsUsedThisAttempt: Math.min(
+      HEAL_CAP_PER_ATTEMPT,
+      state.healsUsedThisAttempt + healApplied,
+    ),
+    attemptDamageReduction: nextAttemptDR,
+    lethalSaveUsed: nextLethalSaveUsed,
+    shieldHp: nextShieldHp,
+    damageDealt,
+    damageTaken,
+    healApplied,
+    knockback,
+    knockout,
+    victory,
+    executed,
+    lethalSaveConsumed,
+    isCrit,
+    appliedKeys: [...nodes.appliedKeys],
+  };
+}
+
+export function resolveBossTurn(
+  identity: SkillIdentityId | null,
+  ownedNodeIds: readonly string[],
+  state: BossTurnState,
+  answer: BossTurnAnswer,
+): BossTurnResult {
+  try {
+    if (typeof state !== 'object' || state === null) {
+      return unchangedBossTurn(state);
+    }
+    const normalizedState: BossTurnState = {
+      ...state,
+      attemptDamageReduction: state.attemptDamageReduction ?? 0,
+      lethalSaveUsed: state.lethalSaveUsed ?? false,
+      shieldHp: state.shieldHp ?? 0,
+    };
+    return resolveNormalizedBossTurn(identity, ownedNodeIds, normalizedState, answer);
+  } catch {
+    return unchangedBossTurn(state);
+  }
 }
