@@ -45,12 +45,9 @@ export function sanitizeTopicKey(raw: unknown): string | null {
 
 import {
   computeBossMaxHp,
-  computeCorrectHit,
-  computeBossAttack,
-  computePlayerEhp,
-  HIT_CEILING_FRACTION,
   evaluateSkillIdentity,
   computeSkillRank,
+  resolveBossTurn,
   SKILL_IDENTITY_VERSION,
   type SkillIdentityId,
 } from "./boss-combat.js";
@@ -99,6 +96,30 @@ export function resolveIdentityModifiers(args: IdentityModifierInput) {
     rank: result.rank,
     identity: result.identity,
   };
+}
+
+export interface AttemptFlags {
+  isFirstOfAttempt: boolean;
+  isFirstMissOfAttempt: boolean;
+}
+
+/**
+ * Derive per-attempt first-answer / first-miss flags from the presentations
+ * array. Never a stored boolean: this stays correct across reloads and partial
+ * state (the current presentation is excluded because it is still pending).
+ */
+export function deriveAttemptFlags(
+  presentations: readonly BossPresentation[] | undefined | null,
+  currentPresentationId: string,
+  isCorrect: boolean,
+): AttemptFlags {
+  const priorAnswered = (presentations || []).filter(
+    (p) => p.status === "answered" && p.presentationId !== currentPresentationId,
+  );
+  const isFirstOfAttempt = priorAnswered.length === 0;
+  const isFirstMissOfAttempt = !isCorrect &&
+    !priorAnswered.some((p) => p.result && p.result.correct === false);
+  return { isFirstOfAttempt, isFirstMissOfAttempt };
 }
 
 const KOOLDOWN_MS = 6 * 60 * 60 * 1000; // knockout cooldown: 6 hours
@@ -242,6 +263,9 @@ export function createBossAttempt(id: string, startedAt: string): BossAttempt {
     presentations: [],
     revisionQueue: [],
     healsUsedThisAttempt: 0,
+    attemptDamageReduction: 0,
+    lethalSaveUsed: false,
+    shieldHp: 0,
   } as BossAttempt & { healsUsedThisAttempt: number };
 }
 
@@ -567,67 +591,59 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     const isCorrect = graded.correct;
     const submittedAttemptId = legacySubmission ? `legacy_${presentationForAnswer.presentationId}` : attempt!.id;
     const healsBeforeAnswer = (attempt as (BossAttempt & { healsUsedThisAttempt?: number }) | null)?.healsUsedThisAttempt || 0;
-    const identity = resolveIdentityModifiers({
-      specId: latestGam.specialization,
-      unlockedSkills: latestGam.unlockedSkills || [],
-      correct: isCorrect,
-      streak: isCorrect ? (session.streak || 0) + 1 : 0,
-      priorStreak: session.streak || 0,
-      playerHp: session.playerHp,
+    const priorStreak = session.streak || 0;
+    const bossMaxHpLocal = bossMaxHp;
+    const attemptProgress = attempt as (BossAttempt & {
+      attemptDamageReduction?: number;
+      lethalSaveUsed?: boolean;
+      shieldHp?: number;
+    }) | null;
+
+    // DERIVE from presentations[] — never store booleans (immune to reloads)
+    const { isFirstOfAttempt, isFirstMissOfAttempt } = deriveAttemptFlags(
+      attempt?.presentations,
+      presentationForAnswer.presentationId,
+      isCorrect,
+    );
+
+    const specId = (latestGam.specialization as SkillIdentityId | undefined) ?? null;
+    const turnState = {
+      bossHp, bossMaxHp: bossMaxHpLocal,
+      playerHp: Number.isFinite(session.playerHp) ? session.playerHp : 0,
       playerMaxHp: session.playerMaxHp || latestLoadout.combat.maxHp,
-      bossHp,
-      bossMaxHp,
+      streak: priorStreak,
+      healsUsedThisAttempt: healsBeforeAnswer,
+      attemptDamageReduction: attemptProgress?.attemptDamageReduction ?? 0,
+      lethalSaveUsed: attemptProgress?.lethalSaveUsed ?? false,
+      shieldHp: attemptProgress?.shieldHp ?? 0,
+      isFirstOfAttempt,
+      isFirstMissOfAttempt,
+    };
+
+    const turn = resolveBossTurn(specId, latestGam.unlockedSkills || [], turnState, {
+      correct: isCorrect,
       difficulty: question.difficulty,
       isRevision: presentationForAnswer.isRevision,
-      healsUsedThisAttempt: healsBeforeAnswer,
+      rand, critRoll,
+      gearScore: latestLoadout.gearScore,
+      stats: latestLoadout.stats,
     });
 
-    let newBossHp = bossHp;
-    let newStreak = session.streak || 0;
-    let playerHp = session.playerHp;
-    let damage = 0;
-    let isCrit = false;
-
-    if (isCorrect) {
-      const hit = computeCorrectHit({
-        gearScore: latestLoadout.gearScore,
-        stats: latestLoadout.stats,
-        difficulty: question.difficulty,
-        streak: session.streak || 0,
-        rand,
-        critRoll,
-        bossMaxHp,
-      });
-      damage = hit.damage;
-      isCrit = hit.isCrit;
-      if (identity.damageMultiplier !== 1 || identity.critBonus !== 0) {
-        const ceiling = Math.max(1, Math.floor(bossMaxHp * HIT_CEILING_FRACTION));
-        const identityDamage = Math.round(hit.preCeilingDamage * identity.damageMultiplier);
-        damage = Math.max(1, Math.min(identityDamage, ceiling));
-      }
-      newBossHp = Math.max(0, bossHp - damage);
-      newStreak = (session.streak || 0) + 1;
-      playerHp = Math.min(session.playerMaxHp || latestLoadout.combat.maxHp, playerHp + identity.healApplied);
-    } else {
-      const ehp = computePlayerEhp({
-        maxHp: session.playerMaxHp || latestLoadout.combat.maxHp,
-        armorPercent: latestLoadout.combat.armorPercent,
-      });
-      const attack = computeBossAttack({ stats: latestLoadout.stats, playerEhp: ehp });
-      const incomingDamage = identity.incomingMultiplier === 1
-        ? attack.damage
-        : Math.max(1, Math.round(attack.damage * identity.incomingMultiplier));
-      damage = incomingDamage;
-      playerHp = Math.max(0, (session.playerHp || 0) - incomingDamage);
-      newStreak = 0;
-    }
+    const newBossHp = turn.bossHp;
+    const rawPlayerHp = turn.playerHp;
+    const playerHp = Number.isFinite(rawPlayerHp)
+      ? Math.min(Math.max(rawPlayerHp, 0), turnState.playerMaxHp)
+      : turnState.playerHp;
+    const newStreak = turn.streak;
+    const damage = turn.damageDealt;
+    const isCrit = turn.isCrit;
 
     // Knockout
     let knockedOut = false;
     let newCooldownUntil: string | null = latestProgress.cooldownUntil || null;
     let knockoutCount = latestProgress.knockoutCount || 0;
     let newSession: BossProgress["session"] = session;
-    if (!isCorrect && playerHp <= 0) {
+    if (turn.knockout) {
       knockedOut = true;
       newSession = null;
       newCooldownUntil = new Date(txNow + KOOLDOWN_MS).toISOString();
@@ -640,7 +656,7 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     let victory = false;
     let pendingAchievementUnlocks: string[] = [];
     const userUpdates: Record<string, any> = {};
-    if (newBossHp <= 0 && !latestProgress.victoryClaimed) {
+    if (turn.victory && !latestProgress.victoryClaimed) {
       victory = true;
       // v2 events store the payout under `rewards`. `completionRewards` is the
       // deprecated v1 BossEncounter field and is undefined on v2 documents, so
@@ -681,7 +697,10 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       const applied = applyAnswerToAttempt(attempt!, presentationId, { correct: isCorrect, damage });
       if (applied.status !== "answered") return { error: "STALE_PRESENTATION" as const };
       (applied.attempt as BossAttempt & { healsUsedThisAttempt?: number }).healsUsedThisAttempt =
-        healsBeforeAnswer + identity.healApplied;
+        turn.healsUsedThisAttempt;
+      (applied.attempt as any).attemptDamageReduction = turn.attemptDamageReduction;
+      (applied.attempt as any).lethalSaveUsed = turn.lethalSaveUsed;
+      (applied.attempt as any).shieldHp = turn.shieldHp;
       attemptComplete = applied.complete;
       completedAttempt = applied.complete ? applied.attempt : null;
       attempt = applied.complete ? null : applied.attempt;
@@ -709,12 +728,10 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       difficulty: question.difficulty,
       answeredAt: new Date(txNow).toISOString(),
       skillIdentityVersion: SKILL_IDENTITY_VERSION,
-      skillIdentity: identity.identity,
-      skillRank: identity.rank,
-      skillDamageMultiplier: identity.damageMultiplier,
-      skillIncomingMultiplier: identity.incomingMultiplier,
-      skillCritBonus: identity.critBonus,
-      skillHealingApplied: identity.healApplied,
+      ...(specId !== null ? { skillIdentity: specId } : {}),
+      appliedKeys: turn.appliedKeys,
+      executed: turn.executed,
+      lethalSaveConsumed: turn.lethalSaveConsumed,
     });
 
     // Progress write (legacy `attempts` field is no longer written)
