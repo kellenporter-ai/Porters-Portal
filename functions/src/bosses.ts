@@ -259,10 +259,12 @@ export function planNextPresentation(
 ): PlannedPresentation | null {
   const pending = attempt.presentations[attempt.presentations.length - 1];
   if (pending?.status === "pending") return { attempt, presentation: pending };
-  if (
-    attempt.answeredCount >= attempt.targetSize ||
-    attempt.presentations.length >= attempt.targetSize
-  ) return null;
+  // Only answeredCount decides whether the attempt is full. Counting
+  // presentations.length here was a bug: revisions add presentations that do not
+  // count as answers, so an attempt with 4 answers plus 1 revision hit the cap and
+  // planning returned null, stranding the student on a question they could not
+  // replace.
+  if (attempt.answeredCount >= attempt.targetSize) return null;
 
   const available = new Set(availableQuestionIds);
   const answered = new Set(

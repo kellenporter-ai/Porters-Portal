@@ -615,7 +615,12 @@ const QuizBossCard: React.FC<{
           setBossIntent(null);
           setSelectedAnswer(null);
           setAnswerResult(null);
-        } else if (!result.knockedOut) {
+        } else {
+          // Covers both normal advancement and knockout. The knockout case used to
+          // be excluded here, which meant `answerResult` was never cleared and all
+          // option buttons stayed disabled, stranding the student on a dead question
+          // with no knockout screen. Refreshing also lets the server's
+          // cooldown/medevac state drive the knockout view.
           safeTimeout(() => {
             setSelectedAnswer(null);
             setAnswerResult(null);
