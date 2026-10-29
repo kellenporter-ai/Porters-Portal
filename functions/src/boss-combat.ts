@@ -376,13 +376,16 @@ export function evaluateSkillIdentity(input: IdentityEvalInput): IdentityEvalRes
 // evaluator above remains unchanged for existing callers and saved payloads.
 export type NodeCondition =
   | 'ALWAYS' | 'HP_BELOW_50' | 'HP_ABOVE_50' | 'HP_ABOVE_80'
-  | 'BOSS_ABOVE_60' | 'BOSS_BELOW_60' | 'BOSS_BELOW_12'
+  | 'HP_BELOW_MAX' | 'HP_BELOW_80' | 'HP_ABOVE_ABS_10'
+  | 'BOSS_ABOVE_60' | 'BOSS_ABOVE_50' | 'BOSS_BELOW_60' | 'BOSS_BELOW_12'
   | 'STREAK_2' | 'STREAK_3' | 'IS_REVISION' | 'AFTER_MISS'
-  | 'HARD_ONLY' | 'FIRST_OF_ATTEMPT';
+  | 'HARD_ONLY' | 'FIRST_OF_ATTEMPT' | 'FIRST_MISS_OF_ATTEMPT'
+  | 'FIRST_MISS_ON_HARD';
 
 export type NodeKind =
   | 'DAMAGE' | 'CRIT' | 'HEAL' | 'SHIELD'
-  | 'STREAK_KEEP' | 'DAMAGE_TAKEN' | 'LETHAL_SAVE' | 'EXECUTE';
+  | 'STREAK_KEEP' | 'DAMAGE_TAKEN' | 'LETHAL_SAVE' | 'EXECUTE'
+  | 'GUARANTEED_CRIT' | 'ATTEMPT_DAMAGE_REDUCTION';
 
 export interface SkillNodeEffect {
   slot: number;
@@ -401,11 +404,11 @@ export const SKILL_TREE: Record<SkillIdentityId, SkillNodeEffect[]> = {
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'HP_BELOW_50', key: 'Cornered' },
     { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'HP_BELOW_50', key: 'Stubborn' },
     { slot: 5, cost: 3, kind: 'DAMAGE_TAKEN', value: 0.85, condition: 'ALWAYS', key: 'Thick Skin' },
-    { slot: 6, cost: 5, kind: 'LETHAL_SAVE', value: 1, condition: 'HP_ABOVE_50', key: 'Last Stand' },
+    { slot: 6, cost: 5, kind: 'LETHAL_SAVE', value: 1, condition: 'HP_ABOVE_ABS_10', key: 'Last Stand' },
   ],
   BERSERKER: [
     { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Bloodlust' },
-    { slot: 2, cost: 1, kind: 'CRIT', value: 0.10, condition: 'HP_BELOW_50', key: 'Reckless' },
+    { slot: 2, cost: 1, kind: 'CRIT', value: 0.10, condition: 'HP_BELOW_80', key: 'Reckless' },
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'BOSS_BELOW_60', key: 'Frenzy' },
     { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'HP_BELOW_50', key: 'Siphon' },
     { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Rampage' },
@@ -413,15 +416,15 @@ export const SKILL_TREE: Record<SkillIdentityId, SkillNodeEffect[]> = {
   ],
   SNIPER: [
     { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Keen Eye' },
-    { slot: 2, cost: 1, kind: 'CRIT', value: 0.15, condition: 'BOSS_ABOVE_60', key: 'Headshot' },
+    { slot: 2, cost: 1, kind: 'CRIT', value: 0.15, condition: 'BOSS_ABOVE_50', key: 'Headshot' },
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'BOSS_ABOVE_60', key: 'High Caliber' },
-    { slot: 4, cost: 2, kind: 'CRIT', value: 1, condition: 'FIRST_OF_ATTEMPT', key: 'Focus' },
+    { slot: 4, cost: 2, kind: 'GUARANTEED_CRIT', value: 1, condition: 'FIRST_OF_ATTEMPT', key: 'Focus' },
     { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'HARD_ONLY', key: 'Deadeye' },
     { slot: 6, cost: 5, kind: 'SHIELD', value: 15, condition: 'FIRST_OF_ATTEMPT', key: 'Camouflage' },
   ],
   SPEEDSTER: [
     { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Quick Strike' },
-    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'FIRST_OF_ATTEMPT', key: 'Momentum' },
+    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'FIRST_MISS_OF_ATTEMPT', key: 'Momentum' },
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'STREAK_2', key: 'Blitz' },
     { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'STREAK_3', key: 'Second Wind' },
     { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Haste' },
@@ -431,7 +434,7 @@ export const SKILL_TREE: Record<SkillIdentityId, SkillNodeEffect[]> = {
     { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Bastion' },
     { slot: 2, cost: 1, kind: 'SHIELD', value: 2, condition: 'HP_ABOVE_50', key: 'Aegis' },
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'HP_ABOVE_50', key: 'Phalanx' },
-    { slot: 4, cost: 2, kind: 'HEAL', value: 3, condition: 'HP_BELOW_50', key: 'Mending' },
+    { slot: 4, cost: 2, kind: 'HEAL', value: 3, condition: 'HP_BELOW_MAX', key: 'Mending' },
     { slot: 5, cost: 3, kind: 'DAMAGE_TAKEN', value: 0.85, condition: 'ALWAYS', key: 'Fortify' },
     { slot: 6, cost: 5, kind: 'DAMAGE', value: 1.12, condition: 'HP_BELOW_50', key: 'Retribution' },
   ],
@@ -439,7 +442,7 @@ export const SKILL_TREE: Record<SkillIdentityId, SkillNodeEffect[]> = {
     { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Smite' },
     { slot: 2, cost: 1, kind: 'HEAL', value: 2, condition: 'ALWAYS', key: 'Blessing' },
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'AFTER_MISS', key: 'Devotion' },
-    { slot: 4, cost: 2, kind: 'DAMAGE_TAKEN', value: 0.80, condition: 'AFTER_MISS', key: 'Purify' },
+    { slot: 4, cost: 2, kind: 'ATTEMPT_DAMAGE_REDUCTION', value: 0.20, condition: 'AFTER_MISS', key: 'Purify' },
     { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Zeal' },
     { slot: 6, cost: 5, kind: 'LETHAL_SAVE', value: 1, condition: 'ALWAYS', key: 'Divine Intervention' },
   ],
@@ -453,7 +456,7 @@ export const SKILL_TREE: Record<SkillIdentityId, SkillNodeEffect[]> = {
   ],
   SCHOLAR: [
     { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Studious' },
-    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'HARD_ONLY', key: 'Recall' },
+    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'FIRST_MISS_ON_HARD', key: 'Recall' },
     { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'HARD_ONLY', key: 'Mastery' },
     { slot: 4, cost: 2, kind: 'CRIT', value: 0.15, condition: 'STREAK_2', key: 'Insight' },
     { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Erudite' },
@@ -475,6 +478,8 @@ export interface SkillNodeEvalInput {
   isRevision: boolean;
   healsUsedThisAttempt: number;
   isFirstOfAttempt: boolean;
+  /** Omitted for legacy callers; treated as false. */
+  isFirstMissOfAttempt?: boolean;
 }
 
 export interface SkillNodeEvalResult {
@@ -486,6 +491,8 @@ export interface SkillNodeEvalResult {
   keepStreakOnMiss: boolean;
   lethalSave: boolean;
   execute: boolean;
+  guaranteedCrit: boolean;
+  attemptDamageReduction: number;
   appliedNodeIds: string[];
   appliedKeys: string[];
 }
@@ -493,6 +500,7 @@ export interface SkillNodeEvalResult {
 const SKILL_DAMAGE_MULTIPLIER_CAP = 1.30;
 const SKILL_CRIT_BONUS_CAP = 0.25;
 const SKILL_DAMAGE_TAKEN_FLOOR = 0.75;
+const SKILL_ATTEMPT_DAMAGE_REDUCTION_CAP = 0.50;
 
 function neutralSkillNodeResult(): SkillNodeEvalResult {
   return {
@@ -504,6 +512,8 @@ function neutralSkillNodeResult(): SkillNodeEvalResult {
     keepStreakOnMiss: false,
     lethalSave: false,
     execute: false,
+    guaranteedCrit: false,
+    attemptDamageReduction: 0,
     appliedNodeIds: [],
     appliedKeys: [],
   };
@@ -520,7 +530,11 @@ function skillNodeConditionApplies(
     case 'HP_BELOW_50': return hpRatio < 0.5;
     case 'HP_ABOVE_50': return hpRatio > 0.5;
     case 'HP_ABOVE_80': return hpRatio > 0.8;
+    case 'HP_BELOW_MAX': return input.playerHp < input.playerMaxHp;
+    case 'HP_BELOW_80': return hpRatio < 0.8;
+    case 'HP_ABOVE_ABS_10': return input.playerHp >= 10;
     case 'BOSS_ABOVE_60': return bossRatio > 0.6;
+    case 'BOSS_ABOVE_50': return bossRatio > 0.5;
     case 'BOSS_BELOW_60': return bossRatio < 0.6;
     case 'BOSS_BELOW_12': return bossRatio < 0.12;
     case 'STREAK_2': return input.streak >= 2;
@@ -529,6 +543,9 @@ function skillNodeConditionApplies(
     case 'AFTER_MISS': return input.priorStreak === 0;
     case 'HARD_ONLY': return input.difficulty === 'HARD';
     case 'FIRST_OF_ATTEMPT': return input.isFirstOfAttempt;
+    case 'FIRST_MISS_OF_ATTEMPT': return input.isFirstMissOfAttempt === true;
+    case 'FIRST_MISS_ON_HARD':
+      return input.isFirstMissOfAttempt === true && input.difficulty === 'HARD';
   }
 }
 
@@ -550,7 +567,9 @@ export function evaluateSkillNodes(input: SkillNodeEvalInput): SkillNodeEvalResu
     Object.prototype.hasOwnProperty.call(DIFFICULTY_MOD, input.difficulty) &&
     typeof input.isRevision === 'boolean' &&
     Number.isInteger(input.healsUsedThisAttempt) && input.healsUsedThisAttempt >= 0 &&
-    typeof input.isFirstOfAttempt === 'boolean';
+    typeof input.isFirstOfAttempt === 'boolean' &&
+    (input.isFirstMissOfAttempt === undefined ||
+      typeof input.isFirstMissOfAttempt === 'boolean');
   if (!valid) return result;
 
   const owned = new Set(input.ownedNodeIds);
@@ -571,6 +590,10 @@ export function evaluateSkillNodes(input: SkillNodeEvalInput): SkillNodeEvalResu
         if (input.correct) result.critBonus += node.value;
         else applied = false;
         break;
+      case 'GUARANTEED_CRIT':
+        if (input.correct) result.guaranteedCrit = true;
+        else applied = false;
+        break;
       case 'HEAL':
         if (input.correct) requestedHeal += node.value;
         else applied = false;
@@ -584,6 +607,16 @@ export function evaluateSkillNodes(input: SkillNodeEvalInput): SkillNodeEvalResu
         break;
       case 'DAMAGE_TAKEN':
         result.damageTakenMultiplier *= node.value;
+        break;
+      case 'ATTEMPT_DAMAGE_REDUCTION':
+        if (input.correct) {
+          result.attemptDamageReduction = Math.min(
+            SKILL_ATTEMPT_DAMAGE_REDUCTION_CAP,
+            result.attemptDamageReduction + node.value,
+          );
+        } else {
+          applied = false;
+        }
         break;
       case 'LETHAL_SAVE':
         result.lethalSave = true;

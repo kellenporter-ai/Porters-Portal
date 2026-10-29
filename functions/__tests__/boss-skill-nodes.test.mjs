@@ -35,6 +35,8 @@ const neutral = () => ({
   keepStreakOnMiss: false,
   lethalSave: false,
   execute: false,
+  guaranteedCrit: false,
+  attemptDamageReduction: 0,
   appliedNodeIds: [],
   appliedKeys: [],
 });
@@ -102,7 +104,7 @@ describe('node-based effect evaluation', () => {
       ownedNodeIds: ['jug_1', 'jug_2', 'jug_5', 'jug_6'],
     }));
     expect(firstBuild.appliedNodeIds).toHaveLength(3);
-    expect(secondBuild.appliedNodeIds).toHaveLength(2);
+    expect(secondBuild.appliedNodeIds).toHaveLength(3);
     expect(firstBuild.damageMultiplier).not.toBe(secondBuild.damageMultiplier);
     expect(firstBuild.appliedKeys).not.toEqual(secondBuild.appliedKeys);
   });
@@ -116,10 +118,137 @@ describe('node-based effect evaluation', () => {
   });
 
   it('caps combined crit bonuses at 0.25', () => {
-    const result = evaluateSkillNodes(inputFor('SNIPER', {
-      ownedNodeIds: ['sni_2', 'sni_4'],
-    }));
-    expect(result.critBonus).toBe(0.25);
+    const original = SKILL_TREE.SNIPER[1].value;
+    try {
+      SKILL_TREE.SNIPER[1].value = 0.40;
+      const result = evaluateSkillNodes(inputFor('SNIPER', {
+        ownedNodeIds: ['sni_2'],
+      }));
+      expect(result.critBonus).toBe(0.25);
+    } finally {
+      SKILL_TREE.SNIPER[1].value = original;
+    }
+  });
+});
+
+describe('precise design conditions and node kinds', () => {
+  it('guarantees a Sniper crit only on the first correct answer of an attempt', () => {
+    const ownedNodeIds = ['sni_4'];
+    expect(evaluateSkillNodes(inputFor('SNIPER', {
+      ownedNodeIds,
+      isFirstOfAttempt: true,
+    })).guaranteedCrit).toBe(true);
+    expect(evaluateSkillNodes(inputFor('SNIPER', {
+      ownedNodeIds,
+      isFirstOfAttempt: false,
+    })).guaranteedCrit).toBe(false);
+  });
+
+  it('heals a hurt Guardian at 95% and 40% HP, but not at full HP', () => {
+    const ownedNodeIds = ['grd_4'];
+    for (const playerHp of [95, 40]) {
+      expect(evaluateSkillNodes(inputFor('GUARDIAN', {
+        ownedNodeIds,
+        playerHp,
+      })).heal).toBe(3);
+    }
+    expect(evaluateSkillNodes(inputFor('GUARDIAN', {
+      ownedNodeIds,
+      playerHp: 100,
+    })).heal).toBe(0);
+  });
+
+  it('applies Berserker crit at 70% HP but not at 85% HP', () => {
+    const ownedNodeIds = ['ber_2'];
+    expect(evaluateSkillNodes(inputFor('BERSERKER', {
+      ownedNodeIds,
+      playerHp: 70,
+    })).critBonus).toBe(0.10);
+    expect(evaluateSkillNodes(inputFor('BERSERKER', {
+      ownedNodeIds,
+      playerHp: 85,
+    })).critBonus).toBe(0);
+  });
+
+  it('applies Sniper crit at boss 55% HP but not at boss 45% HP', () => {
+    const ownedNodeIds = ['sni_2'];
+    expect(evaluateSkillNodes(inputFor('SNIPER', {
+      ownedNodeIds,
+      bossHp: 55,
+    })).critBonus).toBe(0.15);
+    expect(evaluateSkillNodes(inputFor('SNIPER', {
+      ownedNodeIds,
+      bossHp: 45,
+    })).critBonus).toBe(0);
+  });
+
+  it('accumulates and caps Cleric attempt damage reduction after a miss', () => {
+    const original = SKILL_TREE.CLERIC[3].value;
+    const ownedNodeIds = ['clr_4'];
+    try {
+      expect(evaluateSkillNodes(inputFor('CLERIC', {
+        ownedNodeIds,
+        priorStreak: 0,
+      })).attemptDamageReduction).toBeCloseTo(0.20);
+      expect(evaluateSkillNodes(inputFor('CLERIC', {
+        ownedNodeIds,
+        priorStreak: 2,
+      })).attemptDamageReduction).toBe(0);
+      expect(evaluateSkillNodes(inputFor('CLERIC', {
+        ownedNodeIds,
+        priorStreak: 0,
+        correct: false,
+      })).attemptDamageReduction).toBe(0);
+
+      SKILL_TREE.CLERIC[3].value = 0.60;
+      expect(evaluateSkillNodes(inputFor('CLERIC', {
+        ownedNodeIds,
+        priorStreak: 0,
+      })).attemptDamageReduction).toBe(0.50);
+    } finally {
+      SKILL_TREE.CLERIC[3].value = original;
+    }
+  });
+
+  it('keeps Speedster streak only on the first miss of an attempt', () => {
+    const ownedNodeIds = ['spd_2'];
+    expect(evaluateSkillNodes(inputFor('SPEEDSTER', {
+      ownedNodeIds,
+      correct: false,
+      isFirstMissOfAttempt: true,
+    })).keepStreakOnMiss).toBe(true);
+    expect(evaluateSkillNodes(inputFor('SPEEDSTER', {
+      ownedNodeIds,
+      correct: false,
+      isFirstMissOfAttempt: undefined,
+    })).keepStreakOnMiss).toBe(false);
+    expect(evaluateSkillNodes(inputFor('SPEEDSTER', {
+      ownedNodeIds,
+      correct: false,
+      isFirstMissOfAttempt: false,
+    })).keepStreakOnMiss).toBe(false);
+  });
+
+  it('keeps Scholar streak only on the first miss and only on HARD', () => {
+    const ownedNodeIds = ['sch_2'];
+    expect(evaluateSkillNodes(inputFor('SCHOLAR', {
+      ownedNodeIds,
+      correct: false,
+      difficulty: 'HARD',
+      isFirstMissOfAttempt: true,
+    })).keepStreakOnMiss).toBe(true);
+    expect(evaluateSkillNodes(inputFor('SCHOLAR', {
+      ownedNodeIds,
+      correct: false,
+      difficulty: 'HARD',
+      isFirstMissOfAttempt: false,
+    })).keepStreakOnMiss).toBe(false);
+    expect(evaluateSkillNodes(inputFor('SCHOLAR', {
+      ownedNodeIds,
+      correct: false,
+      difficulty: 'MEDIUM',
+      isFirstMissOfAttempt: true,
+    })).keepStreakOnMiss).toBe(false);
   });
 });
 
@@ -159,28 +288,32 @@ describe('healing and defensive invariants', () => {
     })).heal).toBe(0);
   });
 
-  it('enables lethal save only while its condition holds', () => {
+  it('enables Juggernaut lethal save at absolute HP 10 and above', () => {
     const ownedNodeIds = ['jug_6'];
     expect(evaluateSkillNodes(inputFor('JUGGERNAUT', {
       ownedNodeIds,
-      playerHp: 80,
+      playerHp: 10,
     })).lethalSave).toBe(true);
     expect(evaluateSkillNodes(inputFor('JUGGERNAUT', {
       ownedNodeIds,
-      playerHp: 40,
+      playerHp: 60,
+    })).lethalSave).toBe(true);
+    expect(evaluateSkillNodes(inputFor('JUGGERNAUT', {
+      ownedNodeIds,
+      playerHp: 9,
     })).lethalSave).toBe(false);
   });
 
   it('floors damage taken at 0.75 even for an excessive multiplier', () => {
-    const original = SKILL_TREE.CLERIC[3].value;
+    const original = SKILL_TREE.JUGGERNAUT[4].value;
     try {
-      SKILL_TREE.CLERIC[3].value = 0.5;
-      const result = evaluateSkillNodes(inputFor('CLERIC', {
-        ownedNodeIds: ['clr_4'],
+      SKILL_TREE.JUGGERNAUT[4].value = 0.5;
+      const result = evaluateSkillNodes(inputFor('JUGGERNAUT', {
+        ownedNodeIds: ['jug_5'],
       }));
       expect(result.damageTakenMultiplier).toBe(0.75);
     } finally {
-      SKILL_TREE.CLERIC[3].value = original;
+      SKILL_TREE.JUGGERNAUT[4].value = original;
     }
   });
 
@@ -223,6 +356,7 @@ describe('invalid and foreign input handling', () => {
       inputFor('JUGGERNAUT', { playerMaxHp: 0 }),
       inputFor('JUGGERNAUT', { difficulty: 'EXTREME' }),
       inputFor('JUGGERNAUT', { healsUsedThisAttempt: -1 }),
+      inputFor('JUGGERNAUT', { isFirstMissOfAttempt: 'yes' }),
     ];
     for (const input of malformed) {
       expect(() => evaluateSkillNodes(input)).not.toThrow();
