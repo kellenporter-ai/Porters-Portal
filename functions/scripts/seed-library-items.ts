@@ -23,7 +23,7 @@ interface SeedItem {
   contentKind: 'activity' | 'tool' | 'textbook' | 'deck' | 'document' | 'utility';
   subject?: string;
   tags: string[];
-  suggestedCategory: 'Lesson' | 'Lab' | 'Simulation' | 'Practice' | 'Supplemental';
+  suggestedCategory: 'Lesson' | 'Lab' | 'Simulation' | 'Practice' | 'Supplemental' | 'Activity';
   sourceFingerprint: string;
 }
 
@@ -62,13 +62,13 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/tools/bar-chart.html',
   },
   {
-    title: 'Force Diagram Tool',
-    description: 'Free-body / force diagram drawing tool.',
+    title: 'Free-Body Diagram Sandbox',
+    description: 'Digital free-body diagram builder for AP Physics 1: pick a force type, drag arrows from the system dot, sketch the situation, draw the system boundary, and list the external objects. Sandbox, no grading.',
     url: '/tools/force-diagram',
     hostingType: 'bundled',
     contentKind: 'tool',
-    subject: 'Honors Physics',
-    tags: ['forces', 'free-body-diagram'],
+    subject: 'AP Physics 1',
+    tags: ['forces', 'free-body-diagram', "newton's-laws", 'ap-physics-1', 'sandbox', 'sketch'],
     suggestedCategory: 'Simulation',
     sourceFingerprint: '/tools/force-diagram.html',
   },

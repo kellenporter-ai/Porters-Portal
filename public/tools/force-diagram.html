@@ -1,1053 +1,1657 @@
-<!DOCTYPE html>
+<!--
+  Force Diagram Builder (AP Physics 1 free-body diagram sandbox).
+  One root element (the div whose id is fbd-sandbox) holds the style block, all markup and the script.
+  Nothing is registered on window, all CSS is scoped under #fbd-sandbox, and all CSS variables
+  live on #fbd-sandbox, so a host page is not restyled.
+
+  (a) Plain HTML page: paste everything from the opening root div through its closing div
+      (the style, markup and script element are all inside it) into the host body. The script
+      starts itself on DOMContentLoaded, or right away if the page has already loaded. A flag
+      on the root element stops a second init if the block is pasted twice.
+      Optional attributes on the root element:
+        data-storage-key="name"  keys the saved work in localStorage. Copies that share a page or an
+                                 origin should each use a different value so they do not share work.
+                                 When absent the default key "fbd-sandbox:v1" is used.
+        tabindex="-1"            already set. Keyboard shortcuts (Delete, Ctrl+Z, Escape) only act
+                                 while focus is inside the root, and clicking the stage focuses it.
+  (b) React: render the block's markup and style into a container with dangerouslySetInnerHTML
+      (or the same HTML from a string), then in useEffect create a script element, set its
+      textContent to the script body, and append it to the container or document.head. React
+      never runs script elements that arrive through innerHTML, so that step is required. The code
+      finds its root from the script element's closest #fbd-sandbox ancestor, else getElementById("fbd-sandbox").
+      For several copies on one page, keep each script inside its own root and give each root a
+      different data-storage-key.
+-->
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactive Force Diagram Creator</title>
-    <style>
-        :root {
-            /* Modern Glass Theme Colors */
-            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-
-            --accent-blue: #007aff;
-            --accent-blue-glass: rgba(0, 122, 255, 0.25);
-            --accent-green: #34C759;
-            --accent-red: #FF3B30;
-
-            --text-dark: #333;
-
-            --diagram-arrow-color: #557A45;
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            background: var(--bg-gradient);
-            color: var(--text-dark);
-        }
-
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: var(--glass-border);
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* --- LEFT PANEL: LIST --- */
-        #list-panel {
-            width: 260px;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            z-index: 2;
-            border-right: var(--glass-border);
-        }
-
-        .panel-header {
-            text-align: center;
-            font-size: 22px;
-            font-weight: 600;
-            padding: 15px;
-            color: var(--accent-blue);
-            border-bottom: var(--glass-border);
-            background: rgba(255,255,255,0.3);
-        }
-
-        .list-container {
-            padding: 15px 10px;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .list-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 16px;
-            font-weight: 500;
-            color: var(--accent-blue);
-        }
-
-        .list-num {
-            width: 30px;
-            text-align: right;
-            margin-right: 10px;
-            opacity: 0.7;
-        }
-
-        .list-input {
-            flex-grow: 1;
-            border: 1px solid rgba(0,0,0,0.1);
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 15px;
-            color: var(--text-dark);
-            background: rgba(255,255,255,0.5);
-            transition: all 0.2s;
-        }
-        .list-input:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            background: white;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-
-        /* --- MIDDLE PANEL: CANVAS --- */
-        #canvas-panel {
-            flex-grow: 1;
-            position: relative;
-            background-color: rgba(255,255,255,0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
-            z-index: 1;
-        }
-
-        #diagram-title {
-            position: absolute;
-            top: 0;
-            background-color: var(--diagram-arrow-color);
-            color: white;
-            padding: 6px 30px;
-            border-radius: 0 0 12px 12px;
-            font-weight: 600;
-            font-size: 18px;
-            z-index: 10;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        canvas { cursor: crosshair; touch-action: none; }
-
-        .axis-label {
-            position: absolute;
-            color: #999;
-            font-family: monospace;
-            font-weight: bold;
-            pointer-events: none;
-        }
-
-        /* --- ARROW LABELS --- */
-        .force-label-container {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(4px);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            font-size: 16px;
-            color: var(--diagram-arrow-color);
-            pointer-events: auto;
-            white-space: nowrap;
-            z-index: 5;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: transform 0.1s, top 0.1s, left 0.1s;
-        }
-
-        .force-label-input {
-            width: 35px;
-            border: none;
-            border-bottom-width: 2px;
-            border-bottom-style: solid;
-            text-align: center;
-            font-weight: bold;
-            font-size: 15px;
-            background: transparent;
-            outline: none;
-            padding: 2px 0;
-            margin: 0 2px;
-        }
-
-        .input-blue { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
-        .input-red { color: var(--accent-red); border-bottom-color: var(--accent-red); }
-        .force-sub-text { font-size: 13px; color: #666; font-weight: normal;}
-
-        .delete-btn {
-            position: absolute;
-            top: -6px; right: -6px;
-            width: 18px; height: 18px;
-            background-color: var(--accent-red);
-            color: white;
-            border: none; border-radius: 50%;
-            font-size: 14px; line-height: 16px;
-            text-align: center; cursor: pointer;
-            display: none; z-index: 10;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .force-label-container:hover .delete-btn { display: block; }
-
-        #tooltip {
-            position: absolute;
-            background: var(--glass-bg);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--accent-blue);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 12px;
-            pointer-events: none;
-            display: none;
-            z-index: 20;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .controls-container {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            z-index: 30;
-        }
-
-        .control-btn {
-            width: 32px; height: 32px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: var(--glass-border);
-            border-radius: 50%;
-            color: var(--accent-blue);
-            font-weight: bold; font-size: 18px;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: var(--glass-shadow);
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-        .control-btn:hover { background: white; transform: scale(1.05); }
-
-        /* Floating Precision Editor */
-        #precision-editor {
-            position: absolute;
-            display: none;
-            background: var(--accent-blue-glass);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(0, 122, 255, 0.3);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 122, 255, 0.15);
-            width: 190px;
-            color: var(--text-dark);
-            z-index: 100;
-        }
-
-        .editor-title {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--accent-blue);
-            text-align: center;
-        }
-
-        .editor-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .editor-row.checkbox-row {
-            justify-content: flex-end;
-            gap: 8px;
-        }
-
-        .editor-input {
-            width: 70px;
-            border: 1px solid rgba(0,0,0,0.1);
-            background: rgba(255,255,255,0.7);
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 13px;
-            text-align: right;
-        }
-        .editor-input:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            background: white;
-        }
-
-        .close-editor {
-            position: absolute; top: 5px; right: 8px;
-            cursor: pointer; color: var(--accent-blue); font-size: 18px;
-        }
-
-        /* --- HELP MODAL --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
-            display: none;
-            justify-content: center; align-items: center;
-            z-index: 100;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            width: 480px;
-            max-width: 90vw;
-            padding: 30px;
-            border-radius: 16px;
-            position: relative;
-        }
-
-        .modal-close {
-            position: absolute; top: 15px; right: 20px;
-            font-size: 28px; cursor: pointer; color: #999;
-            transition: color 0.2s;
-        }
-        .modal-close:hover { color: var(--text-dark); }
-
-        .modal-title {
-            margin-top: 0;
-            color: var(--accent-blue);
-            font-size: 22px; font-weight: 700;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            padding-bottom: 15px; margin-bottom: 20px;
-        }
-
-        .help-list { list-style: none; padding: 0; margin: 0; }
-        .help-list li {
-            margin-bottom: 16px; display: flex; align-items: flex-start;
-            font-size: 15px; color: var(--text-dark);
-        }
-        .help-icon { margin-right: 15px; font-size: 20px; width: 24px; text-align: center; }
-        .key-badge {
-            background: #eee; border: 1px solid #ccc;
-            border-radius: 5px; padding: 2px 6px;
-            font-family: monospace; font-size: 13px; font-weight: bold;
-            box-shadow: 0 2px 0 #ccc;
-        }
-
-        /* --- MOBILE RESPONSIVE --- */
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #list-panel {
-                width: 100%;
-                height: 35%;
-                order: 2;
-                border-right: none;
-                border-top: var(--glass-border);
-            }
-            #canvas-panel {
-                height: 65%;
-                order: 1;
-            }
-            .list-container {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-            .controls-container {
-                top: auto;
-                bottom: 10px;
-                right: 10px;
-                flex-wrap: wrap;
-                justify-content: flex-end;
-            }
-            .delete-btn { display: block; width: 24px; height: 24px; font-size: 18px; top: -10px; right: -10px; }
-            .force-label-container { padding: 6px 10px; font-size: 14px; }
-            .control-btn { width: 36px; height: 36px; font-size: 20px; }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Force Diagram Builder</title>
 </head>
-<body>
+<body style="margin:0">
+<div id="fbd-sandbox" tabindex="-1">
+<style>
+#fbd-sandbox{
+  --fbd-bg:#14111f; --fbd-panel:#1d1930; --fbd-panel2:#272140; --fbd-line:#3a3358;
+  --fbd-text:#efeaff; --fbd-muted:#a39cc0; --fbd-accent:#7c5cff; --fbd-accent-ink:#ffffff;
+  --fbd-focus:#ffd166; --fbd-danger:#ff6b81; --fbd-canvas:#0f0c1a;
+  --fbd-radius:10px;
+  position:relative; display:flex; flex-direction:column;
+  height:var(--fbd-height,100vh); min-height:440px; width:100%;
+  background:var(--fbd-bg); color:var(--fbd-text);
+  font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  overflow:hidden; text-align:left;
+}
+@supports (height:100dvh){ #fbd-sandbox{ height:var(--fbd-height,100dvh); } }
+#fbd-sandbox *, #fbd-sandbox *::before, #fbd-sandbox *::after{ box-sizing:border-box; }
+#fbd-sandbox [hidden]{ display:none !important; }
+#fbd-sandbox button, #fbd-sandbox input, #fbd-sandbox select{ font:inherit; color:inherit; }
+#fbd-sandbox button{ cursor:pointer; }
+#fbd-sandbox:focus{ outline:none; }
+#fbd-sandbox :focus-visible{ outline:3px solid var(--fbd-focus); outline-offset:2px; }
 
-    <div id="list-panel" class="glass-panel">
-        <div class="panel-header">LIST</div>
-        <div class="list-container" id="list-items">
-            </div>
+/* top region */
+#fbd-sandbox .fbd-top{ flex:none; background:var(--fbd-panel); border-bottom:1px solid var(--fbd-line); }
+#fbd-sandbox .fbd-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 12px; }
+#fbd-sandbox .fbd-title{ margin:0 8px 0 0; font-size:18px; font-weight:700; letter-spacing:.2px; white-space:nowrap; }
+#fbd-sandbox .fbd-spacer{ flex:1 1 8px; }
+#fbd-sandbox .fbd-btn{
+  min-height:38px; padding:6px 12px; border-radius:8px; border:1px solid var(--fbd-line);
+  background:var(--fbd-panel2); display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  white-space:nowrap; touch-action:manipulation;
+}
+#fbd-sandbox .fbd-btn:hover:not(:disabled){ border-color:var(--fbd-accent); }
+#fbd-sandbox .fbd-btn:disabled{ opacity:.4; cursor:default; }
+#fbd-sandbox .fbd-btn[aria-pressed="true"]{ background:var(--fbd-accent); border-color:var(--fbd-accent); color:var(--fbd-accent-ink); }
+#fbd-sandbox .fbd-btn.fbd-warn{ background:var(--fbd-danger); border-color:var(--fbd-danger); color:#1b0d12; font-weight:700; }
+#fbd-sandbox .fbd-btn.fbd-icon{ min-width:38px; padding:6px 8px; }
+#fbd-sandbox .fbd-seg{ display:inline-flex; border:1px solid var(--fbd-line); border-radius:8px; overflow:hidden; }
+#fbd-sandbox .fbd-seg button{ min-height:36px; padding:6px 14px; border:0; background:var(--fbd-panel2); border-radius:0; }
+#fbd-sandbox .fbd-seg button + button{ border-left:1px solid var(--fbd-line); }
+#fbd-sandbox .fbd-seg button[aria-pressed="true"]{ background:var(--fbd-accent); color:var(--fbd-accent-ink); font-weight:700; }
+#fbd-sandbox .fbd-exportwrap{ position:relative; display:inline-block; }
+
+#fbd-sandbox .fbd-chips{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 12px 10px; }
+#fbd-sandbox .fbd-chip{
+  --c:#999; min-height:40px; padding:6px 14px 6px 10px; border-radius:999px;
+  border:2px solid var(--fbd-line); background:var(--fbd-panel2);
+  display:inline-flex; align-items:center; gap:8px; touch-action:manipulation;
+}
+#fbd-sandbox .fbd-chip i{ width:14px; height:14px; border-radius:50%; background:var(--c); display:inline-block; flex:none; }
+#fbd-sandbox .fbd-chip:hover{ border-color:var(--c); }
+#fbd-sandbox .fbd-chip[aria-pressed="true"]{
+  border-color:var(--c); background:var(--c); color:#14111f; font-weight:700;
+  box-shadow:0 0 0 3px rgba(255,255,255,.28);
+}
+#fbd-sandbox .fbd-chip[aria-pressed="true"] i{ background:#14111f; box-shadow:0 0 0 2px #fff inset; }
+#fbd-sandbox .fbd-chip[data-pinned="true"]::after{
+  content:"pinned"; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  background:#14111f; color:#fff; border-radius:999px; padding:1px 6px;
+}
+#fbd-sandbox .fbd-armed{ margin-left:auto; flex:0 0 auto; color:var(--fbd-muted); font-size:13px; white-space:nowrap; }
+
+/* main */
+#fbd-sandbox .fbd-main{ flex:1 1 auto; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; }
+#fbd-sandbox .fbd-stage{ position:relative; min-width:0; min-height:0; background:var(--fbd-canvas); overflow:hidden; outline-offset:-3px; }
+#fbd-sandbox .fbd-svg{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; user-select:none; -webkit-user-select:none; }
+#fbd-sandbox .fbd-svg.fbd-armedcur{ cursor:crosshair; }
+#fbd-sandbox .fbd-svg:focus-visible{ outline:2px solid var(--fbd-accent); outline-offset:-3px; }
+#fbd-sandbox .fbd-label{ font:700 17px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; fill:#fff; stroke:#0f0c1a; stroke-width:5px; stroke-linejoin:round; paint-order:stroke; pointer-events:none; }
+#fbd-sandbox .fbd-axlabel{ font:12px system-ui,sans-serif; fill:#a9a2cc; pointer-events:none; }
+#fbd-sandbox .fbd-axname{ font:700 15px system-ui,sans-serif; fill:#c9c3ee; pointer-events:none; }
+#fbd-sandbox .fbd-label.fbd-subline{ font:400 12px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; fill:#b4aed2; stroke-width:3.5px; }
+#fbd-sandbox .fbd-row2{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+#fbd-sandbox .fbd-row2 .fbd-btn{ min-height:34px; padding:4px 10px; }
+#fbd-sandbox .fbd-empty{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); max-width:80%; text-align:center;
+  color:var(--fbd-muted); font-size:16px; pointer-events:none; margin-top:64px;
+}
+#fbd-sandbox .fbd-pop{
+  position:absolute; z-index:5; top:12px; right:12px; width:236px; max-width:calc(100% - 24px);
+  max-height:calc(100% - 24px); overflow-y:auto; padding:10px; border-radius:var(--fbd-radius);
+  background:var(--fbd-panel); border:1px solid var(--fbd-accent); box-shadow:0 8px 24px rgba(0,0,0,.5);
+  display:grid; gap:8px;
+}
+#fbd-sandbox .fbd-pop label{ display:grid; gap:3px; font-size:12px; color:var(--fbd-muted); }
+#fbd-sandbox .fbd-pop .fbd-row{ display:flex; gap:6px; }
+#fbd-sandbox .fbd-pop .fbd-row .fbd-btn{ flex:1; min-height:40px; }
+#fbd-sandbox .fbd-pop .fbd-head{ display:flex; align-items:center; justify-content:space-between; font-weight:700; }
+#fbd-sandbox .fbd-field{
+  width:100%; min-height:38px; padding:6px 8px; border-radius:8px;
+  border:1px solid var(--fbd-line); background:var(--fbd-bg); color:var(--fbd-text);
+}
+#fbd-sandbox .fbd-field::placeholder{ color:#7d76a0; }
+
+/* rail */
+#fbd-sandbox .fbd-rail{
+  min-height:0; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:8px;
+  background:var(--fbd-bg); border-left:1px solid var(--fbd-line);
+}
+#fbd-sandbox .fbd-panel{ flex:none; background:var(--fbd-panel); border:1px solid var(--fbd-line); border-radius:var(--fbd-radius); overflow:hidden; }
+#fbd-sandbox .fbd-panel > h2{ margin:0; padding:6px 10px; font-size:13px; letter-spacing:.4px; text-transform:uppercase; color:var(--fbd-muted); border-bottom:1px solid var(--fbd-line); }
+#fbd-sandbox .fbd-pad{ display:block; width:100%; max-width:340px; height:auto; border-radius:8px; background:var(--fbd-canvas); border:1px solid var(--fbd-line); touch-action:none; cursor:crosshair; }
+#fbd-sandbox .fbd-tools{ display:flex; flex-wrap:wrap; gap:4px; padding:6px 8px; }
+#fbd-sandbox .fbd-tools .fbd-btn{ min-height:36px; padding:4px 10px; font-size:12.5px; flex:0 1 auto; }
+#fbd-sandbox .fbd-body{ padding:8px; display:grid; gap:8px; }
+#fbd-sandbox .fbd-hint{ margin:0; color:var(--fbd-muted); font-size:12px; line-height:1.3; }
+#fbd-sandbox .fbd-panel{ padding-bottom:2px; }
+#fbd-sandbox .fbd-objs{ list-style:none; margin:0; padding:0; display:grid; gap:6px; max-height:220px; overflow-y:auto; }
+#fbd-sandbox .fbd-obj{ display:flex; align-items:center; gap:6px; }
+#fbd-sandbox .fbd-obj .fbd-field{ flex:1 1 auto; min-width:0; }
+#fbd-sandbox .fbd-badge{ flex:0 1 auto; max-width:48%; overflow:hidden; text-overflow:ellipsis; font-size:12px; padding:3px 8px; border-radius:999px; background:var(--fbd-panel2); border:1px solid var(--fbd-line); color:var(--fbd-muted); white-space:nowrap; }
+
+/* export panel */
+#fbd-sandbox .fbd-export{
+  position:absolute; top:calc(100% + 6px); right:0; z-index:20; width:280px; padding:10px;
+  background:var(--fbd-panel); border:1px solid var(--fbd-accent); border-radius:var(--fbd-radius);
+  box-shadow:0 8px 24px rgba(0,0,0,.55); display:grid; gap:8px; white-space:normal;
+}
+#fbd-sandbox .fbd-export img{ width:100%; max-height:150px; object-fit:contain; background:#fff; border-radius:6px; }
+#fbd-sandbox .fbd-export a{ color:var(--fbd-accent-ink); background:var(--fbd-accent); padding:8px 10px; border-radius:8px; text-decoration:none; text-align:center; min-height:38px; display:block; }
+#fbd-sandbox .fbd-export .fbd-msg{ margin:0; font-size:13px; }
+#fbd-sandbox .fbd-export .fbd-msg.fbd-err{ color:var(--fbd-danger); }
+
+/* modal */
+#fbd-sandbox .fbd-modal{ position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:rgba(8,6,16,.7); padding:16px; }
+#fbd-sandbox .fbd-dialog{ width:min(520px,100%); max-height:100%; overflow:auto; padding:18px 20px; background:var(--fbd-panel); border:1px solid var(--fbd-accent); border-radius:14px; }
+#fbd-sandbox .fbd-dialog h2{ margin:0 0 8px; font-size:20px; }
+#fbd-sandbox .fbd-dialog ol{ margin:0 0 12px; padding-left:20px; display:grid; gap:6px; }
+
+#fbd-sandbox .fbd-sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+@media (max-width:900px){
+  #fbd-sandbox{ height:auto; min-height:0; overflow:visible; }
+  #fbd-sandbox .fbd-main{ grid-template-columns:minmax(0,1fr); }
+  #fbd-sandbox .fbd-stage{ height:62vh; min-height:420px; }
+  #fbd-sandbox .fbd-rail{ overflow:visible; border-left:0; border-top:1px solid var(--fbd-line); }
+  #fbd-sandbox .fbd-armed{ margin-left:0; width:100%; }
+}
+</style>
+
+<header class="fbd-top">
+  <div class="fbd-bar">
+    <h1 class="fbd-title">Force Diagram Builder</h1>
+    <div class="fbd-seg" role="group" aria-label="Dimension mode">
+      <button type="button" data-fbd="mode2d" aria-pressed="true">2D</button>
+      <button type="button" data-fbd="mode1d" aria-pressed="false">1D</button>
     </div>
+    <button type="button" class="fbd-btn" data-fbd="snap" aria-pressed="true" title="Snap arrow direction to 15 degree steps. Hold Shift to bypass.">Snap</button>
+    <button type="button" class="fbd-btn" data-fbd="axes" aria-pressed="false" title="Show axes and angle spokes">Axes</button>
+    <span class="fbd-spacer"></span>
+    <button type="button" class="fbd-btn" data-fbd="undo" title="Undo the last diagram change (Ctrl+Z undoes whichever you did last, diagram or sketch)" aria-label="Undo diagram">Undo diagram</button>
+    <button type="button" class="fbd-btn" data-fbd="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">Redo</button>
+    <span class="fbd-exportwrap">
+      <button type="button" class="fbd-btn" data-fbd="export" aria-haspopup="true">Export PNG</button>
+      <div class="fbd-export" data-fbd="exportPanel" role="region" aria-label="Exported image" hidden></div>
+    </span>
+    <button type="button" class="fbd-btn" data-fbd="reset">Reset</button>
+    <button type="button" class="fbd-btn" data-fbd="help">How to use</button>
+  </div>
+  <div class="fbd-chips" role="group" aria-label="Force types" data-fbd="chips">
+    <span class="fbd-armed" data-fbd="armedText" aria-live="polite">No force type selected.</span>
+  </div>
+</header>
 
-    <div id="canvas-panel">
-        <div id="diagram-title">Force Diagram</div>
+<div class="fbd-main">
+  <div class="fbd-stage" data-fbd="stage">
+    <svg class="fbd-svg" data-fbd="svg" role="application" tabindex="0" aria-label="Free-body diagram canvas. Left and right arrow keys cycle through arrows, up and down change length, Enter edits.">
+      <g data-fbd="gAxes"></g>
+      <g data-fbd="gArrows"></g>
+      <g data-fbd="gAnchor"></g>
+      <g data-fbd="gAxH"></g>
+    </svg>
+    <div class="fbd-sr" data-fbd="live" aria-live="polite" role="status"></div>
+    <div class="fbd-empty" data-fbd="empty">Pick a force type above, then drag outward from the dot.</div>
+    <div class="fbd-pop" data-fbd="pop" role="dialog" aria-label="Arrow settings" hidden></div>
+  </div>
 
-        <div class="controls-container">
-            <button class="control-btn" id="reset-btn" title="Reset Diagram & List">🔄</button>
-            <button class="control-btn" id="save-img-btn" title="Save as Image (PNG)">📷</button>
-            <button class="control-btn" id="save-json-btn" title="Save Project File">💾</button>
-            <button class="control-btn" id="load-json-btn" title="Load Project File">📂</button>
-            <button class="control-btn" id="help-btn" title="How to use this tool">?</button>
+  <aside class="fbd-rail" aria-label="Diagram details">
+    <section class="fbd-panel" aria-label="State sketch">
+      <h2>State sketch</h2>
+      <canvas class="fbd-pad" data-fbd="pad" width="340" height="220" aria-label="Sketch of the situation"></canvas>
+      <div class="fbd-tools" role="group" aria-label="Sketch tools">
+        <button type="button" class="fbd-btn" data-fbd="penThin" aria-pressed="true">Pen</button>
+        <button type="button" class="fbd-btn" data-fbd="penThick" aria-pressed="false">Thick</button>
+        <button type="button" class="fbd-btn" data-fbd="eraser" aria-pressed="false">Eraser</button>
+        <button type="button" class="fbd-btn" data-fbd="padUndo" aria-label="Undo sketch stroke">Undo sketch</button>
+        <button type="button" class="fbd-btn" data-fbd="padClear">Clear</button>
+      </div>
+    </section>
+
+    <section class="fbd-panel" aria-label="System">
+      <h2>System</h2>
+      <div class="fbd-body">
+        <input type="text" class="fbd-field" data-fbd="sysName" placeholder="e.g. the block" maxlength="60" aria-label="System of interest">
+        <button type="button" class="fbd-btn" data-fbd="ringToggle" aria-pressed="false">Encircle system</button>
+        <p class="fbd-hint">The dashed ring is your system boundary. Draw it around your object(s) on the sketch. The force diagram always shows only your system.</p>
+        <div class="fbd-row2" role="group" aria-label="Axes tilt">
+          <span class="fbd-hint" data-fbd="axisRead" aria-live="polite">Axes tilt: 0&deg;</span>
+          <button type="button" class="fbd-btn" data-fbd="axisMinus" aria-label="Tilt axes minus 15 degrees">-15</button>
+          <button type="button" class="fbd-btn" data-fbd="axisPlus" aria-label="Tilt axes plus 15 degrees">+15</button>
+          <button type="button" class="fbd-btn" data-fbd="axisReset">Reset axes angle</button>
         </div>
-        <input type="file" id="file-input" style="display: none;" accept=".json">
-
-        <div id="precision-editor">
-            <span class="close-editor" id="close-editor-btn">&times;</span>
-            <h4 class="editor-title">Precision Editor</h4>
-            <div class="editor-row">
-                <label for="edit-length">Length (px):</label>
-                <input type="number" id="edit-length" class="editor-input" min="10" step="1">
-            </div>
-            <div class="editor-row">
-                <label for="edit-angle">Angle (&theta;°):</label>
-                <input type="number" id="edit-angle" class="editor-input" step="1">
-            </div>
-            <div class="editor-row checkbox-row">
-                <label for="edit-component" style="cursor: pointer;">Component Force</label>
-                <input type="checkbox" id="edit-component" style="cursor: pointer;">
-            </div>
-        </div>
-
-        <div class="axis-label" style="top: 15px; left: 50%; transform: translateX(-50%);">+y</div>
-        <div class="axis-label" style="bottom: 15px; left: 50%; transform: translateX(-50%);">-y</div>
-        <div class="axis-label" style="right: 15px; top: 50%; transform: translateY(-50%);">+x</div>
-        <div class="axis-label" style="left: 15px; top: 50%; transform: translateY(-50%);">-x</div>
-
-        <canvas id="forceCanvas"></canvas>
-        <div id="tooltip"></div>
-        <div id="labels-layer"></div>
-    </div>
-
-    <div id="help-modal" class="modal-overlay">
-        <div class="modal-content glass-panel">
-            <span class="modal-close">&times;</span>
-            <h3 class="modal-title">How to Use</h3>
-            <ul class="help-list">
-                <li>
-                    <span class="help-icon">🔄</span>
-                    <div><b>Reset:</b> Clear everything and start over.</div>
-                </li>
-                <li>
-                    <span class="help-icon">📷</span>
-                    <div><b>Save Image:</b> Download a PNG for submission.</div>
-                </li>
-                <li>
-                    <span class="help-icon">💾</span>
-                    <div><b>Save/Load:</b> Save your work to a file to resume later.</div>
-                </li>
-                <li>
-                    <span class="help-icon">✏️</span>
-                    <div><b>Create Arrow:</b> Click the center black dot and drag outwards.</div>
-                </li>
-                <li>
-                    <span class="help-icon">📐</span>
-                    <div><b>Snap Angles:</b> Hold <span class="key-badge">Shift</span> while dragging.</div>
-                </li>
-                <li>
-                    <span class="help-icon">🎯</span>
-                    <div><b>Precision Mode:</b> Hold <span class="key-badge">Ctrl</span> and click an arrow head.</div>
-                </li>
-                <li>
-                    <span class="help-icon">❌</span>
-                    <div><b>Delete:</b> Hover over a label and click the red <b>×</b>.</div>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <script>
-        // --- SETUP ---
-        const listContainer = document.getElementById('list-items');
-        for (let i = 1; i <= 10; i++) {
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `<span class="list-num">${i}.</span><input type="text" class="list-input" placeholder="[type here]">`;
-            listContainer.appendChild(div);
-        }
-
-        const canvas = document.getElementById('forceCanvas');
-        const ctx = canvas.getContext('2d');
-        const labelsLayer = document.getElementById('labels-layer');
-        const tooltip = document.getElementById('tooltip');
-        const container = document.getElementById('canvas-panel');
-
-        // Precision Editor Elements
-        const editorPanel = document.getElementById('precision-editor');
-        const editLenInput = document.getElementById('edit-length');
-        const editAngInput = document.getElementById('edit-angle');
-        const editComponentCheckbox = document.getElementById('edit-component');
-        const closeEditorBtn = document.getElementById('close-editor-btn');
-
-        // Save/Load Controls
-        const resetBtn = document.getElementById('reset-btn');
-        const saveImgBtn = document.getElementById('save-img-btn');
-        const saveJsonBtn = document.getElementById('save-json-btn');
-        const loadJsonBtn = document.getElementById('load-json-btn');
-        const fileInput = document.getElementById('file-input');
-
-        let width, height, centerX, centerY;
-        let arrows = [];
-        let draggingArrow = null;
-        let isCreatingNew = false;
-        let editingArrowForPrecision = null;
-
-        const centerRadius = 15;
-        const arrowHeadLen = 15;
-        const arrowColor = "#557A45";
-        const highlightColor = "#007aff";
-
-        function resize() {
-            const newWidth = container.clientWidth;
-            const newHeight = container.clientHeight;
-
-            if (width !== undefined && height !== undefined) {
-                const shiftX = (newWidth - width) / 2;
-                const shiftY = (newHeight - height) / 2;
-                arrows.forEach(a => {
-                    a.endX += shiftX;
-                    a.endY += shiftY;
-                });
-            }
-
-            width = newWidth;
-            height = newHeight;
-            canvas.width = width;
-            canvas.height = height;
-            centerX = width / 2;
-            centerY = height / 2;
-            draw();
-        }
-        window.addEventListener('resize', resize);
-
-        // --- DRAWING ---
-        function drawGrid() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.beginPath();
-            ctx.setLineDash([4, 4]);
-            ctx.strokeStyle = "#ccc";
-            ctx.lineWidth = 1;
-            ctx.moveTo(0, centerY); ctx.lineTo(width, centerY);
-            ctx.moveTo(centerX, 0); ctx.lineTo(centerX, height);
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        function drawCenterObject() {
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
-            ctx.fillStyle = "black";
-            ctx.fill();
-        }
-
-        function drawArrow(arrow) {
-            const startX = arrow.offsetStartX !== undefined ? arrow.offsetStartX : centerX;
-            const startY = arrow.offsetStartY !== undefined ? arrow.offsetStartY : centerY;
-            const endX = arrow.offsetEndX !== undefined ? arrow.offsetEndX : arrow.endX;
-            const endY = arrow.offsetEndY !== undefined ? arrow.offsetEndY : arrow.endY;
-
-            const dx = endX - startX;
-            const dy = endY - startY;
-            const angle = Math.atan2(dy, dx);
-
-            const isHighlighted = arrow === editingArrowForPrecision;
-            const currentColor = isHighlighted ? highlightColor : arrowColor;
-
-            ctx.beginPath();
-            ctx.lineWidth = isHighlighted ? 5 : 4;
-            ctx.strokeStyle = currentColor;
-            ctx.fillStyle = currentColor;
-
-            if (arrow.isComponent) {
-                ctx.setLineDash([6, 4]);
-            }
-
-            ctx.moveTo(startX, startY);
-            ctx.lineTo(endX, endY);
-            ctx.stroke();
-
-            ctx.setLineDash([]);
-
-            ctx.beginPath();
-            ctx.moveTo(endX, endY);
-            ctx.lineTo(endX - arrowHeadLen * Math.cos(angle - Math.PI / 6), endY - arrowHeadLen * Math.sin(angle - Math.PI / 6));
-            ctx.lineTo(endX - arrowHeadLen * Math.cos(angle + Math.PI / 6), endY - arrowHeadLen * Math.sin(angle + Math.PI / 6));
-            ctx.lineTo(endX, endY);
-            ctx.fill();
-
-            if (isHighlighted) {
-                ctx.shadowColor = highlightColor;
-                ctx.shadowBlur = 10;
-                ctx.stroke();
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-        }
-
-        // --- OVERLAP LOGIC ---
-        function calculateArrowOffsets() {
-            arrows.forEach(a => {
-                a.offsetStartX = centerX;
-                a.offsetStartY = centerY;
-                a.offsetEndX = a.endX;
-                a.offsetEndY = a.endY;
-                a.groupIndex = 0;
-            });
-
-            const groups = [];
-            const visited = new Set();
-
-            for(let i=0; i<arrows.length; i++) {
-                if(visited.has(arrows[i].id)) continue;
-                const group = [arrows[i]];
-                visited.add(arrows[i].id);
-                const a1Angle = getPhysicsAngle(arrows[i].endX, arrows[i].endY);
-
-                for(let j=i+1; j<arrows.length; j++) {
-                    if(visited.has(arrows[j].id)) continue;
-                    const a2Angle = getPhysicsAngle(arrows[j].endX, arrows[j].endY);
-                    let diff = Math.abs(a1Angle - a2Angle);
-                    if(diff > 180) diff = 360 - diff;
-
-                    if(diff < 3) {
-                        group.push(arrows[j]);
-                        visited.add(arrows[j].id);
-                    }
-                }
-                groups.push(group);
-            }
-
-            const spacing = 12;
-            groups.forEach(group => {
-                if(group.length <= 1) return;
-
-                const dx = group[0].endX - centerX;
-                const dy = group[0].endY - centerY;
-                const len = Math.sqrt(dx*dx + dy*dy) || 1;
-                const perpX = -(dy/len);
-                const perpY = (dx/len);
-
-                group.forEach((arrow, index) => {
-                    const centeredIndex = index - (group.length - 1) / 2;
-                    arrow.groupIndex = centeredIndex;
-
-                    const shiftX = perpX * centeredIndex * spacing;
-                    const shiftY = perpY * centeredIndex * spacing;
-
-                    arrow.offsetStartX += shiftX;
-                    arrow.offsetStartY += shiftY;
-                    arrow.offsetEndX = arrow.endX + shiftX;
-                    arrow.offsetEndY = arrow.endY + shiftY;
-                });
-            });
-        }
-
-        function draw() {
-            drawGrid();
-            drawCenterObject();
-            calculateArrowOffsets();
-
-            arrows.forEach(a => {
-                if (a !== draggingArrow) drawArrow(a);
-            });
-
-            if (draggingArrow) drawArrow(draggingArrow);
-
-            updateLabelPositions();
-        }
-
-        // --- MATH HELPERS ---
-        function dist(x1, y1, x2, y2) { return Math.sqrt((x2-x1)**2 + (y2-y1)**2); }
-        function getPhysicsAngle(x, y) {
-            const dx = x - centerX;
-            const dy = -(y - centerY);
-            let theta = Math.atan2(dy, dx) * (180 / Math.PI);
-            if (theta < 0) theta += 360;
-            return Math.round(theta * 10) / 10;
-        }
-        function getLength(x, y) { return Math.round(dist(centerX, centerY, x, y)); }
-
-        // --- INTERACTION ---
-        function createLabelInput(arrowObj) {
-            const div = document.createElement('div');
-            div.className = 'force-label-container';
-            div.innerHTML = `
-                <button class="delete-btn" title="Delete Arrow">×</button>
-                F <input class="force-label-input input-blue" value="${arrowObj.label1 || ''}">
-                <span class="force-sub-text">on</span>
-                <input class="force-label-input input-red" value="${arrowObj.label2 || ''}">
-            `;
-            const inputs = div.querySelectorAll('input');
-            inputs[0].addEventListener('input', (e) => arrowObj.label1 = e.target.value);
-            inputs[1].addEventListener('input', (e) => arrowObj.label2 = e.target.value);
-            div.querySelector('.delete-btn').addEventListener('click', () => deleteArrow(arrowObj));
-            labelsLayer.appendChild(div);
-            arrowObj.inputEl = div;
-            updateLabelPositions();
-        }
-
-        function deleteArrow(arrowObj) {
-            if (arrowObj.inputEl) arrowObj.inputEl.remove();
-            if (arrowObj === editingArrowForPrecision) closePrecisionEditor();
-            arrows = arrows.filter(a => a !== arrowObj);
-            draw();
-            tooltip.style.display = 'none';
-        }
-
-        function updateLabelPositions() {
-            arrows.forEach(a => {
-                if(a.inputEl) {
-                    const finalX = a.offsetEndX !== undefined ? a.offsetEndX : a.endX;
-                    const finalY = a.offsetEndY !== undefined ? a.offsetEndY : a.endY;
-
-                    const angle = getPhysicsAngle(a.endX, a.endY) % 360;
-                    const isVertical = (angle > 45 && angle < 135) || (angle > 225 && angle < 315);
-                    const idx = a.groupIndex || 0;
-
-                    let left = finalX;
-                    let top = finalY;
-                    let transform = '';
-
-                    if (isVertical) {
-                        const spreadX = idx * 130;
-                        left += spreadX;
-                        if (finalY >= centerY) {
-                            top += 18;
-                            transform = 'translate(-50%, 0)';
-                        } else {
-                            top -= 18;
-                            transform = 'translate(-50%, -100%)';
-                        }
-                    } else {
-                        const spreadY = idx * 60;
-                        top += spreadY;
-                        if (finalY >= centerY) {
-                            top += 18;
-                            transform = 'translate(-50%, 0)';
-                        } else {
-                            top -= 18;
-                            transform = 'translate(-50%, -100%)';
-                        }
-                    }
-
-                    a.inputEl.style.left = left + 'px';
-                    a.inputEl.style.top = top + 'px';
-                    a.inputEl.style.transform = transform;
-                }
-            });
-        }
-
-        function getArrowUnderMouse(mx, my) {
-            for (let a of arrows) {
-                const finalX = a.offsetEndX !== undefined ? a.offsetEndX : a.endX;
-                const finalY = a.offsetEndY !== undefined ? a.offsetEndY : a.endY;
-                if (dist(mx, my, finalX, finalY) < 20) return a;
-            }
-            return null;
-        }
-
-        // --- DYNAMIC EDITOR ---
-        function openPrecisionEditor(arrow) {
-            editingArrowForPrecision = arrow;
-            const finalX = arrow.offsetEndX !== undefined ? arrow.offsetEndX : arrow.endX;
-            const finalY = arrow.offsetEndY !== undefined ? arrow.offsetEndY : arrow.endY;
-            editorPanel.style.left = (finalX + 20) + 'px';
-            editorPanel.style.top = (finalY + 20) + 'px';
-            editorPanel.style.display = 'block';
-            editLenInput.value = getLength(arrow.endX, arrow.endY);
-            editAngInput.value = getPhysicsAngle(arrow.endX, arrow.endY);
-            editComponentCheckbox.checked = arrow.isComponent || false;
-            draw();
-        }
-
-        function closePrecisionEditor() {
-            editingArrowForPrecision = null;
-            editorPanel.style.display = 'none';
-            draw();
-        }
-
-        function updateArrowFromEditor() {
-            if (!editingArrowForPrecision) return;
-            const len = parseFloat(editLenInput.value) || 10;
-            const physicsAngle = parseFloat(editAngInput.value) || 0;
-            const radians = -physicsAngle * (Math.PI / 180);
-
-            editingArrowForPrecision.endX = centerX + len * Math.cos(radians);
-            editingArrowForPrecision.endY = centerY + len * Math.sin(radians);
-            editingArrowForPrecision.isComponent = editComponentCheckbox.checked;
-
-            draw();
-            const finalX = editingArrowForPrecision.offsetEndX !== undefined ? editingArrowForPrecision.offsetEndX : editingArrowForPrecision.endX;
-            const finalY = editingArrowForPrecision.offsetEndY !== undefined ? editingArrowForPrecision.offsetEndY : editingArrowForPrecision.endY;
-            editorPanel.style.left = (finalX + 20) + 'px';
-            editorPanel.style.top = (finalY + 20) + 'px';
-        }
-
-        editLenInput.addEventListener('input', updateArrowFromEditor);
-        editAngInput.addEventListener('input', updateArrowFromEditor);
-        editComponentCheckbox.addEventListener('change', updateArrowFromEditor);
-        closeEditorBtn.addEventListener('click', closePrecisionEditor);
-
-        // --- SAVE / LOAD / RESET FUNCTIONS ---
-
-        // RESET
-        resetBtn.addEventListener('click', () => {
-            if(confirm("Are you sure you want to clear the entire diagram and list?")) {
-                // Clear DOM labels
-                arrows.forEach(a => { if(a.inputEl) a.inputEl.remove(); });
-                arrows = [];
-                editingArrowForPrecision = null;
-                editorPanel.style.display = 'none';
-
-                // Clear List Inputs
-                document.querySelectorAll('.list-input').forEach(input => input.value = '');
-
-                draw();
-            }
-        });
-
-        // SAVE IMAGE
-        saveImgBtn.addEventListener('click', () => {
-            ctx.save();
-            ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalCompositeOperation = 'source-over';
-
-            ctx.fillStyle = "#999";
-            ctx.font = "bold 16px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("+y", centerX, 15);
-            ctx.fillText("-y", centerX, height - 15);
-            ctx.fillText("+x", width - 15, centerY);
-            ctx.fillText("-x", 15, centerY);
-
-            ctx.font = "bold 16px Arial";
-            arrows.forEach(a => {
-                const finalX = a.offsetEndX !== undefined ? a.offsetEndX : a.endX;
-                const finalY = a.offsetEndY !== undefined ? a.offsetEndY : a.endY;
-                const angle = getPhysicsAngle(a.endX, a.endY) % 360;
-                const isVertical = (angle > 45 && angle < 135) || (angle > 225 && angle < 315);
-                const idx = a.groupIndex || 0;
-
-                let left = finalX;
-                let top = finalY;
-
-                if (isVertical) {
-                    left += idx * 130;
-                    if (finalY >= centerY) top += 18; else top -= 18;
-                } else {
-                    top += idx * 60;
-                    if (finalY >= centerY) top += 18; else top -= 18;
-                }
-
-                const l1 = a.label1 || "___";
-                const l2 = a.label2 || "___";
-
-                const boxW = 100; const boxH = 26;
-                let boxY = top;
-                if (finalY < centerY && isVertical) boxY -= boxH;
-                if (finalY < centerY && !isVertical) boxY -= boxH;
-
-                ctx.fillStyle = "rgba(255,255,255,0.9)";
-                ctx.fillRect(left - boxW/2, boxY, boxW, boxH);
-
-                let tx = left - 35;
-                let ty = boxY + 18;
-
-                ctx.fillStyle = "#557A45"; ctx.fillText("F", tx, ty); tx += 12;
-                ctx.fillStyle = "#007aff"; ctx.fillText(l1, tx, ty); tx += (ctx.measureText(l1).width + 5);
-                ctx.fillStyle = "#000"; ctx.fillText("on", tx, ty); tx += 22;
-                ctx.fillStyle = "#FF3B30"; ctx.fillText(l2, tx, ty);
-            });
-
-            const link = document.createElement('a');
-            link.download = 'force-diagram.png';
-            link.href = canvas.toDataURL();
-            link.click();
-            ctx.restore();
-            draw();
-        });
-
-        // SAVE JSON
-        saveJsonBtn.addEventListener('click', () => {
-            const listInputs = Array.from(document.querySelectorAll('.list-input')).map(i => i.value);
-            const data = {
-                arrows: arrows.map(a => ({
-                    id: a.id,
-                    endX: a.endX, endY: a.endY,
-                    label1: a.label1, label2: a.label2,
-                    isComponent: a.isComponent
-                })),
-                list: listInputs,
-                centerX: centerX, centerY: centerY,
-                timestamp: Date.now()
-            };
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'force-diagram-project.json';
-            link.click();
-        });
-
-        // LOAD JSON
-        loadJsonBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    const listInputs = document.querySelectorAll('.list-input');
-                    if (data.list) {
-                        data.list.forEach((val, i) => { if(listInputs[i]) listInputs[i].value = val; });
-                    }
-
-                    const oldCX = data.centerX || centerX;
-                    const oldCY = data.centerY || centerY;
-                    const diffX = centerX - oldCX;
-                    const diffY = centerY - oldCY;
-
-                    arrows.forEach(a => { if(a.inputEl) a.inputEl.remove(); });
-                    arrows = [];
-
-                    if (data.arrows) {
-                        data.arrows.forEach(savedArrow => {
-                            const newArrow = {
-                                id: savedArrow.id || Date.now(),
-                                endX: savedArrow.endX + diffX,
-                                endY: savedArrow.endY + diffY,
-                                label1: savedArrow.label1,
-                                label2: savedArrow.label2,
-                                isComponent: savedArrow.isComponent || false
-                            };
-                            arrows.push(newArrow);
-                            createLabelInput(newArrow);
-                        });
-                    }
-                    draw();
-                } catch(err) {
-                    alert("Error loading file: " + err);
-                }
-            };
-            reader.readAsText(file);
-            fileInput.value = '';
-        });
-
-
-        // --- MOUSE EVENTS ---
-        canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-            const clickedArrow = getArrowUnderMouse(mx, my);
-
-            if (e.ctrlKey && clickedArrow) {
-                openPrecisionEditor(clickedArrow);
-                return;
-            }
-
-            if (clickedArrow) {
-                draggingArrow = clickedArrow;
-                isCreatingNew = false;
-                closePrecisionEditor();
-                return;
-            }
-
-            if (dist(mx, my, centerX, centerY) < centerRadius + 5) {
-                isCreatingNew = true;
-                closePrecisionEditor();
-                draggingArrow = { id: Date.now(), endX: mx, endY: my, label1: '', label2: '', isComponent: false };
-                arrows.push(draggingArrow);
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-
-            if (draggingArrow) {
-                let currentMX = mx, currentMY = my;
-                if (e.shiftKey) {
-                    const dx = mx - centerX, dy = my - centerY;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    let angle = Math.atan2(dy, dx);
-                    const snap = Math.PI / 4;
-                    angle = Math.round(angle / snap) * snap;
-                    currentMX = centerX + dist * Math.cos(angle);
-                    currentMY = centerY + dist * Math.sin(angle);
-                }
-                draggingArrow.endX = currentMX;
-                draggingArrow.endY = currentMY;
-                draw();
-                return;
-            }
-
-            const hoveredArrow = getArrowUnderMouse(mx, my);
-            if (hoveredArrow) {
-                tooltip.style.display = 'block';
-                const finalX = hoveredArrow.offsetEndX !== undefined ? hoveredArrow.offsetEndX : hoveredArrow.endX;
-                const finalY = hoveredArrow.offsetEndY !== undefined ? hoveredArrow.offsetEndY : hoveredArrow.endY;
-                tooltip.style.left = (finalX + 20) + 'px';
-                tooltip.style.top = (finalY + 20) + 'px';
-
-                const len = getLength(hoveredArrow.endX, hoveredArrow.endY);
-                const ang = getPhysicsAngle(hoveredArrow.endX, hoveredArrow.endY);
-                tooltip.innerHTML = `Length: ${len}px<br>&Theta;: ${ang}&deg;`;
-            } else {
-                tooltip.style.display = 'none';
-            }
-
-            const overCenter = dist(mx, my, centerX, centerY) < centerRadius + 5;
-            canvas.style.cursor = (hoveredArrow || overCenter) ? 'pointer' : 'crosshair';
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (draggingArrow) {
-                if (isCreatingNew) {
-                    if (getLength(draggingArrow.endX, draggingArrow.endY) < 10) {
-                        deleteArrow(draggingArrow);
-                    } else {
-                        createLabelInput(draggingArrow);
-                    }
-                } else {
-                    draw();
-                }
-                draggingArrow = null;
-                isCreatingNew = false;
-                draw();
-            }
-        });
-
-        // Touch support
-        function touchHandler(event) {
-            if (event.target !== canvas) return;
-            var touches = event.changedTouches, first = touches[0], type = "";
-            switch(event.type) {
-                case "touchstart": type = "mousedown"; break;
-                case "touchmove":  type = "mousemove"; break;
-                case "touchend":   type = "mouseup";   break;
-                default: return;
-            }
-            var simulatedEvent = new MouseEvent(type, {
-                bubbles: true, cancelable: true, view: window,
-                screenX: first.screenX, screenY: first.screenY,
-                clientX: first.clientX, clientY: first.clientY,
-                button: 0, ctrlKey: false, shiftKey: false
-            });
-            first.target.dispatchEvent(simulatedEvent);
-            if(event.type === 'touchmove') event.preventDefault();
-        }
-        canvas.addEventListener("touchstart", touchHandler, {passive: false});
-        canvas.addEventListener("touchmove", touchHandler, {passive: false});
-        canvas.addEventListener("touchend", touchHandler, {passive: false});
-
-        const helpBtn = document.getElementById('help-btn');
-        const helpModal = document.getElementById('help-modal');
-        helpBtn.addEventListener('click', () => helpModal.style.display = 'flex');
-        document.querySelector('.modal-close').addEventListener('click', () => helpModal.style.display = 'none');
-        helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
-
-        setTimeout(resize, 100);
-    </script>
+        <p class="fbd-hint">Tilt the axes for a ramp. You can also drag the round handle on the +x axis.</p>
+        <button type="button" class="fbd-btn" data-fbd="showObjs" aria-pressed="true">Show objects on labels</button>
+      </div>
+    </section>
+
+    <section class="fbd-panel" aria-label="External objects">
+      <h2>External objects</h2>
+      <div class="fbd-body">
+        <button type="button" class="fbd-btn" data-fbd="addObj">Add object</button>
+        <ul class="fbd-objs" data-fbd="objs"></ul>
+        <p class="fbd-hint" data-fbd="objsHint">Add what is pushing or pulling on your system, then tag each arrow.</p>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="fbd-modal" data-fbd="modal" hidden>
+  <div class="fbd-dialog" role="dialog" aria-modal="true" aria-labelledby="fbd-help-title">
+    <h2 id="fbd-help-title">How to use</h2>
+    <ol>
+      <li>Sketch the situation in the State sketch pad for one moment in time.</li>
+      <li>Pick a force type button, then drag outward from the dot. The arrow starts at the dot.</li>
+      <li>Click an arrow to select it. Drag its shaft to rotate it, or drag its tip to change length and direction.</li>
+      <li>Use the popover to change the type, tag the object that exerts the force, or rename the label. Type F_T to get a subscript.</li>
+      <li>Type an underscore for a subscript, so F_T shows a small T. Only the first underscore makes a subscript.</li>
+      <li>Turn on Snap for 15 degree steps (measured from the tilted +x axis whenever the axes are tilted). Hold Shift to skip snapping. 1D locks each arrow to the +x or +y axis, whichever is closer to your drag.</li>
+      <li>Turn on Axes to see +x and +y. Tilt them with the round handle on +x or the +15 and -15 buttons in the System panel, then draw arrows parallel and perpendicular to a ramp.</li>
+      <li>Name your system, turn on Encircle system, and drag the dashed ring around your object(s) on the sketch pad. The force diagram shows only your system. List the external objects that interact with it.</li>
+      <li>To draw several arrows of one type, Shift+click its button to pin it. Press Escape or click the button again to unpin.</li>
+    </ol>
+    <p class="fbd-hint">This is a sandbox. It does not check your answer, so you decide what belongs in your diagram.</p>
+    <p><button type="button" class="fbd-btn" data-fbd="helpClose">Got it</button></p>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+var root = null;
+try { root = document.currentScript && document.currentScript.closest ? document.currentScript.closest('#fbd-sandbox') : null; } catch (e0) { root = null; }
+if (!root) { root = document.getElementById('fbd-sandbox'); }
+if (!root) { return; }
+
+/* ---------- constants ---------- */
+var KEY = root.getAttribute('data-storage-key') || 'fbd-sandbox:v1';
+var HIST_CAP = 100;
+var MIN_LEN = 26;
+var HEAD_LEN = 16;
+var HEAD_W = 8.5;
+var SNAP_TOL = 6;
+var SNAP_STEP = 15;
+var FAN_GAP = 14;
+var FAN_DEG = 0.5;
+var HYST_DEG = 5;
+var PAD_W = 340, PAD_H = 220;
+var PI = Math.PI;
+var TYPES = [
+  { key: 'weight',   name: 'Weight',   color: '#f5a623', sub: 'g' },
+  { key: 'normal',   name: 'Normal',   color: '#4fd1e0', sub: 'N' },
+  { key: 'friction', name: 'Friction', color: '#e8544f', sub: 'f' },
+  { key: 'tension',  name: 'Tension',  color: '#22d47a', sub: 'T' },
+  { key: 'applied',  name: 'Applied',  color: '#5b9cf6', sub: 'a' },
+  { key: 'spring',   name: 'Spring',   color: '#9b6bff', sub: 's' },
+  { key: 'drag',     name: 'Drag',     color: '#ec6aa8', sub: 'D' },
+  { key: 'other',    name: 'Other',    color: '#b9b4cc', sub: '' }
+];
+var TYPE_BY = {};
+TYPES.forEach(function (t) { TYPE_BY[t.key] = t; });
+
+/* ---------- state ---------- */
+var el = {};
+var S = null;                 /* the document */
+var hist = [], histIdx = -1;  /* snapshot history */
+var armed = null;             /* armed force type key or null */
+var selId = null;             /* selected arrow id */
+var W = 800, H = 600;         /* stage size in px */
+var seq = 0;
+var pinned = null;            /* pinned (repeat-draw) force type key or null */
+var axesAuto = false;         /* Axes auto-shown once after the first tilt change */
+var dockDirty = true;         /* recompute settings panel dock on next popover render */
+var acts = [], redoActs = []; /* shared undo kinds: {kind:'diagram'|'sketch'} */
+
+function defaultState() {
+  return {
+    arrows: [],
+    anchor: { fx: 0.5, fy: 0.5 },
+    ring: { on: false, fx: 0.5, fy: 0.5, rx: 80, ry: 56 }, /* fx/fy: 0..1 of the sketch pad; rx/ry: pad units (340 x 220) */
+    objects: [],
+    sysName: '',
+    mode: '2d',
+    axes: false,
+    snap: true,
+    axisAngle: 0,
+    showObjs: true,
+    strokes: []
+  };
+}
+
+/* ---------- helpers ---------- */
+function q(name) { return root.querySelector('[data-fbd="' + name + '"]'); }
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function uid(p) { seq += 1; return p + seq.toString(36) + Math.random().toString(36).slice(2, 6); }
+function norm360(d) { d = d % 360; return d < 0 ? d + 360 : d; }
+function round1(n) { return Math.round(n * 10) / 10; }
+function arrowById(id) {
+  for (var i = 0; i < S.arrows.length; i++) { if (S.arrows[i].id === id) { return S.arrows[i]; } }
+  return null;
+}
+function objectById(id) {
+  for (var i = 0; i < S.objects.length; i++) { if (S.objects[i].id === id) { return S.objects[i]; } }
+  return null;
+}
+function objName(o) {
+  var i = S.objects.indexOf(o);
+  var n = (o.name || '').trim();
+  return n || ('Object ' + (i + 1));
+}
+function defaultLabel(type) {
+  var t = TYPE_BY[type] || TYPE_BY.other;
+  return t.sub ? 'F_' + t.sub : 'F';
+}
+function arrowLabel(a) { return (a.label && a.label.trim()) ? a.label : defaultLabel(a.type); }
+/* split on the first underscore: [base, subscript] */
+function labelParts(text) {
+  var i = text.indexOf('_');
+  if (i < 0) { return [text, '']; }
+  return [text.slice(0, i), text.slice(i + 1)];
+}
+function labelSVG(text) {
+  var p = labelParts(text);
+  return esc(p[0]) + (p[1] ? '<tspan baseline-shift="sub" font-size="70%">' + esc(p[1]) + '</tspan>' : '');
+}
+function coarse() {
+  try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return false; }
+}
+
+/* ---------- geometry ---------- */
+function ap() { return { x: S.anchor.fx * W, y: S.anchor.fy * H }; }
+function angDiff(a, b) { var d = Math.abs(norm360(a) - norm360(b)); return d > 180 ? 360 - d : d; }
+/* arrows (plus the draft being drawn) whose angles are within FAN_DEG share a fan group */
+function fanOf(a) {
+  var list = draft ? S.arrows.concat([draft]) : S.arrows, seen = {}, i, j, g, x, y;
+  for (i = 0; i < list.length; i++) {
+    x = list[i];
+    if (seen[x.id]) { continue; }
+    seen[x.id] = true; g = [x];
+    for (j = i + 1; j < list.length; j++) {
+      y = list[j];
+      if (!seen[y.id] && angDiff(x.angle, y.angle) <= FAN_DEG) { seen[y.id] = true; g.push(y); }
+    }
+    if (g.indexOf(a) >= 0) { return { k: g.length, idx: g.indexOf(a), group: g, off: (g.indexOf(a) - (g.length - 1) / 2) * FAN_GAP }; }
+  }
+  return { k: 1, idx: 0, group: [a], off: 0 };
+}
+function geomFor(a, off) {
+  var p = ap(), r = a.angle * PI / 180, ux = Math.cos(r), uy = -Math.sin(r), nx = -uy, ny = ux;
+  var tx = p.x + nx * off, ty = p.y + ny * off;
+  return { p: p, ux: ux, uy: uy, nx: nx, ny: ny, off: off, tail: { x: tx, y: ty }, tip: { x: tx + a.len * ux, y: ty + a.len * uy } };
+}
+function geom(a) { return geomFor(a, fanOf(a).off); }
+function tipOf(a) { return geom(a).tip; }
+function tailOf(a) { return geom(a).tail; }
+function subText(a) {
+  var o = a.obj ? objectById(a.obj) : null;
+  if (!o || S.showObjs === false) { return ''; }
+  var n = objName(o);
+  return '(by ' + (n.length > 18 ? n.slice(0, 18) + '\u2026' : n) + ')';
+}
+/* label anchor point for an arrow; fan groups are spread so labels do not collide */
+function baseLabel(G, k) {
+  var side = G.ux > 0.35 ? 'start' : (G.ux < -0.35 ? 'end' : 'middle');
+  var x = G.tip.x + G.ux * 16, y = G.tip.y + G.uy * 16;
+  if (Math.abs(G.ux) <= 0.35) {
+    y += G.uy * 8;
+    if (k > 1 && Math.abs(G.off) > 0.01) {
+      var sg = (G.off * G.nx) >= 0 ? 1 : -1;
+      side = sg > 0 ? 'start' : 'end';
+      x = G.tip.x + sg * (HEAD_W + 8); y = G.tip.y + G.uy * 8;
+    }
+  }
+  return { x: x, y: y, side: side };
+}
+function labelPos(a) {
+  var f = fanOf(a), k = f.k, items = [], mine = null, i;
+  var anySub = f.group.some(function (b) { return !!subText(b); });
+  f.group.forEach(function (b, bi) {
+    var L = baseLabel(geomFor(b, (bi - (k - 1) / 2) * FAN_GAP), k);
+    items.push({ b: b, L: L, y0: L.y, steep: Math.abs(geomFor(b, 0).ux) <= 0.35 });
+    if (b === a) { mine = L; }
+  });
+  if (k > 1) {
+    var steep = Math.abs(geomFor(a, 0).ux) <= 0.35, m0 = 0, m1 = 0, shift;
+    if (steep) {
+      /* vertical-ish fan: each label (and its subline) gets its own line, stacked by fan index */
+      var step = anySub ? 40 : 30;
+      items.forEach(function (it, ii) { it.L.y = it.y0 + (ii - (k - 1) / 2) * step; });
+    } else {
+      var sorted = items.slice().sort(function (m, n) { return m.L.y - n.L.y; });
+      var gap = anySub ? 32 : 19;
+      for (i = 1; i < sorted.length; i++) {
+        if (sorted[i].L.y < sorted[i - 1].L.y + gap) { sorted[i].L.y = sorted[i - 1].L.y + gap; }
+      }
+      items.forEach(function (it) { m0 += it.y0; m1 += it.L.y; });
+      shift = (m0 - m1) / items.length;
+      items.forEach(function (it) { it.L.y += shift; });
+    }
+  }
+  /* keep the whole group inside the canvas by shifting it together, so clamping never merges labels */
+  var hasSub = !!subText(a), lo = 20, hi = H - (anySub ? 32 : 20), ymin = Infinity, ymax = -Infinity, sh = 0;
+  items.forEach(function (it) { ymin = Math.min(ymin, it.L.y); ymax = Math.max(ymax, it.L.y); });
+  if (ymax > hi) { sh = hi - ymax; }
+  if (ymin + sh < lo) { sh = lo - ymin; }
+  return { x: clamp(mine.x, 24, W - 24), y: clamp(mine.y + sh, 20, H - (hasSub ? 32 : 20)), side: mine.side, inline: k > 1 };
+}
+function maxLen() { return Math.max(MIN_LEN + 10, 0.6 * Math.min(W, H)); }
+function clampLen(l) { return Math.max(MIN_LEN, Math.min(maxLen(), l)); }
+function M() { return Math.min(W, H); }
+/* lengths are stored in px and as a fraction of min(W,H); the fraction is canonical on load and resize */
+function setLen(a, len) { a.len = Math.round(len); a.lf = a.len / M(); }
+function rescaleLens() {
+  if (!S) { return; }
+  S.arrows.forEach(function (a) {
+    if (typeof a.lf === 'number' && a.lf > 0) { a.len = Math.round(clampLen(a.lf * M())); }
+    else { a.lf = a.len / M(); }
+  });
+}
+/* snap to 15 degree steps; with Axes on in 2D the steps are measured from the tilted +x axis */
+function snapAngle(deg, shift) {
+  deg = norm360(deg);
+  if (!S.snap || shift) { return deg; }
+  var base = S.axisAngle || 0;
+  var n = base + Math.round((deg - base) / SNAP_STEP) * SNAP_STEP;
+  return angDiff(deg, n) <= SNAP_TOL ? norm360(n) : deg;
+}
+/* lock object {sel} remembers which axis (0 = along +x tilt, 1 = perpendicular) a 1D drag is on, for hysteresis */
+function lockFor(angle) {
+  var m = norm360(angle - (S.axisAngle || 0)) % 180;
+  return { sel: (m > 45 && m < 135) ? 1 : 0 };
+}
+/* angle and length measured from the anchor to a point; lock1d locks to the tilted axis pair */
+function vectorTo(pt, shift, lock1d, lock) {
+  var o = ap(), dx = pt.x - o.x, dy = pt.y - o.y;
+  var len = clampLen(Math.sqrt(dx * dx + dy * dy));
+  var ang;
+  if (lock1d) {
+    var b = S.axisAngle || 0, br = b * PI / 180, c = Math.cos(br), sn = Math.sin(br);
+    var d0 = dx * c - dy * sn, d1 = -dx * sn - dy * c;
+    var phi = Math.atan2(Math.abs(d1), Math.abs(d0)) * 180 / PI;
+    var sel = (lock && lock.sel != null) ? lock.sel : (phi > 45 ? 1 : 0);
+    if (lock && lock.sel != null) {
+      if (sel === 0 && phi > 45 + HYST_DEG) { sel = 1; }
+      else if (sel === 1 && phi < 45 - HYST_DEG) { sel = 0; }
+    }
+    if (lock) { lock.sel = sel; }
+    var dd = sel === 0 ? d0 : d1;
+    ang = norm360(b + sel * 90 + (dd < 0 ? 180 : 0));
+    len = clampLen(Math.abs(dd));
+  } else { ang = snapAngle(Math.atan2(-dy, dx) * 180 / PI, shift); }
+  return { angle: round1(ang), len: Math.round(len) };
+}
+
+/* ---------- history ---------- */
+function docOf() {
+  return JSON.stringify({ arrows: S.arrows, anchor: S.anchor, ring: S.ring, objects: S.objects, sysName: S.sysName, axisAngle: S.axisAngle });
+}
+function applyDoc(str) {
+  var d = JSON.parse(str);
+  S.arrows = d.arrows; S.anchor = d.anchor; S.ring = d.ring; S.objects = d.objects;
+  S.sysName = typeof d.sysName === 'string' ? d.sysName : '';
+  S.axisAngle = typeof d.axisAngle === 'number' ? d.axisAngle : 0;
+  rescaleLens();
+}
+function initHistory() { hist = [docOf()]; histIdx = 0; }
+function commit() {
+  var s = docOf();
+  if (hist[histIdx] === s) { persist(); renderAll(); return; }
+  hist = hist.slice(0, histIdx + 1);
+  hist.push(s);
+  if (hist.length > HIST_CAP) { hist.shift(); }
+  histIdx = hist.length - 1;
+  pushAct('diagram');
+  dockDirty = true;
+  persist();
+  renderAll();
+}
+function afterHistoryMove() {
+  dockDirty = true;
+  if (selId && !arrowById(selId)) { selId = null; }
+  persist();
+  renderAll();
+}
+function undo() { if (histIdx > 0) { histIdx -= 1; applyDoc(hist[histIdx]); afterHistoryMove(); } }
+function redo() { if (histIdx < hist.length - 1) { histIdx += 1; applyDoc(hist[histIdx]); afterHistoryMove(); } }
+/* one shared stack of action kinds so Ctrl+Z follows the order the student actually worked in */
+function pushAct(kind) { acts.push({ kind: kind }); if (acts.length > 300) { acts.shift(); } redoActs = []; }
+function lastActIndex(kind) { for (var i = acts.length - 1; i >= 0; i--) { if (acts[i].kind === kind) { return i; } } return -1; }
+function undoDiagram() {
+  if (histIdx <= 0) { return; }
+  var i = lastActIndex('diagram');
+  if (i >= 0) { acts.splice(i, 1); }
+  redoActs.push({ kind: 'diagram' });
+  undo();
+}
+function undoSketch() {
+  if (!S.strokes.length) { return; }
+  var st = S.strokes.pop(), i = lastActIndex('sketch');
+  if (i >= 0) { acts.splice(i, 1); }
+  redoActs.push({ kind: 'sketch', stroke: st });
+  redrawPad(); persist(); updateChrome();
+}
+function undoAny() {
+  while (acts.length) {
+    var e = acts[acts.length - 1];
+    if (e.kind === 'sketch') {
+      if (S.strokes.length) { undoSketch(); return; }
+      acts.pop();
+    } else { undoDiagram(); return; }
+  }
+  undoDiagram();
+}
+function redoAny() {
+  var e = redoActs.pop();
+  if (!e) { return; }
+  if (e.kind === 'sketch') {
+    S.strokes.push(e.stroke); acts.push({ kind: 'sketch' }); redrawPad(); persist(); updateChrome();
+  } else if (histIdx < hist.length - 1) { acts.push({ kind: 'diagram' }); redo(); }
+}
+
+/* ---------- render: SVG ---------- */
+function axisHandlePos() {
+  var p = ap(), R = Math.max(80, Math.min(W, H) * 0.44), r = S.axisAngle * PI / 180;
+  return { x: p.x + Math.cos(r) * (R + 54), y: p.y - Math.sin(r) * (R + 54), R: R };
+}
+function renderAxes() {
+  var g = el.gAxes, h = el.gAxH;
+  if (!S.axes) { g.innerHTML = ''; h.innerHTML = ''; return; }
+  var p = ap(), R = Math.max(80, Math.min(W, H) * 0.44), out = '', ex = Math.max(W, H) * 1.5;
+  var a0 = S.axisAngle, d, r, c, s;
+  for (d = 0; d < 360; d += SNAP_STEP) {
+    if (d % 90 === 0) { continue; }
+    r = (a0 + d) * PI / 180; c = Math.cos(r); s = -Math.sin(r);
+    out += '<line x1="' + p.x + '" y1="' + p.y + '" x2="' + (p.x + c * R) + '" y2="' + (p.y + s * R) +
+      '" stroke="#8d86b3" stroke-opacity="' + (d % 30 === 0 ? '.38' : '.2') + '" stroke-width="1.2" stroke-dasharray="5 6"/>';
+  }
+  for (d = 0; d < 360; d += 90) {
+    r = (a0 + d) * PI / 180; c = Math.cos(r); s = -Math.sin(r);
+    out += '<line x1="' + p.x + '" y1="' + p.y + '" x2="' + (p.x + c * ex) + '" y2="' + (p.y + s * ex) +
+      '" stroke="#8d86b3" stroke-opacity="' + (d < 180 && d !== 90 ? '.6' : (d === 90 ? '.6' : '.35')) + '" stroke-width="1.5"/>';
+  }
+  for (d = 0; d < 360; d += 30) {
+    if (d % 90 === 0) { continue; }
+    r = (a0 + d) * PI / 180;
+    out += '<text class="fbd-axlabel" x="' + (p.x + Math.cos(r) * (R + 18)) + '" y="' + (p.y - Math.sin(r) * (R + 18)) +
+      '" text-anchor="middle" dominant-baseline="central">' + Math.round(d) + '\u00b0</text>';
+  }
+  var rx = a0 * PI / 180, ry = (a0 + 90) * PI / 180, L = R + 22;
+  out += '<text class="fbd-axname" x="' + (p.x + Math.cos(rx) * L) + '" y="' + (p.y - Math.sin(rx) * L) + '" text-anchor="middle" dominant-baseline="central">+x</text>';
+  out += '<text class="fbd-axname" x="' + (p.x + Math.cos(ry) * L) + '" y="' + (p.y - Math.sin(ry) * L) + '" text-anchor="middle" dominant-baseline="central">+y</text>';
+  g.innerHTML = out;
+  renderAxisHandle();
+}
+function renderAxisHandle() {
+  var h = el.gAxH;
+  if (!S.axes) { h.innerHTML = ''; return; }
+  var q0 = axisHandlePos();
+  q0.x = clamp(q0.x, 16, W - 16); q0.y = clamp(q0.y, 16, H - 16);
+  h.innerHTML =
+    '<circle cx="' + q0.x + '" cy="' + q0.y + '" r="7" fill="#c9c3ee" stroke="#14111f" stroke-width="2" pointer-events="none"/>' +
+    '<circle data-role="axisHandle" cx="' + q0.x + '" cy="' + q0.y + '" r="' + (coarse() ? 22 : 15) + '" fill="rgba(0,0,0,0.001)" style="cursor:grab"/>';
+}
+
+function arrowSVG(a, sel) {
+  var t = TYPE_BY[a.type] || TYPE_BY.other, G = geom(a), p = G.p, tip = G.tip, tl = G.tail, k = fanOf(a).k;
+  var ux = G.ux, uy = G.uy, nx = G.nx, ny = G.ny;
+  var bx = tip.x - ux * HEAD_LEN, by = tip.y - uy * HEAD_LEN;
+  var sx = bx + ux * 2, sy = by + uy * 2;
+  var out = '<g data-arrow="' + esc(a.id) + '">';
+  if (k > 1) {
+    out += '<line x1="' + p.x + '" y1="' + p.y + '" x2="' + tl.x + '" y2="' + tl.y + '" stroke="' + t.color + '" stroke-width="3" stroke-linecap="round" stroke-opacity=".9" pointer-events="none"/>';
+  }
+  if (sel) {
+    out += '<line x1="' + tl.x + '" y1="' + tl.y + '" x2="' + tip.x + '" y2="' + tip.y + '" stroke="' + t.color + '" stroke-opacity=".28" stroke-width="16" stroke-linecap="round" pointer-events="none"/>';
+  }
+  out += '<line x1="' + tl.x + '" y1="' + tl.y + '" x2="' + sx + '" y2="' + sy + '" stroke="' + t.color + '" stroke-width="' + (sel ? 6 : 4) + '" stroke-linecap="round" pointer-events="none"/>';
+  out += '<polygon points="' + tip.x + ',' + tip.y + ' ' + (bx + nx * HEAD_W) + ',' + (by + ny * HEAD_W) + ' ' + (bx - nx * HEAD_W) + ',' + (by - ny * HEAD_W) + '" fill="' + t.color + '" pointer-events="none"/>';
+  var L = labelPos(a);
+  out += '<text class="fbd-label" style="fill:' + t.color + '" x="' + L.x + '" y="' + L.y + '" text-anchor="' + L.side + '" dominant-baseline="central">' + labelSVG(arrowLabel(a)) + '</text>';
+  var sub = subText(a);
+  if (sub) {
+    out += '<text class="fbd-label fbd-subline" data-sub="1" x="' + L.x + '" y="' + (L.y + 15) + '" text-anchor="' + L.side + '" dominant-baseline="central">' + esc(sub) + '</text>';
+  }
+  out += '<line data-role="arrow" data-id="' + esc(a.id) + '" x1="' + tl.x + '" y1="' + tl.y + '" x2="' + tip.x + '" y2="' + tip.y + '" stroke="rgba(0,0,0,0.001)" stroke-width="' + (coarse() ? 44 : 18) + '" stroke-linecap="round" pointer-events="stroke" style="cursor:pointer"/>';
+  if (sel) {
+    out += '<circle cx="' + tip.x + '" cy="' + tip.y + '" r="9" fill="#fff" stroke="' + t.color + '" stroke-width="3" pointer-events="none"/>';
+    out += '<circle data-role="handle" data-id="' + esc(a.id) + '" cx="' + tip.x + '" cy="' + tip.y + '" r="' + (coarse() ? 24 : 18) + '" fill="rgba(0,0,0,0.001)" style="cursor:grab"/>';
+  }
+  return out + '</g>';
+}
+
+function renderArrows() {
+  var out = '';
+  S.arrows.forEach(function (a) { if (a.id !== selId) { out += arrowSVG(a, false); } });
+  var s = selId ? arrowById(selId) : null;
+  if (s) { out += arrowSVG(s, true); }
+  el.gArrows.innerHTML = out;
+}
+
+function renderAnchor() {
+  var p = ap(), spread = 0;
+  S.arrows.forEach(function (a) { var k = fanOf(a); if (k.k > 1) { spread = Math.max(spread, Math.abs(k.off)); } });
+  var rad = Math.max(13, spread + 7);
+  el.gAnchor.innerHTML =
+    '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + rad + '" fill="rgba(15,12,26,.65)" stroke="#fff" stroke-width="2" pointer-events="none"/>' +
+    '<circle cx="' + p.x + '" cy="' + p.y + '" r="5.5" fill="#fff" pointer-events="none"/>' +
+    '<circle data-role="anchor" cx="' + p.x + '" cy="' + p.y + '" r="' + (coarse() ? 26 : 20) + '" fill="rgba(0,0,0,0.001)" style="cursor:' + (armed ? 'crosshair' : 'grab') + '"/>' +
+    originCaption(p, rad);
+}
+function sysCaption(nm, max) { return nm.length > max ? nm.slice(0, max - 1) + '...' : nm; }
+function capSize(txt) { return txt.length > 12 ? Math.max(9, 13 - (txt.length - 12) * 0.35) : 13; }
+function originCaption(p, rad) {
+  var nm = (S.sysName || '').trim();
+  if (!nm) { return ''; }
+  var t = sysCaption(nm, 22);
+  return '<text data-role="caption" x="' + p.x + '" y="' + (p.y + rad + 6 + capSize(t)) + '" text-anchor="middle" pointer-events="none" style="font:600 ' + capSize(t) + 'px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;fill:#a9a2cc;stroke:#0f0c1a;stroke-width:3px;stroke-linejoin:round;paint-order:stroke">' + esc(t) + '</text>';
+}
+
+/* ---------- render: popover ---------- */
+function typeOptions(sel) {
+  return TYPES.map(function (t) {
+    return '<option value="' + t.key + '"' + (t.key === sel ? ' selected' : '') + '>' + esc(t.name) + '</option>';
+  }).join('');
+}
+function objOptions(sel) {
+  var h = '<option value="">(none)</option>';
+  S.objects.forEach(function (o) {
+    h += '<option value="' + esc(o.id) + '"' + (o.id === sel ? ' selected' : '') + '>' + esc(objName(o)) + '</option>';
+  });
+  return h;
+}
+function focusedIn(node) { return !!node && document.activeElement === node; }
+
+function renderPopover() {
+  var pop = el.pop, a = selId ? arrowById(selId) : null;
+  if (!a) { pop.hidden = true; pop.removeAttribute('data-for'); return; }
+  if (pop.getAttribute('data-for') !== a.id) {
+    dockDirty = true;
+    announce(a);
+    pop.setAttribute('data-for', a.id);
+    pop.innerHTML =
+      '<div class="fbd-head"><span>Force arrow</span><button type="button" class="fbd-btn fbd-icon" data-act="close" aria-label="Close">&times;</button></div>' +
+      '<label>Force type<select class="fbd-field" data-f="type"></select></label>' +
+      '<label>Exerted by<select class="fbd-field" data-f="obj"></select></label>' +
+      '<label>Label<input type="text" class="fbd-field" data-f="label" maxlength="24" autocomplete="off"></label>' +
+      '<div class="fbd-row"><button type="button" class="fbd-btn" data-act="dup">Duplicate</button><button type="button" class="fbd-btn" data-act="del">Delete</button></div>';
+    pop.querySelector('[data-f="type"]').innerHTML = typeOptions(a.type);
+    pop.removeAttribute('data-objkey');
+  }
+  var fType = pop.querySelector('[data-f="type"]');
+  var fObj = pop.querySelector('[data-f="obj"]');
+  var fLab = pop.querySelector('[data-f="label"]');
+  if (!focusedIn(fType)) { fType.value = a.type; }
+  var ok = objOptions(a.obj || '');
+  if (pop.getAttribute('data-objkey') !== ok && !focusedIn(fObj)) {
+    fObj.innerHTML = ok; pop.setAttribute('data-objkey', ok);
+  }
+  if (!focusedIn(fObj)) { fObj.value = a.obj || ''; }
+  fLab.placeholder = defaultLabel(a.type);
+  if (!focusedIn(fLab)) { fLab.value = a.label || ''; }
+  pop.hidden = false;
+  if (dockDirty) { dockPopover(a); }
+}
+/* choose a corner for the settings panel that does not cover the selected arrow's tip or label */
+function dockPopover(a) {
+  dockDirty = false;
+  var pop = el.pop, pw = Math.min(236, W - 24), ph = Math.min(pop.offsetHeight || 260, H - 24), m = 12;
+  var G = geom(a), L = labelPos(a), sub = subText(a);
+  var pts = [G.tip, { x: L.x, y: L.y }];
+  if (sub) { pts.push({ x: L.x, y: L.y + 15 }); }
+  pts.push({ x: (G.tip.x + G.tail.x) / 2, y: (G.tip.y + G.tail.y) / 2 });
+  var boxes = {
+    tr: { x0: W - 260, y0: 0, x1: W, y1: 300 },
+    bl: { x0: 0, y0: H - ph - m - 24, x1: pw + m + 24, y1: H },
+    br: { x0: W - pw - m - 24, y0: H - ph - m - 24, x1: W, y1: H }
+  };
+  function hit(b) {
+    return pts.some(function (q0) { return q0.x > b.x0 && q0.x < b.x1 && q0.y > b.y0 && q0.y < b.y1; });
+  }
+  var pos = 'tr';
+  if (hit(boxes.tr)) { pos = !hit(boxes.bl) ? 'bl' : (!hit(boxes.br) ? 'br' : 'bl'); }
+  pop.setAttribute('data-dock', pos);
+  pop.style.top = pos === 'tr' ? m + 'px' : 'auto';
+  pop.style.bottom = pos === 'tr' ? 'auto' : m + 'px';
+  pop.style.left = pos === 'bl' ? m + 'px' : 'auto';
+  pop.style.right = pos === 'bl' ? 'auto' : m + 'px';
+}
+
+/* ---------- render: chrome ---------- */
+function buildChips() {
+  var host = q('chips'), tail = q('armedText');
+  TYPES.forEach(function (t) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fbd-chip';
+    b.setAttribute('data-chip', t.key);
+    b.setAttribute('aria-pressed', 'false');
+    b.style.setProperty('--c', t.color);
+    b.innerHTML = '<i></i><span>' + esc(t.name) + '</span>';
+    host.insertBefore(b, tail);
+  });
+}
+function setPressed(node, on) { if (node) { node.setAttribute('aria-pressed', on ? 'true' : 'false'); } }
+
+function updateChrome() {
+  var chips = root.querySelectorAll('[data-chip]');
+  for (var i = 0; i < chips.length; i++) {
+    setPressed(chips[i], chips[i].getAttribute('data-chip') === armed);
+    if (pinned && chips[i].getAttribute('data-chip') === pinned) { chips[i].setAttribute('data-pinned', 'true'); }
+    else { chips[i].removeAttribute('data-pinned'); }
+  }
+  el.armedText.textContent = pinned
+    ? TYPE_BY[pinned].name + ' pinned. Draw as many as you like. Press Escape or click the button to unpin.'
+    : armed
+    ? 'Selected: ' + TYPE_BY[armed].name + '. Drag outward from the dot. Shift+click a button to pin it.'
+    : (selId ? 'Arrow selected. Pick a force type to draw another.' : 'No force type selected. Pick one to draw.');
+  setPressed(el.mode2d, S.mode !== '1d');
+  setPressed(el.mode1d, S.mode === '1d');
+  setPressed(el.snap, S.snap);
+  setPressed(el.axes, S.axes);
+  setPressed(el.ringToggle, S.ring.on);
+  setPressed(el.showObjs, S.showObjs !== false);
+  el.axisRead.textContent = 'Axes tilt: ' + round1(S.axisAngle) + '\u00b0';
+  el.undo.disabled = histIdx <= 0;
+  el.redo.disabled = redoActs.length === 0;
+  el.empty.hidden = S.arrows.length > 0;
+  if (armed) { el.svg.classList.add('fbd-armedcur'); } else { el.svg.classList.remove('fbd-armedcur'); }
+}
+
+function measure() {
+  var r = el.stage.getBoundingClientRect();
+  var oldM = M();
+  W = Math.max(200, Math.round(r.width)) || 800;
+  H = Math.max(200, Math.round(r.height)) || 600;
+  if (M() !== oldM) { rescaleLens(); }
+  dockDirty = true;
+}
+
+function renderAll() {
+  renderAxes();
+  renderArrows();
+  renderAnchor();
+  updateChrome();
+  renderPopover();
+  renderObjs();
+  redrawPad();
+}
+
+/* ---------- pointer interactions on the SVG ---------- */
+var drag = null;
+var draft = null;
+var lastTap = { id: null, t: 0 };
+var MOVE_PX = 6;
+
+function autoShowAxes() {
+  if (axesAuto) { return; }
+  axesAuto = true;
+  if (!S.axes) { S.axes = true; updateChrome(); }
+}
+function stagePt(e) {
+  var r = el.svg.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function dist(a, b) { return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function renderLive() {
+  renderAxes();
+  renderArrows();
+  if (draft) { el.gArrows.insertAdjacentHTML('beforeend', arrowSVG(draft, false)); }
+  renderAnchor();
+  renderPopover();
+}
+
+function onDown(e) {
+  if (drag) { return; }
+  if (e.pointerType === 'mouse' && e.button !== 0) { return; }
+  try { el.svg.focus({ preventScroll: true }); } catch (e1) { /* ignore */ }
+  var t = e.target;
+  var role = t && t.getAttribute ? t.getAttribute('data-role') : null;
+  var id = t && t.getAttribute ? t.getAttribute('data-id') : null;
+  var p = stagePt(e);
+  if (role === 'handle' && selId) {
+    drag = { kind: 'tip', id: selId, lock: lockFor(arrowById(selId).angle) };
+  } else if (role === 'axisHandle') {
+    drag = { kind: 'axis' };
+  } else if (role === 'arrow' && arrowById(id)) {
+    var wasSel = selId === id;
+    if (!wasSel) { selId = id; renderAll(); }
+    drag = { kind: 'shaft', id: id, wasSel: wasSel, start: p, moved: false, lock: lockFor(arrowById(id).angle) };
+  } else if (role === 'anchor' && !armed) {
+    var a0 = ap();
+    drag = { kind: 'anchor', dx: a0.x - p.x, dy: a0.y - p.y };
+  } else if (armed) {
+    /* empty canvas, or the anchor's small area while a type is selected: start a new arrow */
+    drag = { kind: 'draw', start: p, moved: false, hitId: null, lock: { sel: null } };
+  } else {
+    if (selId) { selId = null; renderAll(); }
+    return;
+  }
+  try { el.svg.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  drag.pid = e.pointerId;
+  e.preventDefault();
+}
+
+function onMove(e) {
+  if (!drag || e.pointerId !== drag.pid) { return; }
+  var p = stagePt(e), shift = e.shiftKey, a, v;
+  if (drag.kind === 'draw') {
+    if (!drag.moved && dist(p, drag.start) < MOVE_PX) { return; }
+    drag.moved = true;
+    v = vectorTo(p, shift, S.mode === '1d', drag.lock);
+    draft = { id: 'draft', type: armed, angle: v.angle, len: v.len, label: '', obj: '' };
+    renderLive();
+  } else if (drag.kind === 'shaft') {
+    if (!drag.wasSel) { return; }
+    if (!drag.moved && dist(p, drag.start) < MOVE_PX) { return; }
+    drag.moved = true;
+    a = arrowById(drag.id);
+    if (!a) { return; }
+    var o = ap();
+    if (S.mode === '1d') { a.angle = vectorTo(p, shift, true, drag.lock).angle; }
+    else { a.angle = round1(snapAngle(Math.atan2(-(p.y - o.y), p.x - o.x) * 180 / PI, shift)); }
+    renderLive();
+  } else if (drag.kind === 'tip') {
+    a = arrowById(drag.id);
+    if (!a) { return; }
+    /* measured from the anchor, never the fanned tail, so fan membership cannot feed back */
+    v = vectorTo(p, shift, S.mode === '1d', drag.lock);
+    a.angle = v.angle; setLen(a, v.len);
+    drag.moved = true;
+    renderLive();
+  } else if (drag.kind === 'axis') {
+    var ca = ap(), ang = Math.atan2(-(p.y - ca.y), p.x - ca.x) * 180 / PI;
+    if (!shift) { ang = Math.round(ang / 5) * 5; }
+    var na0 = round1(norm360(ang));
+    if (na0 !== S.axisAngle) { autoShowAxes(); }
+    S.axisAngle = na0;
+    drag.moved = true;
+    renderLive(); updateChrome();
+  } else if (drag.kind === 'anchor') {
+    S.anchor.fx = clamp((p.x + drag.dx) / W, 0.04, 0.96);
+    S.anchor.fy = clamp((p.y + drag.dy) / H, 0.04, 0.96);
+    drag.moved = true;
+    renderLive();
+  }
+}
+
+function endDrag(e, cancelled) {
+  if (!drag || (e && e.pointerId !== drag.pid)) { return; }
+  var d = drag;
+  drag = null;
+  try { el.svg.releasePointerCapture(d.pid); } catch (err) { /* ignore */ }
+  var dr = draft; draft = null;
+  if (cancelled) { applyDoc(hist[histIdx]); renderAll(); return; }
+  if (d.kind === 'draw') {
+    if (d.moved && dr) {
+      var na = { id: uid('a'), type: dr.type, angle: dr.angle, len: dr.len, lf: dr.len / M(), label: '', obj: '' };
+      S.arrows.push(na);
+      if (!pinned) { armed = null; }
+      selId = na.id;
+      commit();
+    } else {
+      if (selId) { selId = null; }
+      renderAll();
+    }
+    return;
+  }
+  if (d.kind === 'shaft') {
+    if (d.moved) { commit(); return; }
+    var now = Date.now();
+    if (lastTap.id === d.id && now - lastTap.t < 400) {
+      lastTap = { id: null, t: 0 };
+      renderAll();
+      openLabelEditor();
+    } else {
+      lastTap = { id: d.id, t: now };
+      renderAll();
+    }
+    return;
+  }
+  commit();
+}
+
+function openLabelEditor() {
+  var f = el.pop.querySelector('[data-f="label"]');
+  if (f && !el.pop.hidden) { f.focus(); f.select(); }
+}
+
+/* ---------- popover wiring ---------- */
+function onPopChange(e) {
+  var a = selId ? arrowById(selId) : null;
+  if (!a) { return; }
+  var f = e.target.getAttribute('data-f');
+  if (f === 'type') { a.type = e.target.value; commit(); }
+  else if (f === 'obj') { a.obj = e.target.value; commit(); }
+  else if (f === 'label') { a.label = e.target.value.slice(0, 24); commit(); }
+}
+function onPopInput(e) {
+  var a = selId ? arrowById(selId) : null;
+  if (!a || e.target.getAttribute('data-f') !== 'label') { return; }
+  a.label = e.target.value.slice(0, 24);
+  renderArrows();
+  persist();
+}
+function onPopClick(e) {
+  var b = e.target.closest ? e.target.closest('[data-act]') : null;
+  if (!b) { return; }
+  var act = b.getAttribute('data-act'), a = selId ? arrowById(selId) : null;
+  if (act === 'close') { selId = null; renderAll(); }
+  else if (act === 'del' && a) { deleteArrow(a.id); }
+  else if (act === 'dup' && a) {
+    var c = JSON.parse(JSON.stringify(a));
+    c.id = uid('a');
+    c.angle = a.angle;
+    if (S.mode === '1d') {
+      var b0 = S.axisAngle || 0, kq = Math.round(norm360(a.angle - b0) / 90) % 4;
+      c.angle = round1(norm360(b0 + kq * 90));
+    }
+    S.arrows.push(c);
+    selId = c.id;
+    commit();
+  }
+}
+function deleteArrow(id) {
+  S.arrows = S.arrows.filter(function (a) { return a.id !== id; });
+  if (selId === id) { selId = null; }
+  commit();
+}
+function onPopKey(e) {
+  if (e.key === 'Enter' || e.key === 'Escape') {
+    if (e.target.tagName === 'INPUT') { e.stopPropagation(); e.target.blur(); }
+  }
+}
+
+/* ---------- keyboard ---------- */
+function typingTarget(t) {
+  if (!t || !t.tagName) { return false; }
+  var n = t.tagName;
+  return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || t.isContentEditable === true;
+}
+function onKey(e) {
+  var t = e.target;
+  if (typingTarget(t) && root.contains(t)) { return; }
+  var k = e.key, mod = e.ctrlKey || e.metaKey;
+  if (!el.modal.hidden && k === 'Escape') { closeHelp(); return; }
+  if (mod && (k === 'z' || k === 'Z')) { e.preventDefault(); if (e.shiftKey) { redoAny(); } else { undoAny(); } return; }
+  if (mod && (k === 'y' || k === 'Y')) { e.preventDefault(); redoAny(); return; }
+  if (k === 'Escape') {
+    if (pinned) { pinned = null; armed = null; updateChrome(); renderAnchor(); return; }
+    if (selId) { selId = null; renderAll(); }
+    else if (armed) { armed = null; updateChrome(); renderAnchor(); }
+    return;
+  }
+  if ((k === 'Delete' || k === 'Backspace') && selId) { e.preventDefault(); deleteArrow(selId); return; }
+  if (t === el.svg && S.arrows.length) {
+    var cur = selId ? arrowById(selId) : null, idx = cur ? S.arrows.indexOf(cur) : -1, n = S.arrows.length;
+    if (k === 'ArrowRight' || k === 'ArrowLeft') {
+      e.preventDefault();
+      idx = k === 'ArrowRight' ? (idx + 1) % n : (idx <= 0 ? n - 1 : idx - 1);
+      selId = S.arrows[idx].id; renderAll();
+    } else if (k === 'Tab' && !e.shiftKey && idx < n - 1) {
+      e.preventDefault(); selId = S.arrows[idx + 1].id; renderAll();
+    } else if (k === 'Tab' && e.shiftKey && idx > 0) {
+      e.preventDefault(); selId = S.arrows[idx - 1].id; renderAll();
+    } else if ((k === 'ArrowUp' || k === 'ArrowDown') && cur) {
+      e.preventDefault();
+      setLen(cur, clampLen(cur.len + (k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 2 : 10)));
+      commit(); announce(cur);
+    } else if (k === 'Enter' && cur && !el.pop.hidden) {
+      e.preventDefault();
+      var f0 = el.pop.querySelector('select, input');
+      if (f0) { f0.focus(); }
+    }
+  }
+}
+function dirName(deg) {
+  var d = norm360(deg), names = ['right', 'up and right', 'up', 'up and left', 'left', 'down and left', 'down', 'down and right'];
+  var i = Math.round(d / 45) % 8;
+  return Math.abs(d - i * 45) < 1.5 || (i === 8) ? names[i % 8] : 'at ' + round1(d) + ' degrees';
+}
+function announce(a) {
+  var o = a.obj ? objectById(a.obj) : null;
+  var txt = (TYPE_BY[a.type] || TYPE_BY.other).name + ' force, ' + labelParts(arrowLabel(a)).join(' sub ').trim() + ', ' + Math.round(a.len) +
+    ' pixels long, pointing ' + dirName(a.angle) + (o ? ', exerted by ' + objName(o) : '');
+  el.live.textContent = '';
+  setTimeout(function () { el.live.textContent = txt; }, 20);
+  el.live.setAttribute('data-last', txt);
+}
+
+/* ---------- top bar wiring ---------- */
+function setArmed(key, pin) {
+  if (pin) {
+    if (pinned === key) { pinned = null; armed = null; } else { pinned = key; armed = key; }
+  } else if (pinned === key || armed === key) { pinned = null; armed = null; }
+  else { armed = key; pinned = null; }
+  updateChrome();
+  renderAnchor();
+}
+function wireTopBar() {
+  q('chips').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-chip]') : null;
+    if (b) { setArmed(b.getAttribute('data-chip'), !!e.shiftKey); }
+  });
+  el.mode2d.addEventListener('click', function () { S.mode = '2d'; persist(); updateChrome(); });
+  el.mode1d.addEventListener('click', function () { S.mode = '1d'; persist(); updateChrome(); });
+  el.snap.addEventListener('click', function () { S.snap = !S.snap; persist(); updateChrome(); });
+  el.axes.addEventListener('click', function () { S.axes = !S.axes; persist(); renderAxes(); updateChrome(); });
+  el.undo.addEventListener('click', undoDiagram);
+  el.redo.addEventListener('click', redoAny);
+  el.svg.addEventListener('pointerdown', onDown);
+  el.svg.addEventListener('pointermove', onMove);
+  el.svg.addEventListener('pointerup', function (e) { endDrag(e, false); });
+  el.svg.addEventListener('pointercancel', function (e) { endDrag(e, true); });
+  el.svg.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  el.pop.addEventListener('change', onPopChange);
+  el.pop.addEventListener('input', onPopInput);
+  el.pop.addEventListener('click', onPopClick);
+  el.pop.addEventListener('keydown', onPopKey);
+  root.addEventListener('keydown', onKey);
+}
+
+/* ---------- state sketch pad ---------- */
+var padCtx = null;
+var padTool = { erase: false, w: 2.5 };
+var padDraw = null;
+
+function drawStrokeSeg(ctx, st, i0) {
+  var pts = st.pts, i;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineWidth = st.w;
+  ctx.strokeStyle = '#efeaff';
+  ctx.globalCompositeOperation = st.erase ? 'destination-out' : 'source-over';
+  ctx.beginPath();
+  ctx.moveTo(pts[i0][0], pts[i0][1]);
+  if (pts.length - 1 === i0) { ctx.lineTo(pts[i0][0] + 0.01, pts[i0][1]); }
+  for (i = i0 + 1; i < pts.length; i++) { ctx.lineTo(pts[i][0], pts[i][1]); }
+  ctx.stroke();
+  ctx.restore();
+}
+function ringGeom() {
+  var r = S.ring;
+  return { cx: r.fx * PAD_W, cy: r.fy * PAD_H, rx: r.rx, ry: r.ry, hx: r.fx * PAD_W + r.rx * 0.7071, hy: r.fy * PAD_H + r.ry * 0.7071 };
+}
+/* the system boundary lives on the sketch; drawn in pad units, always after (above) the strokes */
+function paintRing(ctx, k, handle) {
+  if (!S.ring.on) { return; }
+  var g = ringGeom();
+  ctx.save();
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(124,92,255,.10)';
+  ctx.beginPath(); ctx.ellipse(g.cx, g.cy, g.rx, g.ry, 0, 0, PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(180,160,255,.95)'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.ellipse(g.cx, g.cy, g.rx, g.ry, 0, 0, PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  var nm = (S.sysName || '').trim();
+  if (nm) {
+    var t = 'System: ' + sysCaption(nm, 28);
+    ctx.font = '700 12px system-ui, Arial, sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+    var hw = ctx.measureText(t).width / 2;
+    var tx = clamp(g.cx, hw + 2, PAD_W - hw - 2), ty = Math.max(13, g.cy - g.ry - 7);
+    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#0f0c1a'; ctx.fillStyle = '#e8e4ff';
+    ctx.strokeText(t, tx, ty); ctx.fillText(t, tx, ty);
+  }
+  if (handle) {
+    ctx.beginPath(); ctx.arc(g.hx, g.hy, 5.5, 0, PI * 2);
+    ctx.fillStyle = '#e8e4ff'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#14111f'; ctx.stroke();
+  }
+  ctx.restore();
+}
+function paintSketch(ctx, k, handle) {
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  S.strokes.forEach(function (st) { if (st.pts && st.pts.length) { drawStrokeSeg(ctx, st, 0); } });
+  paintRing(ctx, k, !!handle);
+}
+function redrawPad() {
+  if (!padCtx || !el.pad.width) { return; }
+  padCtx.setTransform(1, 0, 0, 1, 0, 0);
+  padCtx.clearRect(0, 0, el.pad.width, el.pad.height);
+  paintSketch(padCtx, el.pad.width / PAD_W, true);
+}
+function sizePad() {
+  var r = el.pad.getBoundingClientRect();
+  if (!r.width) { return; }
+  var dpr = window.devicePixelRatio || 1;
+  el.pad.width = Math.max(1, Math.round(r.width * dpr));
+  el.pad.height = Math.max(1, Math.round(r.width * (PAD_H / PAD_W) * dpr));
+  redrawPad();
+}
+/* hit test the ring in screen pixels so hit areas stay 44 px wide on touch: returns 'resize', 'move' or null */
+function ringHit(e) {
+  if (!S.ring.on) { return null; }
+  var r = el.pad.getBoundingClientRect();
+  if (!r.width) { return null; }
+  var sc = r.width / PAD_W, g = ringGeom(), co = coarse();
+  var px = (e.clientX - r.left) / sc, py = (e.clientY - r.top) / sc;
+  if (Math.sqrt(Math.pow(px - g.hx, 2) + Math.pow(py - g.hy, 2)) * sc <= (co ? 22 : 14)) { return 'resize'; }
+  var dx = px - g.cx, dy = py - g.cy;
+  var F = (dx * dx) / (g.rx * g.rx) + (dy * dy) / (g.ry * g.ry) - 1;
+  var gx = 2 * dx / (g.rx * g.rx), gy = 2 * dy / (g.ry * g.ry), gl = Math.sqrt(gx * gx + gy * gy);
+  var d = gl > 0 ? Math.abs(F) / gl : Math.min(g.rx, g.ry);
+  return d * sc <= (co ? 22 : 11) ? 'move' : null;
+}
+function ringCursor(e) {
+  if (e.pointerType && e.pointerType !== 'mouse') { return ''; }
+  var h = ringHit(e);
+  return h === 'resize' ? 'nwse-resize' : (h === 'move' ? 'move' : '');
+}
+function padPt(e) {
+  var r = el.pad.getBoundingClientRect();
+  return [round1((e.clientX - r.left) / r.width * PAD_W), round1((e.clientY - r.top) / r.height * PAD_H)];
+}
+function wirePad() {
+  padCtx = el.pad.getContext('2d');
+  el.pad.addEventListener('pointerdown', function (e) {
+    if (padDraw || (e.pointerType === 'mouse' && e.button !== 0)) { return; }
+    try { root.focus({ preventScroll: true }); } catch (e1) { /* ignore */ }
+    var rh = ringHit(e);
+    if (rh) {
+      var pp = padPt(e);
+      padDraw = { ring: rh, pid: e.pointerId, last: pp, moved: false };
+      try { el.pad.setPointerCapture(e.pointerId); } catch (err0) { /* ignore */ }
+      e.preventDefault();
+      return;
+    }
+    var st = { w: padTool.w, erase: padTool.erase, pts: [padPt(e)] };
+    S.strokes.push(st);
+    padDraw = { st: st, pid: e.pointerId };
+    try { el.pad.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    if (S.ring.on) { redrawPad(); } else {
+      padCtx.setTransform(el.pad.width / PAD_W, 0, 0, el.pad.width / PAD_W, 0, 0);
+      drawStrokeSeg(padCtx, st, 0);
+    }
+    e.preventDefault();
+  });
+  el.pad.addEventListener('pointermove', function (e) {
+    if (!padDraw) { el.pad.style.cursor = ringCursor(e); return; }
+    if (e.pointerId !== padDraw.pid) { return; }
+    if (padDraw.ring) {
+      var q1 = padPt(e), R = S.ring;
+      if (padDraw.ring === 'move') {
+        R.fx += (q1[0] - padDraw.last[0]) / PAD_W; R.fy += (q1[1] - padDraw.last[1]) / PAD_H;
+        padDraw.last = q1;
+        fitRing(R);
+      } else {
+        var cx0 = R.fx * PAD_W, cy0 = R.fy * PAD_H;
+        R.rx = Math.round(clamp((q1[0] - cx0) / 0.7071, 14, Math.max(14, Math.min(cx0, PAD_W - cx0))));
+        R.ry = Math.round(clamp((q1[1] - cy0) / 0.7071, 14, Math.max(14, Math.min(cy0, PAD_H - cy0))));
+      }
+      padDraw.moved = true;
+      redrawPad();
+      return;
+    }
+    var st = padDraw.st, n = st.pts.length - 1;
+    st.pts.push(padPt(e));
+    if (S.ring.on) { redrawPad(); return; }   /* full replay keeps the ring above the strokes */
+    padCtx.setTransform(el.pad.width / PAD_W, 0, 0, el.pad.width / PAD_W, 0, 0);
+    drawStrokeSeg(padCtx, st, n);
+  });
+  function stop(e) {
+    if (!padDraw || e.pointerId !== padDraw.pid) { return; }
+    var pd = padDraw;
+    padDraw = null;
+    if (pd.ring) {
+      if (e.type === 'pointercancel') { applyDoc(hist[histIdx]); redrawPad(); updateChrome(); return; }
+      if (pd.moved) { commit(); } else { redrawPad(); }
+      return;
+    }
+    pushAct('sketch');
+    redrawPad(); persist(); updateChrome();
+  }
+  el.pad.addEventListener('pointerup', stop);
+  el.pad.addEventListener('pointercancel', stop);
+  function setTool(erase, w, btn) {
+    padTool = { erase: erase, w: w };
+    setPressed(el.penThin, btn === el.penThin);
+    setPressed(el.penThick, btn === el.penThick);
+    setPressed(el.eraser, btn === el.eraser);
+  }
+  el.penThin.addEventListener('click', function () { setTool(false, 2.5, el.penThin); });
+  el.penThick.addEventListener('click', function () { setTool(false, 6, el.penThick); });
+  el.eraser.addEventListener('click', function () { setTool(true, 18, el.eraser); });
+  el.padUndo.addEventListener('click', undoSketch);
+  el.padClear.addEventListener('click', function () {
+    S.strokes = []; acts = acts.filter(function (x) { return x.kind !== 'sketch'; });
+    redoActs = redoActs.filter(function (x) { return x.kind !== 'sketch'; });
+    redrawPad(); persist(); updateChrome();
+  });
+}
+
+/* ---------- system panel ---------- */
+function wireSystem() {
+  el.sysName.addEventListener('input', function () {
+    S.sysName = el.sysName.value;
+    persist();
+    redrawPad(); renderAnchor();
+  });
+  function tilt(v) {
+    var nv = round1(norm360(v));
+    if (nv !== S.axisAngle && nv !== 0) { autoShowAxes(); }
+    S.axisAngle = nv; commit();
+  }
+  el.axisPlus.addEventListener('click', function () { tilt(S.axisAngle + 15); });
+  el.axisMinus.addEventListener('click', function () { tilt(S.axisAngle - 15); });
+  el.axisReset.addEventListener('click', function () { tilt(0); });
+  el.showObjs.addEventListener('click', function () { S.showObjs = S.showObjs === false; persist(); renderAll(); });
+  el.ringToggle.addEventListener('click', function () {
+    S.ring.on = !S.ring.on;
+    if (S.ring.on && !S.ring.placed) {
+      S.ring.fx = 0.42; S.ring.fy = 0.55; S.ring.rx = 78; S.ring.ry = 54;
+      S.ring.placed = true;
+    }
+    commit();
+  });
+}
+
+/* ---------- external systems ---------- */
+var objsKey = '';
+function countFor(id) {
+  var n = 0;
+  S.arrows.forEach(function (a) { if (a.obj === id) { n += 1; } });
+  return n;
+}
+/* force labels tagged to an object, e.g. "F_T, F_T"; a count is appended past three */
+function labelsFor(id, maxShown) {
+  var names = [];
+  S.arrows.forEach(function (a) { if (a.obj === id) { names.push(arrowLabel(a)); } });
+  if (!names.length) { return ''; }
+  var shown = names.slice(0, 3).join(', ');
+  return names.length > 3 ? shown + ' (+' + (names.length - 3) + ' more, ' + names.length + ' total)' : shown;
+}
+function renderObjs() {
+  var key = S.objects.map(function (o) { return o.id; }).join('|');
+  var ul = el.objs;
+  if (key !== objsKey) {
+    objsKey = key;
+    ul.innerHTML = '';
+    S.objects.forEach(function (o, i) {
+      var li = document.createElement('li');
+      li.className = 'fbd-obj';
+      li.setAttribute('data-id', o.id);
+      li.innerHTML = '<input type="text" class="fbd-field" maxlength="40" placeholder="e.g. the Earth, the table top, the rope" aria-label="External object name">' +
+        '<span class="fbd-badge"></span>' +
+        '<button type="button" class="fbd-btn fbd-icon" aria-label="Delete object" title="Delete object">&times;</button>';
+      ul.appendChild(li);
+    });
+  }
+  var rows = ul.children;
+  for (var i = 0; i < rows.length; i++) {
+    var o = objectById(rows[i].getAttribute('data-id'));
+    if (!o) { continue; }
+    var inp = rows[i].querySelector('input');
+    if (document.activeElement !== inp) { inp.value = o.name || ''; }
+    var bd = rows[i].querySelector('.fbd-badge'), lt = labelsFor(o.id);
+    bd.textContent = lt || 'no forces';
+    bd.title = lt || '';
+  }
+  el.objsHint.hidden = S.objects.length > 0;
+}
+function wireObjs() {
+  el.addObj.addEventListener('click', function () {
+    var o = { id: uid('o'), name: '' };
+    S.objects.push(o);
+    commit();
+    var rows = el.objs.children;
+    var inp = rows.length ? rows[rows.length - 1].querySelector('input') : null;
+    if (inp) { inp.focus(); }
+    if (inp && inp.scrollIntoView) { inp.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+  });
+  el.objs.addEventListener('input', function (e) {
+    var li = e.target.closest('li'), o = li ? objectById(li.getAttribute('data-id')) : null;
+    if (!o) { return; }
+    o.name = e.target.value;
+    persist();
+    renderPopover();
+  });
+  el.objs.addEventListener('change', function (e) {
+    var li = e.target.closest('li'), o = li ? objectById(li.getAttribute('data-id')) : null;
+    if (o) { commit(); }
+  });
+  el.objs.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.target.blur(); }
+  });
+  el.objs.addEventListener('click', function (e) {
+    var b = e.target.closest('button'), li = e.target.closest('li');
+    if (!b || !li) { return; }
+    var id = li.getAttribute('data-id');
+    S.arrows.forEach(function (a) { if (a.obj === id) { a.obj = ''; } });
+    S.objects = S.objects.filter(function (o) { return o.id !== id; });
+    commit();
+  });
+}
+
+/* ---------- persistence ---------- */
+function persist() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({
+      v: 1, arrows: S.arrows, anchor: S.anchor, ring: S.ring, objects: S.objects,
+      sysName: S.sysName, mode: S.mode, axes: S.axes, snap: S.snap, axisAngle: S.axisAngle, showObjs: S.showObjs, strokes: S.strokes
+    }));
+  } catch (e) { /* storage may be blocked or full */ }
+}
+/* keep the ring (pad units) fully inside the sketch pad; legacy stage-style values are clamped here */
+function fitRing(r) {
+  r.rx = clamp(r.rx, 14, PAD_W / 2); r.ry = clamp(r.ry, 14, PAD_H / 2);
+  r.fx = clamp(r.fx, r.rx / PAD_W, 1 - r.rx / PAD_W);
+  r.fy = clamp(r.fy, r.ry / PAD_H, 1 - r.ry / PAD_H);
+  return r;
+}
+function num(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : d; }
+function loadSaved() {
+  var d = defaultState(), raw, j;
+  try {
+    raw = localStorage.getItem(KEY);
+    if (!raw) { return d; }
+    j = JSON.parse(raw);
+    if (!j || typeof j !== 'object') { return d; }
+    /* pre-migration: the ring used to live on the diagram stage in fractions there and in raw px radii */
+    if (j.ring && !j.ring.placed) {
+      j.ring.rx = num(j.ring.rx, 80) / 480; j.ring.ry = num(j.ring.ry, 56) / 360;
+    }
+    d.arrows = (Array.isArray(j.arrows) ? j.arrows : []).filter(function (a) { return a && typeof a === 'object'; }).map(function (a) {
+      return {
+        id: typeof a.id === 'string' ? a.id : uid('a'),
+        type: TYPE_BY[a.type] ? a.type : 'other',
+        angle: num(a.angle, 0), len: Math.max(MIN_LEN, num(a.len, 100)), lf: num(a.lf, 0) > 0 ? a.lf : 0,
+        label: typeof a.label === 'string' ? a.label.slice(0, 24) : '',
+        obj: typeof a.obj === 'string' ? a.obj : ''
+      };
+    });
+    d.objects = (Array.isArray(j.objects) ? j.objects : []).filter(function (o) { return o && typeof o.id === 'string'; }).map(function (o) {
+      return { id: o.id, name: typeof o.name === 'string' ? o.name.slice(0, 40) : '' };
+    });
+    var ids = {};
+    d.objects.forEach(function (o) { ids[o.id] = true; });
+    d.arrows.forEach(function (a) { if (a.obj && !ids[a.obj]) { a.obj = ''; } });
+    if (j.anchor) { d.anchor = { fx: clamp(num(j.anchor.fx, 0.5), 0.04, 0.96), fy: clamp(num(j.anchor.fy, 0.5), 0.04, 0.96) }; }
+    if (j.ring) {
+      var rx0 = num(j.ring.rx, 80), ry0 = num(j.ring.ry, 56);
+      if (rx0 <= 1 && ry0 <= 1) { rx0 = rx0 * PAD_W; ry0 = ry0 * PAD_H; }
+      d.ring = fitRing({ on: !!j.ring.on, placed: j.ring.placed === undefined ? true : !!j.ring.placed,
+        fx: clamp(num(j.ring.fx, 0.5), 0, 1), fy: clamp(num(j.ring.fy, 0.5), 0, 1), rx: rx0, ry: ry0 });
+    }
+    d.sysName = typeof j.sysName === 'string' ? j.sysName.slice(0, 60) : '';
+    d.mode = j.mode === '1d' ? '1d' : '2d';
+    d.axes = !!j.axes;
+    d.snap = j.snap !== false;
+    d.axisAngle = round1(norm360(num(j.axisAngle, 0)));
+    d.showObjs = j.showObjs !== false;
+    d.strokes = (Array.isArray(j.strokes) ? j.strokes : []).filter(function (s) {
+      return s && Array.isArray(s.pts) && s.pts.length;
+    }).map(function (s) {
+      return { w: clamp(num(s.w, 2.5), 1, 30), erase: !!s.erase,
+        pts: s.pts.filter(function (p) { return Array.isArray(p) && isFinite(p[0]) && isFinite(p[1]); }) };
+    }).filter(function (s) { return s.pts.length; });
+    return d;
+  } catch (e) {
+    return defaultState();
+  }
+}
+
+/* ---------- reset ---------- */
+var resetTimer = null;
+function resetBtnText(confirming) {
+  el.reset.textContent = confirming ? 'Reset again to confirm' : 'Reset';
+  if (confirming) { el.reset.classList.add('fbd-warn'); } else { el.reset.classList.remove('fbd-warn'); }
+}
+function wireReset() {
+  el.reset.addEventListener('click', function () {
+    if (!resetTimer) {
+      resetBtnText(true);
+      resetTimer = setTimeout(function () { resetTimer = null; resetBtnText(false); }, 4000);
+      return;
+    }
+    clearTimeout(resetTimer); resetTimer = null; resetBtnText(false);
+    S = defaultState();
+    selId = null; armed = null; draft = null; objsKey = '\u0000';
+    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+    initHistory();
+    acts = []; redoActs = []; pinned = null; dockDirty = true;
+    el.sysName.value = '';
+    closeExport();
+    redrawPad();
+    renderAll();
+  });
+}
+
+/* ---------- help modal ---------- */
+function openHelp() { el.modal.hidden = false; el.helpClose.focus(); }
+function closeHelp() { el.modal.hidden = true; el.help.focus(); }
+function wireHelp() {
+  el.help.addEventListener('click', openHelp);
+  el.helpClose.addEventListener('click', closeHelp);
+  el.modal.addEventListener('pointerdown', function (e) { if (e.target === el.modal) { closeHelp(); } });
+}
+
+/* ---------- PNG export ---------- */
+var exportUrl = null;
+function closeExport() {
+  if (exportUrl) { try { URL.revokeObjectURL(exportUrl); } catch (e) { /* ignore */ } exportUrl = null; }
+  el.exportPanel.hidden = true;
+  el.exportPanel.innerHTML = '';
+}
+function ctxLabel(ctx, text, x, y, side, color, px) {
+  var p = labelParts(text), big = px, small = Math.round(px * 0.7);
+  ctx.font = '700 ' + big + 'px system-ui, Arial, sans-serif';
+  var w1 = ctx.measureText(p[0]).width, w2 = 0;
+  if (p[1]) { ctx.font = '700 ' + small + 'px system-ui, Arial, sans-serif'; w2 = ctx.measureText(p[1]).width; }
+  var x0 = side === 'start' ? x : (side === 'end' ? x - w1 - w2 : x - (w1 + w2) / 2);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = '#0f0c1a'; ctx.fillStyle = color;
+  ctx.font = '700 ' + big + 'px system-ui, Arial, sans-serif';
+  ctx.strokeText(p[0], x0, y); ctx.fillText(p[0], x0, y);
+  if (p[1]) {
+    ctx.font = '700 ' + small + 'px system-ui, Arial, sans-serif';
+    ctx.strokeText(p[1], x0 + w1, y + big * 0.25); ctx.fillText(p[1], x0 + w1, y + big * 0.25);
+  }
+}
+function ctxArrow(ctx, a, o) {
+  var t = TYPE_BY[a.type] || TYPE_BY.other, G = geom(a), tip = G.tip, tl = G.tail, k = fanOf(a).k;
+  var ux = G.ux, uy = G.uy, nx = G.nx, ny = G.ny;
+  var bx = tip.x - ux * HEAD_LEN, by = tip.y - uy * HEAD_LEN;
+  ctx.strokeStyle = t.color; ctx.fillStyle = t.color; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  if (k > 1) {
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(tl.x, tl.y); ctx.stroke(); ctx.lineWidth = 4;
+  }
+  ctx.beginPath(); ctx.moveTo(tl.x, tl.y); ctx.lineTo(bx + ux * 2, by + uy * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tip.x, tip.y);
+  ctx.lineTo(bx + nx * HEAD_W, by + ny * HEAD_W); ctx.lineTo(bx - nx * HEAD_W, by - ny * HEAD_W);
+  ctx.closePath(); ctx.fill();
+  var L = labelPos(a);
+  ctxLabel(ctx, arrowLabel(a), L.x, L.y, L.side, t.color, 17);
+  var sub = subText(a);
+  if (sub) {
+    ctx.font = '400 12px system-ui, Arial, sans-serif';
+    var sw = ctx.measureText(sub).width, sx = L.side === 'start' ? L.x : (L.side === 'end' ? L.x - sw : L.x - sw / 2);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.lineJoin = 'round'; ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#0f0c1a'; ctx.fillStyle = '#b4aed2';
+    ctx.strokeText(sub, sx, L.y + 15); ctx.fillText(sub, sx, L.y + 15);
+  }
+}
+function summaryLine(o) {
+  var lt = labelsFor(o.id), nm = objName(o);
+  return nm.slice(0, 26) + (lt ? '  ' + lt : '');
+}
+function composeCanvas() {
+  var CW = 1280, CH = 820, c = document.createElement('canvas');
+  c.width = CW; c.height = CH;
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#14111f'; ctx.fillRect(0, 0, CW, CH);
+  ctx.fillStyle = '#efeaff'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  ctx.font = '700 26px system-ui, Arial, sans-serif';
+  ctx.fillText('Force Diagram Builder', 24, 40);
+  /* FBD region */
+  var rx = 24, ry = 60, rw = 870, rh = CH - 84;
+  ctx.fillStyle = '#0f0c1a'; ctx.fillRect(rx, ry, rw, rh);
+  ctx.strokeStyle = '#3a3358'; ctx.lineWidth = 1; ctx.strokeRect(rx + 0.5, ry + 0.5, rw, rh);
+  var k = Math.min(rw / W, rh / H), ox = rx + (rw - W * k) / 2, oy = ry + (rh - H * k) / 2;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
+  ctx.translate(ox, oy); ctx.scale(k, k);
+  var p = ap(), d;
+  if (S.axes) {
+    var R = Math.max(80, Math.min(W, H) * 0.44), a0 = S.axisAngle, ex = Math.max(W, H) * 1.5, ar;
+    ctx.strokeStyle = 'rgba(141,134,179,.4)'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 6]);
+    for (d = 0; d < 360; d += SNAP_STEP) {
+      if (d % 90 === 0) { continue; }
+      ar = (a0 + d) * PI / 180;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(ar) * R, p.y - Math.sin(ar) * R); ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.strokeStyle = 'rgba(141,134,179,.5)'; ctx.lineWidth = 1.5;
+    for (d = 0; d < 360; d += 90) {
+      ar = (a0 + d) * PI / 180;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(ar) * ex, p.y - Math.sin(ar) * ex); ctx.stroke();
+    }
+    ctx.font = '12px system-ui, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#a9a2cc';
+    for (d = 0; d < 360; d += 30) {
+      if (d % 90 === 0) { continue; }
+      ar = (a0 + d) * PI / 180;
+      ctx.fillText(d + '\u00b0', p.x + Math.cos(ar) * (R + 18), p.y - Math.sin(ar) * (R + 18));
+    }
+    ctx.font = '700 15px system-ui, Arial, sans-serif'; ctx.fillStyle = '#c9c3ee';
+    ctx.fillText('+x', p.x + Math.cos(a0 * PI / 180) * (R + 22), p.y - Math.sin(a0 * PI / 180) * (R + 22));
+    ctx.fillText('+y', p.x + Math.cos((a0 + 90) * PI / 180) * (R + 22), p.y - Math.sin((a0 + 90) * PI / 180) * (R + 22));
+  }
+  S.arrows.forEach(function (a) { ctxArrow(ctx, a, p); });
+  ctx.fillStyle = 'rgba(15,12,26,.65)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  var spread = 0;
+  S.arrows.forEach(function (a) { var fk = fanOf(a); if (fk.k > 1) { spread = Math.max(spread, Math.abs(fk.off)); } });
+  ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(13, spread + 7), 0, PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y, 5.5, 0, PI * 2); ctx.fill();
+  var capNm = (S.sysName || '').trim();
+  if (capNm) {
+    var capT = sysCaption(capNm, 22), capS = capSize(capT);
+    ctx.font = '600 ' + capS + 'px system-ui, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#0f0c1a'; ctx.fillStyle = '#a9a2cc';
+    ctx.strokeText(capT, p.x, p.y + Math.max(13, spread + 7) + 6 + capS);
+    ctx.fillText(capT, p.x, p.y + Math.max(13, spread + 7) + 6 + capS);
+    ctx.textAlign = 'left';
+  }
+  ctx.restore();
+  /* right column text */
+  var tx = 920, ty = 100;
+  function clip(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '...' : s; }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#a39cc0'; ctx.font = '600 14px system-ui, Arial, sans-serif';
+  ctx.fillText('SYSTEM', tx, ty);
+  ctx.fillStyle = '#efeaff'; ctx.font = '700 22px system-ui, Arial, sans-serif';
+  ctx.fillText(clip((S.sysName || '').trim() || '(not named)', 30), tx, ty + 30);
+  ty += 80;
+  ctx.fillStyle = '#a39cc0'; ctx.font = '600 14px system-ui, Arial, sans-serif';
+  ctx.fillText('EXTERNAL OBJECTS', tx, ty);
+  ctx.fillStyle = '#efeaff'; ctx.font = '18px system-ui, Arial, sans-serif';
+  ty += 30;
+  if (!S.objects.length) { ctx.fillStyle = '#a39cc0'; ctx.fillText('(none listed)', tx, ty); }
+  var shown = 0;
+  S.objects.forEach(function (o, i) {
+    if (ty > 520) { return; }
+    ctx.fillText('\u2022 ' + clip(summaryLine(o), 46), tx, ty);
+    ty += 28; shown += 1;
+  });
+  if (shown < S.objects.length) { ctx.fillText('+ ' + (S.objects.length - shown) + ' more', tx, ty); }
+  /* sketch */
+  var sx = 920, sy = CH - 24 - PAD_H;
+  ctx.fillStyle = '#a39cc0'; ctx.font = '600 14px system-ui, Arial, sans-serif';
+  ctx.fillText('STATE SKETCH', sx, sy - 10);
+  ctx.fillStyle = '#120f1f'; ctx.fillRect(sx, sy, PAD_W, PAD_H);
+  var off = document.createElement('canvas');
+  off.width = PAD_W * 2; off.height = PAD_H * 2;
+  paintSketch(off.getContext('2d'), 2);
+  ctx.drawImage(off, sx, sy, PAD_W, PAD_H);
+  ctx.strokeStyle = '#3a3358'; ctx.lineWidth = 1; ctx.strokeRect(sx + 0.5, sy + 0.5, PAD_W, PAD_H);
+  return c;
+}
+function exportPng() {
+  closeExport();
+  var panel = el.exportPanel;
+  panel.hidden = false;
+  function fail(msg) {
+    panel.innerHTML = '<p class="fbd-msg fbd-err">' + esc(msg) + '</p><button type="button" class="fbd-btn" data-x="close">Close</button>';
+  }
+  try {
+    var c = composeCanvas();
+    c.toBlob(function (blob) {
+      try {
+        if (!blob) { fail('The image could not be created in this browser. Try a screenshot instead.'); return; }
+        exportUrl = URL.createObjectURL(blob);
+        panel.innerHTML =
+          '<img alt="Preview of your exported diagram" src="' + exportUrl + '">' +
+          '<p class="fbd-msg">Image ready. If your browser did not save it, use a link below.</p>' +
+          '<a data-x="dl" href="' + exportUrl + '" download="force-diagram.png">Download PNG</a>' +
+          '<a href="' + exportUrl + '" target="_blank" rel="noopener">Open in new tab</a>' +
+          '<button type="button" class="fbd-btn" data-x="close">Close</button>';
+        try {
+          var a = document.createElement('a');
+          a.href = exportUrl; a.download = 'force-diagram.png'; a.style.display = 'none';
+          root.appendChild(a); a.click(); root.removeChild(a);
+        } catch (e2) { /* the visible links still work */ }
+      } catch (e1) {
+        fail('Export failed: ' + (e1 && e1.message ? e1.message : 'unknown error') + '.');
+      }
+    }, 'image/png');
+  } catch (e) {
+    fail('Export failed: ' + (e && e.message ? e.message : 'unknown error') + '.');
+  }
+}
+function wireExport() {
+  el.export.addEventListener('click', function () {
+    if (!el.exportPanel.hidden) { closeExport(); } else { exportPng(); }
+  });
+  el.exportPanel.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-x="close"]') : null;
+    if (b) { closeExport(); el.export.focus(); }
+  });
+}
+
+/* ---------- init ---------- */
+function init() {
+  if (root.getAttribute('data-fbd-init') === '1') { return; }
+  root.setAttribute('data-fbd-init', '1');
+  var nodes = root.querySelectorAll('[data-fbd]');
+  for (var i = 0; i < nodes.length; i++) { el[nodes[i].getAttribute('data-fbd')] = nodes[i]; }
+  S = loadSaved();
+  buildChips();
+  measure();
+  rescaleLens();
+  initHistory();
+  el.sysName.value = S.sysName;
+  wireTopBar(); wirePad(); wireSystem(); wireObjs(); wireReset(); wireHelp(); wireExport();
+  objsKey = '\u0000';
+  sizePad();
+  renderAll();
+  function onResize() { measure(); sizePad(); renderAll(); }
+  if (typeof ResizeObserver === 'function') {
+    var pending = false;
+    new ResizeObserver(function () {
+      if (pending) { return; }
+      pending = true;
+      requestAnimationFrame(function () { pending = false; onResize(); });
+    }).observe(el.stage);
+  } else {
+    window.addEventListener('resize', onResize);
+  }
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();
+</script>
+</div>
 </body>
 </html>
