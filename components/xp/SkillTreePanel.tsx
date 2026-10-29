@@ -10,6 +10,7 @@ import {
   SPEC_COLORS_V2,
   SPECIALIZATIONS,
   SPECIALIZATION_IDENTITY,
+  SPEC_PROFILES,
   getSkillIdentityEffect,
   getSkillRank,
   getTrialBossForSpec,
@@ -248,20 +249,39 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
               <p className="text-xs font-bold text-cyan-700 dark:text-cyan-400">
                 {interpolate('skills.respecPick', { cost: respecCost })}
               </p>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {(Object.entries(SKILL_TREES_V2) as [SpecializationId, typeof SKILL_TREES_V2[SpecializationId]][])
                   .filter(([key]) => key !== specialization)
-                  .map(([key, spec]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      disabled={respecBusy}
-                      onClick={() => void handleRespec(key)}
-                      className="px-2 py-2 rounded-lg text-[11px] font-bold bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] hover:border-cyan-500/50 transition disabled:opacity-50"
-                    >
-                      {spec.icon} {spec.name}
-                    </button>
-                  ))}
+                  .map(([key, spec]) => {
+                    const profile = SPEC_PROFILES[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        disabled={respecBusy}
+                        onClick={() => void handleRespec(key)}
+                        className="text-left px-3 py-2 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] hover:border-cyan-500/50 transition disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-[var(--text-primary)]">
+                            {spec.icon} {spec.name}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-[var(--surface-glass)] text-[var(--text-muted)]">
+                            {t(`skills.diff.${profile.difficulty}`)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-secondary)] mb-1">
+                          <span className="font-bold">{t('skills.triggerLabel')}</span> {profile.trigger}
+                        </p>
+                        <p className="text-[11px] text-green-600 dark:text-green-400">
+                          <span className="font-bold">+ </span>{profile.strength}
+                        </p>
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                          <span className="font-bold">- </span>{profile.weakness}
+                        </p>
+                      </button>
+                    );
+                  })}
               </div>
               <button
                 type="button"
@@ -318,6 +338,22 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                 )}
               </div>
               <p className="text-[11.5px] text-[var(--text-tertiary)] mt-1 line-clamp-2">{spec.description}</p>
+              {isSelected && (
+                <div className="mt-1.5 space-y-0.5">
+                  <p className="text-[10.5px] text-[var(--text-secondary)]">
+                    <span className="font-bold">{t('skills.triggerLabel')}</span> {SPEC_PROFILES[key].trigger}
+                  </p>
+                  <p className="text-[10.5px] text-green-600 dark:text-green-400">
+                    <span className="font-bold">+ </span>{SPEC_PROFILES[key].strength}
+                  </p>
+                  <p className="text-[10.5px] text-amber-600 dark:text-amber-400">
+                    <span className="font-bold">- </span>{SPEC_PROFILES[key].weakness}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide">
+                    {t(`skills.diff.${SPEC_PROFILES[key].difficulty}`)}
+                  </p>
+                </div>
+              )}
               {!hasChosen && isSelected && meetsLevel && (
                 <p className="text-[11.5px] text-amber-600 dark:text-amber-400/60 mt-1 font-bold">Browsing — not committed</p>
               )}
@@ -488,7 +524,13 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                           <p className="text-[11px] text-[var(--text-secondary)]">
                             {interpolate('skill.nodeAdvance', {
                               spec: SKILL_TREES_V2[activeSpec].name,
-                              rank: skillRank + 1,
+                              rank: Math.min(6, skillRank + 1),
+                            })}
+                          </p>
+                          <p className="text-[11px] text-[var(--text-muted)]">
+                            {interpolate('skill.rankGain', {
+                              from: formatIdentityEffect(skillRank),
+                              to: formatIdentityEffect(Math.min(6, skillRank + 1)),
                             })}
                           </p>
                         </div>

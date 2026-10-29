@@ -347,6 +347,73 @@ export const SPECIALIZATION_IDENTITY: Record<SpecializationId, SpecializationIde
   SCHOLAR: { rank6Max: 1.24, kind: 'DAMAGE', triggerKey: 'skill.identity.SCHOLAR.desc' },
 };
 
+/**
+ * Player-facing summary of each identity's shape, used by the spec picker so a
+ * student can choose or respec with actual information rather than a name.
+ * Purely descriptive strings; the numbers live in SPECIALIZATION_IDENTITY.
+ */
+export interface SpecProfile {
+  /** When this identity pays out. */
+  trigger: string;
+  /** Where it is strong. */
+  strength: string;
+  /** Where it is weak, stated plainly. */
+  weakness: string;
+  /** How hard it is to play. */
+  difficulty: 'Easy' | 'Moderate' | 'Demanding';
+}
+
+export const SPEC_PROFILES: Record<SpecializationId, SpecProfile> = {
+  JUGGERNAUT: {
+    trigger: 'Correct answers while your health is low',
+    strength: 'Gets stronger the closer you are to being knocked out, so a bad start does not cost you the fight',
+    weakness: 'At full health it does nothing at all. You must take damage before it pays',
+    difficulty: 'Easy',
+  },
+  BERSERKER: {
+    trigger: 'Correct answers while the boss is below half health',
+    strength: 'The strongest finisher. Ends fights quickly once the boss is worn down',
+    weakness: 'Zero help in the first half of the fight, which is where most knockouts happen',
+    difficulty: 'Moderate',
+  },
+  SNIPER: {
+    trigger: 'Your first correct answer against an untouched boss',
+    strength: 'One big opener hit that can knock a chunk off the bar immediately',
+    weakness: 'A single use per boss. Miss the opener and it is wasted',
+    difficulty: 'Moderate',
+  },
+  SPEEDSTER: {
+    trigger: 'Each correct answer in a row',
+    strength: 'Rewards steady accuracy. Builds to the largest bonus of any identity at a 5 streak',
+    weakness: 'Any wrong answer resets it to zero',
+    difficulty: 'Demanding',
+  },
+  GUARDIAN: {
+    trigger: 'Correct answers while at full health',
+    strength: 'Shields you against the next mistake, adding tolerance to your miss budget',
+    weakness: 'Only triggers at full health, so it goes quiet exactly when you are in danger',
+    difficulty: 'Easy',
+  },
+  CLERIC: {
+    trigger: 'A correct answer after a wrong one, while hurt',
+    strength: 'Recovers health mid-fight, directly extending how many mistakes you can survive',
+    weakness: 'Needs you to be both hurt and recovering. A clean run never uses it',
+    difficulty: 'Moderate',
+  },
+  TACTICIAN: {
+    trigger: 'Correct answers on revision questions',
+    strength: 'Pays you for re-solving questions you previously missed, which is where learning happens',
+    weakness: 'Only fires during revision. A short attempt may never trigger it',
+    difficulty: 'Moderate',
+  },
+  SCHOLAR: {
+    trigger: 'Correct answers on the hardest questions available',
+    strength: 'The largest flat bonus on the questions that matter most academically',
+    weakness: 'Nothing on easy or medium questions, which is most of a typical attempt',
+    difficulty: 'Demanding',
+  },
+};
+
 // ========================================
 // SYNERGIES (legacy display metadata; not mechanical rank bonuses)
 // ========================================

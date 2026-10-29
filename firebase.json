@@ -224,6 +224,14 @@
         "destination": "/case-file-0829.html"
       },
       {
+        "source": "/friction-lab",
+        "destination": "/friction-lab/index.html"
+      },
+      {
+        "source": "/friction-lab/",
+        "destination": "/friction-lab/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

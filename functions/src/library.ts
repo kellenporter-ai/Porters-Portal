@@ -76,6 +76,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/outage-waterfront",
   "/cart-04",
   "/case-file-0829",
+  "/friction-lab",
 ]);
 
 /**

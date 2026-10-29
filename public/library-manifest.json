@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T12:06:47.096Z",
+  "generatedAt": "2026-10-29T12:28:46.710Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -100,6 +100,11 @@
       "path": "/forensic-branches/toxicologist.html",
       "fingerprint": "/forensic-branches/toxicologist.html",
       "sizeBytes": 24913
+    },
+    {
+      "path": "/friction-lab/",
+      "fingerprint": "/friction-lab/",
+      "sizeBytes": 653
     },
     {
       "path": "/frq-ch2-unit1-review.html",

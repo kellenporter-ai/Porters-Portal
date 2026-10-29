@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T12:06:47.135Z",
+  "generatedAt": "2026-10-29T12:28:46.747Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -32,12 +32,15 @@
     "/ap1-q1-review/": "/ap1-q1-review/index.html",
     "/outage-waterfront": "/outage-waterfront.html",
     "/cart-04": "/cart-04-corrupted-lab.html",
-    "/case-file-0829": "/case-file-0829.html"
+    "/case-file-0829": "/case-file-0829.html",
+    "/friction-lab": "/friction-lab/index.html",
+    "/friction-lab/": "/friction-lab/index.html"
   },
   "dirs": [
     "/ap1-q1-review",
     "/evidence-types",
     "/forensic-branches",
+    "/friction-lab",
     "/infrastructure-tagging",
     "/power-strip-reading",
     "/seven-s",
