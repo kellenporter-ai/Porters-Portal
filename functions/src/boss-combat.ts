@@ -371,3 +371,248 @@ export function evaluateSkillIdentity(input: IdentityEvalInput): IdentityEvalRes
 
   return result;
 }
+
+// Node-based skill effects (rank redesign). This is additive: the rank-based
+// evaluator above remains unchanged for existing callers and saved payloads.
+export type NodeCondition =
+  | 'ALWAYS' | 'HP_BELOW_50' | 'HP_ABOVE_50' | 'HP_ABOVE_80'
+  | 'BOSS_ABOVE_60' | 'BOSS_BELOW_60' | 'BOSS_BELOW_12'
+  | 'STREAK_2' | 'STREAK_3' | 'IS_REVISION' | 'AFTER_MISS'
+  | 'HARD_ONLY' | 'FIRST_OF_ATTEMPT';
+
+export type NodeKind =
+  | 'DAMAGE' | 'CRIT' | 'HEAL' | 'SHIELD'
+  | 'STREAK_KEEP' | 'DAMAGE_TAKEN' | 'LETHAL_SAVE' | 'EXECUTE';
+
+export interface SkillNodeEffect {
+  slot: number;
+  cost: number;
+  kind: NodeKind;
+  value: number;
+  condition: NodeCondition;
+  /** Stable, student-readable name for the answer record and analytics. */
+  key: string;
+}
+
+export const SKILL_TREE: Record<SkillIdentityId, SkillNodeEffect[]> = {
+  JUGGERNAUT: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Heavy Hand' },
+    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'HP_ABOVE_50', key: 'Unbroken' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'HP_BELOW_50', key: 'Cornered' },
+    { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'HP_BELOW_50', key: 'Stubborn' },
+    { slot: 5, cost: 3, kind: 'DAMAGE_TAKEN', value: 0.85, condition: 'ALWAYS', key: 'Thick Skin' },
+    { slot: 6, cost: 5, kind: 'LETHAL_SAVE', value: 1, condition: 'HP_ABOVE_50', key: 'Last Stand' },
+  ],
+  BERSERKER: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Bloodlust' },
+    { slot: 2, cost: 1, kind: 'CRIT', value: 0.10, condition: 'HP_BELOW_50', key: 'Reckless' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'BOSS_BELOW_60', key: 'Frenzy' },
+    { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'HP_BELOW_50', key: 'Siphon' },
+    { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Rampage' },
+    { slot: 6, cost: 5, kind: 'EXECUTE', value: 1, condition: 'BOSS_BELOW_12', key: 'Execute' },
+  ],
+  SNIPER: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Keen Eye' },
+    { slot: 2, cost: 1, kind: 'CRIT', value: 0.15, condition: 'BOSS_ABOVE_60', key: 'Headshot' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'BOSS_ABOVE_60', key: 'High Caliber' },
+    { slot: 4, cost: 2, kind: 'CRIT', value: 1, condition: 'FIRST_OF_ATTEMPT', key: 'Focus' },
+    { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'HARD_ONLY', key: 'Deadeye' },
+    { slot: 6, cost: 5, kind: 'SHIELD', value: 15, condition: 'FIRST_OF_ATTEMPT', key: 'Camouflage' },
+  ],
+  SPEEDSTER: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Quick Strike' },
+    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'FIRST_OF_ATTEMPT', key: 'Momentum' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'STREAK_2', key: 'Blitz' },
+    { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'STREAK_3', key: 'Second Wind' },
+    { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Haste' },
+    { slot: 6, cost: 5, kind: 'DAMAGE_TAKEN', value: 0.80, condition: 'STREAK_2', key: 'Evasion' },
+  ],
+  GUARDIAN: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Bastion' },
+    { slot: 2, cost: 1, kind: 'SHIELD', value: 2, condition: 'HP_ABOVE_50', key: 'Aegis' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'HP_ABOVE_50', key: 'Phalanx' },
+    { slot: 4, cost: 2, kind: 'HEAL', value: 3, condition: 'HP_BELOW_50', key: 'Mending' },
+    { slot: 5, cost: 3, kind: 'DAMAGE_TAKEN', value: 0.85, condition: 'ALWAYS', key: 'Fortify' },
+    { slot: 6, cost: 5, kind: 'DAMAGE', value: 1.12, condition: 'HP_BELOW_50', key: 'Retribution' },
+  ],
+  CLERIC: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Smite' },
+    { slot: 2, cost: 1, kind: 'HEAL', value: 2, condition: 'ALWAYS', key: 'Blessing' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.12, condition: 'AFTER_MISS', key: 'Devotion' },
+    { slot: 4, cost: 2, kind: 'DAMAGE_TAKEN', value: 0.80, condition: 'AFTER_MISS', key: 'Purify' },
+    { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Zeal' },
+    { slot: 6, cost: 5, kind: 'LETHAL_SAVE', value: 1, condition: 'ALWAYS', key: 'Divine Intervention' },
+  ],
+  TACTICIAN: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Calculated' },
+    { slot: 2, cost: 1, kind: 'CRIT', value: 0.12, condition: 'IS_REVISION', key: 'Analyze' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'IS_REVISION', key: 'Exploit' },
+    { slot: 4, cost: 2, kind: 'HEAL', value: 4, condition: 'AFTER_MISS', key: 'Regroup' },
+    { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Mastermind' },
+    { slot: 6, cost: 5, kind: 'SHIELD', value: 12, condition: 'FIRST_OF_ATTEMPT', key: 'Contingency' },
+  ],
+  SCHOLAR: [
+    { slot: 1, cost: 1, kind: 'DAMAGE', value: 1.08, condition: 'ALWAYS', key: 'Studious' },
+    { slot: 2, cost: 1, kind: 'STREAK_KEEP', value: 0.5, condition: 'HARD_ONLY', key: 'Recall' },
+    { slot: 3, cost: 2, kind: 'DAMAGE', value: 1.14, condition: 'HARD_ONLY', key: 'Mastery' },
+    { slot: 4, cost: 2, kind: 'CRIT', value: 0.15, condition: 'STREAK_2', key: 'Insight' },
+    { slot: 5, cost: 3, kind: 'DAMAGE', value: 1.10, condition: 'ALWAYS', key: 'Erudite' },
+    { slot: 6, cost: 5, kind: 'DAMAGE_TAKEN', value: 0.85, condition: 'HARD_ONLY', key: 'Thesis' },
+  ],
+};
+
+export interface SkillNodeEvalInput {
+  identity: SkillIdentityId;
+  ownedNodeIds: readonly string[];
+  correct: boolean;
+  streak: number;
+  priorStreak: number;
+  playerHp: number;
+  playerMaxHp: number;
+  bossHp: number;
+  bossMaxHp: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  isRevision: boolean;
+  healsUsedThisAttempt: number;
+  isFirstOfAttempt: boolean;
+}
+
+export interface SkillNodeEvalResult {
+  damageMultiplier: number;
+  critBonus: number;
+  damageTakenMultiplier: number;
+  heal: number;
+  shield: number;
+  keepStreakOnMiss: boolean;
+  lethalSave: boolean;
+  execute: boolean;
+  appliedNodeIds: string[];
+  appliedKeys: string[];
+}
+
+const SKILL_DAMAGE_MULTIPLIER_CAP = 1.30;
+const SKILL_CRIT_BONUS_CAP = 0.25;
+const SKILL_DAMAGE_TAKEN_FLOOR = 0.75;
+
+function neutralSkillNodeResult(): SkillNodeEvalResult {
+  return {
+    damageMultiplier: 1,
+    critBonus: 0,
+    damageTakenMultiplier: 1,
+    heal: 0,
+    shield: 0,
+    keepStreakOnMiss: false,
+    lethalSave: false,
+    execute: false,
+    appliedNodeIds: [],
+    appliedKeys: [],
+  };
+}
+
+function skillNodeConditionApplies(
+  condition: NodeCondition,
+  input: SkillNodeEvalInput
+): boolean {
+  const hpRatio = input.playerHp / input.playerMaxHp;
+  const bossRatio = input.bossHp / input.bossMaxHp;
+  switch (condition) {
+    case 'ALWAYS': return true;
+    case 'HP_BELOW_50': return hpRatio < 0.5;
+    case 'HP_ABOVE_50': return hpRatio > 0.5;
+    case 'HP_ABOVE_80': return hpRatio > 0.8;
+    case 'BOSS_ABOVE_60': return bossRatio > 0.6;
+    case 'BOSS_BELOW_60': return bossRatio < 0.6;
+    case 'BOSS_BELOW_12': return bossRatio < 0.12;
+    case 'STREAK_2': return input.streak >= 2;
+    case 'STREAK_3': return input.streak >= 3;
+    case 'IS_REVISION': return input.isRevision;
+    case 'AFTER_MISS': return input.priorStreak === 0;
+    case 'HARD_ONLY': return input.difficulty === 'HARD';
+    case 'FIRST_OF_ATTEMPT': return input.isFirstOfAttempt;
+  }
+}
+
+/** Pure node evaluator. Unknown ids are ignored; malformed input is neutral. */
+export function evaluateSkillNodes(input: SkillNodeEvalInput): SkillNodeEvalResult {
+  const result = neutralSkillNodeResult();
+  if (!input || typeof input !== 'object' || !isSkillIdentity(input.identity) ||
+      !Array.isArray(input.ownedNodeIds)) {
+    return result;
+  }
+
+  const valid = typeof input.correct === 'boolean' &&
+    Number.isInteger(input.streak) && input.streak >= 0 &&
+    Number.isInteger(input.priorStreak) && input.priorStreak >= 0 &&
+    isNonNegativeFinite(input.playerHp) &&
+    Number.isFinite(input.playerMaxHp) && input.playerMaxHp > 0 &&
+    isNonNegativeFinite(input.bossHp) &&
+    Number.isFinite(input.bossMaxHp) && input.bossMaxHp > 0 &&
+    Object.prototype.hasOwnProperty.call(DIFFICULTY_MOD, input.difficulty) &&
+    typeof input.isRevision === 'boolean' &&
+    Number.isInteger(input.healsUsedThisAttempt) && input.healsUsedThisAttempt >= 0 &&
+    typeof input.isFirstOfAttempt === 'boolean';
+  if (!valid) return result;
+
+  const owned = new Set(input.ownedNodeIds);
+  let requestedHeal = 0;
+  const nodes = SKILL_TREE[input.identity];
+  for (let index = 0; index < nodes.length; index++) {
+    const node = nodes[index];
+    const nodeId = SKILL_NODE_IDS[input.identity][index];
+    if (!owned.has(nodeId) || !skillNodeConditionApplies(node.condition, input)) continue;
+
+    let applied = true;
+    switch (node.kind) {
+      case 'DAMAGE':
+        if (input.correct) result.damageMultiplier *= node.value;
+        else applied = false;
+        break;
+      case 'CRIT':
+        if (input.correct) result.critBonus += node.value;
+        else applied = false;
+        break;
+      case 'HEAL':
+        if (input.correct) requestedHeal += node.value;
+        else applied = false;
+        break;
+      case 'SHIELD':
+        result.shield += node.value;
+        break;
+      case 'STREAK_KEEP':
+        if (!input.correct) result.keepStreakOnMiss = true;
+        else applied = false;
+        break;
+      case 'DAMAGE_TAKEN':
+        result.damageTakenMultiplier *= node.value;
+        break;
+      case 'LETHAL_SAVE':
+        result.lethalSave = true;
+        break;
+      case 'EXECUTE':
+        if (input.correct) result.execute = true;
+        else applied = false;
+        break;
+    }
+    if (applied) {
+      result.appliedNodeIds.push(nodeId);
+      result.appliedKeys.push(node.key);
+    }
+  }
+
+  // Internal invariants: no combination can exceed the redesign's hard caps.
+  result.damageMultiplier = input.correct
+    ? Math.min(result.damageMultiplier, SKILL_DAMAGE_MULTIPLIER_CAP)
+    : 1;
+  result.critBonus = Math.min(result.critBonus, SKILL_CRIT_BONUS_CAP);
+  result.damageTakenMultiplier = Math.max(
+    result.damageTakenMultiplier,
+    SKILL_DAMAGE_TAKEN_FLOOR
+  );
+  result.heal = Math.max(0, Math.min(
+    requestedHeal,
+    HEAL_CAP_PER_ANSWER,
+    HEAL_CAP_PER_ATTEMPT - input.healsUsedThisAttempt,
+    input.playerMaxHp - input.playerHp
+  ));
+  return result;
+}
