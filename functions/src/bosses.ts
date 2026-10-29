@@ -813,6 +813,45 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
 // ADAPTIVE QUESTION SELECTION
 // ==========================================
 
+/**
+ * Pure: pick the next question for an attempt.
+ *
+ * Scores by difficulty band and topic recency, and applies a strong penalty to
+ * anything already served during the event. Without the lifetime penalty every
+ * new attempt restarted at the first question, so students saw the same handful
+ * on repeat. The unseen pool always wins until it is exhausted.
+ */
+export function selectNextQuestion(args: {
+  questions: Array<{ id: string; difficulty: string; topicId?: string }>;
+  lifetimeAnsweredIds: string[];
+  targetDifficulties: string[];
+  recentTopics?: Record<string, number>;
+  rand?: () => number;
+}): { id: string; difficulty: string; topicId?: string } | null {
+  const { questions, lifetimeAnsweredIds, targetDifficulties } = args;
+  if (!questions || questions.length === 0) return null;
+  const rand = args.rand || Math.random;
+  const recentTopics = args.recentTopics || {};
+  const lifetimeAnswered = new Set<string>(lifetimeAnsweredIds || []);
+
+  const scored = questions.map((q) => {
+    let score = rand();
+    const diffIdx = targetDifficulties.indexOf(q.difficulty);
+    if (diffIdx === 0) score += 2.0;
+    else if (diffIdx === 1) score += 1.0;
+    if (lifetimeAnswered.has(q.id)) score -= 3.0;
+    if (q.topicId && recentTopics[q.topicId]) {
+      score -= recentTopics[q.topicId] * 0.5;
+    }
+    return { q, score };
+  });
+
+  const unseen = scored.filter((s) => !lifetimeAnswered.has(s.q.id));
+  const pool = unseen.length > 0 ? unseen : scored;
+  pool.sort((a, b) => b.score - a.score);
+  return pool[0].q;
+}
+
 export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const uid = verifyAuth(request.auth);
   generateCorrelationId();
@@ -936,19 +975,16 @@ export const getNextBossQuestion = onCall({ memory: "256MiB", timeoutSeconds: 60
     if (q?.topicId) recentTopics[q.topicId] = (recentTopics[q.topicId] || 0) + 1;
   }
 
-  const scored = remaining.map((q) => {
-    let score = Math.random();
-    const diffIdx = targetDifficulties.indexOf(q.difficulty);
-    if (diffIdx === 0) score += 2.0;
-    else if (diffIdx === 1) score += 1.0;
-    if (q.topicId && recentTopics[q.topicId]) {
-      score -= recentTopics[q.topicId] * 0.5;
-    }
-    return { q, score };
-  });
-
-  scored.sort((a, b) => b.score - a.score);
-  const selected = scored[0].q;
+  // Score by recent exposure across the WHOLE event, not just the current attempt.
+  // `answeredQuestionIds` is event-lifetime history; without it every new attempt
+  // restarted at the first question and students saw the same five on repeat.
+  const selected = selectNextQuestion({
+    questions: remaining,
+    lifetimeAnsweredIds: progress.answeredQuestionIds || [],
+    targetDifficulties,
+    recentTopics,
+    rand: Math.random,
+  })!;
 
   const nextRemaining = remaining.filter((q) => q.id !== selected.id);
   let bossIntent = null;
