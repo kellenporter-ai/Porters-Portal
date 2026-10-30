@@ -70,6 +70,14 @@ function buildPublicProfile(uid: string, data: FirebaseFirestore.DocumentData): 
   };
 }
 
+/** Should this user have a public profile at all? */
+export function shouldMirrorPublicProfile(
+  user: { role?: string; isTestAccount?: boolean } | undefined | null
+): boolean {
+  // Strictly require the boolean true: other truthy values do not exclude.
+  return user?.role === "STUDENT" && user.isTestAccount !== true;
+}
+
 /**
  * Mirror /users/{uid} → /public_profiles/{uid} on every write.
  * Only mirrors STUDENT role. On user delete, removes the public profile too.
@@ -88,8 +96,9 @@ export const mirrorUserToPublicProfile = onDocumentWritten(
       return;
     }
 
-    if (after.role !== "STUDENT") {
-      // Non-students don't appear on leaderboards
+    if (!shouldMirrorPublicProfile(after)) {
+      // Test accounts and non-students are absent from peer-facing surfaces
+      // rather than filtered out: absence fails safe for future consumers.
       await publicRef.delete().catch(() => undefined);
       return;
     }
@@ -109,6 +118,7 @@ export const backfillPublicProfiles = onCall(
     const db = admin.firestore();
 
     let written = 0;
+    let skippedTestAccounts = 0;
     let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
     while (true) {
       let q = db.collection("users")
@@ -122,14 +132,22 @@ export const backfillPublicProfiles = onCall(
 
       const batch = db.batch();
       for (const doc of snap.docs) {
-        batch.set(db.collection("public_profiles").doc(doc.id), buildPublicProfile(doc.id, doc.data()));
+        const data = doc.data();
+        const publicDocRef = db.collection("public_profiles").doc(doc.id);
+        if (!shouldMirrorPublicProfile(data)) {
+          if (data.isTestAccount === true) skippedTestAccounts += 1;
+          // Delete rather than only skipping so stale mirrors cannot survive.
+          batch.delete(publicDocRef);
+          continue;
+        }
+        batch.set(publicDocRef, buildPublicProfile(doc.id, data));
+        written += 1;
       }
       await batch.commit();
-      written += snap.size;
       if (snap.size < 400) break;
     }
 
-    logWithCorrelation('info', 'Public profiles backfilled', correlationId, { written });
-    return { written };
+    logWithCorrelation('info', 'Public profiles backfilled', correlationId, { written, skippedTestAccounts });
+    return { written, skippedTestAccounts };
   }
 );

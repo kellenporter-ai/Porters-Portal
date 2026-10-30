@@ -270,6 +270,12 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  /**
+   * Staff test/inspection account. Excluded from peer-facing surfaces
+   * (leaderboards, chat, parties, aggregates) but fully visible to staff.
+   * Server-write only; clients cannot set this.
+   */
+  isTestAccount?: boolean;
   classType?: ClassType; 
   enrolledClasses?: ClassType[]; 
   section?: string; // LEGACY — single section (kept for backward compat)

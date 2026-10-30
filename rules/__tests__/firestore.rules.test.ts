@@ -794,6 +794,31 @@ describe('boss redesign: answer record lockdown', () => {
   });
 });
 
+// Test-account designation is server/admin controlled.
+describe('users: isTestAccount server-write only', () => {
+  it('student CANNOT set isTestAccount on their own user doc', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', STUDENT_A), { role: 'STUDENT' });
+    });
+
+    const student = testEnv.authenticatedContext(STUDENT_A).firestore();
+    await assertFails(
+      updateDoc(doc(student, 'users', STUDENT_A), { isTestAccount: true }),
+    );
+  });
+
+  it('admin CAN set isTestAccount on a user doc', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', STUDENT_A), { role: 'STUDENT' });
+    });
+
+    const admin = testEnv.authenticatedContext('admin-uid', { admin: true }).firestore();
+    await assertSucceeds(
+      updateDoc(doc(admin, 'users', STUDENT_A), { isTestAccount: true }),
+    );
+  });
+});
+
 // Sanity check that the test env is wired to the emulator, not production.
 describe('emulator wiring', () => {
   it('uses the emulator project id', () => {
