@@ -9,9 +9,10 @@ import {
   specIsInSynergyV2,
   SPEC_COLORS_V2,
   SPECIALIZATIONS,
-  SPECIALIZATION_IDENTITY,
   SPEC_PROFILES,
-  getSkillIdentityEffect,
+  SKILL_TREE_V2,
+  SPECIALIZATION_IDENTITY,
+  getNodeEffect,
   getSkillRank,
   getTrialBossForSpec,
 } from '../../lib/specializations';
@@ -167,13 +168,6 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
   const isLocked = hasChosen && specialization !== activeSpec;
   const canChoose = !hasChosen && level >= specDef.unlockLevel;
   const skillRank = getSkillRank(unlockedSkills, activeSpec);
-  const identity = SPECIALIZATION_IDENTITY[activeSpec];
-  const formatIdentityEffect = (rank: number): string => {
-    const value = getSkillIdentityEffect(activeSpec, rank);
-    return identity.kind === 'HEAL'
-      ? interpolate('skill.effectHeal', { value, attempt: value * 2 })
-      : interpolate('skill.effectDamage', { value: value.toFixed(2) });
-  };
 
   return (
     <div className="space-y-6">
@@ -410,7 +404,7 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
           <h5 className="text-sm font-bold text-[var(--text-primary)]">
             {interpolate('skill.rankHeader', { rank: skillRank })}
           </h5>
-          <p className="text-[11.5px] text-[var(--text-secondary)]">{t(identity.triggerKey)}</p>
+          <p className="text-[11.5px] text-[var(--text-secondary)]">{t(SPECIALIZATION_IDENTITY[activeSpec].triggerKey)}</p>
           {/* Strengths and weaknesses belong on the header card. The spec grid
               only shows profile text on the currently selected (usually locked)
               card, so it was effectively unreachable once a spec was chosen. */}
@@ -429,26 +423,9 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
               {t(`skills.diff.${SPEC_PROFILES[activeSpec].difficulty}`)}
             </p>
           </div>
-          {skillRank === 0 ? (
-            <p className="text-[11.5px] text-[var(--text-tertiary)]">{t('skill.rankZero')}</p>
-          ) : (
-            <dl className="grid grid-cols-1 gap-2 text-[11.5px] sm:grid-cols-[auto_1fr] sm:gap-x-3">
-              <dt className="font-bold text-[var(--text-secondary)]">
-                {interpolate('skill.current', { rank: skillRank })}
-              </dt>
-              <dd className="text-[var(--text-primary)]">{formatIdentityEffect(skillRank)}</dd>
-              {skillRank < 6 && (
-                <>
-                  <dt className="font-bold text-[var(--text-secondary)]">
-                    {interpolate('skill.next', { rank: skillRank + 1 })}
-                  </dt>
-                  <dd className="text-[var(--text-primary)]">{formatIdentityEffect(skillRank + 1)}</dd>
-                </>
-              )}
-              <dt className="font-bold text-[var(--text-secondary)]">{t('skill.max')}</dt>
-              <dd className="text-[var(--text-primary)]">{formatIdentityEffect(6)}</dd>
-            </dl>
-          )}
+          <p className="text-[11.5px] text-[var(--text-primary)]">
+            {interpolate('skills.nodesOwned', { owned: skillRank, total: SKILL_TREE_V2[activeSpec].length })}
+          </p>
         </section>
 
         {/* Trial boss info (only when not yet chosen) */}
@@ -535,26 +512,12 @@ const SkillTreePanel: React.FC<SkillTreePanelProps> = ({
                         {isUnlocked && <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400 ml-auto" />}
                         {!isUnlocked && !isUnlockable && <Lock className="w-3 h-3 text-gray-600 ml-auto" />}
                       </div>
-                      <p className="text-[11.5px] text-[var(--text-tertiary)]">{node.description}</p>
-                      {!isUnlocked && (
-                        <div className="mt-1 space-y-1">
-                          <span className="text-[11.5px] font-mono text-[var(--text-muted)]">
-                            {interpolate('skills.cost', { cost: node.cost })}
-                          </span>
-                          <p className="text-[11px] text-[var(--text-secondary)]">
-                            {interpolate('skill.nodeAdvance', {
-                              spec: SKILL_TREES_V2[activeSpec].name,
-                              rank: Math.min(6, skillRank + 1),
-                            })}
-                          </p>
-                          <p className="text-[11px] text-[var(--text-muted)]">
-                            {interpolate('skill.rankGain', {
-                              from: formatIdentityEffect(skillRank),
-                              to: formatIdentityEffect(Math.min(6, skillRank + 1)),
-                            })}
-                          </p>
-                        </div>
-                      )}
+                      <p className="text-[11.5px] text-[var(--text-secondary)]">{getNodeEffect(node.id)}</p>
+                      <div className="mt-1">
+                        <span className="text-[11.5px] font-mono text-[var(--text-muted)]">
+                          {interpolate('skills.cost', { cost: node.cost })}
+                        </span>
+                      </div>
                       {unlocking === node.id && (
                         <div className="absolute inset-0 bg-[var(--backdrop)] rounded-xl flex items-center justify-center">
                           <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />

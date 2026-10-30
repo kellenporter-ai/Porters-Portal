@@ -879,6 +879,7 @@ export const es: Dictionary = {
   'skill.nodeAdvance': 'Hace que {spec} avance al rango {rank}',
   'skill.effectDamage': 'Hasta {value}x de daño cuando está activo',
   'skill.effectHeal': 'Hasta {value} HP por respuesta correcta, {attempt} HP por intento',
+  'skills.nodesOwned': '{owned} de {total} nodos desbloqueados',
   'skills.tier': 'Nivel {tier}',
   'skills.cost': 'Costo: {cost} PH',
   'skills.respecOpen': 'Cambiar',
