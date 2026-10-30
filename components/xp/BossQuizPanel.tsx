@@ -278,7 +278,7 @@ const QuizBossCard: React.FC<{
   quiz: BossEvent;
   userId: string;
   onAnswer: (quizId: string, questionId: string, answer: number, callbacks: {
-    onResult: (result: { correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
+    onResult: (result: { correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; healApplied?: number; healCapped?: boolean; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void;
   }) => void;
   playerStats?: { tech: number; focus: number; analysis: number; charisma: number };
   playerAppearance?: BossQuizPanelProps['playerAppearance'];
@@ -333,7 +333,7 @@ const QuizBossCard: React.FC<{
   const [victoryClaimed, setVictoryClaimed] = useState(false);
   const [eventClosed, setEventClosed] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
+  const [answerResult, setAnswerResult] = useState<{ correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; healApplied?: number; healCapped?: boolean; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] } | null>(null);
   const [showPhaseTransition, setShowPhaseTransition] = useState<{ phase: number; name: string; dialogue?: string } | null>(null);
   const [showAbility, setShowAbility] = useState<{ name: string; effect: string; value: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -922,9 +922,14 @@ const QuizBossCard: React.FC<{
                     <Zap className="w-5 h-5 inline mr-1" />
                     {answerResult.isCrit ? t('boss.critHit') : ''}{interpolate('boss.dmgToBoss', { dmg: answerResult.damage })}
                   </div>
-                  {answerResult.healAmount && answerResult.healAmount > 0 && (
+                  {(answerResult.healApplied ?? answerResult.healAmount ?? 0) > 0 && (
                     <div className="text-sm text-emerald-700 dark:text-emerald-400 font-bold">
-                      <Heart className="w-4 h-4 inline mr-1" /> {interpolate('boss.hpHealed', { heal: answerResult.healAmount })}
+                      <Heart className="w-4 h-4 inline mr-1" /> {interpolate('boss.hpHealed', { heal: answerResult.healApplied ?? answerResult.healAmount ?? 0 })}
+                    </div>
+                  )}
+                  {answerResult.healCapped === true && (answerResult.healApplied ?? answerResult.healAmount ?? 0) === 0 && (
+                    <div className="text-sm text-slate-600 dark:text-slate-300">
+                      {t('boss.healCapped')}
                     </div>
                   )}
                 </div>
@@ -1023,7 +1028,7 @@ const BossQuizPanel: React.FC<BossQuizPanelProps> = ({ userId, classType, userSe
     quizId: string,
     questionId: string,
     answer: number,
-    callbacks: { onResult: (result: { correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
+    callbacks: { onResult: (result: { correct: boolean; damage: number; streak?: number; attemptComplete?: boolean; playerDamage?: number; playerHp?: number; playerMaxHp?: number; knockedOut?: boolean; isCrit?: boolean; healAmount?: number; healApplied?: number; healCapped?: boolean; shieldBlocked?: boolean; bossHp?: number; bossMaxHp?: number; victoryClaimed?: boolean; error?: 'COOLDOWN_ACTIVE' | 'ALREADY_VICTORIOUS' | 'STALE_PRESENTATION' | 'EVENT_CLOSED'; cooldownUntil?: string | null; medevacCost?: number; playerRole?: string; phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null; triggeredAbility?: { name: string; effect: string; value: number } | null; activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[] }) => void }
   ) => {
     try {
       const result = await dataService.answerBossEvent(quizId, questionId, answer);

@@ -732,6 +732,12 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       appliedKeys: turn.appliedKeys,
       executed: turn.executed,
       lethalSaveConsumed: turn.lethalSaveConsumed,
+      skillRank: turn.rank,
+      skillDamageMultiplier: turn.damageMultiplier,
+      skillIncomingMultiplier: turn.incomingMultiplier,
+      skillCritBonus: turn.critBonus,
+      skillHealingApplied: turn.healApplied,
+      healCapped: turn.healCapped,
     });
 
     // Progress write (legacy `attempts` field is no longer written)
@@ -770,6 +776,9 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       medevacCost: getMedevacCost(latestGam.medevacCount || 0),
       victory,
       streak: newStreak,
+      healAmount: turn.healApplied,
+      healApplied: turn.healApplied,
+      healCapped: turn.healCapped,
       newUnlocks: pendingAchievementUnlocks,
       ...(legacySubmission ? {} : { attemptComplete, presentationId }),
     };

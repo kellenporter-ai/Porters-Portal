@@ -31,6 +31,7 @@ const neutral = () => ({
   critBonus: 0,
   damageTakenMultiplier: 1,
   heal: 0,
+  requestedHeal: 0,
   shield: 0,
   keepStreakOnMiss: false,
   lethalSave: false,

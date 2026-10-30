@@ -762,6 +762,7 @@ export const es: Dictionary = {
   'boss.damageMitigated': 'Daño mitigado',
   'boss.longestStreak': 'Mejor racha',
   'boss.healingReceived': 'Curación recibida',
+  'boss.healCapped': 'Límite de curación alcanzado para este intento',
   'boss.specUnlocked': '¡Especialización desbloqueada!',
   'boss.committedToSpec': 'Te has comprometido a la especialización {spec}.',
   'boss.tutorialPassed': '¡Tutorial aprobado!',

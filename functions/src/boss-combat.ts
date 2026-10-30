@@ -498,6 +498,7 @@ export interface SkillNodeEvalResult {
   critBonus: number;
   damageTakenMultiplier: number;
   heal: number;
+  requestedHeal: number;
   shield: number;
   keepStreakOnMiss: boolean;
   lethalSave: boolean;
@@ -519,6 +520,7 @@ function neutralSkillNodeResult(): SkillNodeEvalResult {
     critBonus: 0,
     damageTakenMultiplier: 1,
     heal: 0,
+    requestedHeal: 0,
     shield: 0,
     keepStreakOnMiss: false,
     lethalSave: false,
@@ -658,6 +660,7 @@ export function evaluateSkillNodes(input: SkillNodeEvalInput): SkillNodeEvalResu
     HEAL_CAP_PER_ATTEMPT - input.healsUsedThisAttempt,
     input.playerMaxHp - input.playerHp
   ));
+  result.requestedHeal = requestedHeal;
   return result;
 }
 
@@ -703,6 +706,11 @@ export interface BossTurnResult {
   lethalSaveConsumed: boolean;
   isCrit: boolean;
   appliedKeys: string[];
+  damageMultiplier: number;
+  incomingMultiplier: number;
+  critBonus: number;
+  rank: number;
+  healCapped: boolean;
 }
 
 function unchangedBossTurn(state: BossTurnState | null | undefined): BossTurnResult {
@@ -724,6 +732,11 @@ function unchangedBossTurn(state: BossTurnState | null | undefined): BossTurnRes
     lethalSaveConsumed: false,
     isCrit: false,
     appliedKeys: [],
+    damageMultiplier: 1,
+    incomingMultiplier: 1,
+    critBonus: 0,
+    rank: 0,
+    healCapped: false,
   };
 }
 
@@ -885,6 +898,9 @@ function resolveNormalizedBossTurn(
         state.playerMaxHp - nextPlayerHp,
       ))
     : 0;
+  // The evaluator records requested healing before per-answer/attempt/HP caps.
+  // Full HP suppresses its HP-gated heal nodes, so check the pre-answer HP too.
+  const healCapped = healApplied === 0 && answer.correct && nodes.requestedHeal > 0;
   nextPlayerHp = Math.min(state.playerMaxHp, Math.max(0, nextPlayerHp + healApplied));
   if (answer.correct) nextShieldHp = Math.min(20, nextShieldHp + nodes.shield);
 
@@ -909,6 +925,11 @@ function resolveNormalizedBossTurn(
     lethalSaveConsumed,
     isCrit,
     appliedKeys: [...nodes.appliedKeys],
+    damageMultiplier: nodes.damageMultiplier,
+    incomingMultiplier: nodes.damageTakenMultiplier,
+    critBonus: nodes.critBonus,
+    rank: identity === null ? 0 : computeSkillRank(identity, ownedNodeIds),
+    healCapped,
   };
 }
 

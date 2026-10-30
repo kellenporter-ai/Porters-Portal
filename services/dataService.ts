@@ -1790,7 +1790,7 @@ export const dataService = {
       bossHp?: number; bossMaxHp?: number;
       playerHp?: number; playerMaxHp?: number;
       knockedOut?: boolean; victory?: boolean; victoryClaimed?: boolean; streak?: number;
-      isCrit?: boolean; healAmount?: number; shieldBlocked?: boolean; playerDamage?: number;
+      isCrit?: boolean; healAmount?: number; healApplied?: number; healCapped?: boolean; shieldBlocked?: boolean; playerDamage?: number;
       phaseTransition?: { phase: number; name: string; dialogue?: string; newAppearance?: unknown } | null;
       activeAbilities?: { abilityId: string; effect: string; value: number; remainingQuestions: number }[];
     };

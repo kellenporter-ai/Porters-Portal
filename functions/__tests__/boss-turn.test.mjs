@@ -294,6 +294,49 @@ describe('pure boss turn resolution', () => {
     expect(shield.appliedKeys).toEqual(['Contingency']);
   });
 
+  it('reports a correct heal capped by the per-attempt allowance', () => {
+    const result = resolveBossTurn('BERSERKER', ['ber_4'], stateFor({
+      playerHp: 40, healsUsedThisAttempt: 8,
+    }), answerFor({ correct: true }));
+    expect(result.healApplied).toBe(0);
+    expect(result.healCapped).toBe(true);
+  });
+
+  it('does not report a cap when four healing lands', () => {
+    const result = resolveBossTurn('BERSERKER', ['ber_4'], stateFor({
+      playerHp: 40,
+    }), answerFor({ correct: true }));
+    expect(result.healApplied).toBe(4);
+    expect(result.healCapped).toBe(false);
+  });
+
+  it('does not report a cap without a heal node', () => {
+    const result = resolveBossTurn('BERSERKER', ['ber_1'], stateFor({
+      playerHp: 40, healsUsedThisAttempt: 8,
+    }), answerFor({ correct: true }));
+    expect(result.healCapped).toBe(false);
+  });
+
+  it('reports an otherwise-applicable heal suppressed at full HP', () => {
+    const result = resolveBossTurn('CLERIC', ['clr_2'], stateFor(), answerFor({ correct: true }));
+    expect(result.healApplied).toBe(0);
+    expect(result.healCapped).toBe(true);
+  });
+
+  it('returns finite numeric skill telemetry on a normal turn', () => {
+    const result = resolveBossTurn('BERSERKER', ['ber_1', 'ber_4'], stateFor({
+      playerHp: 40,
+    }), answerFor({ correct: true }));
+    expect(result.rank).toBe(2);
+    expect(result.damageMultiplier).toBe(1.08);
+    expect(result.incomingMultiplier).toBe(1);
+    expect(result.critBonus).toBe(0);
+    for (const key of ['rank', 'damageMultiplier', 'incomingMultiplier', 'critBonus', 'healApplied']) {
+      expect(Number.isFinite(result[key])).toBe(true);
+    }
+    expect(result.healCapped).toBe(false);
+  });
+
   it('treats null or unknown identities as neutral and malformed input as a no-op', () => {
     const state = stateFor();
     const neutral = resolveBossTurn(null, SKILL_NODE_IDS.GUARDIAN, state, answerFor());
