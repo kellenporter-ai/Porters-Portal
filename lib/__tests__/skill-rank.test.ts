@@ -31,12 +31,11 @@ describe('skill rank server-rule parity', () => {
     expect(getSkillRank([...jugIds, ...jugIds, ...berIds], 'JUGGERNAUT')).toBe(6);
   });
 
-  it('retains six unique nodes per specialization with no effects populated', () => {
+  it('retains six unique structural nodes per specialization', () => {
     for (const ids of Object.values(SKILL_NODE_IDS)) {
       expect(ids).toHaveLength(6);
       expect(new Set(ids).size).toBe(6);
     }
     expect(SKILL_NODES_V2).toHaveLength(48);
-    expect(SKILL_NODES_V2.every(node => node.effect === undefined)).toBe(true);
   });
 });

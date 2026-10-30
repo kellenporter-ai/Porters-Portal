@@ -29,36 +29,32 @@ function renderPanel(unlockedSkills: string[]) {
   );
 }
 
-describe('SkillTreePanel rank truthfulness', () => {
-  it('renders rank three from distinct unlocked Juggernaut nodes and shows current, next, and max effects', () => {
+describe('SkillTreePanel node effects', () => {
+  it('shows owned nodes without a multiplier ramp', () => {
     renderPanel(['jug_1', 'jug_2', 'jug_3']);
 
     expect(screen.getByRole('heading', { name: 'Rank 3 / 6' })).toBeInTheDocument();
-    expect(screen.getByText('Your hits grow stronger as your health drops.')).toBeInTheDocument();
-    expect(screen.getByText('Current (Rank 3)')).toBeInTheDocument();
-    expect(screen.getByText('Next (Rank 4)')).toBeInTheDocument();
-    expect(screen.getByText('Max (Rank 6)')).toBeInTheDocument();
-    expect(screen.getByText('Up to 1.09x damage when active')).toBeInTheDocument();
-    expect(screen.getByText('Up to 1.18x damage when active')).toBeInTheDocument();
+    expect(screen.getByText('3 of 6 nodes unlocked')).toBeInTheDocument();
+    expect(screen.queryByText(/Current \(Rank|Next \(Rank|Max \(Rank|damage when active/i)).not.toBeInTheDocument();
   });
 
-  it('shows no zero bonus and hides next at rank six', () => {
+  it('shows the empty and complete owned-node states', () => {
     const { unmount } = renderPanel([]);
-    expect(screen.getByText('No bonus yet. Unlock a node to begin.')).toBeInTheDocument();
-    expect(screen.queryByText('Current (Rank 0)')).not.toBeInTheDocument();
+    expect(screen.getByText('0 of 6 nodes unlocked')).toBeInTheDocument();
     unmount();
 
     renderPanel(['jug_1', 'jug_2', 'jug_3', 'jug_4', 'jug_5', 'jug_6']);
-    expect(screen.queryByText('Next (Rank 7)')).not.toBeInTheDocument();
+    expect(screen.getByText('6 of 6 nodes unlocked')).toBeInTheDocument();
   });
 
-  it('uses an advance prompt instead of per-node mechanical effect claims', () => {
+  it('renders real mechanics on node cards instead of generic rank advancement', () => {
     renderPanel(['jug_1', 'jug_2', 'jug_3']);
 
-    expect(screen.getAllByText('Advances Juggernaut to Rank 4')).toHaveLength(3);
-    expect(screen.queryByText(/nearby allies/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/armor/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/reflect/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/dodge/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Heavy Hand')).toBeInTheDocument();
+    expect(screen.getByText('Unbroken')).toBeInTheDocument();
+    expect(screen.getAllByText('+8% damage')).not.toHaveLength(0);
+    expect(screen.getByText('A miss keeps half your streak while above half health')).toBeInTheDocument();
+    expect(screen.getByText('+12% damage while below half health')).toBeInTheDocument();
+    expect(screen.queryByText(/Advances .* to Rank/i)).not.toBeInTheDocument();
   });
 });
