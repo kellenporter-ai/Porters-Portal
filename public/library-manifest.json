@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T20:08:57.537Z",
+  "generatedAt": "2026-11-04T13:21:40.686Z",
   "items": [
     {
       "path": "/ap1-forces-practice.html",
@@ -45,6 +45,11 @@
       "path": "/crime-scene-sketch-rubric.html",
       "fingerprint": "/crime-scene-sketch-rubric.html",
       "sizeBytes": 49391
+    },
+    {
+      "path": "/domes-trip/",
+      "fingerprint": "/domes-trip/",
+      "sizeBytes": 55094
     },
     {
       "path": "/electroscope-charge-assessment.html",

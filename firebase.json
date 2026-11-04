@@ -232,6 +232,10 @@
         "destination": "/friction-lab/index.html"
       },
       {
+        "source": "/domes-trip",
+        "destination": "/domes-trip/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T20:08:57.568Z",
+  "generatedAt": "2026-11-04T13:21:40.711Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -34,10 +34,12 @@
     "/cart-04": "/cart-04-corrupted-lab.html",
     "/case-file-0829": "/case-file-0829.html",
     "/friction-lab": "/friction-lab/index.html",
-    "/friction-lab/": "/friction-lab/index.html"
+    "/friction-lab/": "/friction-lab/index.html",
+    "/domes-trip": "/domes-trip/index.html"
   },
   "dirs": [
     "/ap1-q1-review",
+    "/domes-trip",
     "/evidence-types",
     "/forensic-branches",
     "/friction-lab",
