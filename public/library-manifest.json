@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T15:48:30.570Z",
+  "generatedAt": "2026-11-10T15:49:44.932Z",
   "items": [
     {
       "path": "/ap1-course-recap.html",
@@ -160,6 +160,11 @@
       "path": "/l4-decisions-matrix.html",
       "fingerprint": "/l4-decisions-matrix.html",
       "sizeBytes": 28906
+    },
+    {
+      "path": "/latent-print-lab/latent-print-lab.html",
+      "fingerprint": "/latent-print-lab/latent-print-lab.html",
+      "sizeBytes": 462087
     },
     {
       "path": "/linearization-practice.html",
