@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T20:08:57.568Z",
+  "generatedAt": "2026-11-10T15:48:30.615Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -26,6 +26,11 @@
     "/power-line-lab": "/power-line-lab.html",
     "/generator-investigations": "/generator-investigations.html",
     "/rubbing-balloons": "/rubbing-balloons.html",
+    "/ap1-course-recap": "/ap1-course-recap.html",
+    "/physics-course-recap": "/physics-course-recap.html",
+    "/forensic-science-course-recap": "/forensic-science-course-recap.html",
+    "/ap1-recitation-recall": "/ap1-recitation-recall.html",
+    "/generator-story-opener": "/generator-story-opener.html",
     "/evidence-types": "/evidence-types/index.html",
     "/evidence-types/": "/evidence-types/index.html",
     "/ap1-q1-review": "/ap1-q1-review/index.html",
@@ -34,7 +39,8 @@
     "/cart-04": "/cart-04-corrupted-lab.html",
     "/case-file-0829": "/case-file-0829.html",
     "/friction-lab": "/friction-lab/index.html",
-    "/friction-lab/": "/friction-lab/index.html"
+    "/friction-lab/": "/friction-lab/index.html",
+    "/minutiae-hunt": "/minutiae-hunt.html"
   },
   "dirs": [
     "/ap1-q1-review",

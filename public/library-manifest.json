@@ -1,20 +1,25 @@
 {
-  "generatedAt": "2026-10-30T20:08:57.537Z",
+  "generatedAt": "2026-11-10T15:48:30.570Z",
   "items": [
+    {
+      "path": "/ap1-course-recap.html",
+      "fingerprint": "/ap1-course-recap.html",
+      "sizeBytes": 45165
+    },
     {
       "path": "/ap1-forces-practice.html",
       "fingerprint": "/ap1-forces-practice.html",
-      "sizeBytes": 74282
+      "sizeBytes": 74325
     },
     {
       "path": "/ap1-kinematics-practice.html",
       "fingerprint": "/ap1-kinematics-practice.html",
-      "sizeBytes": 111294
+      "sizeBytes": 111337
     },
     {
       "path": "/ap1-newtons-second-law-practice.html",
       "fingerprint": "/ap1-newtons-second-law-practice.html",
-      "sizeBytes": 169778
+      "sizeBytes": 169821
     },
     {
       "path": "/ap1-q1-review/",
@@ -22,44 +27,49 @@
       "sizeBytes": 1959
     },
     {
+      "path": "/ap1-recitation-recall.html",
+      "fingerprint": "/ap1-recitation-recall.html",
+      "sizeBytes": 121268
+    },
+    {
       "path": "/break-in-evidence-rubric.html",
       "fingerprint": "/break-in-evidence-rubric.html",
-      "sizeBytes": 57219
+      "sizeBytes": 57262
     },
     {
       "path": "/cart-04-corrupted-lab.html",
       "fingerprint": "/cart-04-corrupted-lab.html",
-      "sizeBytes": 236469
+      "sizeBytes": 236512
     },
     {
       "path": "/case-file-0829.html",
       "fingerprint": "/case-file-0829.html",
-      "sizeBytes": 207565
+      "sizeBytes": 207608
     },
     {
       "path": "/circuit-diagram-builder.html",
       "fingerprint": "/circuit-diagram-builder.html",
-      "sizeBytes": 44432
+      "sizeBytes": 44475
     },
     {
       "path": "/crime-scene-sketch-rubric.html",
       "fingerprint": "/crime-scene-sketch-rubric.html",
-      "sizeBytes": 49391
+      "sizeBytes": 49434
     },
     {
       "path": "/electroscope-charge-assessment.html",
       "fingerprint": "/electroscope-charge-assessment.html",
-      "sizeBytes": 362647
+      "sizeBytes": 362690
     },
     {
       "path": "/energy-sources.html",
       "fingerprint": "/energy-sources.html",
-      "sizeBytes": 2773078
+      "sizeBytes": 2773121
     },
     {
       "path": "/evidence-court.html",
       "fingerprint": "/evidence-court.html",
-      "sizeBytes": 29305
+      "sizeBytes": 29348
     },
     {
       "path": "/evidence-types/",
@@ -102,6 +112,11 @@
       "sizeBytes": 24913
     },
     {
+      "path": "/forensic-science-course-recap.html",
+      "fingerprint": "/forensic-science-course-recap.html",
+      "sizeBytes": 43110
+    },
+    {
       "path": "/friction-lab/",
       "fingerprint": "/friction-lab/",
       "sizeBytes": 653
@@ -109,7 +124,7 @@
     {
       "path": "/frq-ch2-unit1-review.html",
       "fingerprint": "/frq-ch2-unit1-review.html",
-      "sizeBytes": 731912
+      "sizeBytes": 731955
     },
     {
       "path": "/games/guess-who-evidence.html",
@@ -119,12 +134,17 @@
     {
       "path": "/generator-investigations.html",
       "fingerprint": "/generator-investigations.html",
-      "sizeBytes": 494819
+      "sizeBytes": 494862
+    },
+    {
+      "path": "/generator-story-opener.html",
+      "fingerprint": "/generator-story-opener.html",
+      "sizeBytes": 42841
     },
     {
       "path": "/grid-reference.html",
       "fingerprint": "/grid-reference.html",
-      "sizeBytes": 293885
+      "sizeBytes": 293928
     },
     {
       "path": "/infrastructure-tagging/",
@@ -134,37 +154,47 @@
     {
       "path": "/l4-blackout-detective.html",
       "fingerprint": "/l4-blackout-detective.html",
-      "sizeBytes": 38408
+      "sizeBytes": 38451
     },
     {
       "path": "/l4-decisions-matrix.html",
       "fingerprint": "/l4-decisions-matrix.html",
-      "sizeBytes": 28863
+      "sizeBytes": 28906
     },
     {
       "path": "/linearization-practice.html",
       "fingerprint": "/linearization-practice.html",
-      "sizeBytes": 48530
+      "sizeBytes": 48573
+    },
+    {
+      "path": "/minutiae-hunt.html",
+      "fingerprint": "/minutiae-hunt.html",
+      "sizeBytes": 230943
     },
     {
       "path": "/openscied-hub.html",
       "fingerprint": "/openscied-hub.html",
-      "sizeBytes": 18056
+      "sizeBytes": 18099
     },
     {
       "path": "/outage-waterfront.html",
       "fingerprint": "/outage-waterfront.html",
-      "sizeBytes": 159080
+      "sizeBytes": 159123
+    },
+    {
+      "path": "/physics-course-recap.html",
+      "fingerprint": "/physics-course-recap.html",
+      "sizeBytes": 46672
     },
     {
       "path": "/power-line-lab.html",
       "fingerprint": "/power-line-lab.html",
-      "sizeBytes": 65668
+      "sizeBytes": 65711
     },
     {
       "path": "/power-strip-model-rubric.html",
       "fingerprint": "/power-strip-model-rubric.html",
-      "sizeBytes": 45130
+      "sizeBytes": 45173
     },
     {
       "path": "/power-strip-reading/",
@@ -199,17 +229,17 @@
     {
       "path": "/privacy.html",
       "fingerprint": "/privacy.html",
-      "sizeBytes": 11142
+      "sizeBytes": 11185
     },
     {
       "path": "/rubbing-balloons.html",
       "fingerprint": "/rubbing-balloons.html",
-      "sizeBytes": 813284
+      "sizeBytes": 813327
     },
     {
       "path": "/scientists-circle-toolkit.html",
       "fingerprint": "/scientists-circle-toolkit.html",
-      "sizeBytes": 50593
+      "sizeBytes": 50636
     },
     {
       "path": "/seven-s/",
@@ -254,7 +284,7 @@
     {
       "path": "/texas-grid-blackout.html",
       "fingerprint": "/texas-grid-blackout.html",
-      "sizeBytes": 87897
+      "sizeBytes": 87940
     },
     {
       "path": "/textbook/ch2-kinematics-1d/",
@@ -304,12 +334,12 @@
     {
       "path": "/week4-evidence-storyboard.html",
       "fingerprint": "/week4-evidence-storyboard.html",
-      "sizeBytes": 44887
+      "sizeBytes": 44930
     },
     {
       "path": "/weekly-reflection-journal-rubric.html",
       "fingerprint": "/weekly-reflection-journal-rubric.html",
-      "sizeBytes": 55530
+      "sizeBytes": 55573
     }
   ]
 }

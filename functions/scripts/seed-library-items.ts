@@ -29,6 +29,126 @@ interface SeedItem {
 
 const SEED_ITEMS: SeedItem[] = [
   {
+    title: 'Minutiae Hunt',
+    description:
+      'A fingerprint word search: instead of hunting for hidden words, students hunt for hidden minutiae. ' +
+      'A draggable magnifying glass gives a true 2.5x optical view of a procedurally drawn loop-pattern fingerprint, ' +
+      'and students drag the lens across the ridges to find five ridge endings, five bifurcations, two short ridges, ' +
+      'one island, one dot, and the delta, picking the matching tool for each. ' +
+      'Every feature is a real topological feature of the drawn ridges, so a correct find is genuinely correct. ' +
+      'Includes a per-type progress counter and a closing note that examiners compare minutiae by relative position, ' +
+      'not by count. Pairs with the fingerprint collection card and the fingerprint minutiae lab.',
+    url: '/minutiae-hunt',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'fingerprints',
+      'minutiae',
+      'bilingual',
+      'interactive',
+      'activity',
+      'magnifier',
+      'ridge-patterns',
+      'latent-prints',
+      'observation',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/minutiae-hunt.html',
+  },
+  {
+    title: 'AP Physics 1 Semester Recap: Every Week From Course Setup Through Forces and Friction',
+    description:
+      'A running week-by-week record of everything AP Physics 1 did this semester, built so a student ' +
+      'who was absent can catch up without asking, and so anyone can review before a test. ' +
+      'Each week lists what the class actually did (the motion-mapping lab, the x-t ranking task, the linearization ladder, ' +
+      'the three-period forces lab, the elevator and medicine ball models, the friction lab), ' +
+      'three key ideas worth keeping, and the artifacts used that week. ' +
+      'Weeks are numbered from week 0 and jump-linked, and the whole page toggles between English and Spanish. ' +
+      'The current week shows as in progress rather than guessing, and any week whose detail was reconstructed from the unit sequence says so. ' +
+      'Pairs with the Chapter 2 kinematics textbook, the linearization practice set, and the recitation recall set.',
+    url: '/ap1-course-recap',
+    hostingType: 'bundled',
+    contentKind: 'document',
+    subject: 'AP Physics 1',
+    tags: [
+      'ap-physics-1',
+      'bilingual',
+      'review',
+      'quarter-review',
+      'kinematics',
+      'forces',
+      'newtons-laws',
+      'friction',
+      'free-body-diagram',
+      'reference',
+    ],
+    suggestedCategory: 'Supplemental',
+    sourceFingerprint: '/ap1-course-recap.html',
+  },
+  {
+    title: 'CP and Honors Physics Semester Recap: Every Week From Course Setup Through Electrostatics',
+    description:
+      'A running week-by-week record of the physics course for periods 1, 7, and 9, so a student who ' +
+      'was absent can catch up and anyone can review before a test. Each week lists what the class actually did, ' +
+      'three key ideas worth keeping, and the artifacts used, following the OpenSciEd P.1 arc from the Texas blackout ' +
+      'anchoring event through grid modeling, reliability, energy sources, generators, and the rubbing balloons electrostatics ' +
+      'investigation. Weeks where Honors Physics moved faster or with less scaffolding carry a separate Honors note, ' +
+      'so one page serves both levels honestly. Jumps are linked by week, the page toggles between English and Spanish, ' +
+      'and weeks whose detail was reconstructed from the unit sequence say so. Pairs with the rubbing balloons lab guide, ' +
+      'the Texas grid blackout simulation, and the generator investigations.',
+    url: '/physics-course-recap',
+    hostingType: 'bundled',
+    contentKind: 'document',
+    subject: 'Honors Physics',
+    tags: [
+      'physics',
+      'honors-physics',
+      'bilingual',
+      'review',
+      'quarter-review',
+      'openscied',
+      'electricity',
+      'energy',
+      'electrostatics',
+      'circuits',
+      'reference',
+    ],
+    suggestedCategory: 'Supplemental',
+    sourceFingerprint: '/physics-course-recap.html',
+  },
+  {
+    title: 'Forensic Science Semester Recap: Every Week From Presumptive Testing Through the Minutiae Lab',
+    description:
+      'A running week-by-week record of everything Forensic Science did this semester, so a student who was absent ' +
+      'can catch up and anyone can review before a test. Each week lists what the class actually did, including the ' +
+      'presumptive testing reference key, the Home Visit witness investigation, the six-branch jigsaw, journal rubric ' +
+      'calibration, the Break-In evidence case, the Seven S\'s and scene sketching, and the fingerprint and minutiae lab. ' +
+      'Every week carries three key ideas worth keeping plus the artifacts used, runs in English and Spanish with a toggle, ' +
+      'and is jump-linked by week. Weeks whose detail was reconstructed from the unit sequence are labeled rather than invented. ' +
+      'Pairs with the Break-In case, Evidence Court, the minutiae lab deck, and the Seven S\'s scenario set.',
+    url: '/forensic-science-course-recap',
+    hostingType: 'bundled',
+    contentKind: 'document',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'bilingual',
+      'review',
+      'quarter-review',
+      'crime-scene',
+      'evidence-types',
+      'fingerprints',
+      'minutiae',
+      'the-break-in',
+      'seven-s',
+      'reference',
+    ],
+    suggestedCategory: 'Supplemental',
+    sourceFingerprint: '/forensic-science-course-recap.html',
+  },
+  {
     title: 'Circuit Diagram Builder',
     description: 'Interactive circuit construction tool — build and test series/parallel circuits.',
     url: '/circuit-diagram-builder',
@@ -238,6 +358,32 @@ const SEED_ITEMS: SeedItem[] = [
     tags: ['forensic-science', 'evidence-types', 'crime-scene', 'seven-ss', 'chain-of-custody', 'latent-prints', 'fingerprints', 'presumptive-tests', 'powders', 'case-study', 'bilingual', 'activity', 'review'],
     suggestedCategory: 'Activity',
     sourceFingerprint: '/case-file-0829.html',
+  },
+  {
+    title: 'Inclines, Pulley Systems, and Projectile Components: 90-Minute Recall Practice',
+    description: 'A 90-minute AP Physics 1 recitation set that rebuilds momentum after a break: a 4-item warm-up, then 23 items across three stations. Students predict forces and motion for a block on an inclined plane with static and kinetic friction, work multi-block and Atwood pulley systems including a table-block-over-pulley setup and a tension comparison, then reason about velocity and acceleration components in two dimensions for projectile motion. Each item takes a committed answer before the student checks it, so it never spoils the reasoning: check returns targeted feedback naming the misconception behind every wrong option, and the full worked solution waits behind a second click. A summary screen groups results by topic across 17 topics such as Slant: static threshold and String: Atwood, recommends where to go next, and exports a name-stamped summary PDF per student as the turn-in artifact. Practice credit only, no scores, no timers, English only, and it pairs with the AP1 Forces Practice set, the Newton second law practice set, and the free-body diagram sandbox.',
+    url: '/ap1-recitation-recall',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'AP Physics 1',
+    tags: [
+      'ap-physics-1',
+      'forces',
+      'practice',
+      'friction',
+      'newtons-laws',
+      'free-body-diagram',
+      'kinematics',
+      'acceleration',
+      'vectors',
+      'newtonian-mechanics',
+      'interactive',
+      'stations',
+      'review',
+      'activity',
+    ],
+    suggestedCategory: 'Practice',
+    sourceFingerprint: '/ap1-recitation-recall.html',
   },
 ];
 

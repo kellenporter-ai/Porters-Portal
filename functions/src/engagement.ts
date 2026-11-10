@@ -66,6 +66,7 @@ export const startResourceSession = onCall({ memory: "256MiB", timeoutSeconds: 6
   const db = admin.firestore();
   const sessionId = `${uid}_${assignmentId}`;
   const sessionRef = db.collection("resource_sessions").doc(sessionId);
+  const openRef = db.collection("resource_opens").doc(sessionId);
   const correlationId = generateCorrelationId();
 
   // Reuse existing session (crash recovery / page refresh) if not expired
@@ -76,6 +77,14 @@ export const startResourceSession = onCall({ memory: "256MiB", timeoutSeconds: 6
     const expiresAt = data.expiresAt?.toMillis?.() || Number(data.expiresAt) || 0;
     if (expiresAt && Date.now() < expiresAt + 300000) { // 5-minute grace
       logWithCorrelation("info", "startResourceSession: reused existing", correlationId, { uid, assignmentId });
+      // Durable open receipt — never overwrite an earlier firstOpenedAt
+      const existingOpen = await openRef.get();
+      await openRef.set({
+        userId: uid,
+        assignmentId,
+        ...(existingOpen.exists ? {} : { firstOpenedAt: admin.firestore.FieldValue.serverTimestamp() }),
+        lastOpenedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
       return { sessionToken: sessionId, startedAt };
     }
     // Expired — create new
@@ -87,6 +96,14 @@ export const startResourceSession = onCall({ memory: "256MiB", timeoutSeconds: 6
     startedAt: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
   });
+
+  const existingOpen = await openRef.get();
+  await openRef.set({
+    userId: uid,
+    assignmentId,
+    ...(existingOpen.exists ? {} : { firstOpenedAt: admin.firestore.FieldValue.serverTimestamp() }),
+    lastOpenedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
 
   logWithCorrelation("info", "startResourceSession: created", correlationId, { uid, assignmentId });
   return { sessionToken: sessionId, startedAt: Date.now() };

@@ -237,6 +237,8 @@ export const es: Dictionary = {
   'resources.notSubmitted': 'No entregado',
   'resources.notStarted': 'No empezado',
   'resources.inProgressShort': 'En progreso',
+  'resources.opened': 'Abierto',
+  'resources.new': 'Nuevo',
   'resources.unitStatus.current': 'Actual',
   'resources.unitStatus.complete': 'Completa',
   'resources.unitStatus.past': 'Pasada',

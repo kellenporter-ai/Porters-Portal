@@ -47,6 +47,7 @@ function titleFromFilename(path: string): string {
  * as a display URL when Firebase actually rewrites it to a real file.
  */
 const CLEAN_URL_REWRITES = new Set([
+  "/minutiae-hunt",
   "/privacy",
   "/circuit-diagram-builder",
   "/electroscope-charge-assessment",
@@ -72,11 +73,15 @@ const CLEAN_URL_REWRITES = new Set([
   "/power-line-lab",
   "/generator-investigations",
   "/rubbing-balloons",
+  "/ap1-recitation-recall",
   "/evidence-types",
   "/outage-waterfront",
   "/cart-04",
   "/case-file-0829",
   "/friction-lab",
+  "/ap1-course-recap",
+  "/physics-course-recap",
+  "/forensic-science-course-recap",
 ]);
 
 /**

@@ -236,6 +236,8 @@ export const en: Dictionary = {
   'resources.notSubmitted': 'Not submitted',
   'resources.notStarted': 'Not started',
   'resources.inProgressShort': 'In progress',
+  'resources.opened': 'Opened',
+  'resources.new': 'New',
   'resources.unitStatus.current': 'Current',
   'resources.unitStatus.complete': 'Complete',
   'resources.unitStatus.past': 'Past',

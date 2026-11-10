@@ -2129,6 +2129,20 @@ export const dataService = {
     }, (error) => { reportError(error, { subscription: 'practiceProgress' }); });
   },
 
+  // --- RESOURCE OPENS (durable per-student open receipts) ---
+
+  subscribeToStudentResourceOpens: (userId: string, callback: (opened: Record<string, true>) => void) => {
+    const q = query(collection(db, 'resource_opens'), where('userId', '==', userId));
+    return onSnapshot(q, (snapshot) => {
+      const result: Record<string, true> = {};
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.assignmentId) result[data.assignmentId] = true;
+      });
+      callback(result);
+    }, (error) => { reportError(error, { subscription: 'resourceOpens' }); });
+  },
+
   // ========================================
   // BUG REPORTS
   // ========================================

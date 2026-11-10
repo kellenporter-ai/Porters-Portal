@@ -19,6 +19,7 @@ import {
 import { sortUnitKeys } from '../../lib/sortUnitKeys';
 import { useT, useInterpolate } from '../../lib/i18n';
 import { computeUnitProgress } from '../../lib/unitProgress';
+import { resourceStatusLabel } from '../../lib/resourceStatus';
 
 /*
  * ResourcesTab — Variation D ("Anchored") rebuild.
@@ -105,6 +106,7 @@ type UnitStatus = 'active' | 'next' | 'past' | 'future';
 interface ResourcesTabProps {
   unitGroups: Record<string, EnrichedAssignment[]>;
   practiceCompletion: Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>;
+  resourceOpens: Record<string, true>;
   onStartAssignment?: (id: string) => void;
   classConfigs?: ClassConfig[];
   activeClass: string;
@@ -116,6 +118,7 @@ interface ResourcesTabProps {
 const ResourcesTab: React.FC<ResourcesTabProps> = ({
   unitGroups,
   practiceCompletion,
+  resourceOpens,
   onStartAssignment,
   classConfigs,
   activeClass,
@@ -291,6 +294,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
     const engMin = Math.floor(resource.engagementTime / 60);
     const isSubstantial = engMin >= 5;
     const completion = practiceCompletion[resource.id];
+    const isOpened = !!resourceOpens[resource.id];
     const isModuleCompleted = !!completion?.completed;
     const hasLessonBlocks = (resource.lessonBlocks?.length ?? resource.blockCount ?? 0) > 0;
     const isLessonOnly = hasLessonBlocks && !resource.contentUrl;
@@ -507,7 +511,7 @@ const ResourcesTab: React.FC<ResourcesTabProps> = ({
             <span className="text-[11px] font-mono text-[var(--text-tertiary)]">{t('resources.completed')}</span>
           ) : hasDue ? null : (
             <span className="text-[11px] font-bold whitespace-nowrap text-[var(--text-tertiary)]">
-              {t(resource.isAssessment ? 'resources.notSubmitted' : notStarted ? 'resources.notStarted' : 'resources.inProgressShort')}
+              {t(resourceStatusLabel(resource.isAssessment === true, isOpened))}
             </span>
           )}
           {hasDue && isModuleCompleted && (

@@ -196,6 +196,26 @@
         "destination": "/rubbing-balloons.html"
       },
       {
+        "source": "/ap1-course-recap",
+        "destination": "/ap1-course-recap.html"
+      },
+      {
+        "source": "/physics-course-recap",
+        "destination": "/physics-course-recap.html"
+      },
+      {
+        "source": "/forensic-science-course-recap",
+        "destination": "/forensic-science-course-recap.html"
+      },
+      {
+        "source": "/ap1-recitation-recall",
+        "destination": "/ap1-recitation-recall.html"
+      },
+      {
+        "source": "/generator-story-opener",
+        "destination": "/generator-story-opener.html"
+      },
+      {
         "source": "/evidence-types",
         "destination": "/evidence-types/index.html"
       },
@@ -230,6 +250,10 @@
       {
         "source": "/friction-lab/",
         "destination": "/friction-lab/index.html"
+      },
+      {
+        "source": "/minutiae-hunt",
+        "destination": "/minutiae-hunt.html"
       },
       {
         "source": "**",

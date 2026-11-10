@@ -113,6 +113,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
 
   // Practice progress (completion badges)
   const [practiceCompletion, setPracticeCompletion] = useState<Record<string, { completed: boolean; totalCompletions: number; bestScore: number | null; completedAt: string | null }>>({});
+  const [resourceOpens, setResourceOpens] = useState<Record<string, true>>({});
 
   // RPG State — session state survives ErrorBoundary remounts via per-user store (#19)
   const session = getSessionState(user.id, user.gamification?.lastLevelSeen || 1);
@@ -199,6 +200,13 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
       const unsub = dataService.subscribeToStudentPracticeProgress(user.id, setPracticeCompletion);
       return () => unsub();
     } catch (e) { reportError(e, { subscription: 'practiceProgress' }); }
+  }, [user.id]);
+
+  useEffect(() => {
+    try {
+      const unsub = dataService.subscribeToStudentResourceOpens(user.id, setResourceOpens);
+      return () => unsub();
+    } catch (e) { reportError(e, { subscription: 'resourceOpens' }); }
   }, [user.id]);
 
   // Detect XP changes and show floating animation
@@ -594,6 +602,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, assignments, 
                    <ResourcesTab
                        unitGroups={unitGroups}
                        practiceCompletion={practiceCompletion}
+                       resourceOpens={resourceOpens}
                        onStartAssignment={onStartAssignment}
                        classConfigs={classConfigs}
                        activeClass={activeClass}
