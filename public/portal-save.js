@@ -54,9 +54,15 @@
 
   // ─── Local draft store ────────────────────────────────────────────────────
   // Draft is the local mirror. `dirty` means the server has NOT acknowledged this
-  // payload. `baseRev` is the server rev this draft was edited from (0 = new).
+  // payload. `baseRev`/`baseUpdateTime` are the server state the draft was edited
+  // from (rev 0 / null = never synced).
+  //
+  // There is deliberately NO 'anon' fallback. Invariant #2 says a page with no
+  // auth is not writable, so an anonymous draft should not exist; if one did, a
+  // shared Chromebook would hand it to whichever student signed in next.
   function draftKey(activityId, uid) {
-    return DRAFT_PREFIX + (uid || 'anon') + ':' + activityId;
+    if (!uid) throw new Error('draftKey requires a uid — anonymous drafts are not allowed');
+    return DRAFT_PREFIX + uid + ':' + activityId;
   }
 
   function readDraft(activityId, uid) {
@@ -67,16 +73,24 @@
       if (!d || typeof d !== 'object') return null;
       return d;
     } catch (e) {
+      // No uid (throw from draftKey) or corrupt JSON — both mean "no draft".
       return null;
     }
   }
 
-  function writeDraft(activityId, uid, payload, dirty, baseRev) {
+  function writeDraft(activityId, uid, payload, dirty, baseRev, baseUpdateTime) {
+    var key;
     try {
-      localStorage.setItem(draftKey(activityId, uid), JSON.stringify({
+      key = draftKey(activityId, uid); // throws without a uid — surfaced as false
+    } catch (e) {
+      return false;
+    }
+    try {
+      localStorage.setItem(key, JSON.stringify({
         payload: payload,
         dirty: !!dirty,
         baseRev: baseRev || 0,
+        baseUpdateTime: baseUpdateTime || null,
         timestamp: new Date().toISOString()
       }));
       return true;
@@ -108,10 +122,25 @@
   // Plain HTTPS calls keep the network surface minimal on filtered school
   // networks and avoid the full SDK's offline machinery (which hides pending
   // writes behind "success").
+  //
+  // Writes go through documents:commit rather than documents:patch because the
+  // rules require `updatedAt == request.time`, and a server timestamp transform
+  // (REQUEST_TIME) is the ONLY way to satisfy that. A client-generated
+  // new Date().toISOString() can never equal the server commit time, so a PATCH
+  // with a client timestamp is denied 100% of the time.
+  //
+  // :commit also carries preconditions in the same call, which turns a stale
+  // write into a FAILED_PRECONDITION instead of an indistinguishable 403.
+  var API_BASE = 'https://firestore.googleapis.com';
+  var ACTIVITY_ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
+
+  function docPath(uid, activityId) {
+    return 'projects/' + PROJECT_ID + '/databases/(default)/documents/resource_saves/' +
+      encodeURIComponent(uid) + '/items/' + encodeURIComponent(activityId);
+  }
+
   function docUrl(uid, activityId) {
-    return 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID +
-      '/databases/(default)/documents/resource_saves/' + encodeURIComponent(uid) +
-      '/items/' + encodeURIComponent(activityId);
+    return API_BASE + '/v1/' + docPath(uid, activityId);
   }
 
   function withTimeout(promise, ms) {
@@ -127,38 +156,95 @@
     return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
   }
 
+  // Minimal fetch with a real abort. A Promise.race "timeout" leaves the request
+  // in flight, which can commit server-side AFTER the client decided it failed —
+  // producing a false conflict on the retry. Aborting is not a guarantee the
+  // server did not commit, so callers must treat failures as UNKNOWN, not failed.
+  async function fetchAbort(url, opts, ms) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ms) : null;
+    try {
+      return await fetch(url, Object.assign({}, opts, ctrl ? { signal: ctrl.signal } : {}));
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   async function serverFetch(token, uid, activityId) {
-    var res = await withTimeout(fetch(docUrl(uid, activityId), {
+    var res = await fetchAbort(docUrl(uid, activityId), {
       method: 'GET', headers: authHeaders(token)
-    }), FETCH_TIMEOUT_MS);
-    if (res.status === 404) return { exists: false, rev: 0, payload: null };
-    if (!res.ok) throw new Error('read ' + res.status);
+    }, FETCH_TIMEOUT_MS);
+    if (res.status === 404) return { exists: false, rev: 0, payload: null, updateTime: null };
+    if (!res.ok) {
+      var e = new Error('read ' + res.status);
+      e.status = res.status;
+      throw e;
+    }
     var body = await res.json();
     var f = body.fields || {};
     return {
       exists: true,
       rev: f.rev ? Number(f.rev.integerValue || 0) : 0,
       payload: f.payload && f.payload.stringValue !== undefined ? f.payload.stringValue : null,
-      schemaVersion: f.schemaVersion ? Number(f.schemaVersion.integerValue || 0) : 0
+      schemaVersion: f.schemaVersion ? Number(f.schemaVersion.integerValue || 0) : 0,
+      // updateTime is the doc identity for optimistic concurrency: unlike rev,
+      // it never repeats (a deleted-and-recreated doc gets a fresh one).
+      updateTime: body.updateTime || null
     };
   }
 
-  async function serverWrite(token, uid, activityId, payload, rev, schemaVersion) {
-    var url = docUrl(uid, activityId) +
-      '?updateMask.fieldPaths=payload&updateMask.fieldPaths=rev' +
-      '&updateMask.fieldPaths=schemaVersion&updateMask.fieldPaths=updatedAt';
-    var body = {
-      fields: {
-        payload: { stringValue: payload },
-        rev: { integerValue: String(rev) },
-        schemaVersion: { integerValue: String(schemaVersion || 1) },
-        updatedAt: { timestampValue: new Date().toISOString() }
-      }
+  /**
+   * Commits a save. `expected` is the concurrency token:
+   *   { exists: false }          -> must be a create
+   *   { updateTime: <string> }   -> must match the doc we read
+   * Returns { ok, status, updateTime, error }.
+   */
+  async function serverCommit(token, uid, activityId, payload, rev, schemaVersion, expected) {
+    if (!ACTIVITY_ID_RE.test(activityId)) {
+      return { ok: false, status: 400, error: 'invalid activityId' };
+    }
+    var write = {
+      update: {
+        name: docPath(uid, activityId),
+        fields: {
+          payload: { stringValue: payload },
+          rev: { integerValue: String(rev) },
+          schemaVersion: { integerValue: String(schemaVersion || 1) }
+        }
+      },
+      updateMask: { fieldPaths: ['payload', 'rev', 'schemaVersion'] },
+      // updatedAt is NOT in the mask: the rules require it to equal request.time,
+      // and only a server-time transform can satisfy that.
+      updateTransforms: [{ fieldPath: 'updatedAt', setToServerValue: 'REQUEST_TIME' }]
     };
-    var res = await withTimeout(fetch(url, {
-      method: 'PATCH', headers: authHeaders(token), body: JSON.stringify(body)
-    }), FETCH_TIMEOUT_MS);
-    return res;
+    if (expected && typeof expected.updateTime === 'string') {
+      write.currentDocument = { updateTime: expected.updateTime };
+    } else if (expected && expected.exists === false) {
+      write.currentDocument = { exists: false };
+    }
+
+    var res = await fetchAbort(API_BASE + '/v1/projects/' + PROJECT_ID +
+      '/databases/(default)/documents:commit', {
+      method: 'POST', headers: authHeaders(token), body: JSON.stringify({ writes: [write] })
+    }, FETCH_TIMEOUT_MS);
+
+    var body = null;
+    try { body = await res.json(); } catch (e) { body = null; }
+
+    if (res.ok) {
+      var ut = body && body.writeResults && body.writeResults[0]
+        ? body.writeResults[0].updateTime : null;
+      return { ok: true, status: res.status, updateTime: ut || null };
+    }
+    return {
+      ok: false,
+      status: res.status,
+      error: (body && body.error && body.error.status) || ('http ' + res.status),
+      // FAILED_PRECONDITION => the doc moved under us (stale write), which is a
+      // conflict, not a bug. PERMISSION_DENIED is ambiguous and needs a re-read.
+      precondition: res.status === 400 || res.status === 409 ||
+        (body && body.error && body.error.status === 'FAILED_PRECONDITION')
+    };
   }
 
   // ─── Reconciliation (pure) ────────────────────────────────────────────────
@@ -166,53 +252,114 @@
   // exported so every branch is unit-testable without a network or a browser.
   //
   // Returns one of:
-  //   {action:'push',        rev}         local is newer; write it
-  //   {action:'adopt',       ...server}    take the server copy (Restored toast)
-  //   {action:'conflict',    server}       both diverged; ASK, never auto-pick
-  //   {action:'nothing'}                   nothing on either side
+  //   {action:'push',      rev, expected, reason}  local is newer; write it
+  //   {action:'adopt',     payload, rev, updateTime} take the server copy
+  //   {action:'ack',       rev, updateTime}           our write already landed
+  //   {action:'discard-cache'}                        server copy was deleted
+  //   {action:'conflict',  server, draft, reason}      ASK, never auto-pick
+  //   {action:'nothing'}
   //
-  // The dangerous case is a stale-but-dirty draft that "wins" by default. That is
-  // silently destroying newer work on another device, so it MUST surface as
+  // The dangerous case is a stale-but-dirty draft that "wins" by default. That
+  // silently destroys newer work on another device, so it MUST surface as
   // 'conflict'.
   function reconcile(draft, server) {
     var hasDraft = !!draft;
     var hasServer = !!(server && server.exists);
     var dirty = !!(draft && draft.dirty);
 
-    if (!hasDraft && !hasServer) return { action: 'nothing' };
-    if (!hasDraft && hasServer) return { action: 'adopt', payload: server.payload, rev: server.rev };
+    // ── Clean (non-dirty) local draft: it is only ever a cache. ──
+    if (!dirty) {
+      if (hasServer) {
+        return { action: 'adopt', payload: server.payload, rev: server.rev, updateTime: server.updateTime };
+      }
+      // Server copy is GONE (e.g. an admin reset). A clean draft means the server
+      // already acknowledged it, so a cached copy must not resurrect it and spend
+      // a write doing so. Discard the cache and respect the deletion.
+      return hasDraft ? { action: 'discard-cache' } : { action: 'nothing' };
+    }
 
-    // A pristine (non-dirty) local draft is just a cache: the server always wins.
-    if (!dirty && hasServer) return { action: 'adopt', payload: server.payload, rev: server.rev };
+    // ── Dirty local draft from here down. ──
 
-    // Dirty local draft:
+    // If the server already holds exactly this payload, our write landed (or an
+    // identical one did). Treat as acked — this also resolves the ambiguous
+    // "did my timed-out write commit?" case without a spurious conflict.
+    if (hasServer && server.payload === draft.payload) {
+      return { action: 'ack', rev: server.rev, updateTime: server.updateTime };
+    }
+
     if (!hasServer) {
-      // Nothing on the server yet — safe to push.
-      return { action: 'push', rev: 1 };
+      // Nothing on the server. baseRev > 0 means we HAD a copy that was since
+      // deleted; still push (preserving student work beats respecting a delete
+      // we cannot distinguish from data loss), but tag it for telemetry.
+      return {
+        action: 'push',
+        rev: 1,
+        expected: { exists: false },
+        reason: draft.baseRev > 0 ? 'server-deleted' : 'first-save'
+      };
     }
-    var baseRev = (draft && typeof draft.baseRev === 'number') ? draft.baseRev : 0;
-    if (server.rev === baseRev) {
-      // Server hasn't moved since we last synced — safe to push over it.
-      return { action: 'push', rev: server.rev + 1 };
+
+    var baseRev = (typeof draft.baseRev === 'number') ? draft.baseRev : null;
+    var baseTimeOk = !draft.baseUpdateTime || draft.baseUpdateTime === server.updateTime;
+
+    if (baseRev !== null && server.rev === baseRev && baseTimeOk) {
+      return {
+        action: 'push',
+        rev: server.rev + 1,
+        expected: { updateTime: server.updateTime },
+        reason: 'in-order'
+      };
     }
-    if (server.rev > baseRev) {
-      // Someone (another device / tab / origin) wrote newer work.
-      return { action: 'conflict', server: server, draft: draft };
+
+    // Either the server moved ahead, or the rev regressed (which should be
+    // impossible outside delete-and-recreate and is therefore a bug signal).
+    return {
+      action: 'conflict',
+      server: server,
+      draft: draft,
+      reason: (baseRev !== null && server.rev > baseRev) ? 'server-ahead' : 'rev-regressed'
+    };
+  }
+
+  // ─── Schedule (pure) ──────────────────────────────────────────────────────
+  // Decides when the next write may fire. Kept pure so the cost invariant is
+  // tested as BEHAVIOUR, not as a constant nobody enforces.
+  //
+  // Rules:
+  //   - never sooner than HARD_FLOOR_MS after the previous write
+  //   - while inside the floor, the next write waits for the remainder
+  //   - a flush (tab hiding / pagehide) bypasses the debounce but NOT the floor,
+  //     except for an explicit forced flush on pagehide where losing the write
+  //     is certain and a duplicate is harmless (the reconcile ack branch absorbs it)
+  function decideSchedule(now, lastWriteAt, pendingSince) {
+    if (lastWriteAt === null) {
+      // First write of the session: honour the debounce off the edit time.
+      return { fireAt: (pendingSince || now) + DEBOUNCE_MS, reason: 'debounce' };
     }
-    // Server rev went backwards — treat as conflict rather than trusting either.
-    return { action: 'conflict', server: server, draft: draft };
+    var floorAt = lastWriteAt + HARD_FLOOR_MS;
+    var debounceAt = (pendingSince || now) + DEBOUNCE_MS;
+    var fireAt = Math.max(floorAt, debounceAt);
+    return {
+      fireAt: fireAt,
+      waitMs: Math.max(0, fireAt - now),
+      reason: fireAt === floorAt ? 'floor' : 'debounce'
+    };
   }
 
   // ─── Payload validation (pure) ────────────────────────────────────────────
   // Returns null when acceptable, or a reason string the UI can show.
+  //
+  // The raster message must be HONEST: rejecting the whole payload means NOTHING
+  // is saved, not "images aren't saved." Saying the latter teaches a student that
+  // the rest of their work is safe when it is not.
   function validatePayload(payload) {
     if (typeof payload !== 'string') return 'Payload must be a JSON string.';
     var size = byteLength(payload);
     if (size > MAX_PAYLOAD_BYTES) {
-      return 'This activity\'s work is too large to save (' + Math.round(size / 1024) + ' KB). Remove pasted images.';
+      return 'Your work is too large to save (' + Math.round(size / 1024) + ' KB). Remove pasted images.';
     }
     if (findRasterBlob(payload)) {
-      return 'Images pasted into this activity aren\'t saved to your account.';
+      return 'Your work is NOT being saved while a pasted image is in it. Remove the image to turn saving back on.';
     }
     return null;
   }
@@ -228,13 +375,17 @@
       byteLength: byteLength,
       reconcile: reconcile,
       validatePayload: validatePayload,
+      decideSchedule: decideSchedule,
       DEBOUNCE_MS: DEBOUNCE_MS,
       HARD_FLOOR_MS: HARD_FLOOR_MS,
       MAX_PAYLOAD_BYTES: MAX_PAYLOAD_BYTES,
-      DRAFT_PREFIX: DRAFT_PREFIX
+      DRAFT_PREFIX: DRAFT_PREFIX,
+      ACTIVITY_ID_RE: ACTIVITY_ID_RE,
+      docPath: docPath,
+      API_BASE: API_BASE
     },
     serverFetch: serverFetch,
-    serverWrite: serverWrite
+    serverCommit: serverCommit
   };
 
   if (typeof module !== 'undefined' && module.exports) {

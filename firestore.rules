@@ -54,31 +54,11 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isOwner(userId)
             && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification',
-                          'originHold', 'lastOrigin', 'lastOriginAt'])
+                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification'])
             && (
               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['gamification'])
               || request.resource.data.gamification.diff(resource.data.gamification).affectedKeys()
                   .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeDailyChallenges', 'selectedCharacterModel', 'dismissedAnnouncements'])
-            )
-            // originHold / lastOrigin are written by origin-guard.js during the
-            // one-way migration off the legacy hosting hostname. Constrain the
-            // SHAPE so this cannot become an arbitrary-write surface:
-            //   originHold  = list of localStorage KEY NAMES (<=20, each <=120 chars)
-            //                 — never student content
-            //   lastOrigin  = one of the two known Portal hostnames
-            && (
-              !request.resource.data.diff(resource.data).affectedKeys()
-                  .hasAny(['originHold', 'lastOrigin', 'lastOriginAt'])
-              || (
-                (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['originHold'])
-                  || (
-                    request.resource.data.originHold is list
-                    && request.resource.data.originHold.size() <= 20
-                  ))
-                && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastOrigin'])
-                  || request.resource.data.lastOrigin in ['porters-portal.web.app', 'porters-portal.firebaseapp.com'])
-              )
             ));
       
       // Only admin can delete user profiles
@@ -123,6 +103,38 @@ service cloud.firestore {
           && d.schemaVersion is int
           && d.updatedAt == request.time;
       }
+    }
+
+    // ==========================================
+    // ORIGIN REPORTS (one-way hosting migration telemetry)
+    // ==========================================
+    // Written by origin-guard.js when a student is held on the legacy hostname
+    // because their device holds unsynced work. Deliberately its OWN collection:
+    // telemetry must not share a blast radius with the economy rule on users/{uid},
+    // where a bloated doc would break every Cloud Function write and the profile
+    // mirror.
+    //
+    // Content is an ENUM of known work-key prefixes. hasOnly() on a list checks
+    // element membership, so a student cannot smuggle arbitrary strings (or a
+    // spreadsheet formula-injection payload) into anything an admin later reads.
+    match /origin_reports/{userId} {
+      allow read: if isAdmin() || isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['held', 'lastOrigin', 'at'])
+        && request.resource.data.held is list
+        && request.resource.data.held.size() <= 25
+        && request.resource.data.held.hasOnly([
+             'ap1KinPractice.v1', 'ap1-recitation-recall-v1', 'ap1-recitation-recall-v2',
+             'acdcLab:', 'cart04:state', 'electroscope-assessment-state',
+             'evidenceCourtExhibits', 'l4bd_fallback', 'l4dm.v1', 'l5GenGuide:',
+             'linz-practice-v1', 'outageWaterfront:v1', 'rbGuide:',
+             'scientistsCircleToolkit.v1', 'assessment_session_', 'portalBridge_', 'pp:v1:'
+           ])
+        && request.resource.data.lastOrigin in [
+             'porters-portal.web.app', 'porters-portal.firebaseapp.com'
+           ]
+        && request.resource.data.at == request.time;
+      allow delete: if isAdmin();
     }
 
     // ==========================================

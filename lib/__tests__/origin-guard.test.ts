@@ -24,6 +24,8 @@ interface RunOpts {
   keys?: string[];
   /** Keys present in storage but holding an empty string. */
   emptyKeys?: string[];
+  /** Keys with specific values (e.g. a raw pp:v1: draft JSON string). */
+  values?: Record<string, string>;
   framed?: boolean;
   storageThrows?: boolean;
 }
@@ -36,6 +38,7 @@ function runGuard(opts: RunOpts = {}) {
     hash = '',
     keys = [],
     emptyKeys = [],
+    values = {},
     framed = false,
     storageThrows = false,
   } = opts;
@@ -43,6 +46,7 @@ function runGuard(opts: RunOpts = {}) {
   const store = new Map<string, string>();
   for (const k of keys) store.set(k, '{"some":"work"}');
   for (const k of emptyKeys) store.set(k, '');
+  for (const [k, v] of Object.entries(values)) store.set(k, v);
 
   const localStorage = {
     get length() { return store.size; },
@@ -114,6 +118,28 @@ describe('origin-guard.js', () => {
     const { redirected, window } = runGuard({ keys: ['rbGuide:station3'] });
     expect(redirected).toHaveLength(0);
     expect(window.__originHold).toEqual(['rbGuide:station3']);
+  });
+
+  it('HOLDS on a dirty portal-save draft (unacknowledged work)', () => {
+    // Once an activity is converted, its unsynced work lives in a dirty pp:v1:
+    // draft. Redirecting past that would strand it.
+    const { redirected, window } = runGuard({
+      values: { 'pp:v1:uidA:cart-04': JSON.stringify({ payload: '{}', dirty: true, baseRev: 2 }) },
+    });
+    expect(redirected).toHaveLength(0);
+    expect(window.__originHold).toEqual(['pp:v1:uidA:cart-04']);
+  });
+
+  it('redirects past a CLEAN portal-save draft (it is only a cache)', () => {
+    const { redirected } = runGuard({
+      values: { 'pp:v1:uidA:cart-04': JSON.stringify({ payload: '{}', dirty: false, baseRev: 2 }) },
+    });
+    expect(redirected).toHaveLength(1);
+  });
+
+  it('redirects past a corrupt portal-save draft rather than throwing', () => {
+    const { redirected } = runGuard({ values: { 'pp:v1:uidA:cart-04': '{not json' } });
+    expect(redirected).toHaveLength(1);
   });
 
   it('holds on a real in-flight assessment session key', () => {

@@ -79,6 +79,17 @@
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
         if (!key) continue;
+
+        // portal-save drafts: hold only when DIRTY (unacknowledged student work).
+        // A clean draft is just a cache and is safe to abandon; after conversion
+        // there should be none at all, because the layer deletes on ack.
+        if (key.indexOf('pp:v1:') === 0) {
+          var draft = null;
+          try { draft = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { draft = null; }
+          if (draft && draft.dirty === true) held.push(key);
+          continue;
+        }
+
         for (var j = 0; j < WORK_KEYS.length; j++) {
           if (key.indexOf(WORK_KEYS[j]) === 0) {
             var value = null;
@@ -106,6 +117,13 @@
     host.setAttribute('role', 'status');
     var root = host.attachShadow({ mode: 'open' });
 
+    // Isolate the banner from whatever the activity's stylesheet does to body
+    // text, links, and line-height. Without this, inherited activity CSS leaks
+    // through the shadow boundary as inherited properties.
+    var reset = document.createElement('style');
+    reset.textContent = ':host{all:initial}';
+    root.appendChild(reset);
+
     var wrap = document.createElement('div');
     wrap.style.cssText = [
       'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:2147483647',
@@ -117,24 +135,38 @@
     ].join(';');
 
     var text = document.createElement('span');
+    // Must not promise migration: nothing moves this work until portal-save is
+    // live for this activity. False reassurance breaks the honesty contract.
     text.textContent = heldCount === 1
-      ? 'You have unfinished work saved at this old address. Keep working here and it will be moved for you.'
-      : 'You have unfinished work saved at this old address (' + heldCount + ' activities). Keep working here and it will be moved for you.';
+      ? 'Your work for this activity is saved only on this device at this old address. Keep working here and don\'t clear your browser.'
+      : 'Your work for ' + heldCount + ' activities is saved only on this device at this old address. Keep working here and don\'t clear your browser.';
 
     var link = document.createElement('a');
     link.href = CANONICAL_ORIGIN + window.location.pathname + window.location.search;
-    link.textContent = 'Go to the new address anyway';
+    link.textContent = 'Go to the new address anyway (your saved work stays behind)';
     link.style.cssText = 'margin-left:auto;color:#ffd7c2;text-decoration:underline;font-size:13px;white-space:nowrap';
 
     wrap.appendChild(text);
     wrap.appendChild(link);
     root.appendChild(wrap);
 
-    // Reserve space so the banner does not cover page content.
+    // Reserve exactly the banner's height so it never covers page content and
+    // never leaves a dead gap. Fixed at 52px, the message wraps to 2-3 lines at
+    // Chromebook widths and overlaps whatever sits at the top of the page.
     var spacer = document.createElement('div');
-    spacer.style.cssText = 'height:52px';
+    spacer.style.cssText = 'height:0';
     document.body.insertBefore(spacer, document.body.firstChild);
     document.body.insertBefore(host, document.body.firstChild);
+
+    var syncHeight = function () {
+      spacer.style.height = wrap.offsetHeight + 'px';
+    };
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(syncHeight).observe(wrap);
+    }
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(syncHeight);
+    }
   }
 
   /** True when it is safe (and appropriate) to run the guard at all. */
