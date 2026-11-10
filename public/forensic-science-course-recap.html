@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forensic Science · What We Did Each Week · Mr. Porter</title>
+<meta name="description" content="Forensic Science, Period 5. What we did each week, in English and Spanish.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.72);
+    --ink-faint: rgba(26, 26, 26, 0.62);
+    --accent: #FF4D26;
+    --accent-text: #C2350F;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --dash-strong: 1px dashed rgba(26, 26, 26, 0.55);
+    --focus: #C2350F;
+    --rail-h: 0px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, h1, h2, .eyebrow, .lang-toggle button, .rail a, .chip, .week-num,
+  .brand-line, .foot-line, .recess-label {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+  a { color: var(--accent-text); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  /* ---------- Bilingual span pairs ----------
+     Both languages are always in the DOM. The inactive one is hidden by CSS.
+     Default state is English; body.es flips it. */
+  .lang-es { display: none; }
+  body.es .lang-en { display: none; }
+  body.es .lang-es { display: inline; }
+
+  /* ---------- Header ---------- */
+  header.top { padding: 40px 0 28px; border-bottom: var(--dash); }
+  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .head-main { min-width: 0; flex: 1 1 420px; }
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 12px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 50px); font-weight: 800; margin: 0;
+    letter-spacing: -0.035em; line-height: 1.02;
+  }
+  .subline {
+    font-size: clamp(15px, 1.6vw, 17px); color: var(--ink-soft);
+    margin: 14px 0 0; max-width: 56ch;
+  }
+  .howto {
+    margin: 18px 0 0; padding: 12px 16px; max-width: 62ch;
+    border-left: 3px solid var(--accent); background: rgba(255, 77, 38, 0.05);
+    font-size: 15px; color: var(--ink);
+  }
+  .howto strong { font-weight: 600; }
+
+  .lang-toggle {
+    display: inline-flex; align-items: stretch; border: var(--dash-strong);
+    flex-shrink: 0; background: transparent;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 18px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+    touch-action: manipulation;
+  }
+  .lang-toggle button + button { border-left: var(--dash-strong); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent-text); background: rgba(255, 77, 38, 0.08);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  .lang-toggle button:hover { color: var(--accent-text); }
+
+  /* ---------- Week rail ---------- */
+  nav.rail {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--paper); border-bottom: var(--dash);
+    padding: 10px 0;
+  }
+  .rail-inner { display: flex; align-items: center; gap: 14px; }
+  .rail-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint); flex: 0 0 auto;
+  }
+  .rail-list {
+    display: flex; gap: 4px; overflow-x: auto; flex: 1 1 auto;
+    scrollbar-width: thin; padding: 2px 0; margin: 0; list-style: none;
+  }
+  .rail-list li { flex: 0 0 auto; }
+  .rail a {
+    display: block; padding: 6px 10px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-decoration: none; color: var(--ink-soft);
+    border: 1px solid transparent; white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .rail a:hover { color: var(--accent-text); border-color: var(--accent); }
+  .rail a[aria-current="true"] {
+    color: var(--accent-text); border-color: var(--accent);
+    background: rgba(255, 77, 38, 0.07);
+  }
+  .rail a .rail-num { font-variant-numeric: tabular-nums; }
+  .rail a.is-recess { color: var(--ink-faint); font-style: italic; }
+  .rail a.is-recess::after { content: " ·"; }
+
+  /* ---------- Main ---------- */
+  main { padding: 36px 0 72px; }
+  .week {
+    border: var(--dash); padding: 26px 28px; margin: 0 0 20px;
+    background: transparent; scroll-margin-top: 76px;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+  .week:hover { transform: translateY(-3px); border-color: var(--dash-strong); }
+  .week-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .week-num {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent-text); flex: 0 0 auto;
+  }
+  .week-dates {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .week h2 {
+    font-size: clamp(20px, 2.4vw, 27px); font-weight: 800; margin: 0 0 14px;
+    letter-spacing: -0.025em; line-height: 1.15; max-width: 30ch;
+  }
+  .week p.summary { margin: 0 0 18px; font-size: 16px; max-width: 74ch; }
+
+  .block-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px;
+  }
+  ul.keyideas { margin: 0 0 18px; padding: 0; list-style: none; max-width: 74ch; }
+  ul.keyideas li {
+    position: relative; padding: 0 0 0 20px; margin: 0 0 7px; font-size: 15px;
+  }
+  ul.keyideas li::before {
+    content: ""; position: absolute; left: 2px; top: 0.62em;
+    width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+  .chip {
+    display: inline-block; border: var(--dash); padding: 5px 12px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink);
+  }
+  .note {
+    margin: 0; padding-top: 12px; border-top: var(--dash);
+    font-size: 13px; color: var(--ink-soft); max-width: 74ch;
+  }
+  .note .note-label {
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    font-size: 10px; color: var(--ink-faint); margin-right: 6px;
+  }
+
+  /* ---------- Recess band (unnumbered notice) ---------- */
+  .recess {
+    border: 0; border-top: var(--dash); border-bottom: var(--dash);
+    padding: 22px 28px; margin: 0 0 20px; background: rgba(26, 26, 26, 0.025);
+    scroll-margin-top: 76px;
+  }
+  .recess .week-head { margin-bottom: 4px; }
+  .recess h2 {
+    font-size: clamp(17px, 2vw, 21px); font-weight: 700; margin: 0 0 6px;
+    letter-spacing: -0.015em; color: var(--ink-soft);
+  }
+  .recess p { margin: 0; font-size: 14.5px; color: var(--ink-soft); max-width: 70ch; }
+  .recess .note { border-top: 0; padding-top: 6px; font-size: 12.5px; }
+
+  /* ---------- In progress card (week 11) ---------- */
+  .week.inprogress { border-style: dashed; border-color: var(--dash-strong); }
+  .week.inprogress h2 { color: var(--ink-soft); }
+  .status-tag {
+    display: inline-block; border: 1px solid var(--accent); color: var(--accent-text);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 3px 9px; margin-left: 2px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: var(--dash); padding: 26px 0 40px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .foot-line { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .wrap { padding: 0 18px; }
+    header.top { padding: 28px 0 22px; }
+    .week { padding: 20px 18px; }
+    .recess { padding: 18px; }
+    .rail-label { display: none; }
+    .week h2 { max-width: none; }
+  }
+  @media (max-width: 420px) {
+    .lang-toggle button { padding: 9px 13px; }
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    nav.rail, .lang-toggle { display: none !important; }
+    .week, .recess { break-inside: avoid; border-color: #999; }
+    .week:hover { transform: none; }
+    a { color: #000; text-decoration: none; }
+  }
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<header class="top">
+<div class="wrap">
+<div class="head-row">
+<div class="head-main">
+<p class="eyebrow"><span class="lang-en">Perth Amboy High School · Panther P.R.I.D.E.</span><span class="lang-es">Escuela Secundaria de Perth Amboy · Panther P.R.I.D.E.</span></p>
+<h1><span class="lang-en">Forensic Science</span><span class="lang-es">Ciencias Forenses</span></h1>
+<p class="subline"><span class="lang-en">Period 5 · Mr. Porter · What we did each week</span><span class="lang-es">Período 5 · Sr. Porter · Lo que hicimos cada semana</span></p>
+<p class="howto"><span class="lang-en">Use this page to catch up after an absence or to review before a test. Each week lists what we did, the ideas worth keeping, and what we used.</span><span class="lang-es">Usa esta página para ponerte al día después de una ausencia o para repasar antes de un examen. Cada semana lista lo que hicimos, las ideas que vale la pena conservar y lo que usamos.</span></p>
+</div>
+<div class="lang-toggle" role="group" aria-label="Language">
+<button type="button" data-lang="en" aria-pressed="true">EN</button>
+<button type="button" data-lang="es" aria-pressed="false">ES</button>
+</div>
+</div>
+</div>
+</header>
+<nav class="rail" aria-label="Jump to a week">
+<div class="wrap rail-inner">
+<span class="rail-label"><span class="lang-en">Weeks</span><span class="lang-es">Semanas</span></span>
+<ul class="rail-list">
+<li><a href="#week-0"><span class="rail-num">0</span></a></li>
+<li><a href="#week-1"><span class="rail-num">1</span></a></li>
+<li><a href="#week-2"><span class="rail-num">2</span></a></li>
+<li><a href="#week-3"><span class="rail-num">3</span></a></li>
+<li><a href="#week-4"><span class="rail-num">4</span></a></li>
+<li><a href="#week-5"><span class="rail-num">5</span></a></li>
+<li><a href="#week-6"><span class="rail-num">6</span></a></li>
+<li><a href="#week-7"><span class="rail-num">7</span></a></li>
+<li><a href="#week-8"><span class="rail-num">8</span></a></li>
+<li><a href="#recess-notice" class="is-recess"><span class="rail-num" aria-hidden="true">·</span></a></li>
+<li><a href="#week-9"><span class="rail-num">9</span></a></li>
+</ul>
+
+</div>
+</nav>
+<main id="weeks">
+<div class="wrap">
+<section class="week" id="week-0" data-week="week-0" aria-labelledby="week-0-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 0</span><span class="lang-es">Semana 0</span></span>
+<span class="week-dates"><span class="lang-en">Aug 31 · Sep 4</span><span class="lang-es">31 ago · 4 sep</span></span>
+</div>
+<h2 id="week-0-h"><span class="lang-en">Building the reference key before touching any unknowns</span><span class="lang-es">Construir la clave de referencia antes de tocar cualquier incógnita</span></h2>
+<p class="summary"><span class="lang-en">Day one principle: an unknown means nothing until you have built the reference from knowns. Teams organized twenty pieces of information covering five known powders across four tests into their own whiteboard reference charts. Only then did they run the full test battery on the five known powders, recording observable results to build the interpretive key they would need for case work.</span><span class="lang-es">Principio del primer día: una incógnita no significa nada hasta que has construido la referencia a partir de lo conocido. Los equipos organizaron veinte piezas de información sobre cinco polvos conocidos en cuatro pruebas dentro de sus propias tablas de referencia en la pizarra. Solo entonces corrieron la batería completa de pruebas en los cinco polvos conocidos, registrando resultados observables para construir la clave interpretativa que necesitarían para el trabajo de casos.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Build the reference before you test the unknown.</span><span class="lang-es">Construye la referencia antes de probar la incógnita.</span></li>
+<li><span class="lang-en">A test only means something if you already know what each result looks like.</span><span class="lang-es">Una prueba solo significa algo si ya sabes cómo se ve cada resultado.</span></li>
+<li><span class="lang-en">Recording what you observe beats recording what you expected.</span><span class="lang-es">Registrar lo que observas vale más que registrar lo que esperabas.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Presumptive lab activity</span><span class="lang-es">Actividad de laboratorio presuntivo</span></li>
+<li class="chip"><span class="lang-en">Reflection Journal</span><span class="lang-es">Diario de Reflexión</span></li>
+</ul>
+</section>
+<section class="week" id="week-1" data-week="week-1" aria-labelledby="week-1-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 1</span><span class="lang-es">Semana 1</span></span>
+<span class="week-dates"><span class="lang-en">Sep 8 · 11</span><span class="lang-es">8 · 11 sep</span></span>
+</div>
+<h2 id="week-1-h"><span class="lang-en">Applying the key, then interrogating a witness story</span><span class="lang-es">Aplicar la clave y luego interrogar el relato de un testigo</span></h2>
+<p class="summary"><span class="lang-en">We moved from knowns to unknowns, analyzing evidence bags A through E. Two of the five were two-substance mixtures, and matching each bag's test signature against the reference chart was the only way to catch them. Claims went through a two-dropdown panel with a pure-or-mixture decision, so arguing from your own data was the only way through. Then the Home Visit: a homeowner's story with subtle physical inconsistencies. Students posed their own questions and interrogated an Investigation Oracle that answered only from a fixed body of observations.</span><span class="lang-es">Pasamos de lo conocido a lo desconocido, analizando las bolsas de evidencia A a E. Dos de las cinco eran mezclas de dos sustancias, y comparar la firma de pruebas de cada bolsa con la tabla de referencia era la única forma de detectarlas. Las afirmaciones pasaban por un panel de dos menús con una decisión de puro o mezcla, así que argumentar con tus propios datos era la única manera de avanzar. Luego la Visita a la Casa: el relato de un propietario con inconsistencias físicas sutiles. Los estudiantes plantearon sus propias preguntas e interrogaron a un Oráculo de Investigación que respondía solo a partir de un cuerpo fijo de observaciones.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">A mixture can imitate a pure substance if you only run one test.</span><span class="lang-es">Una mezcla puede imitar a una sustancia pura si solo corres una prueba.</span></li>
+<li><span class="lang-en">Ask questions that the evidence can actually answer.</span><span class="lang-es">Haz preguntas que la evidencia realmente pueda responder.</span></li>
+<li><span class="lang-en">A witness account can be honest and still be wrong.</span><span class="lang-es">El relato de un testigo puede ser honesto y aun así estar equivocado.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Presumptive lab case work</span><span class="lang-es">Trabajo de casos del laboratorio presuntivo</span></li>
+<li class="chip"><span class="lang-en">Home Visit video and Investigation Oracle</span><span class="lang-es">Video de la Visita a la Casa y Oráculo de Investigación</span></li>
+</ul>
+</section>
+<section class="week" id="week-2" data-week="week-2" aria-labelledby="week-2-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 2</span><span class="lang-es">Semana 2</span></span>
+<span class="week-dates"><span class="lang-en">Sep 14 · 18</span><span class="lang-es">14 · 18 sep</span></span>
+</div>
+<h2 id="week-2-h"><span class="lang-en">The six branches, taught by you</span><span class="lang-es">Las seis ramas, enseñadas por ustedes</span></h2>
+<p class="summary"><span class="lang-en">A jigsaw. Each student became the expert on one branch: anthropology, entomology, toxicology, serology, computer science, or forensic psychology. Expert groups researched what the specialist studies, what tools they use, and how their work fits a real investigation. Then mixed groups rotated through every station while each expert taught their peers. The week closed with a scenario match activity, calling the right specialist for each piece of evidence, and a review game.</span><span class="lang-es">Un rompecabezas. Cada estudiante se volvió experto en una rama: antropología, entomología, toxicología, serología, ciencias de la computación o psicología forense. Los grupos de expertos investigaron qué estudia el especialista, qué herramientas usa y cómo encaja su trabajo en una investigación real. Luego los grupos mixtos rotaron por cada estación mientras cada experto enseñaba a sus compañeros. La semana cerró con una actividad de emparejar escenarios, llamando al especialista correcto para cada pieza de evidencia, y un juego de repaso.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Knowing which specialist handles which evidence is half of case work.</span><span class="lang-es">Saber qué especialista maneja qué evidencia es la mitad del trabajo de casos.</span></li>
+<li><span class="lang-en">Teaching something is the fastest way to find out whether you know it.</span><span class="lang-es">Enseñar algo es la forma más rápida de descubrir si lo sabes.</span></li>
+<li><span class="lang-en">Most real cases need more than one branch.</span><span class="lang-es">La mayoría de los casos reales necesitan más de una rama.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Forensic branches site</span><span class="lang-es">Sitio de ramas forenses</span></li>
+<li class="chip"><span class="lang-en">Scenario cards</span><span class="lang-es">Tarjetas de escenarios</span></li>
+<li class="chip"><span class="lang-en">Review game</span><span class="lang-es">Juego de repaso</span></li>
+</ul>
+</section>
+<section class="week" id="week-3" data-week="week-3" aria-labelledby="week-3-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 3</span><span class="lang-es">Semana 3</span></span>
+<span class="week-dates"><span class="lang-en">Sep 21 · 25</span><span class="lang-es">21 · 25 sep</span></span>
+</div>
+<h2 id="week-3-h"><span class="lang-en">Learning the journal rubric from the inside</span><span class="lang-es">Aprender la rúbrica del diario desde adentro</span></h2>
+<p class="summary"><span class="lang-en">Before writing a graded journal entry, we graded one. Students located the Weekly Reflection Journal Rubric on the Portal themselves and answered five exploration questions by quoting the rubric rather than giving opinions. Groups then graded an exemplar week 2 journal: all twelve answered responses, each question's weekly grade, and the overall grade, citing a rubric line for every tier. The reveal showed the real tiers one row at a time and introduced the weakest day rule. Two trap debriefs closed the week: a 23-word entry beat an 85-word one because it showed transferable understanding, and three cases produced three different outcomes.</span><span class="lang-es">Antes de escribir una entrada calificada del diario, calificamos una. Los estudiantes localizaron la Rúbrica del Diario de Reflexión Semanal en el Portal por su cuenta y respondieron cinco preguntas de exploración citando la rúbrica en lugar de dar opiniones. Luego los grupos calificaron un diario modelo de la semana 2: las doce respuestas contestadas, la calificación semanal de cada pregunta y la calificación general, citando una línea de la rúbrica para cada nivel. La revelación mostró los niveles reales fila por fila e introdujo la regla del día más débil. Dos análisis de trampas cerraron la semana: una entrada de 23 palabras superó a una de 85 porque mostraba comprensión transferible, y tres casos produjeron tres resultados distintos.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Length is not quality.</span><span class="lang-es">La longitud no es calidad.</span></li>
+<li><span class="lang-en">Cite the rubric instead of guessing at a tier.</span><span class="lang-es">Cita la rúbrica en lugar de adivinar un nivel.</span></li>
+<li><span class="lang-en">Your weakest day sets each skill grade.</span><span class="lang-es">Tu día más débil define cada calificación de habilidad.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Weekly Reflection Journal rubric (on the Portal)</span><span class="lang-es">Rúbrica del Diario de Reflexión Semanal (en el Portal)</span></li>
+<li class="chip"><span class="lang-en">Exemplar journal packet</span><span class="lang-es">Paquete de diario modelo</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">The forensic content for Thursday and Friday this week is not documented in the folder. Those days continued the journal work under the new rubric.</span><span class="lang-es">El contenido forense del jueves y el viernes de esta semana no está documentado en la carpeta. Esos días continuaron el trabajo del diario con la nueva rúbrica.</span></p>
+</section>
+<section class="week" id="week-4" data-week="week-4" aria-labelledby="week-4-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 4</span><span class="lang-es">Semana 4</span></span>
+<span class="week-dates"><span class="lang-en">Sep 28 · Oct 2</span><span class="lang-es">28 sep · 2 oct</span></span>
+</div>
+<h2 id="week-4-h"><span class="lang-en">The Break-In: building a case from physical evidence</span><span class="lang-es">El Allanamiento: construir un caso a partir de evidencia física</span></h2>
+<p class="summary"><span class="lang-en">Our culminating evidence case. Students read the bilingual story, which carries context only: who had access, who knew the routine, and the timeline. It deliberately withholds physical evidence, so the case has to come from the catalog. From there: classifying all fifteen items as direct or circumstantial and as class or individual, connecting each item to a story hook, and building a supported claim rather than a guess. One item is an intentional red herring that has to be recognized as noise. The week closed with Evidence Court, where students argued their cases and defended why their strongest evidence outranked the alternatives.</span><span class="lang-es">Nuestro caso culminante de evidencia. Los estudiantes leyeron la historia bilingüe, que solo aporta contexto: quién tenía acceso, quién conocía la rutina y la línea de tiempo. Deliberadamente no incluye evidencia física, así que el caso tiene que salir del catálogo. De ahí: clasificar los quince objetos como directos o circunstanciales y como de clase o individuales, conectar cada objeto con un gancho de la historia y construir una afirmación sustentada en lugar de una suposición. Un objeto es una pista falsa intencional que hay que reconocer como ruido. La semana cerró con el Tribunal de Evidencia, donde los estudiantes argumentaron sus casos y defendieron por qué su evidencia más fuerte superaba a las alternativas.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Context tells you who could have done it; evidence tells you who did.</span><span class="lang-es">El contexto te dice quién pudo haberlo hecho; la evidencia te dice quién lo hizo.</span></li>
+<li><span class="lang-en">Class evidence narrows a group; individual evidence names a person.</span><span class="lang-es">La evidencia de clase reduce un grupo; la evidencia individual nombra a una persona.</span></li>
+<li><span class="lang-en">Relevance is a skill, and a red herring tests it.</span><span class="lang-es">La relevancia es una habilidad, y una pista falsa la pone a prueba.</span></li>
+<li><span class="lang-en">A claim needs the evidence behind it and an answer to the counter-argument.</span><span class="lang-es">Una afirmación necesita la evidencia detrás y una respuesta al contraargumento.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">The Break-In case (story in EN and ES, evidence catalog, Evidence Court)</span><span class="lang-es">El caso del Allanamiento (historia en EN y ES, catálogo de evidencia, Tribunal de Evidencia)</span></li>
+</ul>
+</section>
+<section class="week" id="week-5" data-week="week-5" aria-labelledby="week-5-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 5</span><span class="lang-es">Semana 5</span></span>
+<span class="week-dates"><span class="lang-en">Oct 5 · 9</span><span class="lang-es">5 · 9 oct</span></span>
+</div>
+<h2 id="week-5-h"><span class="lang-en">What should happen first at a crime scene</span><span class="lang-es">Qué debe pasar primero en la escena de un crimen</span></h2>
+<p class="summary"><span class="lang-en">We started by breaking it. Students read three short scene write-ups and marked every place a first responder could have destroyed usable evidence. The class built a list of what should happen first, which the Seven S's framework then formalized. We worked securing the scene and argued why each step has to happen in order and what gets lost when one is skipped. Then measured sketching: using a fixed reference point, recording distances and angles instead of approximating by eye. Groups sketched the classroom as a scene and peer-checked each other's scale errors.</span><span class="lang-es">Empezamos rompiéndolo. Los estudiantes leyeron tres relatos cortos de escenas y marcaron cada lugar donde un primer respondiente pudo haber destruido evidencia utilizable. La clase construyó una lista de lo que debería pasar primero, que luego el marco de las Siete S formalizó. Trabajamos el aseguramiento de la escena y discutimos por qué cada paso tiene que ocurrir en orden y qué se pierde cuando se salta uno. Luego el bosquejo medido: usar un punto de referencia fijo, registrar distancias y ángulos en lugar de aproximar a ojo. Los grupos bosquejaron el salón como una escena y revisaron entre sí los errores de escala.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Order matters at a scene.</span><span class="lang-es">El orden importa en una escena.</span></li>
+<li><span class="lang-en">A sketch without a stated reference point cannot be reproduced.</span><span class="lang-es">Un bosquejo sin un punto de referencia declarado no se puede reproducir.</span></li>
+<li><span class="lang-en">Documentation that another investigator cannot replicate is not documentation.</span><span class="lang-es">La documentación que otro investigador no puede replicar no es documentación.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Seven S's scenario set and deck</span><span class="lang-es">Set de escenarios y presentación de las Siete S</span></li>
+<li class="chip"><span class="lang-en">Sketch checklist</span><span class="lang-es">Lista de verificación del bosquejo</span></li>
+</ul>
+</section>
+<section class="week" id="week-6" data-week="week-6" aria-labelledby="week-6-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 6</span><span class="lang-es">Semana 6</span></span>
+<span class="week-dates"><span class="lang-en">Oct 13 · 16</span><span class="lang-es">13 · 16 oct</span></span>
+</div>
+<h2 id="week-6-h"><span class="lang-en">Direct versus circumstantial, and documenting before touching</span><span class="lang-es">Directa contra circunstancial, y documentar antes de tocar</span></h2>
+<p class="summary"><span class="lang-en">Monday, October 12 was a staff in-service day. We returned to the direct versus circumstantial distinction and applied it to statements pulled from a scene narrative, arguing where a single piece of evidence sits on that continuum and what additional evidence would move it. We distinguished primary scenes from secondary scenes and mapped one case across both. Then a structured search of a staged scene: recording location, condition, and collection method for each item before removing anything. The week closed with a final measured sketch where every item was located from a stated reference point.</span><span class="lang-es">El lunes 12 de octubre fue día de capacitación del personal. Volvimos a la distinción entre directa y circunstancial y la aplicamos a declaraciones tomadas de una narrativa de escena, discutiendo dónde se ubica una sola pieza de evidencia en ese continuo y qué evidencia adicional la movería. Distinguimos escenas primarias de escenas secundarias y mapeamos un caso en ambas. Luego una búsqueda estructurada de una escena montada: registrar ubicación, condición y método de recolección de cada objeto antes de retirar nada. La semana cerró con un bosquejo medido final donde cada objeto se ubicó desde un punto de referencia declarado.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Direct versus circumstantial is a continuum, not a switch.</span><span class="lang-es">Directa contra circunstancial es un continuo, no un interruptor.</span></li>
+<li><span class="lang-en">Document before you touch, because the reverse order destroys what you needed to record.</span><span class="lang-es">Documenta antes de tocar, porque el orden inverso destruye lo que necesitabas registrar.</span></li>
+<li><span class="lang-en">A sketch another investigator can reproduce is defensible.</span><span class="lang-es">Un bosquejo que otro investigador puede reproducir es defendible.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Evidence type sets</span><span class="lang-es">Sets de tipos de evidencia</span></li>
+<li class="chip"><span class="lang-en">Staged scene evidence forms</span><span class="lang-es">Formularios de evidencia de la escena montada</span></li>
+</ul>
+</section>
+<section class="week" id="week-7" data-week="week-7" aria-labelledby="week-7-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 7</span><span class="lang-es">Semana 7</span></span>
+<span class="week-dates"><span class="lang-en">Oct 19 · 23</span><span class="lang-es">19 · 23 oct</span></span>
+</div>
+<h2 id="week-7-h"><span class="lang-en">Loops, whorls, and arches</span><span class="lang-es">Bucles, verticilos y arcos</span></h2>
+<p class="summary"><span class="lang-en">We opened with a marble race to surface a hard idea: a whole class of objects can share a pattern while still being distinguishable from each other. That is exactly the fingerprint problem. We worked the three pattern classes, loops, whorls, and arches, and practiced classifying specimen prints. Groups discussed why three groups are useful but nowhere near enough for identification. Then we moved past pattern class into minutiae, the small ridge events that make a print individual. Every student collected their own print and marked minutiae on it, then compared with a partner.</span><span class="lang-es">Abrimos con una carrera de canicas para sacar a la luz una idea difícil: toda una clase de objetos puede compartir un patrón y aun así ser distinguible entre sí. Ese es exactamente el problema de las huellas dactilares. Trabajamos las tres clases de patrón, bucles, verticilos y arcos, y practicamos clasificando huellas de muestra. Los grupos discutieron por qué tres grupos son útiles pero no bastan para identificar. Luego pasamos de la clase de patrón a las minucias, los pequeños eventos de crestas que hacen individual una huella. Cada estudiante tomó su propia huella y marcó minucias en ella, y después la comparó con un compañero.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Pattern class narrows the field; it does not identify a person.</span><span class="lang-es">La clase de patrón reduce el campo; no identifica a una persona.</span></li>
+<li><span class="lang-en">Minutiae are what make a print individual.</span><span class="lang-es">Las minucias son lo que hace individual una huella.</span></li>
+<li><span class="lang-en">Your own print is the best specimen to learn on.</span><span class="lang-es">Tu propia huella es la mejor muestra para aprender.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Week 6 fingerprint deck</span><span class="lang-es">Presentación de huellas de la semana 7</span></li>
+<li class="chip"><span class="lang-en">Print cards</span><span class="lang-es">Tarjetas de huellas</span></li>
+</ul>
+</section>
+<section class="week" id="week-8" data-week="week-8" aria-labelledby="week-8-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 8</span><span class="lang-es">Semana 8</span></span>
+<span class="week-dates"><span class="lang-en">Oct 26 · 30</span><span class="lang-es">26 · 30 oct</span></span>
+</div>
+<h2 id="week-8-h"><span class="lang-en">Reading ridge detail like an examiner</span><span class="lang-es">Leer el detalle de las crestas como un examinador</span></h2>
+<p class="summary"><span class="lang-en">We started from the question that has to be answered once two prints share a pattern class: what else is there to compare? Then we worked the minutiae atlas to build fluency before touching our own prints, distinguishing pattern-level features from minutiae-level features. Each student collected and classified their own print, labeling the pattern on the card and redoing any print too smeared to use rather than forcing a classification. We marked minutiae on our own prints, naming each point and verifying it was actually present, then peer-reviewed.</span><span class="lang-es">Empezamos con la pregunta que hay que responder una vez que dos huellas comparten una clase de patrón: ¿qué más hay para comparar? Luego trabajamos el atlas de minucias para ganar fluidez antes de tocar nuestras propias huellas, distinguiendo rasgos de nivel de patrón de rasgos de nivel de minucia. Cada estudiante tomó y clasificó su propia huella, etiquetando el patrón en la tarjeta y rehaciendo cualquier huella demasiado borrosa en lugar de forzar una clasificación. Marcamos minucias en nuestras propias huellas, nombrando cada punto y verificando que realmente estuviera presente, y luego hicimos revisión entre compañeros.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Redo a bad print rather than classify it.</span><span class="lang-es">Rehaz una huella mala en lugar de clasificarla.</span></li>
+<li><span class="lang-en">A named minutia has to actually be at the location you marked.</span><span class="lang-es">Una minucia nombrada tiene que estar realmente en el lugar que marcaste.</span></li>
+<li><span class="lang-en">Two examiners rarely mark identical sets, and that matters for how fingerprints support identification.</span><span class="lang-es">Dos examinadores rara vez marcan sets idénticos, y eso importa para cómo las huellas apoyan una identificación.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Fingerprint minutiae lab</span><span class="lang-es">Laboratorio de minucias de huellas dactilares</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Some of this week's detail is reconstructed from our unit sequence.</span><span class="lang-es">Parte del detalle de esta semana está reconstruido a partir de la secuencia de la unidad.</span></p>
+</section>
+<section class="recess" id="recess-notice" data-week="recess-notice" aria-labelledby="recess-notice-h">
+<div class="week-head">
+<span class="week-dates"><span class="lang-en">Nov 2 · 6</span><span class="lang-es">2 · 6 nov</span></span>
+<span class="status-tag"><span class="lang-en">No classes</span><span class="lang-es">Sin clases</span></span>
+</div>
+<h2 id="recess-notice-h"><span class="lang-en">Fall Recess. No classes.</span><span class="lang-es">Receso de otoño. No hay clases.</span></h2>
+<p><span class="lang-en">School was closed for Fall Recess. Nothing new was assigned this week.</span><span class="lang-es">La escuela estuvo cerrada por el Receso de Otoño. No se asignó nada nuevo esta semana.</span></p>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">District calendar.</span><span class="lang-es">Calendario del distrito.</span></p>
+</section>
+<section class="week inprogress" id="week-9" data-week="week-9" aria-labelledby="week-9-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 9</span><span class="lang-es">Semana 9</span></span>
+<span class="week-dates"><span class="lang-en">Nov 9 · 13</span><span class="lang-es">9 · 13 nov</span></span>
+<span class="status-tag"><span class="lang-en">Still in progress</span><span class="lang-es">Todavía en curso</span></span>
+</div>
+<h2 id="week-9-h"><span class="lang-en">In progress</span><span class="lang-es">En curso</span></h2>
+<p class="summary"><span class="lang-en">This week is still being written. Check back after the week closes.</span><span class="lang-es">Esta semana todavía se está escribiendo. Vuelve a revisar cuando cierre la semana.</span></p>
+</section>
+</div>
+</main>
+<footer>
+<div class="wrap foot-line">
+<span><span class="lang-en">Perth Amboy High School · Home of the Panthers</span><span class="lang-es">Escuela Secundaria de Perth Amboy · Hogar de los Panthers</span></span>
+<span><span class="lang-en">Forensic Science · Mr. Porter</span><span class="lang-es">Ciencias Forenses · Sr. Porter</span></span>
+</div>
+</footer>
+<script>
+(function () {
+  "use strict";
+  var KEY = "courseRecapLang";
+  var root = document.documentElement;
+  var body = document.body;
+  var buttons = document.querySelectorAll(".lang-toggle button");
+
+  function setLang(lang) {
+    if (lang !== "es") { lang = "en"; }
+    root.setAttribute("lang", lang);
+    body.classList.toggle("es", lang === "es");
+    try { localStorage.setItem(KEY, lang); } catch (e) {}
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      var on = b.getAttribute("data-lang") === lang;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    var groups = document.querySelectorAll(".lang-toggle");
+    for (var g = 0; g < groups.length; g++) {
+      groups[g].setAttribute("aria-label", lang === "es" ? "Idioma" : "Language");
+    }
+  }
+
+  var stored = "en";
+  try { stored = localStorage.getItem(KEY) || "en"; } catch (e) {}
+  setLang(stored);
+
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function () {
+      setLang(this.getAttribute("data-lang"));
+    });
+  }
+
+  /* Week rail scroll-spy: highlight the week currently in view. */
+  var weeks = document.querySelectorAll("[data-week]");
+  var links = document.querySelectorAll(".rail a");
+  if (!weeks.length || !links.length || !("IntersectionObserver" in window)) { return; }
+
+  var linkFor = {};
+  for (var l = 0; l < links.length; l++) {
+    linkFor[links[l].getAttribute("href").slice(1)] = links[l];
+  }
+
+  function mark(id) {
+    for (var k = 0; k < links.length; k++) {
+      links[k].removeAttribute("aria-current");
+    }
+    if (linkFor[id]) { linkFor[id].setAttribute("aria-current", "true"); }
+  }
+
+  var visible = {};
+  var observer = new IntersectionObserver(function (entries) {
+    for (var e = 0; e < entries.length; e++) {
+      var entry = entries[e];
+      visible[entry.target.id] = entry.isIntersecting ? entry.intersectionRatio : 0;
+    }
+    var bestId = null;
+    var bestRatio = 0;
+    for (var id in visible) {
+      if (visible[id] > bestRatio) { bestRatio = visible[id]; bestId = id; }
+    }
+    if (bestId) { mark(bestId); }
+  }, { rootMargin: "-72px 0px -45% 0px", threshold: [0, 0.15, 0.4, 0.75, 1] });
+
+  for (var w = 0; w < weeks.length; w++) { observer.observe(weeks[w]); }
+})();
+</script>
+</body>
+</html>

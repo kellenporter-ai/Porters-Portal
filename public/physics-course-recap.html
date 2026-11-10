@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CP Physics and Honors Physics · What We Did Each Week · Mr. Porter</title>
+<meta name="description" content="CP Physics and Honors Physics, Periods 1, 7, and 9. What we did each week, in English and Spanish.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.72);
+    --ink-faint: rgba(26, 26, 26, 0.62);
+    --accent: #FF4D26;
+    --accent-text: #C2350F;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --dash-strong: 1px dashed rgba(26, 26, 26, 0.55);
+    --focus: #C2350F;
+    --rail-h: 0px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, h1, h2, .eyebrow, .lang-toggle button, .rail a, .chip, .week-num,
+  .brand-line, .foot-line, .recess-label {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+  a { color: var(--accent-text); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  /* ---------- Bilingual span pairs ----------
+     Both languages are always in the DOM. The inactive one is hidden by CSS.
+     Default state is English; body.es flips it. */
+  .lang-es { display: none; }
+  body.es .lang-en { display: none; }
+  body.es .lang-es { display: inline; }
+
+  /* ---------- Header ---------- */
+  header.top { padding: 40px 0 28px; border-bottom: var(--dash); }
+  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .head-main { min-width: 0; flex: 1 1 420px; }
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 12px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 50px); font-weight: 800; margin: 0;
+    letter-spacing: -0.035em; line-height: 1.02;
+  }
+  .subline {
+    font-size: clamp(15px, 1.6vw, 17px); color: var(--ink-soft);
+    margin: 14px 0 0; max-width: 56ch;
+  }
+  .howto {
+    margin: 18px 0 0; padding: 12px 16px; max-width: 62ch;
+    border-left: 3px solid var(--accent); background: rgba(255, 77, 38, 0.05);
+    font-size: 15px; color: var(--ink);
+  }
+  .howto strong { font-weight: 600; }
+
+  .lang-toggle {
+    display: inline-flex; align-items: stretch; border: var(--dash-strong);
+    flex-shrink: 0; background: transparent;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 18px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+    touch-action: manipulation;
+  }
+  .lang-toggle button + button { border-left: var(--dash-strong); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent-text); background: rgba(255, 77, 38, 0.08);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  .lang-toggle button:hover { color: var(--accent-text); }
+
+  /* ---------- Week rail ---------- */
+  nav.rail {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--paper); border-bottom: var(--dash);
+    padding: 10px 0;
+  }
+  .rail-inner { display: flex; align-items: center; gap: 14px; }
+  .rail-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint); flex: 0 0 auto;
+  }
+  .rail-list {
+    display: flex; gap: 4px; overflow-x: auto; flex: 1 1 auto;
+    scrollbar-width: thin; padding: 2px 0; margin: 0; list-style: none;
+  }
+  .rail-list li { flex: 0 0 auto; }
+  .rail a {
+    display: block; padding: 6px 10px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-decoration: none; color: var(--ink-soft);
+    border: 1px solid transparent; white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .rail a:hover { color: var(--accent-text); border-color: var(--accent); }
+  .rail a[aria-current="true"] {
+    color: var(--accent-text); border-color: var(--accent);
+    background: rgba(255, 77, 38, 0.07);
+  }
+  .rail a .rail-num { font-variant-numeric: tabular-nums; }
+  .rail a.is-recess { color: var(--ink-faint); font-style: italic; }
+  .rail a.is-recess::after { content: " ·"; }
+
+  /* ---------- Main ---------- */
+  main { padding: 36px 0 72px; }
+  .week {
+    border: var(--dash); padding: 26px 28px; margin: 0 0 20px;
+    background: transparent; scroll-margin-top: 76px;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+  .week:hover { transform: translateY(-3px); border-color: var(--dash-strong); }
+  .week-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .week-num {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent-text); flex: 0 0 auto;
+  }
+  .week-dates {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .week h2 {
+    font-size: clamp(20px, 2.4vw, 27px); font-weight: 800; margin: 0 0 14px;
+    letter-spacing: -0.025em; line-height: 1.15; max-width: 30ch;
+  }
+  .week p.summary { margin: 0 0 18px; font-size: 16px; max-width: 74ch; }
+
+  .block-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px;
+  }
+  ul.keyideas { margin: 0 0 18px; padding: 0; list-style: none; max-width: 74ch; }
+  ul.keyideas li {
+    position: relative; padding: 0 0 0 20px; margin: 0 0 7px; font-size: 15px;
+  }
+  ul.keyideas li::before {
+    content: ""; position: absolute; left: 2px; top: 0.62em;
+    width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+  .chip {
+    display: inline-block; border: var(--dash); padding: 5px 12px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink);
+  }
+  .note {
+    margin: 0; padding-top: 12px; border-top: var(--dash);
+    font-size: 13px; color: var(--ink-soft); max-width: 74ch;
+  }
+  .note .note-label {
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    font-size: 10px; color: var(--ink-faint); margin-right: 6px;
+  }
+
+  /* ---------- Honors callout (weeks 5 and 6) ---------- */
+  .honors-note {
+    border: 1px dashed rgba(26, 26, 26, 0.35);
+    padding: 12px 16px; margin: 0 0 18px; max-width: 74ch;
+    background: rgba(26, 26, 26, 0.018);
+  }
+  .honors-note .block-label { margin-bottom: 6px; color: var(--accent-text); }
+  .honors-note p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+
+  /* ---------- Recess band (unnumbered notice) ---------- */
+  .recess {
+    border: 0; border-top: var(--dash); border-bottom: var(--dash);
+    padding: 22px 28px; margin: 0 0 20px; background: rgba(26, 26, 26, 0.025);
+    scroll-margin-top: 76px;
+  }
+  .recess .week-head { margin-bottom: 4px; }
+  .recess h2 {
+    font-size: clamp(17px, 2vw, 21px); font-weight: 700; margin: 0 0 6px;
+    letter-spacing: -0.015em; color: var(--ink-soft);
+  }
+  .recess p { margin: 0; font-size: 14.5px; color: var(--ink-soft); max-width: 70ch; }
+  .recess .note { border-top: 0; padding-top: 6px; font-size: 12.5px; }
+
+  /* ---------- In progress card (week 11) ---------- */
+  .week.inprogress { border-style: dashed; border-color: var(--dash-strong); }
+  .week.inprogress h2 { color: var(--ink-soft); }
+  .status-tag {
+    display: inline-block; border: 1px solid var(--accent); color: var(--accent-text);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 3px 9px; margin-left: 2px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: var(--dash); padding: 26px 0 40px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .foot-line { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .wrap { padding: 0 18px; }
+    header.top { padding: 28px 0 22px; }
+    .week { padding: 20px 18px; }
+    .recess { padding: 18px; }
+    .rail-label { display: none; }
+    .week h2 { max-width: none; }
+  }
+  @media (max-width: 420px) {
+    .lang-toggle button { padding: 9px 13px; }
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    nav.rail, .lang-toggle { display: none !important; }
+    .week, .recess { break-inside: avoid; border-color: #999; }
+    .week:hover { transform: none; }
+    a { color: #000; text-decoration: none; }
+  }
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<header class="top">
+<div class="wrap">
+<div class="head-row">
+<div class="head-main">
+<p class="eyebrow"><span class="lang-en">Perth Amboy High School · Panther P.R.I.D.E.</span><span class="lang-es">Escuela Secundaria de Perth Amboy · Panther P.R.I.D.E.</span></p>
+<h1><span class="lang-en">CP Physics and Honors Physics</span><span class="lang-es">Física CP y Física de Honor</span></h1>
+<p class="subline"><span class="lang-en">Periods 1, 7, and 9 · Mr. Porter · What we did each week</span><span class="lang-es">Períodos 1, 7 y 9 · Sr. Porter · Lo que hicimos cada semana</span></p>
+<p class="howto"><span class="lang-en">Use this page to catch up after an absence or to review before a test. Each week lists what we did, the ideas worth keeping, and what we used.</span><span class="lang-es">Usa esta página para ponerte al día después de una ausencia o para repasar antes de un examen. Cada semana lista lo que hicimos, las ideas que vale la pena conservar y lo que usamos.</span></p>
+</div>
+<div class="lang-toggle" role="group" aria-label="Language">
+<button type="button" data-lang="en" aria-pressed="true">EN</button>
+<button type="button" data-lang="es" aria-pressed="false">ES</button>
+</div>
+</div>
+</div>
+</header>
+<nav class="rail" aria-label="Jump to a week">
+<div class="wrap rail-inner">
+<span class="rail-label"><span class="lang-en">Weeks</span><span class="lang-es">Semanas</span></span>
+<ul class="rail-list">
+<li><a href="#week-0"><span class="rail-num">0</span></a></li>
+<li><a href="#week-1"><span class="rail-num">1</span></a></li>
+<li><a href="#week-2"><span class="rail-num">2</span></a></li>
+<li><a href="#week-3"><span class="rail-num">3</span></a></li>
+<li><a href="#week-4"><span class="rail-num">4</span></a></li>
+<li><a href="#week-5"><span class="rail-num">5</span></a></li>
+<li><a href="#week-6"><span class="rail-num">6</span></a></li>
+<li><a href="#week-7"><span class="rail-num">7</span></a></li>
+<li><a href="#week-8"><span class="rail-num">8</span></a></li>
+<li><a href="#recess-notice" class="is-recess"><span class="rail-num" aria-hidden="true">·</span></a></li>
+<li><a href="#week-9"><span class="rail-num">9</span></a></li>
+</ul>
+
+</div>
+</nav>
+<main id="weeks">
+<div class="wrap">
+<section class="week" id="week-0" data-week="week-0" aria-labelledby="week-0-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 0</span><span class="lang-es">Semana 0</span></span>
+<span class="week-dates"><span class="lang-en">Aug 31 · Sep 4</span><span class="lang-es">31 ago · 4 sep</span></span>
+</div>
+<h2 id="week-0-h"><span class="lang-en">Course setup and the Mystery Box</span><span class="lang-es">Preparación del curso y la Caja Misteriosa</span></h2>
+<p class="summary"><span class="lang-en">We set up the three routines that run every day: the Opening Task on the board when you walk in, team whiteboards, and the Reflection Journal at the end of class. Teams are four people named after a scientist on the table tent. Then the Mystery Box: teams pulled colored cords, watched which other cords retracted, and drew a model of what they thought was inside. They predicted one untested pull, committed the prediction with reasoning first, then tested it.</span><span class="lang-es">Establecimos las tres rutinas que se usan todos los días: la Tarea de Apertura en la pizarra al entrar, las pizarras de equipo y el Diario de Reflexión al final de la clase. Los equipos son de cuatro personas con el nombre de un científico en el letrero de la mesa. Luego la Caja Misteriosa: los equipos jalaron cordones de colores, observaron qué otros cordones se retraían y dibujaron un modelo de lo que creían que había dentro. Predijeron un jalón que no habían probado, comprometieron la predicción con su razonamiento primero y después la probaron.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Observation is what you see; inference is what you think it means.</span><span class="lang-es">La observación es lo que ves; la inferencia es lo que crees que significa.</span></li>
+<li><span class="lang-en">Claims should start with "because we saw."</span><span class="lang-es">Las afirmaciones deben empezar con "porque vimos".</span></li>
+<li><span class="lang-en">A model you cannot test is not a model yet.</span><span class="lang-es">Un modelo que no puedes probar todavía no es un modelo.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Mystery Box activity</span><span class="lang-es">Actividad de la Caja Misteriosa</span></li>
+<li class="chip"><span class="lang-en">Reflection Journal</span><span class="lang-es">Diario de Reflexión</span></li>
+</ul>
+</section>
+<section class="week" id="week-1" data-week="week-1" aria-labelledby="week-1-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 1</span><span class="lang-es">Semana 1</span></span>
+<span class="week-dates"><span class="lang-en">Sep 8 · 11</span><span class="lang-es">8 · 11 sep</span></span>
+</div>
+<h2 id="week-1-h"><span class="lang-en">Observation skills in a real case</span><span class="lang-es">Habilidades de observación en un caso real</span></h2>
+<p class="summary"><span class="lang-en">We practiced the difference between what evidence shows and what you assume it shows, working through a forgery case with a detection handbook. The point was not to solve the case quickly but to separate what the document actually shows from what you expect it to show. The week tied back to the Mystery Box cycle: observe, search for patterns, propose an idea, test it.</span><span class="lang-es">Practicamos la diferencia entre lo que la evidencia muestra y lo que supones que muestra, trabajando un caso de falsificación con un manual de detección. El punto no era resolver el caso rápido, sino separar lo que el documento realmente muestra de lo que esperas que muestre. La semana se conectó con el ciclo de la Caja Misteriosa: observar, buscar patrones, proponer una idea, probarla.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Observation comes before explanation.</span><span class="lang-es">La observación va antes de la explicación.</span></li>
+<li><span class="lang-en">Your expectations change what you notice.</span><span class="lang-es">Tus expectativas cambian lo que notas.</span></li>
+<li><span class="lang-en">The observe and test cycle is the engine behind everything else this year.</span><span class="lang-es">El ciclo de observar y probar es el motor detrás de todo lo demás este año.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Forgery detection handbook</span><span class="lang-es">Manual de detección de falsificaciones</span></li>
+</ul>
+</section>
+<section class="week" id="week-2" data-week="week-2" aria-labelledby="week-2-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 2</span><span class="lang-es">Semana 2</span></span>
+<span class="week-dates"><span class="lang-en">Sep 14 · 18</span><span class="lang-es">14 · 18 sep</span></span>
+</div>
+<h2 id="week-2-h"><span class="lang-en">Why did Texas lose power?</span><span class="lang-es">¿Por qué se quedó sin electricidad Texas?</span></h2>
+<p class="summary"><span class="lang-en">This week opened our driving question with the February 2021 Texas grid blackout. Groups drew their first models of how electricity moves from a source to a city, shared them with a partner to see what they agreed on, and set community agreements for the unit. We ran the two-scene grid simulation and tracked what changed between scenes, then read the bilingual news articles in a jigsaw. The week closed by comparing three anonymous class models and building a class consensus.</span><span class="lang-es">Esta semana abrió nuestra pregunta guía con el apagón de la red eléctrica de Texas en febrero de 2021. Los equipos dibujaron sus primeros modelos de cómo se mueve la electricidad de una fuente a una ciudad, los compartieron con un compañero para ver en qué coincidían y establecieron acuerdos de comunidad para la unidad. Corrimos la simulación de la red de dos escenas y registramos qué cambió entre escenas, y luego leímos los artículos de noticias bilingües en un rompecabezas. La semana cerró comparando tres modelos anónimos de la clase y construyendo un consenso de clase.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">The simulation forced components into our models that we had left out.</span><span class="lang-es">La simulación metió en nuestros modelos componentes que habíamos dejado fuera.</span></li>
+<li><span class="lang-en">What a model leaves out matters as much as what it includes.</span><span class="lang-es">Lo que un modelo deja fuera importa tanto como lo que incluye.</span></li>
+<li><span class="lang-en">Two groups can disagree honestly and both have evidence.</span><span class="lang-es">Dos grupos pueden estar en desacuerdo con honestidad y ambos tener evidencia.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Texas grid simulation</span><span class="lang-es">Simulación de la red de Texas</span></li>
+<li class="chip"><span class="lang-en">Texas blackout article site (EN and ES)</span><span class="lang-es">Sitio de artículos del apagón de Texas (EN y ES)</span></li>
+<li class="chip"><span class="lang-en">Initial models handout</span><span class="lang-es">Hoja de modelos iniciales</span></li>
+</ul>
+</section>
+<section class="week" id="week-3" data-week="week-3" aria-labelledby="week-3-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 3</span><span class="lang-es">Semana 3</span></span>
+<span class="week-dates"><span class="lang-en">Sep 21 · 25</span><span class="lang-es">21 · 25 sep</span></span>
+</div>
+<h2 id="week-3-h"><span class="lang-en">What is actually inside a power strip</span><span class="lang-es">Qué hay realmente dentro de una regleta</span></h2>
+<p class="summary"><span class="lang-en">We opened a power strip that was already disassembled and traced what connects to what. After building the safety case, groups connected it to a single D battery and lit one bulb, then two, each as bright as the control bulb, and turned and talked about what changes inside the switch when it flips. We scaled the consensus model up from the strip to a building: energy source, three wires, panel, outlets. Then investigations on broken and short circuits, and finally tagging 37 of our own home photos on the Portal as energy source, transfer, or device.</span><span class="lang-es">Abrimos una regleta que ya estaba desarmada y rastreamos qué se conecta con qué. Después de construir el caso de seguridad, los equipos la conectaron a una sola batería D y encendieron un foco, luego dos, cada uno tan brillante como el foco de control, y se voltearon a hablar sobre qué cambia dentro del interruptor cuando se acciona. Escalamos el modelo de consenso de la regleta a un edificio: fuente de energía, tres cables, panel, contactos. Luego investigaciones sobre circuitos abiertos y cortocircuitos, y al final etiquetamos 37 fotos de nuestras propias casas en el Portal como fuente de energía, transferencia o dispositivo.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Energy moves through a path and needs a return path.</span><span class="lang-es">La energía se mueve por un camino y necesita un camino de regreso.</span></li>
+<li><span class="lang-en">A broken circuit stops the path; a short circuit takes a shortcut around the load.</span><span class="lang-es">Un circuito abierto corta el camino; un cortocircuito toma un atajo alrededor de la carga.</span></li>
+<li><span class="lang-en">The same parts show up in a power strip and in a building, just at different scales.</span><span class="lang-es">Las mismas partes aparecen en una regleta y en un edificio, solo a escalas distintas.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Power strip investigation handout (EN and ES)</span><span class="lang-es">Hoja de investigación de la regleta (EN y ES)</span></li>
+<li class="chip"><span class="lang-en">Tag the Grid activity on the Portal</span><span class="lang-es">Actividad Etiqueta la Red en el Portal</span></li>
+</ul>
+</section>
+<section class="week" id="week-4" data-week="week-4" aria-labelledby="week-4-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 4</span><span class="lang-es">Semana 4</span></span>
+<span class="week-dates"><span class="lang-en">Sep 28 · Oct 2</span><span class="lang-es">28 sep · 2 oct</span></span>
+</div>
+<h2 id="week-4-h"><span class="lang-en">What makes a grid reliable, and what makes it fail</span><span class="lang-es">Qué hace confiable a una red, y qué la hace fallar</span></h2>
+<p class="summary"><span class="lang-en">A four-day arc on reliability. We started with a jigsaw reading of five sections of the electricity related parts reading, then played Fault Hunter: finding ten hidden faults in neighborhood and power plant scene sheets and arguing which is most dangerous. We read the 2003 northeastern blackout account to see how one tree contact could cascade, built energy transfer models for five failure scenarios, compared demand and production graphs from the February 2021 cold snap, and ran a Scientists Circle. The week closed with an equity discussion on who gets underground lines and who gets shut off when supply falls behind demand.</span><span class="lang-es">Un arco de cuatro días sobre confiabilidad. Empezamos con una lectura en rompecabezas de cinco secciones de la lectura sobre partes relacionadas con la electricidad, y luego jugamos Cazador de Fallas: encontrar diez fallas escondidas en hojas de escenas de vecindarios y plantas de energía y discutir cuál es la más peligrosa. Leímos el relato del apagón del noreste de 2003 para ver cómo un solo contacto con un árbol podía encadenarse, construimos modelos de transferencia de energía para cinco escenarios de falla, comparamos gráficas de demanda y producción de la ola de frío de febrero de 2021 e hicimos un Círculo de Científicos. La semana cerró con una discusión de equidad sobre quién recibe líneas subterráneas y a quién le cortan la luz cuando la oferta se queda atrás de la demanda.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Reliability is a design property, not a guarantee.</span><span class="lang-es">La confiabilidad es una propiedad del diseño, no una garantía.</span></li>
+<li><span class="lang-en">Connected systems spread failures as well as power.</span><span class="lang-es">Los sistemas conectados propagan las fallas igual que la energía.</span></li>
+<li><span class="lang-en">Criteria and constraints decide which fix is realistic.</span><span class="lang-es">Los criterios y las restricciones deciden qué solución es realista.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Fault Hunter scene sheets</span><span class="lang-es">Hojas de escenas de Cazador de Fallas</span></li>
+<li class="chip"><span class="lang-en">2003 blackout reading</span><span class="lang-es">Lectura del apagón de 2003</span></li>
+<li class="chip"><span class="lang-en">Demand forecast handout</span><span class="lang-es">Hoja de pronóstico de demanda</span></li>
+<li class="chip"><span class="lang-en">Undergrounding reading site</span><span class="lang-es">Sitio de lectura sobre soterramiento de líneas</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Friday was a flex day to wrap the lesson or catch up.</span><span class="lang-es">El viernes fue un día flexible para cerrar la lección o ponerse al día.</span></p>
+</section>
+<section class="week" id="week-5" data-week="week-5" aria-labelledby="week-5-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 5</span><span class="lang-es">Semana 5</span></span>
+<span class="week-dates"><span class="lang-en">Oct 5 · 9</span><span class="lang-es">5 · 9 oct</span></span>
+</div>
+<h2 id="week-5-h"><span class="lang-en">Where the power stops, and which sources are reliable</span><span class="lang-es">Dónde se detiene la energía, y qué fuentes son confiables</span></h2>
+<p class="summary"><span class="lang-en">We moved around the room reading four blackout scenarios and recorded which piece of the system failed in each, before any vocabulary was introduced. Then we built a source card for each energy source: where it comes from, how it becomes electricity, and one reason it can fail. We read the February 2021 demand and supply graph and converted it into a plain sentence a family without a science background could follow. The week closed comparing natural gas and wind, naming the trade-off we would accept, and following energy from moving air through a turbine into a home.</span><span class="lang-es">Nos movimos por el salón leyendo cuatro escenarios de apagón y registramos qué pieza del sistema falló en cada uno, antes de introducir cualquier vocabulario. Luego construimos una tarjeta de fuente para cada fuente de energía: de dónde viene, cómo se convierte en electricidad y una razón por la que puede fallar. Leímos la gráfica de demanda y suministro de febrero de 2021 y la convertimos en una oración sencilla que una familia sin formación en ciencias pudiera seguir. La semana cerró comparando gas natural y viento, nombrando el compromiso que aceptaríamos y siguiendo la energía desde el aire en movimiento, por una turbina, hasta una casa.</span></p>
+<div class="honors-note">
+<p class="block-label"><span class="lang-en">Honors Physics</span><span class="lang-es">Física de Honor</span></p>
+<p><span class="lang-en">Honors worked the same unit but moved faster with less scaffolding. Instead of scenario cards, Honors opened straight onto the P.1 L4 reliability graphs and committed to a written claim about why the blackout happened. They built a first reliability ranking and named the criterion behind it (cost, output, emissions, availability), then revisited the blackout graph to test that ranking against what actually failed in February 2021, including the natural gas supply interruption. The ranking lab had groups present to another group and exchange one challenge each, recording where their own reasoning was weakest. The week closed on wind turbines, tracing kinetic energy in moving air into rotation and then into electricity.</span><span class="lang-es">Física de Honor trabajó la misma unidad pero avanzó más rápido y con menos andamiaje. En lugar de tarjetas de escenarios, comenzó directo con las gráficas de confiabilidad P.1 L4 y se comprometió con una afirmación escrita sobre por qué ocurrió el apagón. Construyeron una primera clasificación de confiabilidad y nombraron el criterio detrás de ella (costo, producción, emisiones, disponibilidad), luego volvieron a la gráfica del apagón para probar esa clasificación contra lo que realmente falló en febrero de 2021, incluyendo la interrupción del suministro de gas natural. El laboratorio de clasificación tuvo grupos que presentaron a otro grupo e intercambiaron un desafío cada uno, registrando dónde su propio razonamiento era más débil. La semana cerró con turbinas de viento, siguiendo la energía cinética del aire en movimiento hacia la rotación y luego hacia la electricidad.</span></p>
+</div>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Naming the failed component is the first step in explaining a blackout.</span><span class="lang-es">Nombrar el componente que falló es el primer paso para explicar un apagón.</span></li>
+<li><span class="lang-en">Every source fails for a different reason.</span><span class="lang-es">Cada fuente falla por una razón distinta.</span></li>
+<li><span class="lang-en">Energy leaves a system as losses, not only as useful output.</span><span class="lang-es">La energía sale de un sistema como pérdidas, no solo como salida útil.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Scenario cards</span><span class="lang-es">Tarjetas de escenarios</span></li>
+<li class="chip"><span class="lang-en">Energy source cards</span><span class="lang-es">Tarjetas de fuentes de energía</span></li>
+<li class="chip"><span class="lang-en">Solar and wind model on the Portal</span><span class="lang-es">Modelo solar y eólico en el Portal</span></li>
+</ul>
+</section>
+<section class="week" id="week-6" data-week="week-6" aria-labelledby="week-6-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 6</span><span class="lang-es">Semana 6</span></span>
+<span class="week-dates"><span class="lang-en">Oct 13 · 16</span><span class="lang-es">13 · 16 oct</span></span>
+</div>
+<h2 id="week-6-h"><span class="lang-en">Potential energy, natural gas, and how a generator works</span><span class="lang-es">Energía potencial, gas natural y cómo funciona un generador</span></h2>
+<p class="summary"><span class="lang-en">Monday, October 12 was a staff in-service day. We identified where potential energy is stored in objects you can pick up, drop, or stretch, testing our descriptions against a brick set on a shelf and a stretched elastic band. Then we built the transfer chain for a natural gas plant from fuel to wall socket and located the single biggest loss in the chain. The week ended with the generator investigation: turning a generator by hand and recording what changed the output and what did not, before naming any mechanism.</span><span class="lang-es">El lunes 12 de octubre fue día de capacitación del personal. Identificamos dónde se almacena la energía potencial en objetos que puedes levantar, dejar caer o estirar, probando nuestras descripciones con un ladrillo puesto en un estante y una liga estirada. Luego construimos la cadena de transferencia de una planta de gas natural, del combustible al contacto de la pared, y localizamos la pérdida más grande de la cadena. La semana terminó con la investigación del generador: girar un generador a mano y registrar qué cambiaba la salida y qué no, antes de nombrar cualquier mecanismo.</span></p>
+<div class="honors-note">
+<p class="block-label"><span class="lang-en">Honors Physics</span><span class="lang-es">Física de Honor</span></p>
+<p><span class="lang-en">Honors condensed the week. Potential energy was split formally into gravitational and elastic forms, with representations built for an object raised against gravity and a stretched spring, then compared side by side, rather than tested against bricks and elastic bands. The natural gas chain named each conversion and marked where energy leaves as waste heat. Honors also lost Friday to the pep rally and did not meet.</span><span class="lang-es">Física de Honor condensó la semana. La energía potencial se dividió formalmente en formas gravitacional y elástica, construyendo representaciones para un objeto elevado contra la gravedad y un resorte estirado, y luego se compararon lado a lado, en lugar de probarlas contra ladrillos y bandas elásticas. La cadena del gas natural nombró cada conversión y marcó dónde la energía sale como calor residual. Física de Honor también perdió el viernes por el mitin y no tuvo clase.</span></p>
+</div>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Potential energy is stored, not present in the object forever.</span><span class="lang-es">La energía potencial está almacenada, no presente en el objeto para siempre.</span></li>
+<li><span class="lang-en">Every conversion in a chain loses energy somewhere, and the largest loss is usually heat.</span><span class="lang-es">Toda conversión en una cadena pierde energía en algún punto, y la pérdida más grande suele ser calor.</span></li>
+<li><span class="lang-en">Output from a generator depends on the motion applied, and we can find that out before we know why.</span><span class="lang-es">La salida de un generador depende del movimiento que se le aplica, y podemos descubrirlo antes de saber por qué.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Natural gas plant diagram on the Portal</span><span class="lang-es">Diagrama de planta de gas natural en el Portal</span></li>
+<li class="chip"><span class="lang-en">Generator investigation guide</span><span class="lang-es">Guía de investigación del generador</span></li>
+</ul>
+</section>
+<section class="week" id="week-7" data-week="week-7" aria-labelledby="week-7-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 7</span><span class="lang-es">Semana 7</span></span>
+<span class="week-dates"><span class="lang-en">Oct 19 · 23</span><span class="lang-es">19 · 23 oct</span></span>
+</div>
+<h2 id="week-7-h"><span class="lang-en">What happens when you rub a balloon</span><span class="lang-es">Qué pasa cuando frotas un globo</span></h2>
+<p class="summary"><span class="lang-en">A seven-station investigation. We rubbed balloons with fur, plastic, cloth, and hair and recorded what actually happened: did the balloon pull toward something, push away from it, or do nothing. No predictions were made in advance. The whole class agreed on how to log a station that produced no effect, since no effect is still data. Stations that came back inconsistent across groups were flagged rather than averaged away. The week closed by sorting all seven stations into pulled together, pushed apart, or nothing, and writing one big idea.</span><span class="lang-es">Una investigación de siete estaciones. Frotamos globos con piel, plástico, tela y cabello y registramos lo que realmente pasó: si el globo jalaba hacia algo, empujaba lejos de algo o no hacía nada. No se hicieron predicciones de antemano. Toda la clase acordó cómo registrar una estación que no produjo efecto, porque ningún efecto también es dato. Las estaciones que salieron inconsistentes entre grupos se marcaron en lugar de promediarse. La semana cerró clasificando las siete estaciones en se juntaron, se separaron o nada, y escribiendo una idea grande.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Record the outcome, not the expectation.</span><span class="lang-es">Registra el resultado, no la expectativa.</span></li>
+<li><span class="lang-en">No effect is a result, not a failure.</span><span class="lang-es">Ningún efecto es un resultado, no un fracaso.</span></li>
+<li><span class="lang-en">When groups disagree, flag it rather than smoothing it over.</span><span class="lang-es">Cuando los grupos no coinciden, márcalo en lugar de suavizarlo.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Rubbing Balloons seven-station lab guide (EN and ES, on the Portal)</span><span class="lang-es">Guía de laboratorio de siete estaciones Frotar Globos (EN y ES, en el Portal)</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Honors Physics covers the same unit with deeper treatment.</span><span class="lang-es">Física de Honor cubre la misma unidad con mayor profundidad.</span></p>
+</section>
+<section class="week" id="week-8" data-week="week-8" aria-labelledby="week-8-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 8</span><span class="lang-es">Semana 8</span></span>
+<span class="week-dates"><span class="lang-en">Oct 26 · 30</span><span class="lang-es">26 · 30 oct</span></span>
+</div>
+<h2 id="week-8-h"><span class="lang-en">Where the charge comes from</span><span class="lang-es">De dónde viene la carga</span></h2>
+<p class="summary"><span class="lang-en">We went back to the seven-station records and argued for one big idea about what decides whether a balloon pulls or pushes. Then we modeled what actually moves when two materials are rubbed together and why one object ends up with more charge than the other, drawing before and after diagrams for two of our own rubbing combinations. We established that charge is transferred, not created, and checked that against the stations where nothing seemed to happen. The week closed by applying the model to situations that were not in the station set.</span><span class="lang-es">Volvimos a los registros de las siete estaciones y discutimos una idea grande sobre qué decide si un globo jala o empuja. Luego modelamos qué se mueve realmente cuando se frotan dos materiales y por qué un objeto termina con más carga que el otro, dibujando diagramas de antes y después para dos de nuestras propias combinaciones de frotado. Establecimos que la carga se transfiere, no se crea, y lo comprobamos con las estaciones donde parecía no pasar nada. La semana cerró aplicando el modelo a situaciones que no estaban en el set de estaciones.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Rubbing moves charge, it does not make it.</span><span class="lang-es">Frotar mueve la carga, no la crea.</span></li>
+<li><span class="lang-en">Total charge in an isolated system stays the same.</span><span class="lang-es">La carga total en un sistema aislado se mantiene igual.</span></li>
+<li><span class="lang-en">A station with no effect still tells you something about charge movement.</span><span class="lang-es">Una estación sin efecto todavía te dice algo sobre el movimiento de carga.</span></li>
+<li><span class="lang-en">When a prediction fails, revise the model, not the observation.</span><span class="lang-es">Cuando una predicción falla, revisa el modelo, no la observación.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Rubbing Balloons discussion deck</span><span class="lang-es">Presentación de discusión de Frotar Globos</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Some of this week's detail is reconstructed from our unit sequence. Honors Physics covers the same unit with deeper treatment.</span><span class="lang-es">Parte del detalle de esta semana está reconstruido a partir de la secuencia de la unidad. Física de Honor cubre la misma unidad con mayor profundidad.</span></p>
+</section>
+<section class="recess" id="recess-notice" data-week="recess-notice" aria-labelledby="recess-notice-h">
+<div class="week-head">
+<span class="week-dates"><span class="lang-en">Nov 2 · 6</span><span class="lang-es">2 · 6 nov</span></span>
+<span class="status-tag"><span class="lang-en">No classes</span><span class="lang-es">Sin clases</span></span>
+</div>
+<h2 id="recess-notice-h"><span class="lang-en">Fall Recess. No classes.</span><span class="lang-es">Receso de otoño. No hay clases.</span></h2>
+<p><span class="lang-en">School was closed for Fall Recess. Nothing new was assigned this week.</span><span class="lang-es">La escuela estuvo cerrada por el Receso de Otoño. No se asignó nada nuevo esta semana.</span></p>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">District calendar.</span><span class="lang-es">Calendario del distrito.</span></p>
+</section>
+<section class="week inprogress" id="week-9" data-week="week-9" aria-labelledby="week-9-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 9</span><span class="lang-es">Semana 9</span></span>
+<span class="week-dates"><span class="lang-en">Nov 9 · 13</span><span class="lang-es">9 · 13 nov</span></span>
+<span class="status-tag"><span class="lang-en">Still in progress</span><span class="lang-es">Todavía en curso</span></span>
+</div>
+<h2 id="week-9-h"><span class="lang-en">In progress</span><span class="lang-es">En curso</span></h2>
+<p class="summary"><span class="lang-en">This week is still being written. Check back after the week closes.</span><span class="lang-es">Esta semana todavía se está escribiendo. Vuelve a revisar cuando cierre la semana.</span></p>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Honors Physics covers the same unit with deeper treatment.</span><span class="lang-es">Física de Honor cubre la misma unidad con mayor profundidad.</span></p>
+</section>
+</div>
+</main>
+<footer>
+<div class="wrap foot-line">
+<span><span class="lang-en">Perth Amboy High School · Home of the Panthers</span><span class="lang-es">Escuela Secundaria de Perth Amboy · Hogar de los Panthers</span></span>
+<span><span class="lang-en">CP Physics and Honors Physics · Mr. Porter</span><span class="lang-es">Física CP y Física de Honor · Sr. Porter</span></span>
+</div>
+</footer>
+<script>
+(function () {
+  "use strict";
+  var KEY = "courseRecapLang";
+  var root = document.documentElement;
+  var body = document.body;
+  var buttons = document.querySelectorAll(".lang-toggle button");
+
+  function setLang(lang) {
+    if (lang !== "es") { lang = "en"; }
+    root.setAttribute("lang", lang);
+    body.classList.toggle("es", lang === "es");
+    try { localStorage.setItem(KEY, lang); } catch (e) {}
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      var on = b.getAttribute("data-lang") === lang;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    var groups = document.querySelectorAll(".lang-toggle");
+    for (var g = 0; g < groups.length; g++) {
+      groups[g].setAttribute("aria-label", lang === "es" ? "Idioma" : "Language");
+    }
+  }
+
+  var stored = "en";
+  try { stored = localStorage.getItem(KEY) || "en"; } catch (e) {}
+  setLang(stored);
+
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function () {
+      setLang(this.getAttribute("data-lang"));
+    });
+  }
+
+  /* Week rail scroll-spy: highlight the week currently in view. */
+  var weeks = document.querySelectorAll("[data-week]");
+  var links = document.querySelectorAll(".rail a");
+  if (!weeks.length || !links.length || !("IntersectionObserver" in window)) { return; }
+
+  var linkFor = {};
+  for (var l = 0; l < links.length; l++) {
+    linkFor[links[l].getAttribute("href").slice(1)] = links[l];
+  }
+
+  function mark(id) {
+    for (var k = 0; k < links.length; k++) {
+      links[k].removeAttribute("aria-current");
+    }
+    if (linkFor[id]) { linkFor[id].setAttribute("aria-current", "true"); }
+  }
+
+  var visible = {};
+  var observer = new IntersectionObserver(function (entries) {
+    for (var e = 0; e < entries.length; e++) {
+      var entry = entries[e];
+      visible[entry.target.id] = entry.isIntersecting ? entry.intersectionRatio : 0;
+    }
+    var bestId = null;
+    var bestRatio = 0;
+    for (var id in visible) {
+      if (visible[id] > bestRatio) { bestRatio = visible[id]; bestId = id; }
+    }
+    if (bestId) { mark(bestId); }
+  }, { rootMargin: "-72px 0px -45% 0px", threshold: [0, 0.15, 0.4, 0.75, 1] });
+
+  for (var w = 0; w < weeks.length; w++) { observer.observe(weeks[w]); }
+})();
+</script>
+</body>
+</html>

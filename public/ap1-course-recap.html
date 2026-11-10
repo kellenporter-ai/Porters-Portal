@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AP Physics 1 · What We Did Each Week · Mr. Porter</title>
+<meta name="description" content="AP Physics 1, Period 3. What we did each week, in English and Spanish.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.72);
+    --ink-faint: rgba(26, 26, 26, 0.62);
+    --accent: #FF4D26;
+    --accent-text: #C2350F;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --dash-strong: 1px dashed rgba(26, 26, 26, 0.55);
+    --focus: #C2350F;
+    --rail-h: 0px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, h1, h2, .eyebrow, .lang-toggle button, .rail a, .chip, .week-num,
+  .brand-line, .foot-line, .recess-label {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+  a { color: var(--accent-text); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  /* ---------- Bilingual span pairs ----------
+     Both languages are always in the DOM. The inactive one is hidden by CSS.
+     Default state is English; body.es flips it. */
+  .lang-es { display: none; }
+  body.es .lang-en { display: none; }
+  body.es .lang-es { display: inline; }
+
+  /* ---------- Header ---------- */
+  header.top { padding: 40px 0 28px; border-bottom: var(--dash); }
+  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .head-main { min-width: 0; flex: 1 1 420px; }
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 12px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 50px); font-weight: 800; margin: 0;
+    letter-spacing: -0.035em; line-height: 1.02;
+  }
+  .subline {
+    font-size: clamp(15px, 1.6vw, 17px); color: var(--ink-soft);
+    margin: 14px 0 0; max-width: 56ch;
+  }
+  .howto {
+    margin: 18px 0 0; padding: 12px 16px; max-width: 62ch;
+    border-left: 3px solid var(--accent); background: rgba(255, 77, 38, 0.05);
+    font-size: 15px; color: var(--ink);
+  }
+  .howto strong { font-weight: 600; }
+
+  .lang-toggle {
+    display: inline-flex; align-items: stretch; border: var(--dash-strong);
+    flex-shrink: 0; background: transparent;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 18px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+    touch-action: manipulation;
+  }
+  .lang-toggle button + button { border-left: var(--dash-strong); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent-text); background: rgba(255, 77, 38, 0.08);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  .lang-toggle button:hover { color: var(--accent-text); }
+
+  /* ---------- Week rail ---------- */
+  nav.rail {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--paper); border-bottom: var(--dash);
+    padding: 10px 0;
+  }
+  .rail-inner { display: flex; align-items: center; gap: 14px; }
+  .rail-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint); flex: 0 0 auto;
+  }
+  .rail-list {
+    display: flex; gap: 4px; overflow-x: auto; flex: 1 1 auto;
+    scrollbar-width: thin; padding: 2px 0; margin: 0; list-style: none;
+  }
+  .rail-list li { flex: 0 0 auto; }
+  .rail a {
+    display: block; padding: 6px 10px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-decoration: none; color: var(--ink-soft);
+    border: 1px solid transparent; white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .rail a:hover { color: var(--accent-text); border-color: var(--accent); }
+  .rail a[aria-current="true"] {
+    color: var(--accent-text); border-color: var(--accent);
+    background: rgba(255, 77, 38, 0.07);
+  }
+  .rail a .rail-num { font-variant-numeric: tabular-nums; }
+  .rail a.is-recess { color: var(--ink-faint); font-style: italic; }
+  .rail a.is-recess::after { content: " ·"; }
+
+  /* ---------- Main ---------- */
+  main { padding: 36px 0 72px; }
+  .week {
+    border: var(--dash); padding: 26px 28px; margin: 0 0 20px;
+    background: transparent; scroll-margin-top: 76px;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+  .week:hover { transform: translateY(-3px); border-color: var(--dash-strong); }
+  .week-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .week-num {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent-text); flex: 0 0 auto;
+  }
+  .week-dates {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .week h2 {
+    font-size: clamp(20px, 2.4vw, 27px); font-weight: 800; margin: 0 0 14px;
+    letter-spacing: -0.025em; line-height: 1.15; max-width: 30ch;
+  }
+  .week p.summary { margin: 0 0 18px; font-size: 16px; max-width: 74ch; }
+
+  .block-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px;
+  }
+  ul.keyideas { margin: 0 0 18px; padding: 0; list-style: none; max-width: 74ch; }
+  ul.keyideas li {
+    position: relative; padding: 0 0 0 20px; margin: 0 0 7px; font-size: 15px;
+  }
+  ul.keyideas li::before {
+    content: ""; position: absolute; left: 2px; top: 0.62em;
+    width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+  .chip {
+    display: inline-block; border: var(--dash); padding: 5px 12px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink);
+  }
+  .note {
+    margin: 0; padding-top: 12px; border-top: var(--dash);
+    font-size: 13px; color: var(--ink-soft); max-width: 74ch;
+  }
+  .note .note-label {
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    font-size: 10px; color: var(--ink-faint); margin-right: 6px;
+  }
+
+  /* ---------- Recess band (unnumbered notice) ---------- */
+  .recess {
+    border: 0; border-top: var(--dash); border-bottom: var(--dash);
+    padding: 22px 28px; margin: 0 0 20px; background: rgba(26, 26, 26, 0.025);
+    scroll-margin-top: 76px;
+  }
+  .recess .week-head { margin-bottom: 4px; }
+  .recess h2 {
+    font-size: clamp(17px, 2vw, 21px); font-weight: 700; margin: 0 0 6px;
+    letter-spacing: -0.015em; color: var(--ink-soft);
+  }
+  .recess p { margin: 0; font-size: 14.5px; color: var(--ink-soft); max-width: 70ch; }
+  .recess .note { border-top: 0; padding-top: 6px; font-size: 12.5px; }
+
+  /* ---------- In progress card (week 11) ---------- */
+  .week.inprogress { border-style: dashed; border-color: var(--dash-strong); }
+  .week.inprogress h2 { color: var(--ink-soft); }
+  .status-tag {
+    display: inline-block; border: 1px solid var(--accent); color: var(--accent-text);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 3px 9px; margin-left: 2px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: var(--dash); padding: 26px 0 40px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .foot-line { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .wrap { padding: 0 18px; }
+    header.top { padding: 28px 0 22px; }
+    .week { padding: 20px 18px; }
+    .recess { padding: 18px; }
+    .rail-label { display: none; }
+    .week h2 { max-width: none; }
+  }
+  @media (max-width: 420px) {
+    .lang-toggle button { padding: 9px 13px; }
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    nav.rail, .lang-toggle { display: none !important; }
+    .week, .recess { break-inside: avoid; border-color: #999; }
+    .week:hover { transform: none; }
+    a { color: #000; text-decoration: none; }
+  }
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<header class="top">
+<div class="wrap">
+<div class="head-row">
+<div class="head-main">
+<p class="eyebrow"><span class="lang-en">Perth Amboy High School · Panther P.R.I.D.E.</span><span class="lang-es">Escuela Secundaria de Perth Amboy · Panther P.R.I.D.E.</span></p>
+<h1><span class="lang-en">AP Physics 1</span><span class="lang-es">Física AP 1</span></h1>
+<p class="subline"><span class="lang-en">Period 3 · Mr. Porter · What we did each week</span><span class="lang-es">Período 3 · Sr. Porter · Lo que hicimos cada semana</span></p>
+<p class="howto"><span class="lang-en">Use this page to catch up after an absence or to review before a test. Each week lists what we did, the ideas worth keeping, and what we used.</span><span class="lang-es">Usa esta página para ponerte al día después de una ausencia o para repasar antes de un examen. Cada semana lista lo que hicimos, las ideas que vale la pena conservar y lo que usamos.</span></p>
+</div>
+<div class="lang-toggle" role="group" aria-label="Language">
+<button type="button" data-lang="en" aria-pressed="true">EN</button>
+<button type="button" data-lang="es" aria-pressed="false">ES</button>
+</div>
+</div>
+</div>
+</header>
+<nav class="rail" aria-label="Jump to a week">
+<div class="wrap rail-inner">
+<span class="rail-label"><span class="lang-en">Weeks</span><span class="lang-es">Semanas</span></span>
+<ul class="rail-list">
+<li><a href="#week-0"><span class="rail-num">0</span></a></li>
+<li><a href="#week-1"><span class="rail-num">1</span></a></li>
+<li><a href="#week-2"><span class="rail-num">2</span></a></li>
+<li><a href="#week-3"><span class="rail-num">3</span></a></li>
+<li><a href="#week-4"><span class="rail-num">4</span></a></li>
+<li><a href="#week-5"><span class="rail-num">5</span></a></li>
+<li><a href="#week-6"><span class="rail-num">6</span></a></li>
+<li><a href="#week-7"><span class="rail-num">7</span></a></li>
+<li><a href="#week-8"><span class="rail-num">8</span></a></li>
+<li><a href="#recess-notice" class="is-recess"><span class="rail-num" aria-hidden="true">·</span></a></li>
+<li><a href="#week-9"><span class="rail-num">9</span></a></li>
+</ul>
+
+</div>
+</nav>
+<main id="weeks">
+<div class="wrap">
+<section class="week" id="week-0" data-week="week-0" aria-labelledby="week-0-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 0</span><span class="lang-es">Semana 0</span></span>
+<span class="week-dates"><span class="lang-en">Aug 31 · Sep 4</span><span class="lang-es">31 ago · 4 sep</span></span>
+</div>
+<h2 id="week-0-h"><span class="lang-en">Course setup and mapping motion</span><span class="lang-es">Preparación del curso y trazar el movimiento</span></h2>
+<p class="summary"><span class="lang-en">We set up the routines that run all year, then built physical evidence of how objects move. In the Mystery Box activity teams worked out what was inside a box they could not open by pulling cords and reasoning from evidence only. Then the motion-mapping lab put real trails on the floor: a motorized buggy and a rolled ball, one marker per metronome beat, so that another group could describe the motion from the trail alone.</span><span class="lang-es">Establecimos las rutinas que usaremos todo el año y luego construimos evidencia física de cómo se mueven los objetos. En la actividad de la Caja Misteriosa, los equipos descubrieron qué había dentro de una caja que no podían abrir, jalando cordones y razonando solo a partir de la evidencia. Después, el laboratorio de mapeo del movimiento puso rastros reales en el piso: un carrito motorizado y una pelota rodada, una marca por cada pulso del metrónomo, para que otro grupo pudiera describir el movimiento usando solo el rastro.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Observation and inference are different thinking moves.</span><span class="lang-es">Observar e inferir son dos movimientos de pensamiento distintos.</span></li>
+<li><span class="lang-en">Spacing between markers carries information about speed.</span><span class="lang-es">El espacio entre las marcas lleva información sobre la rapidez.</span></li>
+<li><span class="lang-en">Every model needs evidence behind it, and a model is only as good as the test that could break it.</span><span class="lang-es">Todo modelo necesita evidencia detrás, y un modelo vale solo lo que vale la prueba que podría derrumbarlo.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Mystery Box activity</span><span class="lang-es">Actividad de la Caja Misteriosa</span></li>
+<li class="chip"><span class="lang-en">Motion-mapping lab guide</span><span class="lang-es">Guía del laboratorio de mapeo del movimiento</span></li>
+</ul>
+</section>
+<section class="week" id="week-1" data-week="week-1" aria-labelledby="week-1-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 1</span><span class="lang-es">Semana 1</span></span>
+<span class="week-dates"><span class="lang-en">Sep 8 · 11</span><span class="lang-es">8 · 11 sep</span></span>
+</div>
+<h2 id="week-1-h"><span class="lang-en">Making motion measurable, then graphing it</span><span class="lang-es">Hacer medible el movimiento y luego graficarlo</span></h2>
+<p class="summary"><span class="lang-en">We finished the motion-mapping lab by putting numbers on it. Groups defined their own seconds-per-beat, designed their own data table, and computed average velocities for the buggy and the ball. From there we translated real materials into position versus time graphs, then opened the next class with a ranking task built from five graphs. The trap that surfaced: the object that started farthest away was also the slowest.</span><span class="lang-es">Terminamos el laboratorio de mapeo del movimiento poniéndole números. Los equipos definieron sus propios segundos por pulso, diseñaron su propia tabla de datos y calcularon velocidades promedio para el carrito y la pelota. De ahí pasamos de los materiales reales a gráficas de posición contra tiempo, y luego abrimos la siguiente clase con una tarea de ordenar cinco gráficas. La trampa que salió: el objeto que empezó más lejos también era el más lento.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Position needs an origin and time needs a zero.</span><span class="lang-es">La posición necesita un origen y el tiempo necesita un cero.</span></li>
+<li><span class="lang-en">Two groups using different origins can both be right.</span><span class="lang-es">Dos grupos que usan orígenes distintos pueden tener razón los dos.</span></li>
+<li><span class="lang-en">Where an object starts and how fast it moves are two separate facts.</span><span class="lang-es">Dónde empieza un objeto y qué tan rápido se mueve son dos hechos separados.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Motion-mapping lab guide</span><span class="lang-es">Guía del laboratorio de mapeo del movimiento</span></li>
+<li class="chip"><span class="lang-en">x-t ranking deck</span><span class="lang-es">Baraja de ordenar gráficas x-t</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Thursday, Sep 10 was a consolidation and practice day working the week's graphing ideas. It did not introduce new material.</span><span class="lang-es">El jueves 10 de septiembre fue un día de consolidación y práctica con las ideas de gráficas de la semana. No introdujo material nuevo.</span></p>
+</section>
+<section class="week" id="week-2" data-week="week-2" aria-labelledby="week-2-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 2</span><span class="lang-es">Semana 2</span></span>
+<span class="week-dates"><span class="lang-en">Sep 14 · 18</span><span class="lang-es">14 · 18 sep</span></span>
+</div>
+<h2 id="week-2-h"><span class="lang-en">Slope is velocity, area is displacement</span><span class="lang-es">La pendiente es velocidad, el área es desplazamiento</span></h2>
+<p class="summary"><span class="lang-en">We connected the shape of a graph to the physics. The slope of a position-time graph is velocity, and the area under a velocity-time graph is displacement. Groups counted area as rectangles and triangles, traded whiteboards to audit each other, then generalized two hand-computed cases into the equation delta x = v0 t + one half a t squared. The class also worked the Chapter 2 practice exam on the Portal.</span><span class="lang-es">Conectamos la forma de una gráfica con la física. La pendiente de una gráfica de posición contra tiempo es la velocidad, y el área bajo una gráfica de velocidad contra tiempo es el desplazamiento. Los equipos contaron el área como rectángulos y triángulos, intercambiaron pizarras para revisarse entre sí y luego generalizaron dos casos calculados a mano en la ecuación delta x = v0 t + un medio a t al cuadrado. La clase también trabajó el examen de práctica del Capítulo 2 en el Portal.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">The rectangle in an area calculation is the velocity at time zero, not the final velocity.</span><span class="lang-es">El rectángulo en un cálculo de área es la velocidad en el tiempo cero, no la velocidad final.</span></li>
+<li><span class="lang-en">The triangle is the gain that acceleration contributes.</span><span class="lang-es">El triángulo es la ganancia que aporta la aceleración.</span></li>
+<li><span class="lang-en">Area below the axis counts as negative displacement.</span><span class="lang-es">El área debajo del eje cuenta como desplazamiento negativo.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Chapter 2 practice exam on the Portal</span><span class="lang-es">Examen de práctica del Capítulo 2 en el Portal</span></li>
+<li class="chip"><span class="lang-en">Day 5 slide deck</span><span class="lang-es">Presentación del Día 5</span></li>
+</ul>
+</section>
+<section class="week" id="week-3" data-week="week-3" aria-labelledby="week-3-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 3</span><span class="lang-es">Semana 3</span></span>
+<span class="week-dates"><span class="lang-en">Sep 21 · 25</span><span class="lang-es">21 · 25 sep</span></span>
+</div>
+<h2 id="week-3-h"><span class="lang-en">Turning curved data into straight lines</span><span class="lang-es">Convertir datos curvos en líneas rectas</span></h2>
+<p class="summary"><span class="lang-en">Kinematics data almost never arrives as a straight line. This week we learned the routine for fixing that: identify the variables, name the curve, choose the transformation, then re-plot. We worked a ladder of examples from fully scaffolded to almost none, then shifted into Boss Fight rounds where the transformation had to be chosen unprompted. The week closed with a recap checklist and one unseen data set to linearize from start to finish.</span><span class="lang-es">Los datos de cinemática casi nunca llegan como una línea recta. Esta semana aprendimos la rutina para arreglar eso: identificar las variables, nombrar la curva, elegir la transformación y volver a graficar. Trabajamos una escalera de ejemplos, desde totalmente guiados hasta casi sin ayuda, y luego pasamos a rondas de Combate Final donde había que elegir la transformación sin que nadie la indicara. La semana cerró con una lista de repaso y un conjunto de datos nunca visto para linealizar de principio a fin.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Naming the curve comes before picking the transformation.</span><span class="lang-es">Nombrar la curva va antes de elegir la transformación.</span></li>
+<li><span class="lang-en">Slope and intercept carry physical meaning once the line is straight.</span><span class="lang-es">La pendiente y el intercepto tienen significado físico una vez que la línea es recta.</span></li>
+<li><span class="lang-en">A routine beats a memorized answer.</span><span class="lang-es">Una rutina vale más que una respuesta memorizada.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Linearization deck</span><span class="lang-es">Presentación de linealización</span></li>
+</ul>
+</section>
+<section class="week" id="week-4" data-week="week-4" aria-labelledby="week-4-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 4</span><span class="lang-es">Semana 4</span></span>
+<span class="week-dates"><span class="lang-en">Sep 28 · Oct 2</span><span class="lang-es">28 sep · 2 oct</span></span>
+</div>
+<h2 id="week-4-h"><span class="lang-en">What force actually does to motion</span><span class="lang-es">Lo que la fuerza realmente le hace al movimiento</span></h2>
+<p class="summary"><span class="lang-en">A three-period lab week using rolling carts, metronome-timed cotton ball drops, and ruler pushes. Groups built motion diagrams and force diagrams side by side, then stated the pattern linking the sum of forces to the direction of velocity change. The decisive experiment set two competing ideas against each other: does an object move in the direction of the net force, or in the direction of the change in velocity? The elevator model and the medicine ball catch tested the rule further.</span><span class="lang-es">Una semana de laboratorio de tres períodos con carritos rodantes, caídas de bolas de algodón cronometradas con metrónomo y empujes con regla. Los equipos construyeron diagramas de movimiento y diagramas de fuerza lado a lado, y luego enunciaron el patrón que conecta la suma de fuerzas con la dirección del cambio de velocidad. El experimento decisivo puso dos ideas en competencia: ¿un objeto se mueve en la dirección de la fuerza neta o en la dirección del cambio de velocidad? El modelo del elevador y la recepción del balón medicinal pusieron la regla a prueba otra vez.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Net force and change in velocity point in the same direction.</span><span class="lang-es">La fuerza neta y el cambio de velocidad apuntan en la misma dirección.</span></li>
+<li><span class="lang-en">Every force needs an identifiable second object.</span><span class="lang-es">Toda fuerza necesita un segundo objeto identificable.</span></li>
+<li><span class="lang-en">The rule holds in any reference frame.</span><span class="lang-es">La regla se cumple en cualquier marco de referencia.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Forces lab guide (ALG 3.3 to 3.4)</span><span class="lang-es">Guía del laboratorio de fuerzas (ALG 3.3 a 3.4)</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Thursday and Friday were debrief and buffer days closing out the three-period lab rather than new lab work.</span><span class="lang-es">El jueves y el viernes fueron días de cierre y margen para terminar el laboratorio de tres períodos, no trabajo de laboratorio nuevo.</span></p>
+</section>
+<section class="week" id="week-5" data-week="week-5" aria-labelledby="week-5-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 5</span><span class="lang-es">Semana 5</span></span>
+<span class="week-dates"><span class="lang-en">Oct 5 · 9</span><span class="lang-es">5 · 9 oct</span></span>
+</div>
+<h2 id="week-5-h"><span class="lang-en">Which mass belongs in the equation</span><span class="lang-es">Cuál masa va en la ecuación</span></h2>
+<p class="summary"><span class="lang-en">We linearized acceleration and mass data, justifying which quantity belongs on each axis before plotting anything. The center of the week was the standard confusion over which mass appears in Newton's second law, worked through the free-fall case. Groups argued whether a falling object has infinite mass or is simply at rest in its own frame, then found the physical situation where the naive model genuinely fails and named what is responsible. The week closed with equation manipulation and board work for test preparation.</span><span class="lang-es">Linealizamos datos de aceleración y masa, justificando qué cantidad va en cada eje antes de graficar nada. El centro de la semana fue la confusión habitual sobre cuál masa aparece en la segunda ley de Newton, trabajada con el caso de caída libre. Los equipos discutieron si un objeto que cae tiene masa infinita o simplemente está en reposo en su propio marco, y luego encontraron la situación física donde el modelo ingenuo realmente falla y nombraron qué es responsable. La semana cerró con manejo de ecuaciones y trabajo en pizarra para preparar el examen.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">The slope carries the physics, so the axis choice is a physics decision.</span><span class="lang-es">La pendiente carga la física, así que elegir los ejes es una decisión de física.</span></li>
+<li><span class="lang-en">Air resistance is what breaks the naive free-fall model, not some special property of mass.</span><span class="lang-es">La resistencia del aire es lo que rompe el modelo ingenuo de caída libre, no alguna propiedad especial de la masa.</span></li>
+<li><span class="lang-en">When an answer is wrong, name the error type before re-solving.</span><span class="lang-es">Cuando una respuesta está mal, nombra el tipo de error antes de volver a resolver.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Linearization sheets</span><span class="lang-es">Hojas de linealización</span></li>
+<li class="chip"><span class="lang-en">Force diagram set</span><span class="lang-es">Juego de diagramas de fuerza</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Friday was used for board work and chapter test preparation based on student work. It did not introduce new material.</span><span class="lang-es">El viernes se usó para trabajo en pizarra y preparación del examen del capítulo a partir del trabajo de los estudiantes. No introdujo material nuevo.</span></p>
+</section>
+<section class="week" id="week-6" data-week="week-6" aria-labelledby="week-6-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 6</span><span class="lang-es">Semana 6</span></span>
+<span class="week-dates"><span class="lang-en">Oct 13 · 16</span><span class="lang-es">13 · 16 oct</span></span>
+</div>
+<h2 id="week-6-h"><span class="lang-en">Forces are interactions, and Chapter 3 test preparation</span><span class="lang-es">Las fuerzas son interacciones, y preparación del examen del Capítulo 3</span></h2>
+<p class="summary"><span class="lang-en">Monday, October 12 was a staff in-service day, so this was a four-day week. We worked the requirement that every force must trace back to an identifiable second object, then corrected force diagrams that contained forces with no source. Groups tested the force model against unfamiliar situations and recorded where it predicted something unexpected. The rest of the week was structured review for the Chapter 3 unit test, driven by student questions, closing with an error-pattern analysis that separated errors of concept from errors of procedure.</span><span class="lang-es">El lunes 12 de octubre fue día de capacitación del personal, así que esta fue una semana de cuatro días. Trabajamos el requisito de que toda fuerza debe rastrearse hasta un segundo objeto identificable, y luego corregimos diagramas de fuerza que tenían fuerzas sin origen. Los equipos probaron el modelo de fuerzas en situaciones desconocidas y anotaron dónde predecía algo inesperado. El resto de la semana fue repaso estructurado para el examen de la unidad del Capítulo 3, guiado por las preguntas de los estudiantes, y cerró con un análisis de patrones de error que separó errores de concepto de errores de procedimiento.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">If you cannot name what is exerting a force, that force does not belong on the diagram.</span><span class="lang-es">Si no puedes nombrar qué ejerce una fuerza, esa fuerza no va en el diagrama.</span></li>
+<li><span class="lang-en">State the law you used and the assumption that made it valid.</span><span class="lang-es">Enuncia la ley que usaste y la suposición que la hizo válida.</span></li>
+<li><span class="lang-en">Naming the reasoning step that failed is worth more than redoing the problem.</span><span class="lang-es">Nombrar el paso de razonamiento que falló vale más que rehacer el problema.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Force diagram set</span><span class="lang-es">Juego de diagramas de fuerza</span></li>
+<li class="chip"><span class="lang-en">Chapter 3 review materials</span><span class="lang-es">Materiales de repaso del Capítulo 3</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">The Friday error analysis followed the test review sequence. It did not add new content.</span><span class="lang-es">El análisis de errores del viernes siguió la secuencia de repaso del examen. No agregó contenido nuevo.</span></p>
+</section>
+<section class="week" id="week-7" data-week="week-7" aria-labelledby="week-7-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 7</span><span class="lang-es">Semana 7</span></span>
+<span class="week-dates"><span class="lang-en">Oct 19 · 23</span><span class="lang-es">19 · 23 oct</span></span>
+</div>
+<h2 id="week-7-h"><span class="lang-en">Breaking forces into parts, and what friction really does</span><span class="lang-es">Separar las fuerzas en partes, y lo que la fricción realmente hace</span></h2>
+<p class="summary"><span class="lang-en">We resolved forces at an angle into perpendicular components, working a set of diagrams where the choice of axes decides whether a problem is solvable at all. Then the friction lab: measuring the pull needed to start a block moving versus the pull needed to keep it moving, recording both values before attempting any explanation. Groups pooled data and graphed to check whether friction is proportional to normal force. The Chapter 3 unit test was administered this week.</span><span class="lang-es">Descompusimos fuerzas en ángulo en componentes perpendiculares, trabajando un juego de diagramas donde la elección de ejes decide si un problema se puede resolver o no. Luego el laboratorio de fricción: medir el jalón necesario para empezar a mover un bloque contra el jalón necesario para mantenerlo en movimiento, anotando ambos valores antes de intentar cualquier explicación. Los equipos juntaron datos y graficaron para comprobar si la fricción es proporcional a la fuerza normal. El examen de la unidad del Capítulo 3 se aplicó esta semana.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">The axes you choose are part of the model, not a formality.</span><span class="lang-es">Los ejes que eliges son parte del modelo, no un trámite.</span></li>
+<li><span class="lang-en">Static friction is larger than kinetic friction.</span><span class="lang-es">La fricción estática es mayor que la fricción cinética.</span></li>
+<li><span class="lang-en">Check a claimed relationship by graphing it, not by eyeballing a table.</span><span class="lang-es">Comprueba una relación propuesta graficándola, no mirando una tabla a ojo.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Chapter 4 force components and friction lab guide</span><span class="lang-es">Guía del laboratorio de componentes de fuerza y fricción del Capítulo 4</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">The exact test period is reconstructed. The examined answer booklets are dated Oct 14.</span><span class="lang-es">El período exacto del examen es reconstruido. Los cuadernillos de respuestas examinados tienen fecha del 14 de octubre.</span></p>
+</section>
+<section class="week" id="week-8" data-week="week-8" aria-labelledby="week-8-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 8</span><span class="lang-es">Semana 8</span></span>
+<span class="week-dates"><span class="lang-en">Oct 26 · 30</span><span class="lang-es">26 · 30 oct</span></span>
+</div>
+<h2 id="week-8-h"><span class="lang-en">Accurate free-body diagrams and where static friction breaks</span><span class="lang-es">Diagramas de cuerpo libre precisos y dónde falla la fricción estática</span></h2>
+<p class="summary"><span class="lang-en">We used the force diagram sandbox to build free-body diagrams for increasingly complicated situations. The tool surfaced the standard errors directly: forces drawn from the wrong point, interactions left out, forces with no identifiable second object. We then tested where the static friction model stops working, measuring maximum static friction across several surfaces and comparing static to kinetic coefficients. The week closed reviewing the friction patterns and revising diagrams against the class consensus.</span><span class="lang-es">Usamos el arenero de diagramas de fuerza para construir diagramas de cuerpo libre en situaciones cada vez más complicadas. La herramienta mostró directamente los errores habituales: fuerzas dibujadas desde el punto equivocado, interacciones que se dejaron fuera, fuerzas sin un segundo objeto identificable. Luego probamos dónde deja de funcionar el modelo de fricción estática, midiendo la fricción estática máxima en varias superficies y comparando coeficientes estáticos con cinéticos. La semana cerró repasando los patrones de fricción y revisando diagramas contra el consenso de la clase.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Static and kinetic coefficients are not interchangeable.</span><span class="lang-es">Los coeficientes estático y cinético no son intercambiables.</span></li>
+<li><span class="lang-en">Normal force is where most friction mistakes start.</span><span class="lang-es">La fuerza normal es donde empiezan la mayoría de los errores de fricción.</span></li>
+<li><span class="lang-en">A diagram that survives scrutiny is worth more than one that is merely drawn.</span><span class="lang-es">Un diagrama que aguanta el escrutinio vale más que uno que solo está dibujado.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Force diagram sandbox</span><span class="lang-es">Arenero de diagramas de fuerza</span></li>
+<li class="chip"><span class="lang-en">Static friction lab guide</span><span class="lang-es">Guía del laboratorio de fricción estática</span></li>
+<li class="chip"><span class="lang-en">Static friction patterns review</span><span class="lang-es">Repaso de patrones de fricción estática</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">Some of this week's detail is reconstructed from our unit sequence rather than from daily agendas.</span><span class="lang-es">Parte del detalle de esta semana está reconstruido a partir de la secuencia de la unidad y no de las agendas diarias.</span></p>
+</section>
+<section class="recess" id="recess-notice" data-week="recess-notice" aria-labelledby="recess-notice-h">
+<div class="week-head">
+<span class="week-dates"><span class="lang-en">Nov 2 · 6</span><span class="lang-es">2 · 6 nov</span></span>
+<span class="status-tag"><span class="lang-en">No classes</span><span class="lang-es">Sin clases</span></span>
+</div>
+<h2 id="recess-notice-h"><span class="lang-en">Fall Recess. No classes.</span><span class="lang-es">Receso de otoño. No hay clases.</span></h2>
+<p><span class="lang-en">School was closed for Fall Recess. Nothing new was assigned this week.</span><span class="lang-es">La escuela estuvo cerrada por el Receso de Otoño. No se asignó nada nuevo esta semana.</span></p>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">District calendar.</span><span class="lang-es">Calendario del distrito.</span></p>
+</section>
+<section class="week inprogress" id="week-9" data-week="week-9" aria-labelledby="week-9-h">
+<div class="week-head">
+<span class="week-num"><span class="lang-en">Week 9</span><span class="lang-es">Semana 9</span></span>
+<span class="week-dates"><span class="lang-en">Nov 9 · 13</span><span class="lang-es">9 · 13 nov</span></span>
+<span class="status-tag"><span class="lang-en">Still in progress</span><span class="lang-es">Todavía en curso</span></span>
+</div>
+<h2 id="week-9-h"><span class="lang-en">Coming back from break: forces on inclines, pulleys, and projectiles</span><span class="lang-es">Volver del receso: fuerzas en planos inclinados, poleas y proyectiles</span></h2>
+<p class="summary"><span class="lang-en">Returning from a week off, we ran a recall recitation that rebuilds momentum. A short warm-up first, then three stations: forces and motion for a block on an inclined plane, multi-block and Atwood pulley systems including a table-block-over-a-pulley setup, and velocity and acceleration components in two dimensions for projectile motion. Every item takes a committed answer before it is checked.</span><span class="lang-es">Al volver de una semana libre, hicimos una recitación de recordar que recupera el ritmo. Primero un calentamiento corto, luego tres estaciones: fuerzas y movimiento para un bloque en un plano inclinado, sistemas de poleas con varios bloques y de Atwood, incluido un montaje de bloque en mesa con polea, y componentes de velocidad y aceleración en dos dimensiones para el movimiento de proyectiles. Cada ejercicio pide una respuesta comprometida antes de revisarla.</span></p>
+<p class="block-label"><span class="lang-en">Key ideas</span><span class="lang-es">Ideas clave</span></p>
+<ul class="keyideas">
+<li><span class="lang-en">Commit before checking, or you learn nothing about what you actually know.</span><span class="lang-es">Compromete una respuesta antes de revisar, o no aprendes nada sobre lo que realmente sabes.</span></li>
+<li><span class="lang-en">Cold hands is normal after a week off.</span><span class="lang-es">Tener las manos frías es normal después de una semana libre.</span></li>
+<li><span class="lang-en">Start with the moves you need for the whole period.</span><span class="lang-es">Empieza con los movimientos que necesitas para todo el período.</span></li>
+</ul>
+<p class="block-label"><span class="lang-en">What we used</span><span class="lang-es">Lo que usamos</span></p>
+<ul class="chips">
+<li class="chip"><span class="lang-en">Recitation recall set (90 minutes, on the Portal)</span><span class="lang-es">Set de recitación de recordar (90 minutos, en el Portal)</span></li>
+</ul>
+<p class="note"><span class="note-label"><span class="lang-en">Note</span><span class="lang-es">Nota</span></span><span class="lang-en">This week is in progress.</span><span class="lang-es">Esta semana está en curso.</span></p>
+</section>
+</div>
+</main>
+<footer>
+<div class="wrap foot-line">
+<span><span class="lang-en">Perth Amboy High School · Home of the Panthers</span><span class="lang-es">Escuela Secundaria de Perth Amboy · Hogar de los Panthers</span></span>
+<span><span class="lang-en">AP Physics 1 · Mr. Porter</span><span class="lang-es">Física AP 1 · Sr. Porter</span></span>
+</div>
+</footer>
+<script>
+(function () {
+  "use strict";
+  var KEY = "courseRecapLang";
+  var root = document.documentElement;
+  var body = document.body;
+  var buttons = document.querySelectorAll(".lang-toggle button");
+
+  function setLang(lang) {
+    if (lang !== "es") { lang = "en"; }
+    root.setAttribute("lang", lang);
+    body.classList.toggle("es", lang === "es");
+    try { localStorage.setItem(KEY, lang); } catch (e) {}
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      var on = b.getAttribute("data-lang") === lang;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    var groups = document.querySelectorAll(".lang-toggle");
+    for (var g = 0; g < groups.length; g++) {
+      groups[g].setAttribute("aria-label", lang === "es" ? "Idioma" : "Language");
+    }
+  }
+
+  var stored = "en";
+  try { stored = localStorage.getItem(KEY) || "en"; } catch (e) {}
+  setLang(stored);
+
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function () {
+      setLang(this.getAttribute("data-lang"));
+    });
+  }
+
+  /* Week rail scroll-spy: highlight the week currently in view. */
+  var weeks = document.querySelectorAll("[data-week]");
+  var links = document.querySelectorAll(".rail a");
+  if (!weeks.length || !links.length || !("IntersectionObserver" in window)) { return; }
+
+  var linkFor = {};
+  for (var l = 0; l < links.length; l++) {
+    linkFor[links[l].getAttribute("href").slice(1)] = links[l];
+  }
+
+  function mark(id) {
+    for (var k = 0; k < links.length; k++) {
+      links[k].removeAttribute("aria-current");
+    }
+    if (linkFor[id]) { linkFor[id].setAttribute("aria-current", "true"); }
+  }
+
+  var visible = {};
+  var observer = new IntersectionObserver(function (entries) {
+    for (var e = 0; e < entries.length; e++) {
+      var entry = entries[e];
+      visible[entry.target.id] = entry.isIntersecting ? entry.intersectionRatio : 0;
+    }
+    var bestId = null;
+    var bestRatio = 0;
+    for (var id in visible) {
+      if (visible[id] > bestRatio) { bestRatio = visible[id]; bestId = id; }
+    }
+    if (bestId) { mark(bestId); }
+  }, { rootMargin: "-72px 0px -45% 0px", threshold: [0, 0.15, 0.4, 0.75, 1] });
+
+  for (var w = 0; w < weeks.length; w++) { observer.observe(weeks[w]); }
+})();
+</script>
+</body>
+</html>

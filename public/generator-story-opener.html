@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where We Left Off. Physics Story Opener.</title>
+<!--
+  a-lign standalone deck. Single file, no JS libraries, no CDN scripts.
+
+  Physics, first period, the morning after a week of fall break.
+  Purpose: restore the narrative thread from the generator lab, then hand the
+  class straight into the Rubbing Balloons electrostatics lab.
+
+  Authoring notes live at the top of the script block. The visual system is
+  the a-lign token set: paper #F4F3EF, ink #1A1A1A, dashed ink frames, accent
+  #FF4D26 reserved for chrome only, accent-colored TEXT uses #C2350F.
+
+  Chrome (timer, language control, progress, nav) lives INSIDE the
+  1920x1080 stage box. Nothing here uses position:fixed.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F3EF;
+    --ink:#1A1A1A;
+    --soft:rgba(26,26,26,.55);
+    --faint:rgba(26,26,26,.35);
+    --accent:#FF4D26;      /* chrome ONLY: buttons, rules, active affordances */
+    --accent-text:#C2350F; /* accent-colored TEXT: WCAG AA on paper */
+    --card:#FFFFFF;
+    --border:#D8D6CC;
+    --font-display:'Archivo',Arial,'Helvetica Neue',Helvetica,sans-serif;
+    --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--paper);color:var(--ink);font-family:var(--font-body)}
+  body{overflow:hidden}
+
+  /* Stage host carries the SCALED size as real layout size. The 1920x1080 stage
+     is its only child and is transformed inside it. Without this, the layout box
+     stays 1920x1080 regardless of scale and the bottom chrome falls below a short
+     viewport's fold. */
+  /* The host takes the SCALED size as real layout size. Leaving it as a plain
+     block made it grow to fill <body> and, at small window sizes, the stage's
+     1920px content widened the document. Both are now pinned. */
+  #stageHost{
+    position:relative;overflow:hidden;background:var(--paper);
+    margin:0;max-width:none;max-height:none;flex:none;
+  }
+
+  /* ---------- stage ---------- */
+  .slide{
+    display:none;
+    width:1920px;height:1080px;
+    position:relative;
+    background:var(--paper);
+    padding:78px 96px 132px;
+    overflow:hidden;
+  }
+  /* fill-opacity, not a transform: a transform on a display:none element is
+     dropped, and the stage scale would then silently skip revealed screens. */
+  .slide.active{display:block;position:absolute;top:0;left:0;right:0;bottom:0}
+
+  /* ---------- type ---------- */
+  .kicker{
+    color:var(--accent-text);font-weight:600;font-size:20px;
+    letter-spacing:.18em;text-transform:uppercase;font-family:var(--font-body);
+  }
+  .display{font-family:var(--font-display);font-weight:800;letter-spacing:-0.03em}
+  h1.display{font-size:104px;line-height:1.0;margin-top:20px}
+  h2.display{font-size:70px;line-height:1.06;margin-top:16px}
+  h2.display .es{display:block;font-size:44px;letter-spacing:-0.015em;color:var(--soft);margin-top:10px}
+  .lead{font-size:32px;line-height:1.42;color:var(--soft);margin-top:26px;max-width:1560px}
+  .lead strong{color:var(--ink);font-weight:600}
+  .accent-rule{width:110px;height:8px;background:var(--accent);margin:32px 0}
+
+  /* ---------- bilingual ---------- */
+  /* default state: English shown, Spanish hidden. Never blank a line that has
+     copy in it: the toggle only ever swaps which of the pair is on screen.
+     translate is set by the controller, so a hidden language is invisible even
+     when an inline span mixes with display:block siblings elsewhere on a
+     screen (a lone display:block sibling can anchor a whole inline formatting
+     context and paint it). */
+  .lang-en,.lang-es{display:inline}
+  body.lang-es .lang-en{display:none}
+  body.lang-es .lang-es{display:inline}
+  .line-es{display:none;margin-top:12px}
+  body.lang-es .line-es{display:block}
+  body.lang-es .line-en{display:none}
+  /* board prompts: both languages stacked, always. These are lines students copy. */
+  .board .lang-en,.board .lang-es{display:block}
+  .board .lang-es{margin-top:18px}
+
+  /* ---------- dashed frames ---------- */
+  .dashed{border:1px dashed var(--faint)}
+  .pitch{
+    margin:0 auto;width:100%;max-width:1560px;
+    padding:52px 60px;
+  }
+  .quote{
+    font-family:var(--font-display);font-weight:800;
+    font-size:56px;line-height:1.14;letter-spacing:-0.025em;
+  }
+  .quote .lang-es{font-size:44px;letter-spacing:-0.015em;font-weight:700}
+
+  /* ---------- cards ---------- */
+  .card{background:var(--card);border:1px solid var(--border);padding:34px 38px}
+  .grid{display:grid;gap:28px;margin-top:48px}
+  .grid.two{grid-template-columns:1fr 1fr}
+
+  /* ---------- notes: projected, addressed to students ---------- */
+  .note{
+    position:absolute;left:96px;bottom:150px;right:420px;
+    font-size:26px;line-height:1.35;color:var(--soft);
+  }
+  /* ---------- pnote: teacher only, hidden until N is pressed ---------- */
+  .pnote{
+    display:none;
+    position:absolute;left:96px;right:96px;bottom:150px;
+    font-size:24px;line-height:1.4;color:var(--ink);
+    background:var(--paper);
+    border-top:2px dashed var(--ink);padding-top:14px;
+  }
+  .pnote::before{
+    content:"Teacher note";display:block;font-family:var(--font-display);
+    font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent-text);margin-bottom:8px;
+  }
+  /* the teacher note replaces the projected caption, never stacks with it */
+  body.notes-on .pnote{display:block}
+  body.notes-on .note{display:none}
+
+  /* ---------- screen 0 ---------- */
+  .title-meta{
+    position:absolute;right:96px;top:78px;text-align:right;
+    font-size:20px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+    font-weight:600;
+  }
+  .walk-in{
+    margin-top:56px;max-width:900px;padding:30px 36px;
+    font-family:var(--font-display);font-weight:700;
+    font-size:40px;line-height:1.2;letter-spacing:-0.02em;
+  }
+  .walk-in .lang-es{font-size:33px;font-weight:600;letter-spacing:-0.01em;display:block;margin-top:10px}
+  .title-deco{
+    position:absolute;right:96px;top:150px;width:340px;height:560px;
+  }
+  .title-deco span{
+    position:absolute;left:26px;bottom:22px;font-size:17px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--soft);font-weight:600;
+  }
+
+  /* ---------- screen 1: near-empty ---------- */
+  .cue-slide .cue-frame{
+    position:absolute;left:96px;right:96px;top:420px;height:330px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cue-slide .cue-frame .still{
+    font-family:var(--font-display);font-weight:900;font-size:34px;
+    letter-spacing:.34em;text-transform:uppercase;color:var(--faint);
+  }
+  .cue-slide .cue-body{font-size:36px;line-height:1.4;margin-top:30px;max-width:1400px}
+
+  /* ---------- screen 2 ---------- */
+  .false-claim{padding:46px 60px;margin-top:36px}
+  .false-claim .tag{
+    font-size:17px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);
+    font-weight:600;margin-bottom:18px;
+  }
+  /* inside a board frame the two language tags stack, matching the quote */
+  .false-claim .tag .lang-en,
+  .false-claim .tag .lang-es{display:block}
+  .false-claim .tag .lang-es{margin-top:6px;letter-spacing:.16em}
+  .task-line{
+    font-family:var(--font-display);font-weight:800;font-size:44px;line-height:1.2;
+    letter-spacing:-0.02em;margin-top:40px;max-width:1600px;
+  }
+  .task-line .lang-es{display:block;font-size:34px;font-weight:600;margin-top:10px;letter-spacing:-0.01em}
+
+  /* ---------- screen 3: editable consensus ---------- */
+  .consensus{display:grid;grid-template-columns:1fr;gap:20px;margin-top:36px}
+  .cons-row{
+    display:grid;grid-template-columns:74px 1fr 132px;align-items:stretch;
+    border:1px dashed var(--faint);background:transparent;
+  }
+  .cons-row .num{
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:900;font-size:40px;
+    color:var(--faint);border-right:1px dashed var(--faint);
+  }
+  .cons-row .write{
+    padding:16px 26px;min-height:118px;display:flex;align-items:center;
+    font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1.2;
+    letter-spacing:-0.02em;outline:none;caret-color:var(--accent);white-space:pre-wrap;
+  }
+  .cons-row .write:empty::before{
+    content:attr(data-placeholder);
+    color:var(--faint);font-weight:600;font-size:26px;letter-spacing:.02em;
+  }
+  .cons-row .write:focus{background:var(--card);border-color:var(--accent)}
+  .cons-row .write:not(:empty){background:var(--card)}
+  .cons-row .clr{
+    border:0;border-left:1px dashed var(--faint);background:transparent;cursor:pointer;
+    font-family:var(--font-body);font-weight:600;font-size:19px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--soft);
+  }
+  .cons-row .clr:hover{color:var(--accent-text);background:var(--card)}
+
+  /* ---------- screen 4: two columns ---------- */
+  .cols{display:grid;grid-template-columns:1.15fr 1fr;gap:40px;margin-top:36px}
+  .col-hd{
+    font-size:20px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink);border-bottom:1px solid var(--ink);padding-bottom:14px;
+  }
+  .col-hd .es{display:block;font-size:15px;letter-spacing:.14em;color:var(--soft);margin-top:6px}
+  .obs{margin-top:22px}
+  .obs li{
+    list-style:none;font-size:31px;line-height:1.32;padding-left:34px;position:relative;
+    margin-top:20px;
+  }
+  .obs li::before{content:"";position:absolute;left:0;top:.62em;width:14px;height:1px;background:var(--ink)}
+  .empty-side{
+    margin-top:22px;min-height:300px;display:flex;align-items:center;justify-content:center;
+    border:1px dashed var(--faint);
+  }
+  .empty-side span{
+    font-family:var(--font-display);font-weight:800;font-size:40px;color:var(--faint);
+    letter-spacing:-0.02em;text-align:center;line-height:1.25;
+  }
+  .empty-side .lang-es{display:block;font-size:32px}
+
+  /* ---------- screen 5 ---------- */
+  .handoff{padding:54px 64px;margin-top:34px}
+  .handoff .quote{font-size:52px}
+  .handoff .quote .lang-es{font-size:42px}
+  .copy-line{
+    font-family:var(--font-display);font-weight:800;font-size:40px;line-height:1.2;
+    letter-spacing:-0.02em;margin-top:40px;
+  }
+  .copy-line .lang-es{display:block;font-size:32px;font-weight:600;margin-top:8px}
+
+  /* ---------- screen 6 ---------- */
+  .launch-body{font-size:38px;line-height:1.4;margin-top:30px;max-width:1400px}
+  .launch-body .lang-es{display:block;font-size:31px;margin-top:14px;color:var(--soft)}
+
+  /* ---------- chrome buttons (inside the stage) ---------- */
+  .btn{
+    appearance:none;border:1px solid var(--ink);background:transparent;color:var(--ink);
+    font-family:var(--font-body);font-weight:600;font-size:22px;letter-spacing:.06em;
+    padding:16px 28px;cursor:pointer;transition:border-color .15s, color .15s;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent-text)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .btn.solid{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .btn.solid:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .big-launch{
+    margin-top:52px;font-family:var(--font-display);font-weight:800;font-size:40px;
+    padding:30px 48px;letter-spacing:-0.015em;
+  }
+
+  /* ---------- stage chrome ----------
+     Everything here is absolutely positioned inside a 1920x1080 wrapper that is
+     a child of <body>, so it inherits the same scale transform as the slides.
+     No position:fixed anywhere: fixed anchors to the browser viewport and
+     collides with slide content at every non-16:9 window size. */
+  .stage-chrome{
+    position:absolute;left:0;top:0;width:1920px;height:1080px;
+    pointer-events:none;z-index:60;font-family:var(--font-body);
+  }
+  .stage-chrome > *{pointer-events:auto}
+
+  .top-rule{
+    position:absolute;left:96px;right:96px;top:34px;height:1px;
+    background:rgba(26,26,26,.14);
+  }
+  .clip-title{
+    position:absolute;left:96px;top:4px;
+    font-size:15px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--soft);
+  }
+  .nav-btns{
+    position:absolute;right:96px;top:2px;display:flex;gap:12px;align-items:center;
+  }
+  .nav-btns .btn{
+    font-size:17px;padding:8px 16px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .nav-btns .btn[disabled]{opacity:.28;cursor:default}
+  .nav-btns .btn[disabled]:hover{border-color:var(--ink);color:var(--ink)}
+
+  /* language switch */
+  .langwrap{
+    position:absolute;right:96px;bottom:56px;display:flex;align-items:center;gap:16px;
+  }
+  .langwrap .lbl{
+    font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);
+    font-weight:600;
+  }
+  .langbtns{display:flex;border:1px solid var(--ink)}
+  .langbtns button{
+    appearance:none;border:0;background:transparent;cursor:pointer;
+    font-family:var(--font-body);font-weight:600;font-size:18px;letter-spacing:.14em;
+    text-transform:uppercase;padding:10px 18px;color:var(--ink);
+  }
+  .langbtns button + button{border-left:1px solid var(--ink)}
+  .langbtns button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  .langbtns button:hover:not([aria-pressed="true"]){color:var(--accent-text)}
+
+  /* timer */
+  .timer{
+    position:absolute;left:96px;bottom:36px;display:flex;align-items:center;gap:18px;
+  }
+  .timer .clock{
+    font-family:var(--font-display);font-weight:800;font-size:58px;line-height:1;
+    letter-spacing:-0.03em;font-variant-numeric:tabular-nums;
+    min-width:172px;
+  }
+  .timer.over .clock{color:var(--accent-text)}
+  .timer .flag{
+    font-size:16px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent-text);opacity:0;transition:opacity .2s;
+  }
+  .timer.over .flag{opacity:1}
+  .timer .btn{font-size:16px;padding:9px 16px;letter-spacing:.12em;text-transform:uppercase}
+
+  /* ABT indicator */
+  .abt{
+    position:absolute;right:96px;bottom:114px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .abt .chip{
+    font-size:14px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+    padding:7px 13px;border:1px solid rgba(26,26,26,.22);color:var(--soft);
+    transition:background .18s, color .18s, border-color .18s;
+  }
+  .abt .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .abt .sep{width:14px;height:1px;background:rgba(26,26,26,.3)}
+  .abt .abt-hd{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--faint);font-weight:600;margin-right:4px;
+  }
+
+  /* progress bar along the bottom edge of the stage */
+  .progress{
+    position:absolute;left:0;bottom:0;height:5px;background:var(--accent);width:0;
+    transition:width .18s ease;
+  }
+
+  /* ---------- print ---------- */
+  @media print{
+    @page{size:13.333in 7.5in;margin:0}
+    html,body{background:var(--paper);overflow:visible}
+    body{transform:none !important;width:auto !important;height:auto !important}
+    #stageHost{width:auto !important;height:auto !important;overflow:visible !important}
+    .slide{display:block !important;page-break-after:always;transform:none !important}
+    .stage-chrome{display:none !important}
+    .pnote{display:none !important}
+  }
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body class="lang-en">
+<div id="stageHost">
+
+<!-- ============================================================
+     1. TITLE. On screen as students walk in.
+     ============================================================ -->
+<section class="slide title-slide active" data-abt="0" aria-label="Where we left off">
+  <div class="title-meta">First period &middot; 8:00 am</div>
+  <div class="kicker"><span class="lang-en">Physics &middot; Mr. Porter</span><span class="lang-es">F&iacute;sica &middot; Sr. Porter</span></div>
+  <h1 class="display">
+    <span class="lang-en">Where we left off</span>
+    <span class="lang-es">D&oacute;nde nos quedamos</span>
+  </h1>
+  <div class="accent-rule"></div>
+  <p class="lead">
+    <span class="lang-en">A week ago: a magnet, a wire, and an LED. Today we go back and ask what was actually moving.</span>
+    <span class="lang-es">Hace una semana: un im&aacute;n, un cable y un LED. Hoy regresamos y preguntamos qu&eacute; se estaba moviendo de verdad.</span>
+  </p>
+  <div class="dashed walk-in">
+    <span class="lang-en">Chromebooks closed. Nothing to write yet. Just watch.</span>
+    <span class="lang-es">Chromebooks cerrados. Todav&iacute;a nada que escribir. Solo miren.</span>
+  </div>
+  <div class="dashed title-deco"><span>And / But / Therefore</span></div>
+</section>
+
+<!-- ============================================================
+     2. THE PHYSICAL CUE. Almost empty on purpose. No questions.
+     ============================================================ -->
+<section class="slide cue-slide" data-abt="0" aria-label="Watch the crank">
+  <div class="kicker"><span class="lang-en">Physics &middot; Mr. Porter</span><span class="lang-es">F&iacute;sica &middot; Sr. Porter</span></div>
+  <h2 class="display">
+    <span class="lang-en">Watch the crank.</span>
+    <span class="lang-es">Miren la manivela.</span>
+  </h2>
+  <p class="cue-body">
+    <span class="lang-en">Mr. Porter will have the generator in his hands. Nothing to do yet. Watch the LED. Watch the compass.</span>
+    <span class="lang-es">El Sr. Porter va a tener el generador en sus manos. Todav&iacute;a nada que hacer. Miren el LED. Miren la br&uacute;jula.</span>
+  </p>
+  <div class="dashed cue-frame"><span class="still">Watch</span></div>
+</section>
+
+<!-- ============================================================
+     3. AND. The falsification task. No answers anywhere on this screen.
+     ============================================================ -->
+<section class="slide" data-abt="1" aria-label="Fix the claim">
+  <div class="kicker"><span class="lang-en">And</span><span class="lang-es">Y</span></div>
+  <h2 class="display" style="font-size:44px;margin-top:10px">
+    <span class="lang-en">Your data said something. Fix this claim so it matches it.</span>
+    <span class="lang-es">Sus datos dijeron algo. Corrijan esta afirmaci&oacute;n para que coincida.</span>
+  </h2>
+  <div class="dashed false-claim board">
+    <div class="tag"><span class="lang-en">The claim on the table</span><span class="lang-es">La afirmaci&oacute;n sobre la mesa</span></div>
+    <p class="quote">
+      <span class="lang-en">The LED turns on as long as a strong magnet is touching the coil.</span>
+      <span class="lang-es">El LED se enciende siempre que un im&aacute;n fuerte toque la bobina.</span>
+    </p>
+  </div>
+  <p class="task-line">
+    <span class="lang-en">On your table whiteboard: rewrite this claim so it matches your evidence. Eight words or fewer.</span>
+    <span class="lang-es">En su pizarra: reescriban esta afirmaci&oacute;n para que coincida con su evidencia. Ocho palabras o menos.</span>
+  </p>
+  <p class="pnote">Two tables read out, one English and one Spanish. Write what they say on the board without editing it. Do not tell the class which versions are right.</p>
+  <p class="note"><span class="lang-en">With your table. Time your teacher gives.</span><span class="lang-es">Con su mesa. El tiempo que indique su maestro.</span></p>
+</section>
+
+<!-- ============================================================
+     4. AND. Class consensus, typed live by the teacher from student words.
+     Boxes are empty by default and stay empty until someone types.
+     ============================================================ -->
+<section class="slide" data-abt="1" aria-label="What we proved">
+  <div class="kicker"><span class="lang-en">And</span><span class="lang-es">Y</span></div>
+  <h2 class="display" style="font-size:52px;margin-top:10px">
+    <span class="lang-en">What we proved, in our own words</span>
+    <span class="lang-es">Lo que probamos, en nuestras palabras</span>
+  </h2>
+  <div class="consensus">
+    <div class="cons-row">
+      <div class="num">1</div>
+      <div class="write" id="cons1" contenteditable="true" spellcheck="false" role="textbox" aria-label="Consensus line 1" data-placeholder=""></div>
+      <button class="clr" type="button" data-clear="cons1">Clear</button>
+    </div>
+    <div class="cons-row">
+      <div class="num">2</div>
+      <div class="write" id="cons2" contenteditable="true" spellcheck="false" role="textbox" aria-label="Consensus line 2" data-placeholder=""></div>
+      <button class="clr" type="button" data-clear="cons2">Clear</button>
+    </div>
+    <div class="cons-row">
+      <div class="num">3</div>
+      <div class="write" id="cons3" contenteditable="true" spellcheck="false" role="textbox" aria-label="Consensus line 3" data-placeholder=""></div>
+      <button class="clr" type="button" data-clear="cons3">Clear</button>
+    </div>
+  </div>
+  <p class="note"><span class="lang-en">Your teacher types what you say. Say it short enough to fit.</span><span class="lang-es">Su maestro escribe lo que ustedes dicen. Digan algo que quepa.</span></p>
+</section>
+
+<!-- ============================================================
+     5. BUT. The gap between the magnet side and the electric side.
+     ============================================================ -->
+<section class="slide" data-abt="2" aria-label="The gap">
+  <div class="kicker"><span class="lang-en">But</span><span class="lang-es">Pero</span></div>
+  <h2 class="display" style="font-size:52px;margin-top:10px">
+    <span class="lang-en">We know the magnet side. We know nothing about the electric side.</span>
+    <span class="lang-es">Sabemos el lado del im&aacute;n. No sabemos nada del lado el&eacute;ctrico.</span>
+  </h2>
+  <div class="cols">
+    <div>
+      <div class="col-hd">
+        <span class="lang-en">The magnet side</span><span class="lang-es">El lado del im&aacute;n</span>
+        <span class="es"><span class="lang-en">We observed</span><span class="lang-es">Lo que observamos</span></span>
+      </div>
+      <ul class="obs">
+        <li>
+          <span class="lang-en">A compass needle turns near a magnet even when nothing touches it.</span>
+          <span class="lang-es">La aguja de la br&uacute;jula gira cerca de un im&aacute;n aunque nada la toque.</span>
+        </li>
+        <li>
+          <span class="lang-en">The needle moves when the crank turns, slowly or quickly.</span>
+          <span class="lang-es">La aguja se mueve cuando gira la manivela, despacio o r&aacute;pido.</span>
+        </li>
+        <li>
+          <span class="lang-en">A spinning crank can light an LED.</span>
+          <span class="lang-es">Una manivela que gira puede encender un LED.</span>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <div class="col-hd">
+        <span class="lang-en">The electric side</span><span class="lang-es">El lado el&eacute;ctrico</span>
+        <span class="es"><span class="lang-en">We observed</span><span class="lang-es">Lo que observamos</span></span>
+      </div>
+      <div class="empty-side">
+        <span>
+          <span class="lang-en">Nothing yet.</span>
+          <span class="lang-es">Nada todav&iacute;a.</span>
+        </span>
+      </div>
+    </div>
+  </div>
+  <p class="note"><span class="lang-en">On your whiteboard: write ONE question about the electric side that we have not answered.</span><span class="lang-es">En su pizarra: escriban UNA pregunta sobre el lado el&eacute;ctrico que todav&iacute;a no hemos contestado.</span></p>
+  <p class="pnote">If a student says electrons, charge, or voltage, write it in quotes and move on. Do not confirm. Do not correct.</p>
+</section>
+
+<!-- ============================================================
+     6. THEREFORE. The handoff sentence students copy.
+     ============================================================ -->
+<section class="slide" data-abt="3" aria-label="So we start here">
+  <div class="kicker"><span class="lang-en">Therefore</span><span class="lang-es">Por eso</span></div>
+  <div class="dashed handoff board" style="margin-top:26px">
+    <p class="quote">
+      <span class="lang-en">The generator made something electric move in a wire. Before we can say what the magnetism pushed, we need to find out how electric things push and pull on each other.</span>
+      <span class="lang-es">El generador hizo que algo el&eacute;ctrico se moviera en un cable. Antes de saber qu&eacute; empuja el magnetismo, necesitamos descubrir c&oacute;mo las cosas el&eacute;ctricas se empujan y se jalan.</span>
+    </p>
+  </div>
+  <p class="copy-line">
+    <span class="lang-en">Copy this at the top of your group whiteboard before you move.</span>
+    <span class="lang-es">Copien esto arriba en su pizarra antes de moverse.</span>
+  </p>
+  <p class="note"><span class="lang-en">Both languages are on this screen. Copy the one on your table's whiteboard.</span><span class="lang-es">Los dos idiomas est&aacute;n en esta pantalla. Copien el de la pizarra de su mesa.</span></p>
+</section>
+
+<!-- ============================================================
+     7. LAUNCH
+     ============================================================ -->
+<section class="slide" data-abt="4" aria-label="To the stations">
+  <div class="kicker"><span class="lang-en">Physics &middot; Mr. Porter</span><span class="lang-es">F&iacute;sica &middot; Sr. Porter</span></div>
+  <h2 class="display">
+    <span class="lang-en">To the stations.</span>
+    <span class="lang-es">A las estaciones.</span>
+  </h2>
+  <p class="launch-body">
+    <span class="lang-en">Start at the first station box that is still empty on your lab page.</span>
+    <span class="lang-es">Empiecen en la primera casilla vac&iacute;a de su hoja de laboratorio.</span>
+  </p>
+  <button class="btn big-launch" type="button" id="launchTimer">
+    <span class="lang-en">Start the 8 minute timer</span><span class="lang-es">Iniciar el cron&oacute;metro de 8 minutos</span>
+  </button>
+  <p class="note"><span class="lang-en">Eyes up here until your table is called.</span><span class="lang-es">Ojos aqu&iacute; hasta que su mesa sea llamada.</span></p>
+</section>
+
+<!-- ============================================================
+     CHROME. Inside the scaled stage, never position:fixed.
+     ============================================================ -->
+<div class="stage-chrome">
+  <div class="top-rule"></div>
+  <div class="clip-title" id="clipTitle">Where we left off</div>
+  <div class="nav-btns">
+    <button class="btn" type="button" id="prevBtn" aria-label="Previous screen">Prev</button>
+    <button class="btn" type="button" id="nextBtn" aria-label="Next screen">Next</button>
+  </div>
+
+  <div class="abt" id="abt" aria-hidden="true">
+    <span class="abt-hd">Story</span>
+    <span class="chip" data-abt-chip="0">Start</span>
+    <span class="sep"></span>
+    <span class="chip" data-abt-chip="1">And</span>
+    <span class="sep"></span>
+    <span class="chip" data-abt-chip="2">But</span>
+    <span class="sep"></span>
+    <span class="chip" data-abt-chip="3">Therefore</span>
+  </div>
+
+  <div class="timer" id="timer">
+    <span class="clock" id="clock" role="timer" aria-live="off">0:00</span>
+    <span class="flag" id="timeFlag">Time</span>
+    <button class="btn" type="button" id="timerBtn">Start</button>
+    <button class="btn" type="button" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="langwrap">
+    <span class="lbl">Language</span>
+    <div class="langbtns" id="langBtns">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="es" aria-pressed="false">ES</button>
+    </div>
+  </div>
+
+  <div class="progress" id="progress"></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ------------------------------------------------------------------
+     DECK CONTROLLER
+     One IIFE. No shared state leaks out, no second script block.
+
+     Screens (0-6) come from DOM order. Each section carries data-abt
+     (0 = start, 1 = AND, 2 = BUT, 3 = THEREFORE, 4 = launch) which drives
+     the story chips in the corner.
+
+     Keys: right/space = next, left/backspace = prev, t = timer start/pause,
+     l = language swap, r = reset to screen 0, f = fullscreen,
+     n = teacher notes toggle.
+
+     Timer counts UP to 8:00, then turns accent and shows TIME. It keeps
+     running; it never blocks navigation or the launch button.
+     ------------------------------------------------------------------ */
+
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var n = slides.length;
+  var i = 0;
+
+  var clock     = document.getElementById('clock');
+  var timerEl   = document.getElementById('timer');
+  var timerBtn  = document.getElementById('timerBtn');
+  var resetBtn  = document.getElementById('resetBtn');
+  var progress  = document.getElementById('progress');
+  var clipTitle = document.getElementById('clipTitle');
+  var prevBtn   = document.getElementById('prevBtn');
+  var nextBtn   = document.getElementById('nextBtn');
+  var abtChips  = Array.prototype.slice.call(document.querySelectorAll('[data-abt-chip]'));
+  var langBtns  = Array.prototype.slice.call(document.querySelectorAll('[data-lang]'));
+
+  /* ---------------- viewport fit ----------------
+     A transform does NOT shrink the element's layout box, so the body keeps a
+     1920x1080 box no matter what scale we apply. That left the document
+     scrollable inside a hidden overflow, and on a display whose working area is
+     shorter than the assumed height the bottom band (timer, language toggle,
+     progress bar) sat below the fold. The stage is therefore wrapped in a host
+     element that carries the scaled dimensions as its own LAYOUT size, and the
+     stage keeps its 1920x1080 logical size inside it.
+
+     The viewport is measured with documentElement.clientWidth/clientHeight
+     (layout viewport: excludes scrollbars, tracks browser zoom) instead of
+     window.innerWidth/innerHeight, and the result is subpixel rather than
+     rounded, so no unscaled sliver is left on the right or bottom edge. */
+  var stageHost = document.getElementById('stageHost');
+
+  function fit(){
+    if (window.matchMedia && window.matchMedia('print').matches) return;
+    var vw = document.documentElement.clientWidth || window.innerWidth;
+    var vh = document.documentElement.clientHeight || window.innerHeight;
+    if (!vw || !vh) return;
+
+    var s = Math.min(vw / 1920, vh / 1080);
+
+    /* The scale goes on the stage HOST, a dedicated wrapper that holds the
+       slides and the chrome. It never goes on <body>: with the transform on
+       body this Chromium laid out the scaled box but PAINTED the text at 100%,
+       so the deck looked oversized and clipped while every measurement
+       reported the correct small size. Scaling the wrapper paints and lays out
+       at the same factor.
+       .slide has display:none until active; a transform on a display:none
+       element is dropped, so per-section scaling would silently stop working
+       for screens that are revealed later. */
+    /* The scale goes on the slide and the chrome directly, each pinned to the
+       wrapper's top-left corner. Two things this rules out, both observed:
+       1. A transform on <body> made this Chromium lay the box out scaled but
+          PAINT the text at 100%, so the deck looked oversized and clipped.
+       2. Scaling the wrapper while it also carries the host layout size doubled
+          the shrink and let the stage drift away from the origin.
+       Both layers keep their 1920x1080 logical size; only paint is scaled. */
+    var scalables = document.querySelectorAll('.slide, .stage-chrome');
+    for (var i = 0; i < scalables.length; i++){
+      scalables[i].style.transform = 'scale(' + s + ')';
+      scalables[i].style.transformOrigin = 'top left';
+      scalables[i].style.left = '0';
+      scalables[i].style.top = '0';
+    }
+    if (stageHost){
+      stageHost.style.width = (1920 * s) + 'px';
+      stageHost.style.height = (1080 * s) + 'px';
+    }
+
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  /* ---------------- editable fields ----------------
+     contenteditable fields lose their typed text when a screen is hidden
+     and shown again, because the browser tears down the editing host. Save
+     text into memory on input and restore it on every render. Nothing is
+     written to localStorage. */
+  function saveFields(){
+    var els = document.querySelectorAll('.write[contenteditable]');
+    for (var k = 0; k < els.length; k++){
+      els[k].dataset.saved = els[k].innerHTML;
+    }
+  }
+  function restoreFields(){
+    var els = document.querySelectorAll('.write[contenteditable]');
+    for (var k = 0; k < els.length; k++){
+      var saved = els[k].dataset.saved;
+      if (saved !== undefined && els[k].innerHTML !== saved){
+        els[k].innerHTML = saved;
+      }
+    }
+  }
+  document.addEventListener('input', function(e){
+    var t = e.target;
+    if (t && t.classList && t.classList.contains('write')){
+      t.dataset.saved = t.innerHTML;
+    }
+  });
+  Array.prototype.slice.call(document.querySelectorAll('[data-clear]')).forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var target = document.getElementById(btn.getAttribute('data-clear'));
+      if (!target) return;
+      target.innerHTML = '';
+      target.dataset.saved = '';
+      target.focus();
+    });
+  });
+  /* Pasting rich text into a projected field is a live classroom hazard:
+     strip every tag except <br>. */
+  Array.prototype.slice.call(document.querySelectorAll('.write[contenteditable]')).forEach(function(el){
+    el.addEventListener('paste', function(e){
+      e.preventDefault();
+      var txt = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
+      var lines = txt.split(/\r?\n/).slice(0, 2);
+      document.execCommand('insertText', false, lines.join('\n'));
+    });
+    /* Enter should move the teacher on, not add a paragraph nobody can read. */
+    el.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        el.blur();
+      }
+    });
+  });
+
+  /* ---------------- screen switching ---------------- */
+  function show(k, opts){
+    if (typeof k !== 'number' || isNaN(k)) return;
+    saveFields();
+    i = Math.max(0, Math.min(n - 1, k));
+    for (var j = 0; j < n; j++){
+      slides[j].classList.toggle('active', j === i);
+    }
+    restoreFields();
+
+    prevBtn.disabled = (i === 0);
+    nextBtn.disabled = (i === n - 1);
+    progress.style.width = ((i + 1) / n * 100) + '%';
+
+    var abt = slides[i].getAttribute('data-abt') || '0';
+    for (var c = 0; c < abtChips.length; c++){
+      abtChips[c].classList.toggle('on', abtChips[c].getAttribute('data-abt-chip') === abt);
+    }
+    if (!opts || !opts.silentTitle){
+      clipTitle.textContent = (i + 1) + ' / ' + n + '  ' + deckName(i);
+    }
+    fit();
+  }
+  function deckName(k){
+    var el = slides[k];
+    var t = el.querySelector('h1 .lang-en, h2 .lang-en, h2 .display .lang-en');
+    if (!t){
+      var h = el.querySelector('h1, h2');
+      t = h;
+    }
+    return t ? t.textContent.trim().replace(/\s+/g, ' ') : '';
+  }
+
+  /* ---------------- timer ----------------
+     Elapsed is derived from a start stamp plus accumulated seconds, so a
+     background tab that throttles the interval still reads correctly when
+     the teacher comes back. */
+  var LIMIT = 8 * 60;
+  var acc = 0;          /* accumulated seconds while paused */
+  var startedAt = 0;    /* performance.now() of the current run, 0 = stopped */
+  var running = false;
+  var tickId = null;
+  function elapsed(){
+    return acc + (running ? (performance.now() - startedAt) / 1000 : 0);
+  }
+  function fmt(sec){
+    var whole = Math.floor(sec);
+    var m = Math.floor(whole / 60);
+    var s = whole % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function paint(){
+    var e = elapsed();
+    clock.textContent = fmt(e);
+    var over = e >= LIMIT;
+    timerEl.classList.toggle('over', over);
+    clock.setAttribute('aria-label', fmt(e) + (over ? ', time is up' : ''));
+    if (running && !over){
+      clock.textContent = fmt(e);
+    }
+  }
+  function tick(){
+    paint();
+    if (running) tickId = window.setTimeout(tick, 250);
+    else tickId = null;
+  }
+  function startTimer(){
+    if (running) return;
+    running = true;
+    startedAt = performance.now();
+    timerBtn.textContent = 'Pause';
+    paint();
+    if (!tickId) tick();
+  }  function pauseTimer(){
+    if (!running) return;
+    acc = elapsed();
+    running = false;
+    startedAt = 0;
+    timerBtn.textContent = 'Start';
+    paint();
+  }
+  function toggleTimer(){
+    if (running) pauseTimer(); else startTimer();
+  }
+  function resetTimer(){
+    running = false;
+    startedAt = 0;
+    acc = 0;
+    timerBtn.textContent = 'Start';
+    if (tickId){ window.clearTimeout(tickId); tickId = null; }
+    paint();
+  }
+  timerBtn.addEventListener('click', function(e){ e.stopPropagation(); toggleTimer(); });
+  resetBtn.addEventListener('click', function(e){ e.stopPropagation(); resetTimer(); });
+
+  var launchBtn = document.getElementById('launchTimer');
+  if (launchBtn){
+    launchBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      resetTimer();
+      startTimer();
+    });
+  }
+
+  /* ---------------- language ----------------
+     Default English. Both languages are always in the DOM; the body class
+     decides which one paints. Board prompts ignore the class and show both. */
+  function setLang(lang){
+    var es = (lang === 'es');
+    document.body.classList.toggle('lang-es', es);
+    document.documentElement.setAttribute('lang', es ? 'es' : 'en');
+    for (var k = 0; k < langBtns.length; k++){
+      var on = langBtns[k].getAttribute('data-lang') === (es ? 'es' : 'en');
+      langBtns[k].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    /* Defence in depth. The class swap above is the mechanism; this pass makes
+       the hidden side structurally invisible to the layout, so no inline
+       formatting context can leak it onto screen. Board prompts are exempt:
+       they show both languages on purpose. */
+    var spans = document.querySelectorAll('.lang-en, .lang-es');
+    for (var j = 0; j < spans.length; j++){
+      var el = spans[j];
+      if (el.closest && el.closest('.board')) continue;
+      var isEs = el.classList.contains('lang-es');
+      el.style.display = (isEs === es) ? '' : 'none';
+    }
+  }
+  for (var lb = 0; lb < langBtns.length; lb++){
+    (function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        setLang(btn.getAttribute('data-lang'));
+      });
+    })(langBtns[lb]);
+  }
+
+  /* ---------------- nav ---------------- */
+  function next(){ show(i + 1); }
+  function prev(){ show(i - 1); }
+  nextBtn.addEventListener('click', function(e){ e.stopPropagation(); next(); });
+  prevBtn.addEventListener('click', function(e){ e.stopPropagation(); prev(); });
+
+  /* Clicking the paper advances. Chrome controls and editable fields stop
+     propagation above, so this never fires from a button or a text field. */
+  var stage = document.querySelectorAll('.slide');
+  for (var s = 0; s < stage.length; s++){
+    stage[s].addEventListener('click', function(e){
+      if (e.target.closest && e.target.closest('[contenteditable="true"], button, a')) return;
+      if (window.getSelection && String(window.getSelection()).length > 0) return;
+      next();
+    });
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.target && e.target.isContentEditable) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    var key = e.key;
+    var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    var typing = (tag === 'input' || tag === 'textarea');
+
+    if (key === 'ArrowRight' || key === 'PageDown' || key === ' ' || key === 'Spacebar' || key === 'Enter'){
+      if (typing) return;
+      if (key === 'Enter' && e.target && e.target.tagName === 'BUTTON') return;
+      e.preventDefault();
+      next();
+    } else if (key === 'ArrowLeft' || key === 'Backspace' || key === 'PageUp'){
+      if (typing) return;
+      e.preventDefault();
+      prev();
+    } else if (key === 'Home'){
+      e.preventDefault();
+      show(0);
+    } else if (key === 'End'){
+      e.preventDefault();
+      show(n - 1);
+    } else if (key === 't' || key === 'T'){
+      e.preventDefault();
+      toggleTimer();
+    } else if (key === 'l' || key === 'L'){
+      e.preventDefault();
+      setLang(document.body.classList.contains('lang-es') ? 'en' : 'es');
+    } else if (key === 'r' || key === 'R'){
+      e.preventDefault();
+      show(0);
+    } else if (key === 'f' || key === 'F'){
+      e.preventDefault();
+      toggleFullscreen();
+    } else if (key === 'n' || key === 'N'){
+      e.preventDefault();
+      document.body.classList.toggle('notes-on');
+    }
+  });
+
+  function toggleFullscreen(){
+    try{
+      if (!document.fullscreenElement){
+        var p = document.documentElement.requestFullscreen
+          ? document.documentElement.requestFullscreen()
+          : null;
+        if (p && p.catch) p.catch(function(){});
+      } else if (document.exitFullscreen){
+        var q = document.exitFullscreen();
+        if (q && q.catch) q.catch(function(){});
+      }
+    } catch (err){ /* fullscreen can be blocked by policy. Navigation is unaffected. */ }
+  }
+
+  /* ---------------- boot ---------------- */
+  /* Deep link: #3 opens screen 3. Used by the headless smoke test and by any
+     link that points at a specific screen. A hash change on an already-loaded
+     page does not re-run the script, so listen for hashchange too. */
+  function screenFromHash(){
+    var h = parseInt((location.hash || '').replace('#', ''), 10);
+    return (!isNaN(h) && h >= 1 && h <= n) ? h - 1 : null;
+  }
+  function boot(){
+    var start = screenFromHash();
+    setLang('en');
+    paint();
+    show(start === null ? 0 : start);
+  }
+
+  window.addEventListener('hashchange', function(){
+    var target = screenFromHash();
+    if (target !== null && target !== i) show(target);
+  });
+
+  window.addEventListener('resize', fit);
+  document.addEventListener('visibilitychange', function(){
+    /* Returning from a hidden tab: repaint immediately so the clock is not
+       stale for up to a quarter second. */
+    if (!document.hidden) paint();
+  });
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</div>
+</body>
+</html>

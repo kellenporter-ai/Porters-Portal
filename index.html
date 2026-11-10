@@ -20,6 +20,10 @@
         if (theme === 'dark') document.documentElement.classList.add('dark');
       })();
     </script>
+    <!-- One-way migration off the legacy firebaseapp.com hostname. Must run
+         BEFORE any app or activity code touches storage. Plain synchronous
+         script: no defer/async/module. See public/origin-guard.js. -->
+    <script src="/origin-guard.js"></script>
 </head>
 <body class="min-h-screen">
     <a href="#main-content" class="skip-to-content">Skip to main content</a>

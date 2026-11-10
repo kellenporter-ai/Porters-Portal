@@ -54,11 +54,31 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isOwner(userId)
             && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification'])
+                .hasOnly(['settings', 'classType', 'lastLoginAt', 'gamification',
+                          'originHold', 'lastOrigin', 'lastOriginAt'])
             && (
               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['gamification'])
               || request.resource.data.gamification.diff(resource.data.gamification).affectedKeys()
                   .hasOnly(['codename', 'privacyMode', 'lastLevelSeen', 'appearance', 'classProfiles', 'activeDailyChallenges', 'selectedCharacterModel', 'dismissedAnnouncements'])
+            )
+            // originHold / lastOrigin are written by origin-guard.js during the
+            // one-way migration off the legacy hosting hostname. Constrain the
+            // SHAPE so this cannot become an arbitrary-write surface:
+            //   originHold  = list of localStorage KEY NAMES (<=20, each <=120 chars)
+            //                 — never student content
+            //   lastOrigin  = one of the two known Portal hostnames
+            && (
+              !request.resource.data.diff(resource.data).affectedKeys()
+                  .hasAny(['originHold', 'lastOrigin', 'lastOriginAt'])
+              || (
+                (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['originHold'])
+                  || (
+                    request.resource.data.originHold is list
+                    && request.resource.data.originHold.size() <= 20
+                  ))
+                && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastOrigin'])
+                  || request.resource.data.lastOrigin in ['porters-portal.web.app', 'porters-portal.firebaseapp.com'])
+              )
             ));
       
       // Only admin can delete user profiles
@@ -241,6 +261,17 @@ service cloud.firestore {
         (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
       allow create, update: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid;
+    }
+
+    // ==========================================
+    // RESOURCE OPENS (durable per-student "opened" receipt)
+    // ==========================================
+    // Written by the startResourceSession Cloud Function. Unlike resource_sessions
+    // this record is NOT swept, so students keep an accurate opened/not-opened state.
+    match /resource_opens/{docId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create, update, delete: if false; // Admin SDK / Cloud Functions only
     }
 
     // ==========================================

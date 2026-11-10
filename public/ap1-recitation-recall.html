@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coming Back Cold: Forces on Slants, Blocks on Strings, and Two Dimensions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   a-lign design language. One authoritative theme.
+   Paper, ink, dashed borders, chrome accent only.
+   ============================================================ */
+:root{
+  color-scheme: light;
+  --paper:#F4F3EF;
+  --paper-deep:#EDEBE5;
+  --ink:#1A1A1A;
+  --ink-soft:rgba(26,26,26,.55);
+  --ink-muted:rgba(26,26,26,.35);
+  /* Text-only quiet ink for small labels. Solid, not alpha, because an
+     alpha token cannot reach 4.5:1 over paper at any usable opacity.
+     Measured 5.42:1 on #F4F3EF and 4.82:1 on the ink-held composite. */
+  --ink-quiet:#64635F;
+  --ink-held:rgba(26,26,26,.06);
+  --accent:#FF4D26;
+  --dash:1px dashed rgba(26,26,26,.35);
+  --dash-strong:2px dashed rgba(26,26,26,.35);
+  --measure:70ch;
+  --display:'Archivo','Inter','Helvetica Neue',Arial,'Segoe UI',system-ui,sans-serif;
+  --body:'Inter','Helvetica Neue',Arial,'Segoe UI',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* No overflow-x on html/body: an overflow value other than visible
+   makes that element the sticky scroll container and breaks the nav. */
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 32px 96px}
+
+/* ---------- Type primitives ---------- */
+.eyebrow,.kicker,.idchip,.opt .ltr,.verdict{
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  line-height:1.4;
+}
+.display,h1,h2,h3{
+  font-family:var(--display);
+  font-weight:900;
+  letter-spacing:-.03em;
+  line-height:1.05;
+}
+a{color:var(--ink);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* ---------- Header ---------- */
+.masthead{padding:64px 0 40px}
+.masthead .kicker{color:var(--ink-soft);display:block;margin-bottom:28px}
+.masthead h1{
+  font-size:clamp(34px,4.6vw,58px);
+  letter-spacing:-.04em;
+  max-width:22ch;
+  margin-bottom:24px;
+}
+.masthead .subtitle{
+  font-size:17px;
+  color:var(--ink-soft);
+  max-width:var(--measure);
+  margin-bottom:24px;
+}
+.masthead .bylines{
+  display:flex;flex-wrap:wrap;gap:8px 28px;
+  border-top:var(--dash);
+  padding-top:16px;
+  font-size:13px;
+  color:var(--ink-muted);
+}
+.masthead .bylines .who{color:var(--ink-soft);font-weight:600}
+
+/* ---------- Sticky nav ---------- */
+.navwrap{
+  position:sticky;top:0;z-index:40;
+  background:var(--paper);
+  border-bottom:var(--dash);
+  padding:0;
+  margin-bottom:48px;
+}
+.navbar{display:flex;gap:0;flex-wrap:wrap}
+.navbtn{
+  appearance:none;
+  flex:1 1 auto;
+  min-height:56px;
+  min-width:0;
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  background:transparent;
+  border:none;
+  border-bottom:2px solid transparent;
+  padding:10px 16px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:3px;
+  text-align:left;
+  transition:color .2s ease,border-color .2s ease;
+}
+.navbtn + .navbtn{border-left:var(--dash)}
+.navbtn:hover{color:var(--ink)}
+.navbtn .navname{display:block}
+.navbtn .navprog{
+  font-family:var(--body);
+  font-size:11px;
+  font-weight:400;
+  letter-spacing:0;
+  text-transform:none;
+  color:var(--ink-quiet);
+}
+/* Second nav line. Rendered only once the station has a solved item,
+   so the element does not exist in the DOM before that. */
+.navbtn .navsolve{
+  display:block;
+  font-family:var(--display);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+  line-height:1.3;
+}
+.navbtn[aria-current="true"]{
+  color:var(--accent);
+  border-bottom-color:var(--accent);
+}
+.navbtn[aria-current="true"] .navprog,
+.navbtn[aria-current="true"] .navsolve{color:var(--ink-soft)}
+
+/* ---------- Flow panel ---------- */
+.panel{
+  border:var(--dash);
+  background:var(--paper);
+  margin-bottom:64px;
+}
+.panel > summary{
+  cursor:pointer;
+  list-style:none;
+  min-height:60px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px 24px;
+  font-family:var(--display);
+  font-weight:600;
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  transition:color .2s ease;
+}
+.panel > summary:hover,.panel > summary:focus-visible{color:var(--ink)}
+.panel > summary::-webkit-details-marker{display:none}
+.panel > summary .chev{
+  margin-left:auto;
+  font-family:var(--body);
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.04em;
+  text-transform:none;
+  color:var(--ink-muted);
+}
+.panel[open] > summary{border-bottom:var(--dash);color:var(--ink)}
+.panel[open] > summary .chev::after{content:"Hide"}
+.panel:not([open]) > summary .chev::after{content:"Open"}
+.panelbody{
+  padding:28px 24px 30px;
+  background:var(--paper-deep);
+  font-size:16px;
+  color:var(--ink-soft);
+}
+.panelbody h3{
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink);
+  margin:28px 0 10px;
+}
+.panelbody h3:first-child{margin-top:0}
+.panelbody p{margin-bottom:14px;max-width:var(--measure)}
+.panelbody p:last-child{margin-bottom:0}
+
+/* ---------- Sections ---------- */
+.section{margin-bottom:88px;scroll-margin-top:88px}
+.stationhead{margin-bottom:32px}
+.stationhead .eyebrow{display:block;color:var(--ink-muted);margin-bottom:18px}
+.stationhead h2{font-size:clamp(26px,3.2vw,38px);letter-spacing:-.035em;margin-bottom:20px;max-width:26ch}
+.meta{display:flex;flex-wrap:wrap;gap:0;border:var(--dash);margin-bottom:20px;max-width:fit-content}
+.meta span{
+  padding:9px 18px;
+  font-family:var(--display);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.meta span + span{border-left:var(--dash)}
+.hintline{font-size:16px;color:var(--ink-soft);max-width:var(--measure);margin-bottom:14px}
+.sectprogress{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-muted)}
+
+/* ---------- Cards ---------- */
+.card{
+  border:var(--dash);
+  background:var(--paper);
+  padding:28px 28px 24px;
+  margin-bottom:28px;
+  scroll-margin-top:88px;
+  transition:transform .25s ease,border-color .25s ease;
+}
+.card:hover{transform:translateY(-6px);border-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){
+  .card{transition:none}
+  .card:hover{transform:none;border-color:var(--ink-muted)}
+  .opt{transition:none}
+  .opt:hover{transform:none}
+}
+.cardhead{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.idchip{
+  color:var(--ink);
+  border:var(--dash);
+  padding:5px 10px;
+  min-width:40px;
+  text-align:center;
+}
+/* Topic tag. Sits in the head row, muted ink, never accent. */
+.topictag{
+  font-family:var(--display);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-quiet);
+  border:var(--dash);
+  padding:5px 9px;
+  line-height:1.4;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:52%;
+  min-width:0;
+}
+.timechip{font-size:13px;color:var(--ink-quiet);margin-left:auto}
+/* Per-item status line. Only created after a check, so nothing in the
+   DOM hints at progress before the student commits. */
+.itemstatus{
+  display:block;
+  margin-top:14px;
+  font-family:var(--display);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+}
+.star{
+  position:relative;
+  flex:0 0 auto;
+  width:44px;height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:none;border:none;border-radius:0;
+  color:var(--ink);
+  cursor:help;
+  padding:0;
+  order:0;
+}
+.star svg{display:block;width:14px;height:14px}
+.star:hover,.star:focus-visible{color:var(--accent)}
+.tip{
+  position:absolute;
+  top:calc(100% + 4px);
+  right:0;
+  width:240px;
+  background:var(--ink);
+  color:var(--paper);
+  font-family:var(--body);
+  font-size:13px;
+  font-weight:400;
+  line-height:1.45;
+  padding:10px 12px;
+  text-align:left;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .15s ease;
+  z-index:30;
+  pointer-events:none;
+}
+.star:hover .tip,.star:focus-visible .tip{opacity:1;visibility:visible}
+.stem{font-size:20px;line-height:1.5;margin-bottom:24px;max-width:var(--measure)}
+
+/* ---------- Options ---------- */
+.opts{display:grid;gap:10px;margin-bottom:24px}
+.opt{
+  appearance:none;
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  min-height:56px;
+  width:100%;
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.45;
+  text-align:left;
+  color:var(--ink);
+  background:transparent;
+  border:var(--dash);
+  padding:15px 20px;
+  cursor:pointer;
+  position:relative;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease;
+}
+.opt:hover:not(:disabled){transform:translateY(-2px);border-color:var(--accent)}
+.opt .ltr{
+  flex:0 0 auto;
+  color:var(--ink-muted);
+  padding-top:2px;
+  transition:color .2s ease;
+}
+.opt .opttext{flex:1 1 auto}
+/* Selected: solid ink border plus a solid ink bar on the left edge.
+   Ink, not accent. Correctness never shows before Check. */
+.opt[aria-pressed="true"]{
+  border:1px solid var(--ink);
+  background:var(--ink-held);
+}
+.opt[aria-pressed="true"]::before{
+  content:"";
+  position:absolute;
+  left:-1px;top:-1px;bottom:-1px;
+  width:4px;
+  background:var(--ink);
+}
+.opt[aria-pressed="true"] .ltr{color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt:disabled:hover{transform:none;border-color:rgba(26,26,26,.35)}
+.opt[aria-pressed="true"]:disabled{border-color:var(--ink)}
+.opt:disabled .opttext{color:var(--ink-soft)}
+
+/* ---------- Numeric ---------- */
+.numrow{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
+.numwrap{display:flex;align-items:center;flex:0 1 200px}
+.numfield{
+  font-family:var(--body);
+  font-size:17px;
+  width:100%;
+  min-height:56px;
+  padding:12px 16px;
+  color:var(--ink);
+  background:transparent;
+  border:var(--dash);
+  border-radius:0;
+  transition:border-color .2s ease;
+}
+.numfield:hover:not(:disabled){border-color:var(--accent)}
+.numfield:focus{outline:none;border-bottom:2px solid var(--accent);border-top-color:rgba(26,26,26,.35);border-left-color:rgba(26,26,26,.35);border-right-color:rgba(26,26,26,.35)}
+.numfield:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.numfield:disabled{color:var(--ink-soft);border-style:solid;border-color:rgba(26,26,26,.2);cursor:default}
+.numfield[aria-invalid="true"]{border-color:var(--ink);border-style:solid}
+.inputlabel{
+  display:block;
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+  margin-bottom:10px;
+}
+.unit{font-size:17px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+.entrynote{font-size:13px;color:var(--ink-quiet);margin:0 0 20px}
+
+/* ---------- Actions ---------- */
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:0;scroll-margin-top:88px;scroll-margin-bottom:24px}
+.btn{
+  appearance:none;
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  min-height:48px;
+  min-width:44px;
+  padding:14px 26px;
+  border-radius:0;
+  border:var(--dash);
+  background:transparent;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background .2s ease,color .2s ease,border-color .2s ease,opacity .2s ease;
+}
+.btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-primary{background:var(--ink);border:1px solid var(--ink);color:var(--paper)}
+.btn-primary:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.btn-quiet{color:var(--ink-soft)}
+.btn-danger{background:transparent;border:1px solid var(--ink);color:var(--ink)}
+.btn-danger:hover:not(:disabled){background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ---------- Result ----------
+   Monochrome by design. Correctness is carried by border weight,
+   the eyebrow word, and the message. Accent is never used here. */
+.result{margin-top:20px;padding:18px 20px;border:1px solid var(--ink);background:var(--ink-held)}
+.result.no{border:2px solid var(--ink);background:transparent}
+.result[hidden]{display:none}
+.result .verdict{display:block;color:var(--ink);margin-bottom:8px}
+.result p{font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0;max-width:var(--measure)}
+.result.ok p{color:var(--ink-soft)}
+
+/* ---------- Walk-through ---------- */
+.wt{display:block;margin-top:24px}
+.wt[hidden]{display:none}
+.wt > summary{
+  cursor:pointer;
+  list-style:none;
+  min-height:48px;
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink);
+  background:none;
+  border:none;
+  border-bottom:2px solid var(--accent);
+  width:fit-content;
+  max-width:100%;
+  transition:color .2s ease;
+}
+.wt > summary::-webkit-details-marker{display:none}
+.wt > summary:hover,.wt > summary:focus-visible{color:var(--accent)}
+.wt > summary .tx{
+  font-family:var(--body);
+  font-size:11px;
+  font-weight:400;
+  letter-spacing:.04em;
+  text-transform:none;
+  color:var(--ink-muted);
+}
+.wt[open] > summary .tx::after{content:"Close"}
+.wt:not([open]) > summary .tx::after{content:"Read"}
+.wt .wtbody{
+  padding:22px 24px;
+  font-size:15px;
+  line-height:1.6;
+  color:var(--ink-soft);
+  border:var(--dash);
+  background:var(--paper-deep);
+  margin-top:16px;
+  max-width:var(--measure);
+}
+
+/* ---------- Footer ---------- */
+.footnote{
+  border-top:var(--dash);
+  padding-top:28px;
+  margin-top:8px;
+  font-size:15px;
+  color:var(--ink-soft);
+  max-width:var(--measure);
+}
+.resetrow{
+  margin-top:56px;
+  padding-top:40px;
+  border-top:var(--dash);
+  display:flex;flex-wrap:wrap;gap:20px;align-items:center;
+}
+.resetrow .rst-note{font-size:13px;color:var(--ink-muted);flex:1 1 260px;max-width:56ch}
+.confirm{
+  border:var(--dash);
+  background:var(--paper-deep);
+  padding:22px 24px;
+  margin-top:20px;
+  flex-basis:100%;
+}
+.confirm[hidden]{display:none}
+.confirm p{font-size:15px;margin-bottom:16px;color:var(--ink)}
+.confirm .actions{margin-bottom:0}
+
+/* ---------- Summary ---------- */
+.summary .stationhead h2{max-width:20ch}
+.sum-lead{font-size:16px;color:var(--ink-soft);max-width:var(--measure);margin-bottom:0}
+.sum-block{margin-bottom:56px}
+.sum-block > .eyebrow{display:block;color:var(--ink-muted);margin-bottom:18px}
+.namefield{
+  display:block;
+  width:100%;
+  max-width:420px;
+  min-height:48px;
+  font-family:var(--body);
+  font-size:17px;
+  padding:12px 16px;
+  color:var(--ink);
+  background:transparent;
+  border:var(--dash);
+  border-radius:0;
+}
+.namefield:hover{border-color:var(--accent)}
+.namefield:focus{outline:none;border-bottom:2px solid var(--accent)}
+.namefield:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.statgrid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:0;
+  border:var(--dash);
+}
+.statcell{
+  padding:18px 20px;
+  border-left:var(--dash);
+  break-inside:avoid;
+  page-break-inside:avoid;
+}
+.statcell:first-child{border-left:none}
+.statcell .eyebrow{display:block;color:var(--ink-muted);margin-bottom:12px}
+.statcell .statline{font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.45;color:var(--ink)}
+.statcell .statline + .statline{font-size:13px;font-weight:600;color:var(--ink-soft)}
+.topicgroup{margin-bottom:36px}
+.topicgroup:last-child{margin-bottom:0}
+.topicgroup h3{
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink);
+  margin-bottom:12px;
+  padding-bottom:8px;
+  border-bottom:var(--dash);
+}
+.topicrow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 88px 88px minmax(120px,190px);
+  gap:12px;
+  align-items:center;
+  padding:9px 0;
+  border-bottom:1px dashed rgba(26,26,26,.18);
+}
+.topicrow:last-child{border-bottom:none}
+/* A not-started row carries its label as its own cell, so the two
+   number columns collapse out of the grid rather than rendering empty. */
+.topicrow.is-notstarted{grid-template-columns:minmax(0,1fr) minmax(120px,190px)}
+.trow-name{font-size:15px;color:var(--ink)}
+.trow-num{font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--ink-soft);text-align:right;white-space:nowrap}
+/* Row-level text, never bar content: 16px type inside a 10px bar clips. */
+.trow-notstarted{font-size:13px;color:var(--ink-quiet);font-family:var(--body);white-space:nowrap}
+.trow-bar{
+  position:relative;
+  height:10px;
+  border:1px solid rgba(26,26,26,.35);
+  background:transparent;
+  overflow:hidden;
+}
+.trow-bar .fill{display:block;height:100%;background:var(--ink)}
+/* Accessible text alternative for the bar. Visually reduced, still
+   readable by assistive tech and by find-in-page. */
+.bar-alt{
+  position:absolute;
+  width:1px;height:1px;
+  overflow:hidden;
+  clip:rect(0 0 0 0);
+  clip-path:inset(50%);
+  white-space:nowrap;
+}
+.nextsteps{
+  border-left:2px solid var(--ink);
+  padding:4px 0 4px 20px;
+  max-width:var(--measure);
+}
+.nextsteps p{font-size:17px;color:var(--ink);line-height:1.6;margin:0}
+.nextsteps p + p{margin-top:10px;font-size:15px;color:var(--ink-soft)}
+.emptynote{font-size:16px;color:var(--ink-soft);border-left:2px solid var(--ink);padding:4px 0 4px 20px;max-width:var(--measure)}
+.exportrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:0}
+.fallback{
+  border:1px solid var(--ink);
+  background:var(--ink-held);
+  padding:20px 22px;
+  margin-top:22px;
+  max-width:var(--measure);
+}
+.fallback[hidden]{display:none}
+.fallback .eyebrow{display:block;color:var(--ink);margin-bottom:10px}
+.fallback p{font-size:14px;color:var(--ink-soft);margin-bottom:6px}
+.fallback .fname{font-family:var(--body);font-size:15px;color:var(--ink);word-break:break-word;margin-bottom:14px}
+.fallback .flinks{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:10px}
+/* Both controls are real anchors with a 44px target. The first one carries
+   a solid border so the reliable path reads as the primary action. The
+   accent appears on hover only. */
+.fallback .flink{
+  font-family:var(--display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  min-height:44px;
+  min-width:44px;
+  padding:12px 20px;
+  display:inline-flex;
+  align-items:center;
+  border:var(--dash);
+  color:var(--ink);
+  text-decoration:none;
+  transition:background .2s ease,color .2s ease,border-color .2s ease;
+}
+.fallback .flink:hover{border-color:var(--accent);color:var(--accent)}
+.fallback .flink-first{border:1px solid var(--ink)}
+.fallback .flink-first:hover{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.fallback .fguidance{font-size:13px;color:var(--ink-quiet);margin:0 0 12px;line-height:1.5}
+.fallback .printlinkrow{margin:0 0 14px}
+/* Text-only control. Still a real button with a 44px target, so it is
+   reachable by keyboard and by touch. */
+.linkbtn{
+  appearance:none;
+  background:none;
+  border:0;
+  border-bottom:1px solid rgba(26,26,26,.35);
+  border-radius:0;
+  padding:10px 2px;
+  min-height:44px;
+  min-width:44px;
+  font-family:var(--body);
+  font-size:13px;
+  color:var(--ink-soft);
+  text-align:left;
+  cursor:pointer;
+  transition:color .2s ease,border-color .2s ease;
+}
+.linkbtn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.fallback .btn{margin-top:4px}
+.export-error{
+  border:2px solid var(--ink);
+  background:transparent;
+  padding:16px 18px;
+  margin-top:22px;
+  max-width:var(--measure);
+}
+.export-error[hidden]{display:none}
+.export-error .eyebrow{display:block;color:var(--ink);margin-bottom:8px}
+.export-error p{font-size:15px;color:var(--ink-soft);margin:0}
+.printonly{display:none}
+
+/* ---------- Responsive ---------- */
+@media (max-width:760px){
+  .wrap{padding:0 20px 64px}
+  .masthead{padding:40px 0 28px}
+  .navbtn{flex:1 1 100%;border-left:none}
+  .navbtn + .navbtn{border-left:none;border-top:var(--dash)}
+  .card{padding:22px 20px 20px}
+  .stem{font-size:18px}
+  .tip{width:min(240px,72vw)}
+  .meta{max-width:100%}
+  .meta span{padding:8px 12px}
+  .statgrid{grid-template-columns:1fr 1fr}
+  .statcell:nth-child(odd){border-left:none}
+  .statcell:nth-child(n+3){border-top:var(--dash)}
+  .topicrow{grid-template-columns:minmax(0,1fr) 70px 70px;row-gap:6px}
+  .topicrow.is-notstarted{grid-template-columns:minmax(0,1fr) auto}
+  .trow-bar{grid-column:1 / -1}
+  .topictag{max-width:100%}
+  .cardhead{flex-wrap:wrap;gap:10px}
+}
+
+/* ---------- Print: summary only ----------
+   Printing produces a clean written summary. The practice set itself,
+   the nav, the setup panel, and the reset control are all suppressed. */
+@media print{
+  @page{margin:18mm 16mm}
+  :root{--paper:#FFFFFF;--paper-deep:#FFFFFF}
+  html,body{background:#FFFFFF}
+  body{font-size:11pt}
+  .navwrap,.panel,.section:not(.summary),.footnote,.resetrow,.exportrow,
+  .fallback,.export-error,.chev{display:none !important}
+  .sum-block.exportblock{display:none !important}
+  .wrap{max-width:none;padding:0}
+  .masthead{padding:0 0 12pt}
+  .masthead .kicker{color:#000;margin-bottom:8pt}
+  .masthead h1{font-size:20pt;margin-bottom:8pt;max-width:none}
+  .masthead .subtitle{color:#333;font-size:10pt;margin-bottom:10pt}
+  .masthead .bylines{border-top:1px solid #999;padding-top:6pt;font-size:9pt;color:#333}
+  .summary{margin-bottom:0}
+  .summary .stationhead{margin-bottom:14pt}
+  .summary .stationhead .eyebrow,.summary .stationhead h2{color:#000}
+  .summary .stationhead h2{font-size:16pt;margin-bottom:6pt}
+  .sum-block{margin-bottom:16pt;break-inside:avoid;page-break-inside:avoid}
+  .sum-block > .eyebrow,.statcell .eyebrow,.topicgroup h3{color:#000}
+  /* Group headings are headings, not dividers: solid hairline in print. */
+  .topicgroup h3{border-bottom:1px solid #999;border-bottom-style:solid}
+  .statgrid{border:1px solid #999;grid-template-columns:repeat(4,1fr)}
+  .statcell{border-left:1px solid #999;break-inside:avoid;page-break-inside:avoid}
+  .statcell .statline{color:#000}
+  .statcell .statline + .statline{color:#333}
+  .topicrow{border-bottom:1px solid #DDD;break-inside:avoid;page-break-inside:avoid}
+  .trow-bar{border:1px solid #666}
+  .trow-bar .fill{background:#000}
+  .trow-name{color:#000}
+  .trow-num{color:#333}
+  .namefield,#nameLabel{display:none}
+  /* A summary printed with no name should still carry one, so the
+     masthead byline picks up the typed name at print time. */
+  .sumprintname{display:block;font-family:var(--display);font-size:11pt;letter-spacing:.14em;text-transform:uppercase;color:#000;margin-bottom:8pt}
+  .sumprintname[hidden]{display:none !important}
+  .exportrow,.fallback,.export-error{display:none !important}
+  .nextsteps{border-left:2px solid #000}
+  .nextsteps p{color:#000}
+  .printonly{display:block;font-family:var(--display);font-size:9pt;letter-spacing:.14em;text-transform:uppercase;color:#333;margin-bottom:12pt;padding-bottom:6pt;border-bottom:1px solid #999}
+  a{color:#000}
+  .card{display:none !important}
+}
+
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="kicker">AP Physics 1 / Recitation</span>
+    <h1>Coming Back Cold: Forces on Slants, Blocks on Strings, and Two Dimensions</h1>
+    <p class="subtitle">AP Physics 1 / Practice credit only / Nothing here is graded or timed per problem</p>
+    <div class="bylines">
+      <span class="who">Mr. Porter</span>
+      <span>Three stations plus a warm-up, done in order</span>
+    </div>
+  </header>
+
+  <div class="navwrap">
+    <nav class="navbar" aria-label="Jump to a section">
+      <button type="button" class="navbtn" data-goto="warmup" aria-current="true">
+        <span class="navname">Warm-up</span>
+        <span class="navprog" id="prog-warmup">0 of 4 checked in</span>
+      </button>
+      <button type="button" class="navbtn" data-goto="stationA" aria-current="false">
+        <span class="navname">Station A</span>
+        <span class="navprog" id="prog-stationA">0 of 7 checked in</span>
+      </button>
+      <button type="button" class="navbtn" data-goto="stationB" aria-current="false">
+        <span class="navname">Station B</span>
+        <span class="navprog" id="prog-stationB">0 of 7 checked in</span>
+      </button>
+      <button type="button" class="navbtn" data-goto="stationC" aria-current="false">
+        <span class="navname">Station C</span>
+        <span class="navprog" id="prog-stationC">0 of 5 checked in</span>
+      </button>
+      <button type="button" class="navbtn" data-goto="summary" aria-current="false">
+        <span class="navname">Summary</span>
+        <span class="navprog" id="prog-summary">Open</span>
+      </button>
+    </nav>
+  </div>
+
+  <details class="panel">
+    <summary>How today runs (open if this is your first minute) <span class="chev"></span></summary>
+    <div class="panelbody">
+      <h3>The first 3 minutes</h3>
+      <p>Nothing here is graded and nothing here is timed per problem. A week off means cold hands, so the warm-up is the easiest four questions in the set, and they are the same moves you need for the whole 90.</p>
+      <p>Take a pencil, not a keyboard, for the diagrams. The rule for the whole period: you commit an answer before you check it. Checking first tells you nothing about what you actually know.</p>
+      <p>Do the sections in order, warm-up, then A, then B, then C. If you are still in A at minute 30, that is information, not failure. Flag it and move.</p>
+      <h3>Minute 35 checkpoint (end of Station A)</h3>
+      <p>Pencils down for thirty seconds and look at what you have on paper. If you left a problem blank because you did not know where to start, mark it with a star. You are coming back to those stars in the last five minutes. Station B is the same idea with strings instead of ramps, so the free-body habit carries straight over.</p>
+      <p>Nothing is collected at this checkpoint. It is a self-audit, not a hand-in.</p>
+      <h3>Minute 70 checkpoint (end of Station B)</h3>
+      <p>Everything in Station C except C1 and C5 is conceptual. Nothing else there needs a calculator, so if you find yourself reaching for one on another item, stop and reread the question. Two things I want you to leave with: the horizontal part of a projectile's motion does not care about gravity, and gravity points the same way the whole flight. Show me on paper what that means for the top of the arc.</p>
+      <h3>If you finish early</h3>
+      <p>Go back to any problem from A or B where you got the number right but could not have explained the free-body diagram to a classmate. Redraw that diagram on a fresh sheet with no numbers on it, only arrows and labels.</p>
+      <p>When that is done, check a neighbor's answer against the set and say out loud which specific diagram arrow that neighbor had right or wrong.</p>
+    </div>
+  </details>
+
+  <section class="section" id="warmup" aria-labelledby="h-warmup">
+    <div class="stationhead">
+      <div class="eyebrow">Section 1</div>
+      <h2 id="h-warmup">Warm-up: Four Questions, Five Minutes</h2>
+      <div class="meta">
+        <span>4 items</span>
+        <span>Practice credit only</span>
+        <span>About 5 minutes total</span>
+      </div>
+      <p class="hintline">Deliberately easy starts that get a pencil moving and reactivate component resolution and Newton's second law after a week off.</p>
+      <div class="sectprogress" id="sectprog-warmup">0 of 4 checked in</div>
+    </div>
+    <div id="cards-warmup"></div>
+  </section>
+
+  <section class="section" id="stationA" aria-labelledby="h-stationA">
+    <div class="stationhead">
+      <div class="eyebrow">Section 2</div>
+      <h2 id="h-stationA">Station A / Force Prediction on Slants</h2>
+      <div class="meta">
+        <span>7 items</span>
+        <span>Practice credit only</span>
+        <span>About 32 minutes</span>
+      </div>
+      <p class="hintline">The slant only changes how you split the weight. After that it is ordinary Newton's second law in one direction, so the tilted free-body diagram is the whole game.</p>
+      <div class="sectprogress" id="sectprog-stationA">0 of 7 checked in</div>
+    </div>
+    <div id="cards-stationA"></div>
+  </section>
+
+  <section class="section" id="stationB" aria-labelledby="h-stationB">
+    <div class="stationhead">
+      <div class="eyebrow">Section 3</div>
+      <h2 id="h-stationB">Station B / Blocks and Strings</h2>
+      <div class="meta">
+        <span>7 items</span>
+        <span>Practice credit only</span>
+        <span>About 32 minutes</span>
+      </div>
+      <p class="hintline">Two habits carry this whole station: one free-body diagram per block, and the tension is the same value on both sides of an ideal pulley.</p>
+      <div class="sectprogress" id="sectprog-stationB">0 of 7 checked in</div>
+    </div>
+    <div id="cards-stationB"></div>
+  </section>
+
+  <section class="section" id="stationC" aria-labelledby="h-stationC">
+    <div class="stationhead">
+      <div class="eyebrow">Section 4</div>
+      <h2 id="h-stationC">Station C / Two Dimensions</h2>
+      <div class="meta">
+        <span>5 items</span>
+        <span>Practice credit only</span>
+        <span>About 21 minutes</span>
+      </div>
+      <p class="hintline">A projectile is two stories told at once: a horizontal story with no force in it, and a vertical story where gravity never changes its mind.</p>
+      <div class="sectprogress" id="sectprog-stationC">0 of 5 checked in</div>
+    </div>
+    <div id="cards-stationC"></div>
+  </section>
+
+  <section class="section summary" id="summary" aria-labelledby="h-summary">
+    <div class="stationhead">
+      <div class="eyebrow">Summary</div>
+      <h2 id="h-summary">Where you stand</h2>
+      <p class="sum-lead">This page shows the work you have done. It does not count against you, and nothing here is graded.</p>
+      <p class="printonly sumprintname" id="printName" hidden></p>
+      <p class="printonly" id="printDate">Summary printed from the practice set</p>
+    </div>
+
+    <div class="sum-block">
+      <span class="eyebrow" id="nameLabel">Your name, for the PDF</span>
+      <input type="text" class="namefield" id="studentName" aria-labelledby="nameLabel"
+             placeholder="First and last name" autocomplete="name" spellcheck="false">
+    </div>
+
+    <div class="sum-block">
+      <span class="eyebrow">Overall</span>
+      <div class="statgrid" id="statGrid">
+        <div class="statcell">
+          <span class="eyebrow">Warm-up</span>
+          <p class="statline" id="stat-warmup-worked">0 of 4 worked</p>
+          <p class="statline" id="stat-warmup-solved">0 solved</p>
+        </div>
+        <div class="statcell">
+          <span class="eyebrow">Station A</span>
+          <p class="statline" id="stat-stationA-worked">0 of 7 worked</p>
+          <p class="statline" id="stat-stationA-solved">0 solved</p>
+        </div>
+        <div class="statcell">
+          <span class="eyebrow">Station B</span>
+          <p class="statline" id="stat-stationB-worked">0 of 7 worked</p>
+          <p class="statline" id="stat-stationB-solved">0 solved</p>
+        </div>
+        <div class="statcell">
+          <span class="eyebrow">Station C</span>
+          <p class="statline" id="stat-stationC-worked">0 of 5 worked</p>
+          <p class="statline" id="stat-stationC-solved">0 solved</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sum-block">
+      <span class="eyebrow">By topic</span>
+      <div id="topicTable"></div>
+    </div>
+
+    <div class="sum-block">
+      <span class="eyebrow">Where to go next</span>
+      <div class="nextsteps" id="nextSteps"></div>
+    </div>
+
+    <div class="sum-block exportblock">
+      <span class="eyebrow">Export</span>
+      <div class="exportrow">
+        <button type="button" class="btn btn-primary" id="exportBtn">Export summary PDF</button>
+        <button type="button" class="btn btn-quiet" id="printBtn">Print this page</button>
+      </div>
+      <div class="fallback" id="fallbackPanel" hidden aria-live="polite">
+        <span class="eyebrow">Your summary is ready</span>
+        <p class="fname" id="fallbackName"></p>
+        <p>The new tab is the option that works on every school Chromebook. Download is the second choice if the new tab is blocked.</p>
+        <div class="flinks">
+          <a id="openLink" class="flink flink-first" href="#" target="_blank" rel="noopener noreferrer">Open in a new tab</a>
+          <a id="downloadLink" class="flink" href="#" download>Download the PDF</a>
+        </div>
+        <p class="fguidance">If nothing downloaded, the tab above has your file. Save or print it from that tab with the browser's own buttons.</p>
+        <p class="printlinkrow">
+          <button type="button" class="linkbtn" id="printViewBtn">Open print view in a new tab</button>
+        </p>
+        <button type="button" class="btn btn-quiet" id="fallbackClose">Dismiss</button>
+      </div>
+      <div class="export-error" id="exportError" hidden role="alert">
+        <span class="eyebrow">The PDF could not be built</span>
+        <p id="exportErrorText"></p>
+      </div>
+    </div>
+  </section>
+
+  <p class="footnote">Every number here uses g = 9.8 m/s². If you used 10, your value will land close but outside tolerance on a few items.</p>
+
+  <div class="resetrow">
+    <p class="rst-note">Your committed answers and any walk-throughs you opened are saved in this browser, so a reload will not lose them.</p>
+    <button type="button" class="btn btn-quiet" id="resetBtn">Start fresh</button>
+    <div class="confirm" id="confirmBox" role="alertdialog" aria-labelledby="confirmTitle" aria-describedby="confirmDesc" hidden>
+      <p id="confirmTitle"><strong>Clear everything on this device?</strong></p>
+      <p id="confirmDesc">This wipes every committed answer, check result, and opened walk-through for this set in this browser. It cannot be undone.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-danger" id="confirmYes">Yes, start fresh</button>
+        <button type="button" class="btn" id="confirmNo">Keep my work</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<script src="vendor/jspdf.umd.min.js" defer></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ==========================================================
+     DATA: verbatim from recitation-content-spec.md
+     ========================================================== */
+  var SECTIONS = [
+    { id: "warmup", label: "Warm-up", total: 4 },
+    { id: "stationA", label: "Station A", total: 7 },
+    { id: "stationB", label: "Station B", total: 7 },
+    { id: "stationC", label: "Station C", total: 5 }
+  ];
+
+  var ITEMS = [
+    {
+      id: "W1", section: "warmup", type: "numeric", time: "~1 min",
+      stem: "A 5.0 kg crate sits at rest on a 30 degree ramp with no friction. What is the magnitude of the component of the crate's weight that points down the ramp?",
+      answer: 24.5, unit: "N", tolerance: 0.5,
+      altAnswers: [24.5, 24.6, 24.50, 2.45e1],
+      solution: "Weight is 5.0 times 9.8, which is 49 N straight down. The down-ramp component is the part of that weight lying along the surface, and that component is the weight times sin of 30 degrees. Sin of 30 degrees is 0.50, so the answer is 49 times 0.50, which is 24.5 N. Trap alert: multiplying by cos of 30 instead gives the part that presses into the ramp, not the part that slides the crate down it.",
+      mustSolve: false
+    },
+    {
+      id: "W2", section: "warmup", type: "numeric", time: "~1 min",
+      stem: "A ball is launched at 10.0 m/s at 37 degrees above the horizontal. What is the horizontal component of its velocity?",
+      answer: 8.0, unit: "m/s", tolerance: 0.3,
+      altAnswers: [8.0, 8, 7.99, 8.00],
+      solution: "The launch velocity is a single arrow tilted up. Its horizontal component is the velocity times cos of the launch angle. Cos of 37 degrees is about 0.80, and 10.0 times 0.80 is 8.0 m/s. Trap alert: using sin here gives the vertical part, the part gravity acts on. Cos always goes with the side that touches the angle.",
+      mustSolve: false
+    },
+    {
+      id: "W3", section: "warmup", type: "numeric", time: "~1 min",
+      stem: "A 4.0 kg cart on a level floor is pushed with 12 N while kinetic friction of 4.0 N acts backward. What is the magnitude of the cart's acceleration?",
+      answer: 2.0, unit: "m/s²", tolerance: 0.15,
+      altAnswers: [2.0, 2, 2.00],
+      solution: "Add the horizontal forces with direction in mind. 12 N forward and 4.0 N backward leave a net of 8 N forward. Newton's second law puts acceleration at net force divided by mass, so 8 divided by 4.0 is 2.0 m/s². Trap alert: dividing the push by the mass, 12 over 4.0, gives 3.0 and quietly deletes the friction that the problem went out of its way to give you.",
+      mustSolve: false
+    },
+    {
+      id: "W4", section: "warmup", type: "numeric", time: "~1 min",
+      stem: "A 6.0 kg block is on a rough level floor. A rope attached horizontally pulls with 40 N of tension. The block's acceleration is measured at 2.5 m/s² to the right. What is the magnitude of the friction force on the block?",
+      answer: 25.0, unit: "N", tolerance: 0.5,
+      altAnswers: [25.0, 25, 25.00],
+      solution: "Work backward from the acceleration. Newton's second law says the net horizontal force is mass times acceleration, so 6.0 times 2.5 is 15.0 N to the right. The rope supplies 40 N to the right, so friction must be taking away 40 minus 15.0, which is 25.0 N. Trap alert: reporting 15 N confuses the net force with the friction force. The net is what is left after friction is subtracted.",
+      mustSolve: false
+    },
+
+    {
+      id: "A1", section: "stationA", type: "numeric", time: "~4 min",
+      stem: "A 4.0 kg block slides down a 30 degree ramp with no applied force. The coefficient of kinetic friction between the block and the ramp is 0.35. What is the magnitude of the block's acceleration?",
+      answer: 1.93, unit: "m/s²", tolerance: 0.12,
+      altAnswers: [1.93, 1.9, 1.929, 1.96],
+      solution: "Draw the free-body diagram tilted to match the ramp. Weight splits into 19.6 N down the ramp and 33.9 N into the surface, and the normal force balances that 33.9 N. Kinetic friction is then 0.35 times 33.9, which is 11.9 N up the ramp. The net force down the ramp is 19.6 minus 11.9, about 7.7 N, so acceleration is 7.7 divided by 4.0, which is 1.93 m/s². Trap alert: on a ramp, the normal force is not the weight. Using 39.2 N as the normal force inflates friction and makes the block look like it barely moves.",
+      mustSolve: true
+    },
+    {
+      id: "A2", section: "stationA", type: "numeric", time: "~4 min",
+      stem: "A 6.0 kg crate is held at rest on a 20 degree ramp. The coefficient of kinetic friction is 0.15. The crate is released and nothing else touches it. What is the magnitude of the crate's acceleration after release?",
+      answer: 1.97, unit: "m/s²", tolerance: 0.06,
+      altAnswers: [1.97, 2.0, 1.970],
+      solution: "The weight splits into 20.1 N down the ramp and 55.3 N into the surface, so the normal force is 55.3 N. Kinetic friction is 0.15 times 55.3, about 8.3 N, and it points up the ramp because the crate would slide down. The net is 20.1 minus 8.3, about 11.8 N, and dividing by 6.0 kg gives 1.97 m/s². Point your friction arrow the right way before you do any arithmetic: friction opposes sliding, not gravity.",
+      mustSolve: false
+    },
+    {
+      id: "A3", section: "stationA", type: "mc", time: "~4 min",
+      stem: "An 8.0 kg box rests on a frictionless 25 degree ramp. A rope pulls the box straight up the ramp with 20 N of tension. How does the box move the instant the rope is taut?",
+      options: [
+        { letter: "A", text: "The box stays at rest because 20 N is less than the box's weight" },
+        { letter: "B", text: "The box accelerates up the ramp at a rate of 1.6 m/s²" },
+        { letter: "C", text: "The box accelerates down the ramp at a rate of 1.65 m/s²" },
+        { letter: "D", text: "The box accelerates down the ramp at a rate of 4.1 m/s²" }
+      ],
+      correct: "C",
+      distractor: {
+        A: "Compares the pull against the full weight of 78 N instead of against the down-ramp component. On a ramp, you compare along the surface.",
+        B: "Subtracts the down-ramp component from the tension and keeps the sign flipped, so a net force pointing downhill gets reported as motion uphill.",
+        D: "Forgets the rope entirely and uses only the down-ramp component, which is the acceleration the box would have with no pull at all."
+      },
+      solution: "On a frictionless ramp, the only forces along the surface are the 20 N pull up the ramp and the down-ramp part of the weight. That part is 78.4 times sin of 25 degrees, about 33.1 N downhill. The net is 33.1 minus 20.0, about 13.1 N downhill, and dividing by 8.0 kg gives 1.65 m/s² down the ramp. The box is moving uphill while slowing down only if it started uphill, but here it starts from rest, so it simply accelerates downhill.",
+      mustSolve: false
+    },
+    {
+      id: "A4", section: "stationA", type: "mc", time: "~4 min",
+      stem: "Two identical 3.0 kg blocks are released from rest on two frictionless ramps, one tilted at 20 degrees and one at 40 degrees. Which statement correctly compares what happens?",
+      options: [
+        { letter: "A", text: "Both accelerate at the same rate because both blocks weigh the same" },
+        { letter: "B", text: "The 40 degree block accelerates faster, and it presses less into its ramp" },
+        { letter: "C", text: "The 20 degree block accelerates faster because its ramp surface is shorter" },
+        { letter: "D", text: "The 40 degree block accelerates faster, and it presses harder into its ramp" }
+      ],
+      correct: "B",
+      distractor: {
+        A: "Treats the weight as the only relevant force and ignores that the ramp only lets part of that weight act along the surface.",
+        C: "Confuses ramp steepness with ramp length, so a shallower, possibly shorter ramp is assumed to give more speed.",
+        D: "Gets the acceleration comparison right but assumes that a steeper ramp must also press harder into the surface, which inverts the normal force."
+      },
+      solution: "Acceleration on a frictionless ramp is gravity times sin of the angle, so steeper means faster: 3.35 m/s² at 20 degrees against 6.30 m/s² at 40 degrees. The normal force is the weight times cos of the angle, so as the angle grows, the cosine shrinks and the block presses into the ramp less. Trap alert: steeper ramps make blocks slide faster while pushing on them less. Those two facts feel like they should point the same direction, and they do not.",
+      mustSolve: false
+    },
+    {
+      id: "A5", section: "stationA", type: "numeric", time: "~4 min",
+      stem: "A 6.0 kg toolbox sits at rest on a 35 degree ramp. The coefficient of static friction is 0.85 and the coefficient of kinetic friction is 0.55. No one is pushing or pulling the toolbox. What is the magnitude of the friction force on the toolbox?",
+      answer: 33.7, unit: "N", tolerance: 1.0,
+      altAnswers: [33.7, 34, 33.73, 33.6],
+      solution: "First decide whether it moves. The down-ramp part of the weight is 58.8 times sin of 35 degrees, about 33.7 N. The largest static friction the surface can supply is 0.85 times the normal force, and the normal force is 58.8 times cos of 35 degrees, about 48.2 N, so the ceiling is about 40.9 N. Since 33.7 N is under that ceiling, the toolbox does not budge, and static friction matches the push exactly at 33.7 N. Trap alert: this is the item people lose. Using the kinetic coefficient here would be wrong twice over, because kinetic friction only applies once something is already sliding.",
+      mustSolve: true
+    },
+    {
+      id: "A6", section: "stationA", type: "mc", time: "~4 min",
+      stem: "A student is told to hold a 2.0 kg block at rest on a frictionless 30 degree ramp by pulling on a rope that runs parallel to the ramp surface. The student reports the required tension. Which reasoning is correct?",
+      options: [
+        { letter: "A", text: "The tension equals 20 N here because it matches the block's weight" },
+        { letter: "B", text: "The tension equals 19.6 N here because that is the block's weight" },
+        { letter: "C", text: "The tension equals 17 N here because the ramp adds no force" },
+        { letter: "D", text: "The tension equals 9.8 N because it cancels the along-ramp share" }
+      ],
+      correct: "D",
+      distractor: {
+        A: "Reaches for the block's full weight and ignores that the ramp holds up most of it, so the rope only has to do the along-surface share.",
+        B: "Uses the block's full weight as the answer and ignores that the ramp carries most of it, so the rope only supplies the along-surface share.",
+        C: "Treats the number as a rounding accident and asserts the ramp contributes nothing, which is the opposite of what a ramp does."
+      },
+      solution: "At rest, the net force along the ramp is zero, so the rope must supply exactly the down-ramp component of the weight and nothing more. That component is 19.6 times sin of 30 degrees, which is 9.8 N. The ramp is doing real work here: the normal force carries 17.0 N of the weight so the rope never has to. Trap alert: holding a block on a ramp takes less tension than holding it straight up, and the free-body diagram shows exactly why.",
+      mustSolve: false
+    },
+    {
+      id: "A7", section: "stationA", type: "mc", time: "~5 min",
+      stem: "A classmate explains a problem this way: \"The 3.0 kg block on the 25 degree ramp is being pulled up the ramp by a 30 N rope. The ramp has kinetic friction 0.25. Since the rope is stronger than friction, the block accelerates up the ramp at about 7.8 m/s².\" What is the main error in this reasoning?",
+      options: [
+        { letter: "A", text: "The classmate left out the along-ramp part of the block's weight" },
+        { letter: "B", text: "The classmate used the wrong friction coefficient for a sliding block" },
+        { letter: "C", text: "The classmate used weight instead of mass in Newton's second law" },
+        { letter: "D", text: "The classmate compared the rope to friction instead of to the normal force" }
+      ],
+      correct: "A",
+      distractor: {
+        B: "Fixates on which coefficient belongs in a moving-object problem, which is a real thing to check but not the error that inflates the answer.",
+        C: "Swaps mass for weight in Newton's second law, which is a common unit slip but here the mass was used correctly.",
+        D: "Matches the surface-pairing idea to the wrong pair. Friction and the normal force are perpendicular, so they are never compared against each other."
+      },
+      solution: "Three forces act along the ramp, not two. The rope pulls up with 30 N, and both friction and the down-ramp part of the weight point down the ramp. Friction is 0.25 times the normal force, and the normal force is 29.4 times cos of 25 degrees, about 26.7 N, so friction is about 6.7 N. The weight contributes 29.4 times sin of 25 degrees, about 12.4 N. The net is 30 minus 6.7 minus 12.4, about 10.9 N, and dividing by 3.0 kg gives 3.6 m/s². Trap alert: the ramp always gets a vote. Leaving out the weight component is the single most common way this problem goes wrong.",
+      mustSolve: true
+    },
+
+    {
+      id: "B1", section: "stationB", type: "numeric", time: "~4 min",
+      stem: "Two blocks hang from opposite ends of a massless string that passes over a frictionless pulley. The left block is 3.0 kg and the right block is 5.0 kg. The system is released from rest. What is the magnitude of the acceleration of either block?",
+      answer: 2.45, unit: "m/s²", tolerance: 0.15,
+      altAnswers: [2.45, 2.5, 2.450, 2.44],
+      solution: "Write Newton's second law for each block separately, then combine. For the 5.0 kg block, weight minus tension is its mass times acceleration. For the 3.0 kg block, tension minus weight is its mass times acceleration. Adding the two equations cancels the tension and leaves 49.0 minus 29.4, which is 19.6 N, shared across 8.0 kg of mass, giving 2.45 m/s². Notice the tension disappeared from the combined equation, which is the whole reason you add instead of subtract.",
+      mustSolve: true
+    },
+    {
+      id: "B2", section: "stationB", type: "numeric", time: "~5 min",
+      stem: "A 4.0 kg block rests on a level table. A massless string tied to it runs over a pulley at the table edge and hangs a 3.0 kg block. The coefficients of friction between the 4.0 kg block and the table are 0.45 static and 0.30 kinetic. The system is released from rest. What is the magnitude of the blocks' acceleration?",
+      answer: 2.52, unit: "m/s²", tolerance: 0.15,
+      altAnswers: [2.52, 2.5, 2.520, 2.51],
+      solution: "Check motion first. The hanging weight is 29.4 N, which is more than the maximum static friction on the table block, 0.45 times 39.2, about 17.6 N, so the system does move. Now kinetic friction applies: 0.30 times 39.2 is 11.8 N. The combined mass is 7.0 kg, and the net driving force is 29.4 minus 11.8, about 17.6 N, giving 2.52 m/s². Trap alert: the classic slip is checking the static ceiling, confirming motion, and then carrying the static coefficient into the calculation anyway. Once it slides, you swap to kinetic.",
+      mustSolve: true
+    },
+    {
+      id: "B3", section: "stationB", type: "numeric", time: "~5 min",
+      stem: "Three blocks are connected in a line. A 2.0 kg block rests on a level table with kinetic friction coefficient 0.25 and is tied to a string that runs over a pulley to a 3.0 kg block. The 3.0 kg block is in turn tied to a 2.0 kg block that hangs below it. The blocks are released from rest and move together. What is the magnitude of the acceleration?",
+      answer: 6.30, unit: "m/s²", tolerance: 0.25,
+      altAnswers: [6.3, 6.30, 6.300],
+      solution: "Treat all three blocks as one system to get the acceleration in a single step. The total moving mass is 7.0 kg. The two hanging blocks supply 3.0 times 9.8 plus 2.0 times 9.8, which is 49.0 N downward. The only force opposing motion is friction on the table block, 0.25 times 19.6, which is 4.9 N. The net is 44.1 N, and dividing by 7.0 kg gives 6.30 m/s². Trap alert: internal tensions cancel when you treat the blocks as one system, so if you find yourself solving for tension here, you have taken a longer and more error-prone road than the item asks for.",
+      mustSolve: false
+    },
+    {
+      id: "B4", section: "stationB", type: "mc", time: "~4 min",
+      stem: "A 4.0 kg block on a level table is tied to a string over a pulley to a hanging block. The coefficients of friction on the table block are 0.40 static and 0.25 kinetic. The hanging block is 1.0 kg. A student wants to know what happens when the system is released from rest. What is the correct conclusion?",
+      options: [
+        { letter: "A", text: "The system stays at rest because the pull is under the static ceiling" },
+        { letter: "B", text: "The system moves slowly because kinetic friction is less than static" },
+        { letter: "C", text: "The system stays at rest because the hanging mass is smaller than the table mass" },
+        { letter: "D", text: "The system moves at 9.8 m/s² because gravity pulls the hanging block" }
+      ],
+      correct: "A",
+      distractor: {
+        B: "Correctly notices that kinetic friction is smaller than static but skips the gate: nothing is sliding yet, so the kinetic coefficient is not in play.",
+        C: "Attaches the idea of imbalance to the mass difference alone and never checks whether friction is strong enough to absorb it.",
+        D: "Uses the hanging weight divided by the hanging mass, which silently removes the table block and friction from the problem."
+      },
+      solution: "The hanging weight is 9.8 N. The largest static friction the table can supply is 0.40 times 39.2, which is 15.7 N. Since the pull is weaker than the ceiling, friction simply matches it at 9.8 N and the system does not move. Trap alert: unequal masses do not guarantee motion. An unequal-mass system with enough friction is a perfectly ordinary rest state, and the static ceiling is what decides it.",
+      mustSolve: true
+    },
+    {
+      id: "B5", section: "stationB", type: "mc", time: "~4 min",
+      stem: "Two blocks of very different mass hang from opposite ends of a massless string over a frictionless, massless pulley. The string is taut and the system accelerates. How do the two tensions compare, where each tension is the force the string exerts on its own block?",
+      options: [
+        { letter: "A", text: "The tension on the heavier block is larger because that string carries more load" },
+        { letter: "B", text: "The two tensions are equal because it is one continuous string over an ideal pulley" },
+        { letter: "C", text: "The two are equal only when the system is at rest, and differ once it accelerates" },
+        { letter: "D", text: "The tension on the lighter block is larger because it must be pulled upward faster" }
+      ],
+      correct: "B",
+      distractor: {
+        A: "Assumes tension tracks the weight it is near, which is the intuition the item is designed to displace.",
+        C: "Carries over a rule that applies to a real pulley with mass, then applies it to the ideal case where the pulley's own inertia has been removed.",
+        D: "Swaps in a kinematic impression, faster means bigger force, which is not how string tension behaves on either side."
+      },
+      solution: "The string is massless, so there is nothing for a tension difference to accelerate, and the pulley is massless and frictionless, so it cannot add or remove any force of its own. The tension therefore has one value on both sides. The two blocks accelerate at different rates only in their direction of motion, not in the magnitude of the force on them. Trap alert: the tension is not the average of the two weights either. For a 3.0 kg and 5.0 kg pair the tension comes out near 36.8 N, which is neither weight.",
+      mustSolve: false
+    },
+    {
+      id: "B6", section: "stationB", type: "numeric", time: "~3 min",
+      stem: "Two identical 3.0 kg blocks hang from opposite ends of a massless string over a frictionless pulley. The system is released from rest. What is the tension in the string?",
+      answer: 29.4, unit: "N", tolerance: 0.5,
+      altAnswers: [29.4, 29, 29.40, 29.5],
+      solution: "Equal masses means the system does not accelerate, so each block is in equilibrium and the tension must balance that block's weight. The weight is 3.0 times 9.8, which is 29.4 N. It is worth noticing what this rules out: the tension is not zero just because nothing happens, and it is not half the combined weight of the pair.",
+      mustSolve: false
+    },
+    {
+      id: "B7", section: "stationB", type: "mc", time: "~4 min",
+      stem: "A student derives the acceleration of a two-block Atwood system with masses m1 and m2, where m2 is the larger mass, and reports the result as a equals g times the quantity m2 minus m1, all over m1 plus m2. A classmate objects that dividing by the sum of the masses is a mistake, and says the mass in Newton's second law should be the moving mass, so the denominator should be only m2. Which response is correct?",
+      options: [
+        { letter: "A", text: "The classmate is right, because only the heavier block is being accelerated by gravity" },
+        { letter: "B", text: "The classmate is right, because tension already accounts for the lighter block" },
+        { letter: "C", text: "The student is right, because the string force changes direction at the pulley" },
+        { letter: "D", text: "The student is right, because both blocks accelerate together so both masses resist the net force" }
+      ],
+      correct: "D",
+      distractor: {
+        A: "Assumes only the block that is pulled by gravity counts as mass in motion, which drops the lighter block from the system entirely.",
+        B: "Decides that tension removes the lighter block from consideration, but tension is internal to the combined system and cancels.",
+        C: "Describes a real feature of the setup but attaches it to the wrong consequence, since the pulley changing the force direction does not change how much mass is accelerating."
+      },
+      solution: "When the two blocks are combined into one system, the tension acts forward on one block and backward on the other, so it cancels. What remains is the difference in weights, and the mass that must be accelerated is everything that moves, which is both blocks. Dividing by only the heavier mass would make the system accelerate as though the lighter block had been removed mid-flight.",
+      mustSolve: false
+    },
+
+    {
+      id: "C1", section: "stationC", type: "numeric", time: "~3 min",
+      stem: "A ball leaves a ramp and flies through the air at 25 m/s at 37 degrees above the horizontal. What is the vertical component of its velocity the instant after it leaves the ramp?",
+      answer: 15.0, unit: "m/s", tolerance: 0.4,
+      altAnswers: [15.0, 15, 15.05, 15.1],
+      solution: "The launch velocity is one arrow tilted 37 degrees above horizontal, and its vertical part is the leg away from the horizontal, so it takes the sine. Sin of 37 degrees is about 0.60, and 25 times 0.60 is 15.0 m/s. Trap alert: using cos gives 20.0 m/s, which is the horizontal part. A quick self check: at 37 degrees the ball is climbing steeply, so the vertical number should be the bigger of the two.",
+      mustSolve: true
+    },
+    {
+      id: "C2", section: "stationC", type: "mc", time: "~4 min",
+      stem: "A ball is thrown at some angle above the horizontal and follows a curved path. Air resistance is negligible. At the highest point of its path, what is true about the ball's acceleration vector?",
+      options: [
+        { letter: "A", text: "It is zero there, because vertical velocity is zero at that point" },
+        { letter: "B", text: "It points downward at the same size it had at launch, all flight long" },
+        { letter: "C", text: "It points horizontally in the ball's current direction of travel" },
+        { letter: "D", text: "It points downward with a smaller magnitude than it had at launch" }
+      ],
+      correct: "B",
+      distractor: {
+        A: "Treats a momentary zero in velocity as a zero in acceleration, which is the single most common conflation in projectile motion.",
+        C: "Tracks the direction of motion rather than the direction of the only force, so a ball moving sideways is assumed to accelerate sideways.",
+        D: "Believes the acceleration must be weakening as the ball slows down, which would make the trajectory stop curving early."
+      },
+      solution: "Gravity is the only force acting once the ball leaves the hand, and gravity does not change with height or with speed. So the acceleration vector points straight down at 9.8 m/s² at launch, at the top, and just before landing. The top of the path is where the vertical velocity passes through zero, not where the acceleration does. Trap alert: velocity and acceleration are separate stories. Zero velocity and zero acceleration are not the same event, and this item exists because they get read as one.",
+      mustSolve: true
+    },
+    {
+      id: "C3", section: "stationC", type: "mc", time: "~4 min",
+      stem: "A ball is launched at some upward angle over level ground. Air resistance is negligible. How does the horizontal component of the ball's velocity behave between launch and landing?",
+      options: [
+        { letter: "A", text: "It stops changing at the top, then grows on the way down" },
+        { letter: "B", text: "It keeps the same value during the whole flight" },
+        { letter: "C", text: "It shrinks while the ball rises and grows on the way down" },
+        { letter: "D", text: "It shrinks all flight long because the air pushes back" }
+      ],
+      correct: "B",
+      distractor: {
+        A: "Assumes the path looks symmetric so the velocity should speed up again after the peak, which confuses the vertical story with the horizontal one.",
+        C: "Applies a vertical-shaped change to the horizontal axis, so the horizontal part is imagined slowing on the way up.",
+        D: "Keeps the idea of steady reduction but adds an air force, and the item already stated that air resistance is negligible."
+      },
+      solution: "Gravity is vertical, so it has no horizontal part at all. With no horizontal force and no horizontal acceleration, Newton's first law says the horizontal velocity does not change, and the ball keeps covering the same horizontal distance every second. Trap alert: the path curves because the vertical part changes, not because the horizontal part does. Take gravity out of one axis and that axis goes quiet.",
+      mustSolve: true
+    },
+    {
+      id: "C4", section: "stationC", type: "mc", time: "~4 min",
+      stem: "Two balls are launched from level ground with the same speed of 12 m/s. One is launched at 30 degrees above horizontal and the other at 60 degrees above horizontal. Both land at the same height they started. Which ball is in the air longer, and why?",
+      options: [
+        { letter: "A", text: "The 60 degree ball, because more of its speed points up" },
+        { letter: "B", text: "The 30 degree ball, because it travels farther sideways" },
+        { letter: "C", text: "They are up equally long because both speeds match" },
+        { letter: "D", text: "The 60 degree ball, because it starts from a greater height" }
+      ],
+      correct: "A",
+      distractor: {
+        B: "Confuses time of flight with horizontal distance, so the ball with the larger horizontal component is assumed to have more time to use it.",
+        C: "Uses the matching launch speeds as if they implied matching flight times, which would mean the launch angle does not matter.",
+        D: "Attaches the correct conclusion to an untrue premise, since the stem states both start at the same height."
+      },
+      solution: "Time in the air is decided entirely by the vertical story. The vertical launch speed is 12 times sin of the angle, which is about 6.0 m/s at 30 degrees and about 10.4 m/s at 60 degrees. Gravity cancels vertical motion at the same rate for both, so the ball that starts with more upward velocity climbs longer and falls for longer. Trap alert: equal launch speed does not mean equal time in the air. Two balls with the same speed can have completely different vertical starts depending on how the speed is aimed.",
+      mustSolve: false
+    },
+    {
+      id: "C5", section: "stationC", type: "numeric", time: "~5 min",
+      stem: "A ball leaves a ramp at 15 m/s at 60 degrees above the horizontal. It lands at exactly the same height it left. How much time passes between leaving the ramp and landing? Use g equal to 9.8 m/s².",
+      answer: 2.65, unit: "s", tolerance: 0.20,
+      altAnswers: [2.65, 2.6, 2.653, 2.7],
+      solution: "Only the vertical component matters for hang time. The vertical launch speed is 15 times sin of 60 degrees, about 13.0 m/s. Rising from that speed to rest at the top takes 13.0 divided by 9.8, about 1.33 s, and since the ball lands at the height it started, the fall takes exactly as long. The total is about 2.65 s. Trap alert: the horizontal speed of 7.5 m/s is real and useful for distance, but it has no bearing on how long the ball stays up.",
+      mustSolve: false
+    }
+  ];
+
+  /* Three generic numeric nudges, none of which reveal the answer. */
+  var NUMERIC_NUDGES = [
+    "Not quite. Check whether the number you entered is the size the question asked for, and whether the unit beside the field is the one your arithmetic produced.",
+    "Not quite. Reread which quantity the question wants, then confirm the field unit matches the arithmetic you just did.",
+    "Not quite. Look again at whether your value is the size asked for, and whether the label beside the field is the unit your work handed you."
+  ];
+
+  var STORE_KEY = "ap1-recitation-recall-v2";
+  var LEGACY_STORE_KEY = "ap1-recitation-recall-v1";
+  var LETTERS = ["A", "B", "C", "D"];
+
+  /* Topic tags. Assigned by the teacher so the summary can group by topic.
+     The station is the natural first grouping, the topic is the finer one. */
+  var TOPICS = {
+    W1: "Vector components",
+    W2: "Vector components",
+    W3: "Net force",
+    W4: "Net force",
+    A1: "Slant: friction",
+    A2: "Slant: friction",
+    A3: "Slant: predict motion",
+    A4: "Slant: predict motion",
+    A5: "Slant: static threshold",
+    A6: "Slant: predict force",
+    A7: "Slant: reasoning",
+    B1: "String: Atwood",
+    B2: "String: table and pulley",
+    B3: "String: multi-block",
+    B4: "String: static threshold",
+    B5: "String: ideal pulley",
+    B6: "String: Atwood",
+    B7: "String: reasoning",
+    C1: "2D: components",
+    C2: "2D: acceleration",
+    C3: "2D: horizontal velocity",
+    C4: "2D: flight time",
+    C5: "2D: flight time"
+  };
+
+  /* ==========================================================
+     STATE
+     v2 blob: { student: { name }, items: { <id>: {...} } }
+     v1 blobs are deleted on sight, never migrated. The teacher asked
+     for a clean start so a summary is never built from stale attempts.
+     ========================================================== */
+  var state = {};
+  var mem = {};
+  var studentName = "";
+
+  function blankItem() {
+    return { commit: null, draft: "", checked: false, correct: false, attempts: 0, revealed: false, showSol: false };
+  }
+
+  function storageOk() {
+    try {
+      var t = "__probe__";
+      window.localStorage.setItem(t, "1");
+      window.localStorage.removeItem(t);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  var hasStorage = storageOk();
+
+  function loadState() {
+    var raw = null;
+    var legacy = null;
+    if (hasStorage) {
+      try {
+        raw = window.localStorage.getItem(STORE_KEY);
+        legacy = window.localStorage.getItem(LEGACY_STORE_KEY);
+      } catch (e) { raw = null; legacy = null; }
+
+      // Old schema: delete it outright. No migration, on purpose.
+      if (legacy !== null) {
+        try { window.localStorage.removeItem(LEGACY_STORE_KEY); } catch (e) { /* ignore */ }
+      }
+    }
+    if (!raw) return;
+
+    var parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { return; }
+    if (!parsed || typeof parsed !== "object") return;
+
+    var items = parsed.items;
+    if (!items || typeof items !== "object") return;
+
+    ITEMS.forEach(function (item) {
+      var s = items[item.id];
+      if (!s || typeof s !== "object") return;
+      var base = blankItem();
+      if (typeof s.commit === "string") base.commit = s.commit;
+      // A draft only matters when it differs from what was committed. An
+      // identical draft is noise and would mask the commit on restore.
+      if (typeof s.draft === "string" && s.draft !== "" && s.draft !== s.commit) {
+        base.draft = s.draft;
+      }
+      base.checked = s.checked === true;
+      base.revealed = s.revealed === true;
+      base.showSol = s.showSol === true;
+      var n = Number(s.attempts);
+      base.attempts = isFinite(n) && n > 0 ? Math.floor(n) : 0;
+      // Only trust a stored correctness flag that came with a real check
+      // and a committed response. Anything else is reset to unsolved.
+      base.correct = base.checked && base.commit !== null && s.correct === true;
+      if (base.checked) base.attempts = Math.max(1, base.attempts);
+      if (!base.checked) base.attempts = 0;
+      state[item.id] = base;
+    });
+
+    var name = parsed.student && parsed.student.name;
+    if (typeof name === "string") studentName = name;
+  }
+
+  // Write the empty v2 blob on first load. A student who reads the page and
+  // leaves has a well-formed record, not a missing one.
+  function ensureStore() {
+    if (!hasStorage) return;
+    try {
+      if (window.localStorage.getItem(STORE_KEY) === null) persist();
+    } catch (e) { /* private mode */ }
+  }
+
+  function persist() {
+    mem = state;
+    if (!hasStorage) return;
+    var out = {};
+    ITEMS.forEach(function (item) {
+      var s = state[item.id];
+      if (!s) return;
+      // An item with any trace of progress is persisted. The draft counts:
+      // typed text that has not been committed is student work too, and
+      // dropping it on a keystroke is exactly how a checked item was being
+      // erased from storage.
+      var hasProgress = s.checked || s.commit !== null || (typeof s.draft === "string" && s.draft !== "");
+      if (!hasProgress) return;
+      out[item.id] = {
+        commit: s.commit,
+        draft: s.draft,
+        checked: s.checked,
+        correct: s.correct,
+        attempts: s.attempts,
+        revealed: s.revealed,
+        showSol: s.showSol
+      };
+    });
+    var blob = { student: { name: studentName }, items: out };
+    try { window.localStorage.setItem(STORE_KEY, JSON.stringify(blob)); } catch (e) { /* quota or private mode */ }
+  }
+
+  /* ==========================================================
+     ANSWER CHECKING
+     ========================================================== */
+
+  // A response counts as committed when a value was typed and committed,
+  // or when a multiple choice option was chosen. The gate is the same.
+  function isCommitted(s) {
+    return s.commit !== null && s.commit !== undefined && s.commit !== "";
+  }
+
+  // A worked item is one the student has checked at least once. Counting a
+  // commit would let an abandoned answer inflate the summary.
+  function isWorked(s) {
+    return !!(s && s.checked);
+  }
+
+  // Normalize a typed value: strip unit text the student may have repeated,
+  // accept leading plus, trailing zeros, scientific notation.
+  function parseTyped(raw) {
+    if (raw === null || raw === undefined) return null;
+    var s = String(raw).trim();
+    if (!s) return null;
+    // Strip any unit characters a student typed after the number.
+    var m = s.match(/^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?/);
+    if (!m) return null;
+    var n = Number(m[0]);
+    if (!isFinite(n)) return null;
+    return n;
+  }
+
+  function matches(item, typed) {
+    var n = parseTyped(typed);
+    if (n === null) return false;
+    if (Math.abs(n - item.answer) <= item.tolerance + 1e-9) return true;
+    for (var i = 0; i < item.altAnswers.length; i++) {
+      var a = Number(item.altAnswers[i]);
+      if (isFinite(a) && Math.abs(n - a) <= 1e-9) return true;
+    }
+    return false;
+  }
+
+  /* ==========================================================
+     RENDERING
+     ========================================================== */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+
+  function buildCard(item) {
+    var s = state[item.id];
+    var card = el("article", "card");
+    card.id = "item-" + item.id;
+    card.setAttribute("aria-labelledby", "label-" + item.id);
+
+    // ---- head ----
+    var head = el("div", "cardhead");
+    var idchip = el("span", "idchip", item.id);
+    idchip.id = "label-" + item.id;
+    head.appendChild(idchip);
+    // Topic tag, muted ink, informational only. Set from the teacher's map.
+    var tag = el("span", "topictag", TOPICS[item.id] || "");
+    tag.setAttribute("title", "Topic: " + (TOPICS[item.id] || ""));
+    head.appendChild(tag);
+    head.appendChild(el("span", "timechip", item.time));
+
+    if (item.mustSolve) {
+      var star = el("button", "star");
+      star.type = "button";
+      star.setAttribute("aria-describedby", "tip-" + item.id);
+      star.setAttribute("aria-label", "Marked for a short time budget. If you are short on time, do this one.");
+      // Inline SVG rather than a unicode star: no font dependency, no tofu risk.
+      var starIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      starIcon.setAttribute("viewBox", "0 0 24 24");
+      starIcon.setAttribute("aria-hidden", "true");
+      starIcon.setAttribute("focusable", "false");
+      var starShape = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      starShape.setAttribute("d", "M12 2.5 14.9 8.9 22 9.8 16.8 14.7 18.1 21.7 12 18.3 5.9 21.7 7.2 14.7 2 9.8 9.1 8.9Z");
+      starShape.setAttribute("fill", "none");
+      starShape.setAttribute("stroke", "currentColor");
+      starShape.setAttribute("stroke-width", "1.6");
+      starShape.setAttribute("stroke-linejoin", "round");
+      starIcon.appendChild(starShape);
+      star.appendChild(starIcon);
+      var tip = el("span", "tip", "If you are short on time, do this one.");
+      tip.id = "tip-" + item.id;
+      tip.setAttribute("role", "tooltip");
+      star.appendChild(tip);
+      head.appendChild(star);
+    }
+    card.appendChild(head);
+
+    // ---- stem ----
+    var stem = el("p", "stem", item.stem);
+    card.appendChild(stem);
+
+    // ---- input surface ----
+    var controls = {};
+    // Only a checked item is frozen. A commit alone still allows a check.
+    var readingState = !!s.correct; // only a solved item renders read-only
+
+    if (item.type === "mc") {
+      var optWrap = el("div", "opts");
+      optWrap.id = "opts-" + item.id;
+      optWrap.setAttribute("role", "group");
+      optWrap.setAttribute("aria-label", "Answer options for " + item.id);
+      item.options.forEach(function (o) {
+        var b = el("button", "opt");
+        b.type = "button";
+        b.setAttribute("aria-pressed", s.commit === o.letter ? "true" : "false");
+        b.dataset.letter = o.letter;
+        b.disabled = readingState;
+        var ltr = el("span", "ltr", o.letter);
+        var txt = el("span", "opttext", o.text);
+        b.appendChild(ltr);
+        b.appendChild(txt);
+        b.addEventListener("click", function () {
+          if (state[item.id].correct) return; // a solved answer is frozen
+          if (!state[item.id].checked && state[item.id].commit === o.letter) return;
+          state[item.id].commit = o.letter;
+          state[item.id].checked = false; // a new choice is a new, unchecked attempt
+          state[item.id].draft = "";
+          Array.prototype.forEach.call(optWrap.children, function (c) {
+            c.setAttribute("aria-pressed", c.dataset.letter === o.letter ? "true" : "false");
+          });
+          persist();
+          // Same path the numeric handler uses: the old verdict and any
+          // opened walk-through come down with the new pick, so choosing D
+          // never leaves A's distractor reason on screen.
+          applyCheckedVisual(item, card);
+          updateButtons(item);
+        });
+        optWrap.appendChild(b);
+      });
+      controls.optWrap = optWrap;
+      card.appendChild(optWrap);
+    } else {
+      var label = el("label", "inputlabel", "Your value for " + item.id);
+      label.id = "lbl-" + item.id;
+      label.setAttribute("for", "in-" + item.id);
+      card.appendChild(label);
+
+      var row = el("div", "numrow");
+      var wrap = el("div", "numwrap");
+      var input = el("input", "numfield");
+      input.type = "text";
+      input.id = "in-" + item.id;
+      input.inputMode = "decimal";
+      input.autocomplete = "off";
+      input.spellcheck = false;
+      input.placeholder = "Type a number";
+      input.setAttribute("aria-labelledby", "lbl-" + item.id);
+      // A draft newer than the commit is what the student last typed, so
+      // the field restores to that. The prior attempts stay on screen
+      // until they commit again.
+      var shown = (typeof s.draft === "string" && s.draft !== "") ? s.draft
+        : (typeof s.commit === "string" ? s.commit : "");
+      if (shown) input.value = shown;
+      input.disabled = readingState;
+      input.addEventListener("input", function () {
+        var st = state[item.id];
+        if (st.correct) return;
+        // Typing records a draft and nothing else. It never clears the
+        // check, the committed answer, the attempt count, or an opened
+        // walk-through: one keystroke used to wipe the whole item record.
+        st.draft = input.value;
+        persist();
+        applyCheckedVisual(item, card);
+        updateButtons(item);
+      });
+      wrap.appendChild(input);
+      row.appendChild(wrap);
+      var unit = el("span", "unit", item.unit);
+      unit.setAttribute("aria-hidden", "false");
+      row.appendChild(unit);
+      card.appendChild(row);
+      card.appendChild(el("p", "entrynote", "Type the number only. The unit beside the field is already the one to use."));
+      controls.input = input;
+    }
+
+    // ---- actions ----
+    var actions = el("div", "actions");
+    var commitBtn = el("button", "btn btn-primary", "Commit");
+    commitBtn.type = "button";
+    commitBtn.dataset.role = "commit";
+    commitBtn.disabled = false;
+
+    var checkBtn = el("button", "btn", "Check");
+    checkBtn.type = "button";
+    checkBtn.dataset.role = "check";
+    checkBtn.disabled = !s.checked && s.commit === null;
+    if (s.checked) checkBtn.disabled = true;
+
+    actions.appendChild(commitBtn);
+    actions.appendChild(checkBtn);
+    card.appendChild(actions);
+
+    // ---- status line (stamped by renderItemStatus after a check) ----
+    var status = el("p", "itemstatus");
+    status.hidden = true;
+    card.appendChild(status);
+
+    // ---- result ----
+    var result = el("div", "result");
+    result.hidden = true;
+    result.setAttribute("role", "status");
+    result.setAttribute("aria-live", "polite");
+    card.appendChild(result);
+
+    // ---- walkthrough ----
+    var wt = el("details", "wt");
+    wt.hidden = true;
+    var wtsum = el("summary");
+    wtsum.appendChild(document.createTextNode("Show the full walk-through"));
+    var wtx = el("span", "tx");
+    wtsum.appendChild(wtx);
+    wt.appendChild(wtsum);
+    var wtbody = el("div", "wtbody");
+    wt.appendChild(wtbody);
+    card.appendChild(wt);
+
+    card._ui = {
+      commitBtn: commitBtn,
+      checkBtn: checkBtn,
+      result: result,
+      status: status,
+      wt: wt,
+      wtbody: wtbody,
+      head: head,
+      controls: controls
+    };
+
+    commitBtn.addEventListener("click", function () { doCommit(item); });
+    checkBtn.addEventListener("click", function () { doCheck(item); });
+
+    renderItemStatus(item, card);
+    // Wire styles before the card is in the document: every lookup below
+    // needs the built card, not a document query.
+    applyCheckedVisual(item, card);
+    return card;
+  }
+
+  /* Per-item status. Nothing is written until a check has happened, so
+     there is no hint in the DOM before the student commits and checks. */
+  function renderItemStatus(item, card) {
+    if (!card || !card._ui || !card._ui.status) return;
+    var s = state[item.id];
+    var node = card._ui.status;
+    // The line reports attempt history, so it survives a fresh commit on an
+    // item that has already been checked at least once. Before any check
+    // there is no line at all.
+    if (!s.checked && !(s.attempts > 0)) {
+      node.hidden = true;
+      node.textContent = "";
+      return;
+    }
+    var n = Math.max(1, s.attempts || 1);
+    node.hidden = false;
+    node.textContent = (s.correct && s.checked)
+      ? "Solved on check " + n
+      : "Across " + n + (n === 1 ? " check" : " checks");
+  }
+
+  function getCard(item) {
+    return document.getElementById("item-" + item.id);
+  }
+
+  function updateButtons(item, cardRef) {
+    // buildCard calls this before the card is attached, so it passes its
+    // own node. Every other caller looks the card up by id.
+    var card = cardRef || getCard(item);
+    if (!card || !card._ui) return;
+    var s = state[item.id];
+    // Solved is final. A numeric item stays open for another try: the
+    // commit control returns as soon as the check has been read. A multiple
+    // choice item commits at selection time, so its Commit control never
+    // has anything left to do after a check and stays disabled.
+    var canCommit = !s.correct && (!isCommitted(s) || (s.checked && item.type !== "mc"));
+    card._ui.commitBtn.disabled = !canCommit;
+    card._ui.commitBtn.textContent = s.correct
+      ? "Committed"
+      : ((isCommitted(s) && item.type !== "mc") ? "Commit again" : "Commit");
+    card._ui.checkBtn.disabled = s.correct || !isCommitted(s) || s.checked;
+    card._ui.checkBtn.textContent = s.checked && !s.correct ? "Checked" : "Check";
+  }
+
+  function doCommit(item) {
+    var s = state[item.id];
+    if (s.correct) return;
+    var card = getCard(item);
+    // A committed value has to be checked before it can be replaced, but
+    // after a check the item is open again, so retry is always reachable.
+    if (isCommitted(s) && !s.checked) return;
+    if (item.type === "numeric") {
+      var raw = card._ui.controls.input.value;
+      var n = parseTyped(raw);
+      if (n === null) {
+        card._ui.controls.input.focus();
+        card._ui.controls.input.setAttribute("aria-invalid", "true");
+        s.draft = raw;
+        persist();
+        return;
+      }
+      card._ui.controls.input.setAttribute("aria-invalid", "false");
+      s.commit = String(raw).trim();
+      // The typed text became the commit, so there is no longer a draft.
+      s.draft = "";
+      card._ui.controls.input.value = s.commit;
+      card._ui.controls.input.disabled = true;
+    }
+    // mc commit already happened at selection time
+    // A new committed value is a new attempt, so the previous verdict is
+    // closed. The attempt history is kept (attempts, revealed); only the
+    // checked flag on the old answer is retired. Typing alone never does
+    // this: the commit is what starts the next attempt.
+    s.checked = false;
+    persist();
+    applyCheckedVisual(item, card);
+    renderItemStatus(item, card);
+    updateButtons(item);
+    progressAll();
+    renderSummary();
+  }
+
+  function doCheck(item) {
+    var s = state[item.id];
+    if (s.correct || !isCommitted(s)) return;
+    var card = getCard(item);
+
+    s.attempts = (s.attempts || 0) + 1;
+    if (item.type === "mc") {
+      s.correct = s.commit === item.correct;
+    } else {
+      s.correct = matches(item, s.commit);
+    }
+    s.checked = true;
+    persist();
+
+    applyCheckedVisual(item, card);
+    renderItemStatus(item, card);
+    updateButtons(item);
+    progressAll();
+    renderSummary();
+  }
+
+  function applyCheckedVisual(item, card) {
+    var s = state[item.id];
+    var ui = card._ui;
+    var freeze = !!s.correct;
+
+    // A solved item is frozen for good. An unsolved item is frozen only
+    // between a check and its own next commit, so retry stays possible.
+    Array.prototype.forEach.call(card.querySelectorAll(".opt"), function (b) {
+      b.disabled = freeze;
+    });
+    // The field is disabled only when solved, or when a value is committed
+    // and waiting to be checked. After a wrong check it reopens for a retry.
+    if (ui.controls.input) {
+      ui.controls.input.disabled = freeze || (isCommitted(s) && !s.checked);
+    }
+    updateButtons(item, card);
+    if (s.checked) {
+      ui.result.hidden = false;
+      ui.result.className = "result " + (s.correct ? "ok" : "no");
+      ui.result.textContent = "";
+
+      var verdict = el("span", "verdict", s.correct ? "Correct" : "Not correct yet");
+      ui.result.appendChild(verdict);
+      var msg;
+      if (s.correct) {
+        msg = "That is the answer. The full walk-through below is there whenever you want to see how it was put together.";
+      } else if (item.type === "mc") {
+        msg = item.distractor[s.commit] || "Take another look at what the question is asking for before you compare forces.";
+      } else {
+        var idx = s2nudge(item.id) % NUMERIC_NUDGES.length;
+        msg = NUMERIC_NUDGES[idx];
+      }
+      ui.result.appendChild(el("p", null, msg));
+
+      // Walkthrough becomes available after the first check has been seen,
+      // correct or not. The control is always offered from that point; the
+      // solution text stays out of the DOM until the student opens it.
+      ui.wt.hidden = false;
+      ui.wt.open = false;
+      ui.wtbody.textContent = ""; // not rendered until the student asks
+      // A restored session may have left the disclosure open. Honour it only
+      // when the item has actually been checked, so the gate still holds.
+      if (s.revealed) {
+        ui.wt.open = true;
+        ui.wtbody.textContent = item.solution;
+      }
+    } else {
+      ui.result.hidden = true;
+      ui.result.textContent = "";
+      ui.wt.hidden = true;
+      ui.wt.open = false;
+      ui.wtbody.textContent = "";
+    }
+  }
+
+  // Deterministic per-item nudge pick so the same item does not flicker
+  // between reloads, but different items do not all say the same thing.
+  function s2nudge(id) {
+    var h = 0;
+    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return h;
+  }
+
+  function refreshCard(item) {
+    var card = getCard(item);
+    if (!card || !card._ui) return;
+    updateButtons(item);
+    progressAll();
+    renderSummary();
+  }
+
+  function wireWalkthrough(item) {
+    var card = getCard(item);
+    if (!card || !card._ui) return;
+    var wt = card._ui.wt;
+    // Guard against a second binding: reset rebuilds the card and re-wires it,
+    // and duplicate listeners would persist the same toggle twice.
+    if (wt._wtWired) return;
+    wt._wtWired = true;
+    wt.addEventListener("toggle", function () {
+      var s = state[item.id];
+      if (wt.open) {
+        s.revealed = true;
+        // Always render on open. The first-check path unhides the control but
+        // deliberately leaves the body empty until the student asks for it,
+        // so this is the only place the solution is written on demand.
+        card._ui.wtbody.textContent = item.solution;
+      }
+      s.showSol = wt.open;
+      persist();
+    });
+  }
+
+  /* ==========================================================
+     PROGRESS
+     ========================================================== */
+  function countChecked(sectionId) {
+    var n = 0;
+    ITEMS.forEach(function (it) {
+      if (it.section === sectionId && state[it.id] && state[it.id].checked) n++;
+    });
+    return n;
+  }
+
+  function countSolved(sectionId) {
+    var n = 0;
+    ITEMS.forEach(function (it) {
+      if (it.section === sectionId && state[it.id] && state[it.id].correct) n++;
+    });
+    return n;
+  }
+
+  function progressAll() {
+    SECTIONS.forEach(function (sec) {
+      var n = countChecked(sec.id);
+      var line = n + " of " + sec.total + " checked in";
+      var nav = document.getElementById("prog-" + sec.id);
+      if (nav) nav.textContent = line;
+      var sect = document.getElementById("sectprog-" + sec.id);
+      if (sect) sect.textContent = line;
+
+      // Second nav line. Created only once the station has a solved item,
+      // and removed again on reset, so an empty line never exists.
+      var btn = document.querySelector('.navbtn[data-goto="' + sec.id + '"]');
+      if (!btn) return;
+      var solved = countSolved(sec.id);
+      var tag = btn.querySelector(".navsolve");
+      if (solved > 0) {
+        if (!tag) {
+          tag = el("span", "navsolve");
+          btn.appendChild(tag);
+        }
+        tag.textContent = solved + " solved";
+      } else if (tag && tag.parentNode) {
+        tag.parentNode.removeChild(tag);
+      }
+    });
+  }
+
+  /* ==========================================================
+     NAVIGATION
+     All sections stay in the document. The nav buttons anchor to a
+     section; the sticky bar highlights whichever section you are in.
+     ========================================================== */
+  function markCurrent(id) {
+    Array.prototype.forEach.call(document.querySelectorAll(".navbtn"), function (b) {
+      b.setAttribute("aria-current", b.dataset.goto === id ? "true" : "false");
+    });
+  }
+
+  function jumpTo(id) {
+    var target = document.getElementById(id);
+    if (!target) return;
+    markCurrent(id);
+    if (id === "summary") renderSummary();
+    // "instant" honors the anchor without the long smooth-scroll glide
+    // that strands a reader mid-page on a 4-section document.
+    try {
+      target.scrollIntoView({ block: "start", behavior: "instant" });
+    } catch (e) {
+      target.scrollIntoView(true);
+    }
+    // Keep a shareable deep link, but never let a bad hash hide anything.
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* file:// restriction */ }
+  }
+
+  function wireNav() {
+    Array.prototype.forEach.call(document.querySelectorAll(".navbtn"), function (b) {
+      b.addEventListener("click", function () { jumpTo(b.dataset.goto); });
+    });
+  }
+
+  // Scroll-spy: highlight the section occupying the top of the viewport.
+  function wireScrollSpy() {
+    if (!("IntersectionObserver" in window)) return;
+    var visible = {};
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { visible[en.target.id] = en.isIntersecting; });
+      for (var i = 0; i < SECTIONS.length; i++) {
+        if (visible[SECTIONS[i].id]) { markCurrent(SECTIONS[i].id); return; }
+      }
+      // The summary is a fifth destination in the same flow.
+      if (visible["summary"]) markCurrent("summary");
+    }, { rootMargin: "-96px 0px -55% 0px", threshold: 0 });
+    SECTIONS.forEach(function (sec) {
+      var s = document.getElementById(sec.id);
+      if (s) obs.observe(s);
+    });
+    var sum = document.getElementById("summary");
+    if (sum) obs.observe(sum);
+  }
+
+  /* ==========================================================
+     RESET
+     ========================================================== */
+  function wireReset() {
+    var btn = document.getElementById("resetBtn");
+    var box = document.getElementById("confirmBox");
+    var yes = document.getElementById("confirmYes");
+    var no = document.getElementById("confirmNo");
+
+    btn.addEventListener("click", function () {
+      box.hidden = false;
+      yes.focus();
+    });
+    no.addEventListener("click", function () {
+      box.hidden = true;
+      btn.focus();
+    });
+    yes.addEventListener("click", function () {
+      ITEMS.forEach(function (it) { state[it.id] = blankItem(); });
+      if (hasStorage) {
+        try { window.localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+      }
+      box.hidden = true;
+      ITEMS.forEach(function (it) {
+        var old = getCard(it);
+        var fresh = buildCard(it);
+        if (old && old.parentNode) {
+          old.parentNode.replaceChild(fresh, old);
+        }
+        wireWalkthrough(it);
+      });
+      dropFallback();
+      progressAll();
+      renderSummary();
+      btn.focus();
+    });
+
+    // Escape closes the inline confirm.
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !box.hidden) {
+        box.hidden = true;
+        btn.focus();
+      }
+    });
+  }
+
+  /* ==========================================================
+     SUMMARY
+     Built from the same state object the cards read, so the summary can
+     never disagree with the set. No percentage appears anywhere, and the
+     only place a count crosses stations is this section.
+     ========================================================== */
+  var TOPIC_ORDER = [];
+
+  function topicRows() {
+    // Group the item map by station, preserving the station order and
+    // first-appearance order of each topic inside that station.
+    var out = [];
+    SECTIONS.forEach(function (sec) {
+      var seen = {};
+      var rows = [];
+      ITEMS.forEach(function (it) {
+        if (it.section !== sec.id) return;
+        var t = TOPICS[it.id] || "Untitled topic";
+        if (!seen[t]) {
+          seen[t] = { topic: t, total: 0, worked: 0, solved: 0, ids: [] };
+          rows.push(seen[t]);
+        }
+        var s = state[it.id] || blankItem();
+        seen[t].total++;
+        seen[t].ids.push(it.id);
+        if (isWorked(s)) {
+          seen[t].worked++;
+          if (s.correct) seen[t].solved++;
+        }
+      });
+      out.push({ section: sec, rows: rows });
+    });
+    return out;
+  }
+
+  function sectionCounts(secId) {
+    var worked = 0, solved = 0, total = 0;
+    ITEMS.forEach(function (it) {
+      if (it.section !== secId) return;
+      total++;
+      var s = state[it.id] || blankItem();
+      if (isWorked(s)) worked++;
+      if (s.correct) solved++;
+    });
+    return { worked: worked, solved: solved, total: total };
+  }
+
+  function anyWork() {
+    return ITEMS.some(function (it) { return isWorked(state[it.id]); });
+  }
+
+  // Next steps. Rules over the data, in precedence order. Never names a
+  // student and never quotes a score.
+  function nextStepsText() {
+    if (!anyWork()) return [];
+
+    // Rule 1: must-solve items with no check at all.
+    var untouched = ITEMS.filter(function (it) {
+      return it.mustSolve && !isWorked(state[it.id] || blankItem());
+    }).map(function (it) { return it.id; });
+
+    if (untouched.length) {
+      var list = joinList(untouched);
+      return ["You have not started " + list + ". If you are short on time, these are the ones."];
+    }
+
+    // Rule 2: the topic with the most open (worked but unsolved) items.
+    var best = null;
+    topicRows().forEach(function (grp) {
+      grp.rows.forEach(function (row) {
+        var open = row.worked - row.solved;
+        if (open <= 0) return;
+        if (!best || open > best.open) best = { row: row, open: open };
+      });
+    });
+    if (best) {
+      return ["The topic with the most open questions is " + best.row.topic + ", where "
+        + best.open + " of " + best.row.worked + " are still open."];
+    }
+
+    // Rule 3: every worked item is solved.
+    return ["Everything is solved. Go back to any item where you got the number right but could not explain the drawing to a classmate."];
+  }
+
+  function joinList(parts) {
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return parts[0] + " and " + parts[1];
+    return parts.slice(0, -1).join(", ") + ", and " + parts[parts.length - 1];
+  }
+
+  function renderSummary() {
+    var table = document.getElementById("topicTable");
+    var nextHost = document.getElementById("nextSteps");
+
+    SECTIONS.forEach(function (sec) {
+      var c = sectionCounts(sec.id);
+      var w = document.getElementById("stat-" + sec.id + "-worked");
+      var s = document.getElementById("stat-" + sec.id + "-solved");
+      if (w) w.textContent = c.worked + " of " + c.total + " worked";
+      if (s) s.textContent = c.solved + " solved";
+    });
+
+    if (table) {
+      table.textContent = "";
+      if (!anyWork()) {
+        table.appendChild(el("p", "emptynote", "Nothing worked yet. Start with the warm-up."));
+      } else {
+        topicRows().forEach(function (grp) {
+          var g = el("div", "topicgroup");
+          g.appendChild(el("h3", null, grp.section.label));
+          grp.rows.forEach(function (row) {
+            g.appendChild(buildTopicRow(row));
+          });
+          table.appendChild(g);
+        });
+      }
+    }
+
+    if (nextHost) {
+      nextHost.textContent = "";
+      var lines = nextStepsText();
+      if (!lines.length) {
+        nextHost.appendChild(el("p", null, "Nothing worked yet. Start with the warm-up."));
+      } else {
+        lines.forEach(function (t) { nextHost.appendChild(el("p", null, t)); });
+      }
+    }
+
+    var pd = document.getElementById("printDate");
+    if (pd) pd.textContent = "Summary printed " + todayLabel();
+
+    var pn = document.getElementById("printName");
+    if (pn) {
+      var typed = (studentName || "").trim();
+      pn.textContent = typed;
+      pn.hidden = !typed;
+    }
+  }
+
+  function buildTopicRow(row) {
+    var r = el("div", "topicrow");
+    var notStarted = row.worked === 0;
+    if (notStarted) r.classList.add("is-notstarted");
+    r.appendChild(el("span", "trow-name", row.topic));
+
+    if (notStarted) {
+      // No worked items: the two count columns collapse entirely, and the
+      // row states the fact once, as row text rather than bar content.
+      r.appendChild(el("span", "trow-notstarted", "not started"));
+    } else {
+      r.appendChild(el("span", "trow-num", row.worked + " worked"));
+      r.appendChild(el("span", "trow-num", row.solved + " solved"));
+      var bar = el("span", "trow-bar");
+      var pct = Math.round((row.solved / row.worked) * 100);
+      var fill = el("span", "fill");
+      fill.style.width = pct + "%";
+      bar.appendChild(fill);
+      // Text alternative for the bar. Not aria-hidden, so a screen reader
+      // reads the same fact the bar shows.
+      bar.appendChild(el("span", "bar-alt",
+        row.solved + " of " + row.worked + " worked items solved"));
+      r.appendChild(bar);
+    }
+    return r;
+  }
+
+  function todayLabel() {
+    var d = new Date();
+    var months = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    return months[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+  }
+
+  /* ==========================================================
+     EXPORT: native jsPDF layout, never a DOM raster
+     ========================================================== */
+  var PDF_TITLE = "Coming Back Cold: Forces on Slants, Blocks on Strings, and Two Dimensions";
+  var PDF_FALLBACK_NAME = "AP Physics 1 Student";
+  // url is the object URL the panel currently points at. It is revoked only
+  // when a NEW export replaces it, and again on page unload. Never on panel
+  // dismiss: a tab still loading that URL would render blank.
+  var pdfState = { url: null, name: null };
+
+  function jsPdfReady() {
+    return !!(window.jspdf && window.jspdf.jsPDF);
+  }
+
+  // Vendored sibling file, loaded with a plain script tag. A failed load
+  // is a real, reportable state, so say so instead of failing silently.
+  function wirePdfAvailability() {
+    var btn = document.getElementById("exportBtn");
+    if (!btn) return;
+    if (!jsPdfReady()) {
+      btn.setAttribute("aria-describedby", "pdfMissing");
+      var note = el("p", "export-error", "The PDF tool did not load. Print this page still works, "
+        + "so you can hand in a printed summary instead.");
+      note.id = "pdfMissing";
+      note.setAttribute("role", "status");
+      var host = document.getElementById("exportError");
+      if (host && host.parentNode) host.parentNode.insertBefore(note, host);
+    }
+  }
+
+  function sanitizeName(raw) {
+    var base = (raw || "").trim();
+    if (!base) base = PDF_FALLBACK_NAME;
+    // Letters, digits, hyphens, and spaces only.
+    base = base.replace(/[^A-Za-z0-9\- ]+/g, " ").replace(/\s+/g, " ").trim();
+    if (!base) base = PDF_FALLBACK_NAME;
+    return base.slice(0, 60).trim();
+  }
+
+  function pdfFileName() {
+    return "AP1-Recitation-" + sanitizeName(studentName) + ".pdf";
+  }
+
+  // Retire the previous object URL. Called only when a new export replaces
+  // it, so the URL behind an open tab stays alive for the life of the page.
+  function retirePdfUrl() {
+    if (!pdfState.url) return null;
+    var old = pdfState.url;
+    pdfState.url = null;
+    try { URL.revokeObjectURL(old); } catch (e) { /* ignore */ }
+    return old;
+  }
+
+  // Dismissing the panel hides it and clears the links, but deliberately
+  // does NOT revoke the object URL. A student who dismisses and then opens
+  // the tab from a re-shown panel, or whose tab is still committing, must
+  // not land on a dead blob.
+  function dropFallback() {
+    var panel = document.getElementById("fallbackPanel");
+    if (panel) panel.hidden = true;
+    var dl = document.getElementById("downloadLink");
+    var op = document.getElementById("openLink");
+    if (dl) dl.setAttribute("href", "#");
+    if (op) op.setAttribute("href", "#");
+    var nm = document.getElementById("fallbackName");
+    if (nm) nm.textContent = "";
+  }
+
+  function showExportError(err) {
+    var box = document.getElementById("exportError");
+    var txt = document.getElementById("exportErrorText");
+    if (!box || !txt) return;
+    var detail = err && err.message ? String(err.message) : "no further detail";
+    txt.textContent = "The PDF was not created. Nothing was downloaded. You can still use Print this page, "
+      + "or reload the page and try again. Technical detail: " + detail;
+    box.hidden = false;
+  }
+
+  function hideExportError() {
+    var box = document.getElementById("exportError");
+    if (box) box.hidden = true;
+  }
+
+  function buildPdfDoc() {
+    var JsPDF = window.jspdf.jsPDF;
+    var doc = new JsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
+    var LEFT = 54;
+    var RIGHT = 54;
+    var TOP = 54;
+    var BOTTOM = 54;
+    var W = doc.internal.pageSize.getWidth();
+    var H = doc.internal.pageSize.getHeight();
+    var usable = W - LEFT - RIGHT;
+    var y = TOP;
+    var name = (studentName || "").trim() || PDF_FALLBACK_NAME;
+    var dateStr = todayLabel();
+
+    // --- footer on every page ---
+    var pages = function () { return doc.internal.getNumberOfPages(); };
+    var stampFooters = function () {
+      var total = pages();
+      for (var p = 1; p <= total; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(120);
+        doc.setLineWidth(0.5);
+        doc.line(LEFT, H - BOTTOM + 14, W - RIGHT, H - BOTTOM + 14);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(70);
+        doc.text("Generated from Porter's Portal", LEFT, H - BOTTOM + 28);
+        doc.text("Page " + p + " of " + total, W - RIGHT, H - BOTTOM + 28, { align: "right" });
+      }
+      doc.setTextColor(20);
+    };
+
+    var ensure = function (h) {
+      if (y + h > H - BOTTOM) {
+        doc.addPage();
+        y = TOP;
+      }
+    };
+
+    var line = function (size, style, text) {
+      doc.setFont("helvetica", style || "normal");
+      doc.setFontSize(size);
+      var wrapped = doc.splitTextToSize(text, usable);
+      for (var i = 0; i < wrapped.length; i++) {
+        ensure(size * 1.35);
+        doc.text(wrapped[i], LEFT, y + size);
+        y += size * 1.35;
+      }
+    };
+
+    var rule = function (gap) {
+      ensure(gap || 12);
+      y += 6;
+      doc.setDrawColor(140);
+      doc.setLineWidth(0.6);
+      doc.line(LEFT, y, W - RIGHT, y);
+      y += (gap || 12);
+    };
+
+    // Draw the rule without letting it open a page of its own. Used where a
+    // heading and its first line must stay together: the caller reserves the
+    // whole group's height first, then this draws inside that reservation.
+    var ruleNoBreak = function (gap) {
+      y += 6;
+      doc.setDrawColor(140);
+      doc.setLineWidth(0.6);
+      doc.line(LEFT, y, W - RIGHT, y);
+      y += (gap || 12);
+    };
+
+    // --- header block ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    var titleLines = doc.splitTextToSize(PDF_TITLE, usable);
+    titleLines.forEach(function (t) {
+      doc.text(t, LEFT, y + 17);
+      y += 21;
+    });
+    y += 4;
+    line(11, "normal", name);
+    line(11, "normal", "Generated " + dateStr);
+    line(11, "normal", "AP Physics 1 / Practice credit only / not graded");
+    rule(14);
+
+    // --- station blocks ---
+    SECTIONS.forEach(function (sec) {
+      var c = sectionCounts(sec.id);
+      ensure(30);
+      line(11, "bold", sec.label);
+      line(10, "normal", c.worked + " of " + c.total + " worked, " + c.solved + " solved");
+      y += 8;
+    });
+
+    // --- topic table ---
+    rule(14);
+    line(11, "bold", "By topic");
+    y += 4;
+    var rows = [];
+    topicRows().forEach(function (grp) {
+      grp.rows.forEach(function (row) {
+        rows.push([grp.section.label, row.topic, row.worked + " of " + row.total,
+          String(row.solved)]);
+      });
+    });
+    if (!rows.length) {
+      line(10, "normal", "Nothing worked yet. Start with the warm-up.");
+    } else {
+      var widths = [70, 250, 90, 60];
+      var head = ["Station", "Topic", "Worked", "Solved"];
+      var drawRow = function (cells, bold) {
+        var h = 16;
+        ensure(h);
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setFontSize(9.5);
+        var x = LEFT;
+        for (var i = 0; i < cells.length; i++) {
+          doc.text(String(cells[i]), x, y + 11);
+          x += widths[i];
+        }
+        y += h;
+        doc.setDrawColor(210);
+        doc.setLineWidth(0.4);
+        doc.line(LEFT, y, W - RIGHT, y);
+      };
+      drawRow(head, true);
+      rows.forEach(function (r) { drawRow(r, false); });
+    }
+
+    // --- where to go next ---
+    rule(14);
+    line(11, "bold", "Where to go next");
+    y += 4;
+    var nexts = nextStepsText();
+    if (!nexts.length) nexts = ["Nothing worked yet. Start with the warm-up."];
+    nexts.forEach(function (t) { line(10.5, "normal", t); });
+
+    // --- per-item listing ---
+    // Height of the first item is needed before the heading is drawn: if the
+    // heading lands alone at the foot of a page the list reads as orphaned.
+    // Measure it, then hold the heading, its rule, its trailing gap, and the
+    // first item together. A blanket page break would open a large blank gap
+    // whenever the heading already sits near the top of a page.
+    var firstItem = ITEMS[0];
+    var firstItemH = 14;
+    if (firstItem) {
+      var fs = state[firstItem.id] || blankItem();
+      var fWorked = isWorked(fs);
+      var fAnswer = fWorked ? (fs.commit === null ? "(no response)" : String(fs.commit)) : "(no response yet)";
+      var fLeft = firstItem.id + "  " + (TOPICS[firstItem.id] || "") + ": " + fAnswer;
+      var fLines = doc.splitTextToSize(fLeft, usable - 208);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      var fExtra = 10;
+      for (var fi = 1; fi < fLines.length; fi++) fExtra += 11;
+      firstItemH = Math.max(14, fExtra + 2);
+    }
+    var RULE_GAP = 14;
+    var RULE_LEAD = 6;      // the rule helper advances y by 6 before drawing
+    var HEAD_GAP = 4;
+    var HEAD_H = 11 * 1.35;
+    // Reserve the rule lead-in, the rule's trailing gap, the heading and its
+    // trailing gap, and the first item, all at once. Reserving them piecemeal
+    // lets an inner ensure() break the page between the rule and the heading.
+    var keepWithHead = RULE_LEAD + RULE_GAP + HEAD_H + HEAD_GAP + firstItemH;
+
+    ensure(keepWithHead);
+    ruleNoBreak(RULE_GAP);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Item by item", LEFT, y + 11);
+    y += HEAD_H;
+    y += HEAD_GAP;
+    ITEMS.forEach(function (it) {
+      var s = state[it.id] || blankItem();
+      var topic = TOPICS[it.id] || "";
+      var worked = isWorked(s);
+      var answerText = worked ? (s.commit === null ? "(no response)" : String(s.commit)) : "(no response yet)";
+      var statusText;
+      if (!worked) statusText = "not checked";
+      else if (s.correct) statusText = "correct, " + s.attempts + (s.attempts === 1 ? " check" : " checks");
+      else statusText = "not yet correct, " + s.attempts + (s.attempts === 1 ? " check" : " checks");
+      ensure(14);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      var left = it.id + "  " + topic + ": " + answerText;
+      var leftLines = doc.splitTextToSize(left, usable - 208);
+      var mark = s.correct ? "[correct] " : "";
+      doc.text(String(leftLines[0]), LEFT, y + 10);
+      doc.text(mark + statusText, LEFT + usable - 198, y + 10);
+      var extra = 10;
+      for (var j = 1; j < leftLines.length; j++) {
+        doc.text(String(leftLines[j]), LEFT + 14, y + 10 + extra);
+        extra += 11;
+      }
+      y += Math.max(14, extra + 2);
+    });
+
+    stampFooters();
+    return doc;
+  }
+
+  function runExport() {
+    hideExportError();
+    var previousUrl = null;
+
+    var made = null;
+    var blob = null;
+    try {
+      if (!jsPdfReady()) throw new Error("the PDF library did not load, so the file cannot be built in this tab");
+      made = buildPdfDoc();
+      blob = made.output("blob");
+      if (!blob || !blob.size) throw new Error("the built file was empty");
+    } catch (err) {
+      showExportError(err);
+      return;
+    }
+
+    var name = pdfFileName();
+    var url = null;
+    try {
+      url = URL.createObjectURL(blob);
+    } catch (err) {
+      showExportError(err);
+      return;
+    }
+
+    // The new URL exists, so it is safe to retire the previous one now.
+    // Retiring before this point would leave the panel dead if the build
+    // threw, and would kill any tab still reading the old blob.
+    previousUrl = retirePdfUrl();
+    pdfState.url = url;
+    pdfState.name = name;
+
+    // Best-effort auto download. Silent on failure: managed Chromebooks
+    // block this, and the panel below is the intended delivery path.
+    try {
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.rel = "noopener";
+      a.style.position = "fixed";
+      a.style.left = "-9999px";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) { /* blocked: the panel covers it */ }
+
+    var panel = document.getElementById("fallbackPanel");
+    var dl = document.getElementById("downloadLink");
+    var op = document.getElementById("openLink");
+    var nm = document.getElementById("fallbackName");
+    // The new-tab anchor keeps target/_blank and rel, and never gets a
+    // download attribute: download wins over target and suppresses the tab.
+    if (op) {
+      op.href = url;
+      op.setAttribute("target", "_blank");
+      op.setAttribute("rel", "noopener noreferrer");
+      op.removeAttribute("download");
+    }
+    // The download anchor is the one that carries download, and no target.
+    if (dl) {
+      dl.href = url;
+      dl.setAttribute("download", name);
+      dl.removeAttribute("target");
+    }
+    if (nm) nm.textContent = name;
+    if (panel) panel.hidden = false;
+
+    return { url: url, previousUrl: previousUrl, name: name };
+  }
+
+  /* ==========================================================
+     PRINT VIEW: a standalone document in a new tab.
+     No jsPDF, no parent stylesheet. Built from the same summary
+     data, rendered with its own inline CSS, then printed.
+     ========================================================== */
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function printViewMarkup() {
+    var typed = (studentName || "").trim();
+    var rowsHtml = "";
+
+    SECTIONS.forEach(function (sec) {
+      var c = sectionCounts(sec.id);
+      rowsHtml += '<tr><td>' + esc(sec.label) + "</td><td>" + c.worked + " of " + c.total
+        + " worked</td><td>" + c.solved + " solved</td></tr>";
+    });
+
+    var topicHtml = "";
+    var groups = topicRows();
+    groups.forEach(function (grp) {
+      var inner = "";
+      var printed = 0;
+      grp.rows.forEach(function (row) {
+        if (row.worked === 0) return;
+        printed++;
+        var pct = row.worked ? Math.round((row.solved / row.worked) * 100) : 0;
+        inner += '<div class="trow"><span class="tname">' + esc(row.topic)
+          + '</span><span class="tnum">' + row.worked + " worked</span>"
+          + '<span class="tnum">' + row.solved + " solved</span>"
+          + '<span class="tbar"><span class="tfill" style="width:' + pct + '%"></span></span></div>';
+      });
+      if (printed) {
+        topicHtml += '<h3>' + esc(grp.section.label) + "</h3>" + inner;
+      }
+    });
+    if (!topicHtml) {
+      topicHtml = '<p class="empty">Nothing worked yet. Start with the warm-up.</p>';
+    }
+
+    var nextHtml = "";
+    var lines = nextStepsText();
+    if (!lines.length) {
+      nextHtml = '<p class="empty">Nothing worked yet. Start with the warm-up.</p>';
+    } else {
+      lines.forEach(function (t) { nextHtml += "<p>" + esc(t) + "</p>"; });
+    }
+
+    var nameLine = typed ? '<p class="name">' + esc(typed) + "</p>" : "";
+
+    return "<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
+      + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+      + "<title>" + esc(typed ? typed.replace(/[<>&"]/g, "") + " summary" : "Summary") + "</title>"
+      + "<style>" + PRINT_VIEW_CSS + "</style>"
+      + "</head><body>"
+      + '<header><span class="kicker">AP Physics 1 / Recitation</span>'
+      + "<h1>" + esc(PDF_TITLE) + "</h1>"
+      + '<p class="meta">Summary printed ' + esc(todayLabel()) + "</p>"
+      + nameLine
+      + "</header>"
+      + "<h2>Overall</h2>"
+      + '<table><thead><tr><th scope="col">Section</th><th scope="col">Worked</th>'
+      + '<th scope="col">Solved</th></tr></thead><tbody>' + rowsHtml + "</tbody></table>"
+      + "<h2>By topic</h2>" + topicHtml
+      + "<h2>Where to go next</h2>" + '<div class="next">' + nextHtml + "</div>"
+      + '<p class="foot">Every number here uses g = 9.8 m/s\u00B2.</p>'
+      + "</body></html>";
+  }
+
+  // Own styles. Deliberately self-contained: the injected document shares
+  // nothing with the parent page, so it renders the same with the parent
+  // stylesheet absent, blocked, or rewritten.
+  var PRINT_VIEW_CSS = [
+    "html{-webkit-text-size-adjust:100%}",
+    "body{margin:0;padding:28px 32px 48px;background:#F4F3EF;color:#1A1A1A;",
+    "font-family:Inter,'Helvetica Neue',Arial,'Segoe UI',system-ui,sans-serif;",
+    "font-size:15px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact}",
+    "header{border-bottom:2px solid #1A1A1A;padding-bottom:14px;margin-bottom:24px}",
+    ".kicker{display:block;font-size:11px;font-weight:600;letter-spacing:.18em;",
+    "text-transform:uppercase;color:#64635F;margin-bottom:14px}",
+    "h1{font-size:22px;line-height:1.25;margin:0 0 10px;font-weight:600}",
+    ".meta{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#64635F;margin:0}",
+    ".name{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:10px 0 0;font-weight:600}",
+    "h2{font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;",
+    "margin:26px 0 10px;padding-bottom:5px;border-bottom:1px solid #1A1A1A}",
+    "h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;",
+    "margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #C9C7C0}",
+    "table{width:100%;border-collapse:collapse;font-size:14px}",
+    "th{text-align:left;font-size:10px;letter-spacing:.14em;text-transform:uppercase;",
+    "font-weight:600;color:#64635F;padding:6px 10px;border-bottom:1px solid #1A1A1A}",
+    "td{padding:7px 10px;border-bottom:1px solid #DDD}",
+    "th:not(:first-child),td:not(:first-child){text-align:right;white-space:nowrap}",
+    ".trow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 14px;",
+    "align-items:center;padding:7px 0;border-bottom:1px solid #DDD;font-size:14px}",
+    ".tname{min-width:0;overflow-wrap:anywhere}",
+    ".tnum{font-size:12px;color:#64635F;white-space:nowrap;text-align:right}",
+    ".tbar{grid-column:1 / -1;display:block;height:8px;border:1px solid #666;background:transparent}",
+    ".tfill{display:block;height:100%;background:#1A1A1A}",
+    ".next{border-left:2px solid #1A1A1A;padding:2px 0 2px 16px;margin:0}",
+    ".next p{margin:0 0 8px;font-size:15px}",
+    ".next p:last-child{margin-bottom:0}",
+    ".empty{color:#64635F;font-size:14px}",
+    ".foot{margin-top:28px;font-size:12px;color:#64635F}",
+    "@page{margin:16mm 14mm}",
+    "@media print{body{background:#FFFFFF;padding:0}}"
+  ].join("");
+
+  // Opens about:blank and writes the document directly. The window handle
+  // is required to write, so `noopener` cannot be passed to window.open:
+  // it forces a null return by spec. We sever the handle afterwards instead,
+  // which gives the tab no live opener to reach back through.
+  function openPrintView() {
+    var win = null;
+    try {
+      win = window.open("", "_blank");
+    } catch (e) { /* popup blocked */ }
+    if (!win || !win.document) {
+      // No tab available. Print the current page, which the print
+      // stylesheet already reduces to the summary.
+      try { window.print(); } catch (e2) { /* ignore */ }
+      return false;
+    }
+    try {
+      win.document.open();
+      win.document.write(printViewMarkup());
+      win.document.close();
+    } catch (e) {
+      try { win.close(); } catch (e2) { /* ignore */ }
+      try { window.print(); } catch (e3) { /* ignore */ }
+      return false;
+    }
+    // Print after layout settles. Some managed browsers drop a print call
+    // made in the same task as the write, so wait a beat.
+    try {
+      win.focus();
+      setTimeout(function () {
+        try { win.print(); } catch (e) { /* user agent refused */ }
+      }, 350);
+    } catch (e) { /* ignore */ }
+    // Detach after the document is in place. The tab keeps its content and
+    // the parent keeps no reachable handle to it.
+    try { win.opener = null; } catch (e) { /* ignore */ }
+    win = null;
+    return true;
+  }
+
+  function wireSummary() {
+    var input = document.getElementById("studentName");
+    if (input) {
+      input.value = studentName;
+      input.addEventListener("input", function () {
+        studentName = input.value;
+        persist();
+        // Keep the print-only name line in step with the field.
+        var pn = document.getElementById("printName");
+        if (pn) {
+          var typed = (studentName || "").trim();
+          pn.textContent = typed;
+          pn.hidden = !typed;
+        }
+      });
+    }
+
+    var exportBtn = document.getElementById("exportBtn");
+    if (exportBtn) exportBtn.addEventListener("click", runExport);
+    wirePdfAvailability();
+
+    var printBtn = document.getElementById("printBtn");
+    if (printBtn) printBtn.addEventListener("click", function () {
+      // Printing a clean summary, not the whole set. The print stylesheet
+      // hides everything except the summary.
+      try { window.print(); } catch (e) { /* user agent refused */ }
+    });
+
+    var close = document.getElementById("fallbackClose");
+    if (close) close.addEventListener("click", function () {
+      // Hides the panel only. The object URL stays alive so an open tab
+      // that is still loading does not go blank.
+      dropFallback();
+    });
+
+    var pView = document.getElementById("printViewBtn");
+    if (pView) pView.addEventListener("click", function () {
+      openPrintView();
+    });
+
+    // The one safe place to revoke: the page is going away, so nothing
+    // here can still be reading the blob.
+    window.addEventListener("beforeunload", function () {
+      if (pdfState.url) {
+        try { URL.revokeObjectURL(pdfState.url); } catch (e) { /* ignore */ }
+        pdfState.url = null;
+      }
+    });
+  }
+
+  /* ==========================================================
+     PORTAL BRIDGE (graceful standalone degradation)
+     ========================================================== */
+  function wireBridge() {
+    window.addEventListener("message", function (e) {
+      var d = e && e.data;
+      if (!d || typeof d !== "object") return;
+      if (d.type === "PORTAL_CONTEXT") {
+        document.documentElement.dataset.portalContext = "1";
+      }
+    });
+  }
+
+  /* ==========================================================
+     BOOT
+     ========================================================== */
+  function boot() {
+    ITEMS.forEach(function (it) { state[it.id] = blankItem(); });
+    loadState();
+    ensureStore();
+
+    ITEMS.forEach(function (it) {
+      var host = document.getElementById("cards-" + it.section);
+      if (!host) return;
+      host.appendChild(buildCard(it));
+      wireWalkthrough(it);
+    });
+
+    wireNav();
+    wireReset();
+    wireBridge();
+    wireSummary();
+    renderSummary();
+    progressAll();
+    wireScrollSpy();
+
+    // Every section is already rendered. A deep link just scrolls to it.
+    var hash = (window.location.hash || "").replace("#", "");
+    var known = SECTIONS.some(function (sec) { return sec.id === hash; }) || hash === "summary";
+    markCurrent(known ? hash : "warmup");
+    if (known) jumpTo(hash);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>
