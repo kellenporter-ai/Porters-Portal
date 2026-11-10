@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T15:49:44.974Z",
+  "generatedAt": "2026-11-10T15:59:42.508Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -40,7 +40,10 @@
     "/case-file-0829": "/case-file-0829.html",
     "/friction-lab": "/friction-lab/index.html",
     "/friction-lab/": "/friction-lab/index.html",
-    "/minutiae-hunt": "/minutiae-hunt.html"
+    "/minutiae-hunt": "/minutiae-hunt.html",
+    "/latent-print-lab": "/latent-print-lab/index.html",
+    "/latent-print-lab/prints/**": "/latent-print-lab/prints/**",
+    "/latent-print-lab/portraits/**": "/latent-print-lab/portraits/**"
   },
   "dirs": [
     "/ap1-q1-review",
@@ -48,6 +51,7 @@
     "/forensic-branches",
     "/friction-lab",
     "/infrastructure-tagging",
+    "/latent-print-lab",
     "/power-strip-reading",
     "/seven-s",
     "/texas-blackout-articles",

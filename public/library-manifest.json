@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T15:49:44.932Z",
+  "generatedAt": "2026-11-10T15:59:42.476Z",
   "items": [
     {
       "path": "/ap1-course-recap.html",
@@ -29,7 +29,7 @@
     {
       "path": "/ap1-recitation-recall.html",
       "fingerprint": "/ap1-recitation-recall.html",
-      "sizeBytes": 121268
+      "sizeBytes": 121269
     },
     {
       "path": "/break-in-evidence-rubric.html",
@@ -39,12 +39,12 @@
     {
       "path": "/cart-04-corrupted-lab.html",
       "fingerprint": "/cart-04-corrupted-lab.html",
-      "sizeBytes": 236512
+      "sizeBytes": 236513
     },
     {
       "path": "/case-file-0829.html",
       "fingerprint": "/case-file-0829.html",
-      "sizeBytes": 207608
+      "sizeBytes": 207546
     },
     {
       "path": "/circuit-diagram-builder.html",
@@ -162,8 +162,8 @@
       "sizeBytes": 28906
     },
     {
-      "path": "/latent-print-lab/latent-print-lab.html",
-      "fingerprint": "/latent-print-lab/latent-print-lab.html",
+      "path": "/latent-print-lab/",
+      "fingerprint": "/latent-print-lab/",
       "sizeBytes": 462087
     },
     {
@@ -184,7 +184,7 @@
     {
       "path": "/outage-waterfront.html",
       "fingerprint": "/outage-waterfront.html",
-      "sizeBytes": 159123
+      "sizeBytes": 159124
     },
     {
       "path": "/physics-course-recap.html",
