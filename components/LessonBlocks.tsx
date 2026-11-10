@@ -414,6 +414,51 @@ const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
   const embedUrl = getGoogleDriveEmbedUrl(block.url || '');
   const isGoogleDrive = embedUrl !== block.url;
   const [embedError, setEmbedError] = useState(false);
+
+  // Sandbox is scoped by URL ORIGIN, not by block type. EMBED accepts an arbitrary
+  // author-supplied URL, so the two cases have opposite requirements:
+  //   • Same-origin (the Portal's own public/*.html resources) — these persist student
+  //     work in localStorage. Without `allow-same-origin` the iframe runs in an opaque
+  //     origin and every storage access throws SecurityError, so saves fail outright.
+  //   • Third-party (Forms, Docs, anything else) — granting `allow-same-origin` would let
+  //     an arbitrary embedded page reach into the Portal's origin (cookies, storage, DOM
+  //     after same-origin navigation). They must stay in an opaque origin.
+  // Do NOT "simplify" this into one list: either direction reopens a hole or re-breaks saves.
+  // Checked against block.url (the raw authored value) so a relative path like
+  // `/minutiae-hunt.html` resolves against the Portal origin; the Drive-converted
+  // embedUrl is always drive.google.com and would defeat the check.
+  const isSameOrigin = useMemo(() => {
+    if (!block.url) return false;
+
+    // A relative path ("/minutiae-hunt.html") is always a Portal-owned resource.
+    // Resolve it against the Portal origin; it cannot leave the origin.
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(block.url) === false) {
+      return block.url.startsWith('/') || block.url.startsWith('./') || block.url.startsWith('../')
+        ? true
+        : false;
+    }
+
+    // Absolute URL: parse WITHOUT a base. Passing a base makes `new URL()` lenient
+    // enough to rescue garbage — `new URL('ht!tp://%%%', origin)` does NOT throw, it
+    // silently resolves to a same-origin path with protocol "https:", which would
+    // fail OPEN. Without a base, a malformed scheme fails to parse and we fail closed.
+    try {
+      const parsed = new URL(block.url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+      return parsed.origin === window.location.origin;
+    } catch {
+      // Malformed URL — fail closed (treat as third-party).
+      return false;
+    }
+  }, [block.url]);
+
+  // Drive takes precedence: its preview needs allow-same-origin regardless of origin.
+  const sandbox = isGoogleDrive
+    ? `allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox`
+    : isSameOrigin
+      ? `allow-scripts allow-same-origin allow-forms allow-popups`
+      : `allow-scripts allow-forms allow-popups`;
+
   return (
     <div className="space-y-2">
       <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--panel-bg)]" style={{ height: block.height || 500 }}>
@@ -424,7 +469,7 @@ const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
             src={embedUrl}
             className="w-full h-full border-0"
             title={block.caption || 'Embedded content'}
-            sandbox={isGoogleDrive ? `allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox` : `allow-scripts allow-forms allow-popups`}
+            sandbox={sandbox}
             allow={isGoogleDrive ? 'autoplay' : undefined}
             onError={() => setEmbedError(true)}
           />
