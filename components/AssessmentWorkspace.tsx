@@ -831,7 +831,7 @@ const HtmlActivityWorkCard: React.FC<HtmlActivityWorkCardProps> = ({ state, cont
         src={contentUrl}
         className="w-full h-[600px] rounded-lg border border-[var(--border)] bg-white"
         title="HTML Activity Preview"
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
       />
     </div>
   );

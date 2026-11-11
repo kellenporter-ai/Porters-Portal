@@ -157,7 +157,7 @@ const StudyMaterial: React.FC<StudyMaterialProps> = ({ assignment, onComplete, r
                         src={material.storageUrl || URL.createObjectURL(new Blob([material.htmlContent!], { type: 'text/html' }))}
                         className="w-full h-full border-none"
                         title="Study Material"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
                     />
                 </div>
             ) : (

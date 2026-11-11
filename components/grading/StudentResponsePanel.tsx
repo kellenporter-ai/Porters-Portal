@@ -124,7 +124,7 @@ function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; cont
           className="w-full h-[700px] border-0"
           title="Student HTML Activity"
           onLoad={() => sendState(iframeRef.current)}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
         />
       </div>
 
@@ -148,7 +148,7 @@ function HtmlActivityResponsePanel({ state, contentUrl }: { state: unknown; cont
               className="w-full flex-1 border-0"
               title="Student HTML Activity Fullscreen"
               onLoad={() => sendState(modalIframeRef.current)}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-downloads allow-popups"
             />
           </div>
         </div>

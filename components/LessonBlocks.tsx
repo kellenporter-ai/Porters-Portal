@@ -454,10 +454,10 @@ const EmbedBlock: React.FC<{ block: LessonBlock }> = React.memo(({ block }) => {
 
   // Drive takes precedence: its preview needs allow-same-origin regardless of origin.
   const sandbox = isGoogleDrive
-    ? `allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox`
+    ? `allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-popups-to-escape-sandbox`
     : isSameOrigin
-      ? `allow-scripts allow-same-origin allow-forms allow-popups`
-      : `allow-scripts allow-forms allow-popups`;
+      ? `allow-scripts allow-same-origin allow-forms allow-popups allow-downloads`
+      : `allow-scripts allow-forms allow-popups allow-downloads`;
 
   return (
     <div className="space-y-2">

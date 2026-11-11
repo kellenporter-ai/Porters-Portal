@@ -1045,7 +1045,7 @@ const LessonEditorPage: React.FC<LessonEditorPageProps> = ({ assignments, onClos
                   <iframe
                     src={resolveResourceContentUrl(resContentUrl)}
                     className="w-full h-full border-none bg-white"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
                     title="Resource Preview"
                   />
                 </div>

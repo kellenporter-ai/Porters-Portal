@@ -9,9 +9,9 @@ import type { LessonBlock } from '../../types';
 // EmbedBlock is not exported, so it is exercised through the public LessonBlocks
 // renderer with a single EMBED block — the same path students hit in production.
 
-const DRIVE_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
-const SAME_ORIGIN_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-popups';
-const THIRD_PARTY_SANDBOX = 'allow-scripts allow-forms allow-popups';
+const DRIVE_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-popups-to-escape-sandbox';
+const SAME_ORIGIN_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-popups allow-downloads';
+const THIRD_PARTY_SANDBOX = 'allow-scripts allow-forms allow-popups allow-downloads';
 
 function makeEmbedBlock(url: string): LessonBlock {
   return {

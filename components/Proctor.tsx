@@ -2070,7 +2070,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                             src={resolvedContentUrl || ''}
                             className="w-full h-full min-h-0 border-none bg-white"
                             title={t('proctor.body.resourceViewerTitle')}
-                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox allow-downloads"
                             allow="fullscreen"
                             allowFullScreen
                             onLoad={handleInteraction}
@@ -2095,7 +2095,7 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
                                 src={studyMaterial.storageUrl || studyMaterialBlobUrl || ''}
                                 className="w-full h-full border-none"
                                 title={t('proctor.body.referenceMaterialTitle')}
-                                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
                             />
                         ) : (
                             <div className="h-full overflow-y-auto custom-scrollbar">
