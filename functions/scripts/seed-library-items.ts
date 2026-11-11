@@ -385,6 +385,33 @@ const SEED_ITEMS: SeedItem[] = [
     suggestedCategory: 'Practice',
     sourceFingerprint: '/ap1-recitation-recall.html',
   },
+  {
+    title: 'Your Own Investigation: Full ISLE Cycle Extra Credit',
+    description: 'A guided scientific-process project where each student picks a question they are genuinely curious about, in any field including psychology, social science, or their own life, and runs the complete ISLE cycle on it. Five tiers worth 2 points each map onto the nine ISLE steps: ask a question and design an observation, collect and analyze data in a five-row table, write a first crazy idea with the evidence that would disprove it, design a test and predict with that idea using a prediction lock, then run the test and re-evaluate the idea. Nothing locks, so a student who stops after tier 3 keeps 6 of 10 points, and a wrong conclusion still earns the final tier because the reasoning is what is scored. Each field carries its own length guidance, the placeholder names the shape of the answer without supplying content, and work autosaves with an EN/ES toggle. Exports a PDF with a cover page and a tier score block for Google Classroom submission. Pairs with the OpenSciEd P.1 energy unit and the rubbing balloons electrostatics investigation as a transfer task after those units close.',
+    url: '/your-own-investigation',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Physics',
+    tags: [
+      'physics',
+      'honors-physics',
+      'isle',
+      'scientific-practices',
+      'experimental-design',
+      'data-analysis',
+      'modeling',
+      'argument-from-evidence',
+      'extra-credit',
+      'inquiry',
+      'bilingual',
+      'pdf-export',
+      'autosave',
+      'chromebook-friendly',
+      'activity',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/your-own-investigation.html',
+  },
 ];
 
 async function main() {

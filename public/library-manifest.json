@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T01:57:23.342Z",
+  "generatedAt": "2026-11-11T12:29:55.905Z",
   "items": [
     {
       "path": "/ap1-course-recap.html",
@@ -74,7 +74,7 @@
     {
       "path": "/evidence-court.html",
       "fingerprint": "/evidence-court.html",
-      "sizeBytes": 29348
+      "sizeBytes": 34982
     },
     {
       "path": "/evidence-types/",
@@ -159,12 +159,12 @@
     {
       "path": "/l4-blackout-detective.html",
       "fingerprint": "/l4-blackout-detective.html",
-      "sizeBytes": 38451
+      "sizeBytes": 38452
     },
     {
       "path": "/l4-decisions-matrix.html",
       "fingerprint": "/l4-decisions-matrix.html",
-      "sizeBytes": 28906
+      "sizeBytes": 28907
     },
     {
       "path": "/latent-print-lab/",
@@ -350,6 +350,11 @@
       "path": "/weekly-reflection-journal-rubric.html",
       "fingerprint": "/weekly-reflection-journal-rubric.html",
       "sizeBytes": 55573
+    },
+    {
+      "path": "/your-own-investigation.html",
+      "fingerprint": "/your-own-investigation.html",
+      "sizeBytes": 552457
     }
   ]
 }
