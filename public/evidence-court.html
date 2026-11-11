@@ -178,6 +178,28 @@
   }
 </style>
   <script src="/origin-guard.js"></script>
+  <!--
+    Durable student work.
+
+    Work is saved to this device AND to the server. The device copy is written
+    first and unconditionally, so a failed sign-in never costs a student their
+    work. Managed-Chromebook policy periodically wipes browser storage, which is
+    why the device copy alone is not enough.
+
+    portal-auth supplies identity; portal-save performs the writes. The config
+    below must match lib/firebase.ts: same project, same apiKey, and the SAME
+    default app name, so this page shares the Portal's signed-in session instead
+    of asking for a second sign-in.
+  -->
+  <script>
+    window.__PORTAL_FIREBASE_CONFIG__ = {
+      apiKey: 'AIzaSyAEbD7LIWGkS0vu6o1uPuKvMpLeSeeTMeo',
+      projectId: 'porters-portal',
+      authDomain: 'porters-portal.web.app'
+    };
+  </script>
+  <script src="/portal-auth.js"></script>
+  <script src="/portal-save.js"></script>
 </head>
 <body>
 <div class="app">
@@ -259,6 +281,12 @@ const STRINGS = {
     save: 'Save to this device',
     load: 'Load from this device',
     savedOk: 'Saved to this device.',
+    savedCloud: 'Saved to your account.',
+    savingCloud: 'Saving…',
+    pendingCloud: 'Not saved to your account yet.',
+    blockedNoAuth: 'Not saved — sign in to save your work.',
+    blockedConflict: 'Not saved — this work was changed on another device. Reload to compare.',
+    tooLarge: 'Work is too large to save. Remove any pasted images.',
     loadedOk: 'Loaded from this device.',
     notFound: 'Nothing saved on this device yet.',
     demo: 'Fill with demo data',
@@ -312,6 +340,12 @@ const STRINGS = {
     save: 'Guardar en este dispositivo',
     load: 'Cargar de este dispositivo',
     savedOk: 'Guardado en este dispositivo.',
+    savedCloud: 'Guardado en su cuenta.',
+    savingCloud: 'Guardando…',
+    pendingCloud: 'Todavía no guardado en su cuenta.',
+    blockedNoAuth: 'No guardado — inicien sesión para guardar su trabajo.',
+    blockedConflict: 'No guardado — este trabajo se cambió en otro dispositivo. Recarguen para comparar.',
+    tooLarge: 'El trabajo es demasiado grande para guardar. Quiten las imágenes pegadas.',
     loadedOk: 'Cargado de este dispositivo.',
     notFound: 'Todavía no hay nada guardado en este dispositivo.',
     demo: 'Llenar con datos de prueba',
@@ -496,15 +530,95 @@ function applyLang() {
 }
 
 /* ================= storage ================= */
-function saveToDevice() {
+// The activity id must be a stable slug: it keys the server document
+// (resource_saves/{uid}/items/{activityId}) and every local draft.
+const ACTIVITY_ID = 'evidence-court';
+
+// Created on boot once an identity is known; until then work is device-only.
+let saveController = null;
+
+function payloadString() {
   readFormIntoState();
-  const payload = { group: state.group, story: state.story, exhibits: state.exhibits };
+  return JSON.stringify({ group: state.group, story: state.story, exhibits: state.exhibits });
+}
+
+function saveToDevice() {
+  const payload = payloadString();
+  // Local first, unconditionally: this must never be gated behind a network
+  // round-trip, or a failed sign-in becomes a data-loss event.
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    setStatus(t('savedOk'));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(JSON.parse(payload)));
   } catch (err) {
     setStatus('Save failed: ' + err.message, true);
+    return;
   }
+
+  if (saveController && saveController.hasIdentity()) {
+    // The controller owns the green state from here. It reports 'saved' only
+    // after the server acknowledges this exact payload.
+    saveController.markDirty(payload);
+    return;
+  }
+
+  // No identity: say so plainly rather than implying the work is safe.
+  setStatus(t('blockedNoAuth'), true);
+}
+
+/**
+ * Reflect the save layer's state in the existing status line.
+ * 'saved' is reachable ONLY from here, i.e. only on a server acknowledgement.
+ */
+function onSaveStatus(status, detail) {
+  if (status === 'saved') { setStatus(t('savedCloud')); return; }
+  if (status === 'saving') { setStatus(t('savingCloud')); return; }
+  if (status === 'pending') { setStatus(t('pendingCloud')); return; }
+  if (status === 'blocked') {
+    if (detail === 'conflict' || detail === 'precondition') {
+      setStatus(t('blockedConflict'), true);
+    } else if (detail === 'no-identity' || detail === 'no-token-source') {
+      setStatus(t('blockedNoAuth'), true);
+    } else if (detail && /too large/i.test(String(detail))) {
+      setStatus(t('tooLarge'), true);
+    } else {
+      setStatus(String(detail || t('blockedNoAuth')), true);
+    }
+  }
+}
+
+/** Bind identity, then start saving. Failure here must not block the activity. */
+function initSaveLayer() {
+  if (!window.PortalAuth || !window.PortalSave) return;
+  window.PortalAuth.bind()
+    .then(function (identity) {
+      if (!identity.uid) {
+        setStatus(t('blockedNoAuth'), true);
+        // Offer sign-in only when this document is NOT framed; inside a frame
+        // the parent owns sign-in and a popup would be blocked.
+        if (window.PortalAuth.canSignInHere() && els.btnSave) {
+          els.btnSave.addEventListener('click', function () {
+            window.PortalAuth.signIn().catch(function () { /* student cancelled */ });
+          });
+        }
+        return;
+      }
+      saveController = window.PortalSave.createController({
+        activityId: ACTIVITY_ID,
+        uid: identity.uid,
+        getToken: identity.getToken,
+        onStatus: onSaveStatus,
+        onConflict: function () { setStatus(t('blockedConflict'), true); },
+      });
+      // Identity changed mid-session (shared device): stop writing immediately.
+      window.PortalAuth.onChange(function (next) {
+        if (saveController) saveController.setUid(next.uid);
+        if (!next.uid) setStatus(t('blockedNoAuth'), true);
+      });
+    })
+    .catch(function () {
+      // Auth unavailable (filtered network, blocked SDK). The activity still
+      // works locally; the student is told their work is not on the server.
+      setStatus(t('blockedNoAuth'), true);
+    });
 }
 
 function loadFromDevice() {
@@ -716,6 +830,25 @@ els.btnStart.addEventListener('click', startPresenting);
 els.btnNext.addEventListener('click', nextGroup);
 
 applyLang();
+
+/* ================= durable save boot ================= */
+// The debounce window is a loss window: a lid-close or a policy wipe inside it
+// would destroy unacknowledged work. Flush when the page is hidden or going
+// away rather than only on a timer.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && saveController) {
+    saveController.flush({ force: true });
+  }
+});
+window.addEventListener('pagehide', () => {
+  if (saveController) saveController.flush({ force: true });
+});
+
+// Local work from before this version (or from a signed-out session) is NOT
+// auto-uploaded. Attributing an unscoped device blob to whoever signs in next
+// would hand one student's work to another on a shared cart. The teacher
+// resolves those manually.
+initSaveLayer();
 </script>
 </body>
 </html>

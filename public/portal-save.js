@@ -364,7 +364,280 @@
     return null;
   }
 
+  // ─── Save controller (orchestration) ──────────────────────────────────────
+  // Everything above is a tested primitive. This drives them as one save loop:
+  // edit -> local draft (always) -> debounced server write -> reconcile -> status.
+  //
+  // THE CONTRACT THE STUDENT SEES
+  //   'saved'    ONLY when the server acknowledged the exact on-screen payload.
+  //   'saving'   a write is in flight.
+  //   'pending'  dirty work exists that the server has not acknowledged.
+  //   'blocked'  no identity, or a conflict, or a payload we refuse to send.
+  // A localStorage write NEVER produces 'saved'. That is the whole point.
+  //
+  // CONFLICTS NEVER AUTO-RESOLVE. reconcile() returning 'conflict' stops here and
+  // asks. Refetching a rev and re-pushing would silently destroy the other
+  // device's newer work, which is the exact loss this exists to prevent.
+  function createController(options) {
+    var opts = options || {};
+    var activityId = opts.activityId;
+    var uid = opts.uid || null;
+    var getToken = opts.getToken || null;
+    var onStatus = opts.onStatus || function () {};
+    var onConflict = opts.onConflict || null;
+    var schemaVersion = opts.schemaVersion || 1;
+
+    if (!activityId || !ACTIVITY_ID_RE.test(activityId)) {
+      throw new Error('createController: invalid activityId');
+    }
+
+    var status = 'idle';
+    var lastWriteAt = null;
+    var pendingSince = null;
+    var timer = null;
+    var inFlight = false;
+    var lastAckedPayload = null;
+    var lastAckedRev = 0;
+    var lastAckedUpdateTime = null;
+    var lastError = null;
+
+    function setStatus(next, detail) {
+      if (status === next && !detail) return;
+      status = next;
+      try {
+        onStatus(next, detail || null);
+      } catch (e) {
+        /* a status renderer must never break saving */
+      }
+    }
+
+    function clearTimer() {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    }
+
+    /** Identity changing mid-session is fatal to correctness — stop everything. */
+    function setUid(nextUid, nextGetToken) {
+      if (nextUid !== uid) {
+        clearTimer();
+        lastAckedPayload = null;
+        lastAckedRev = 0;
+        lastAckedUpdateTime = null;
+      }
+      uid = nextUid || null;
+      if (nextGetToken) getToken = nextGetToken;
+      if (!uid) setStatus('blocked', 'no-identity');
+    }
+
+    /**
+     * Record an edit. ALWAYS writes the local draft first, before any auth
+     * check — a local write gated on the network turns a re-login into a loss.
+     */
+    function markDirty(payloadString) {
+      var bad = validatePayload(payloadString);
+      if (bad) {
+        setStatus('blocked', bad);
+        return { ok: false, reason: bad };
+      }
+      if (!uid) {
+        // Keep the work locally, but say plainly it is not saved.
+        try {
+          localStorage.setItem(
+            'pp:v1:pending-anon:' + activityId,
+            payloadString,
+          );
+        } catch (e) { /* private mode: nothing more we can do */ }
+        setStatus('blocked', 'no-identity');
+        return { ok: false, reason: 'no-identity' };
+      }
+
+      writeDraft(activityId, uid, payloadString, true, lastAckedRev, lastAckedUpdateTime);
+      pendingSince = pendingSince || Date.now();
+      setStatus('pending');
+      schedule();
+      return { ok: true };
+    }
+
+    function schedule() {
+      if (inFlight) return; // the in-flight completion re-schedules
+      clearTimer();
+      var now = Date.now();
+      var s = decideSchedule(now, lastWriteAt, pendingSince);
+      var wait = Math.max(0, (s.fireAt || now) - now);
+      timer = setTimeout(function () {
+        timer = null;
+        flush();
+      }, wait);
+    }
+
+    /**
+     * Push the local draft to the server now.
+     * @param {{force?: boolean}} o force bypasses the debounce (NOT the floor
+     *        reasoning) — used for pagehide/visibilitychange.
+     */
+    function flush(o) {
+      var force = !!(o && o.force);
+      clearTimer();
+      if (inFlight) return Promise.resolve({ ok: false, reason: 'in-flight' });
+      if (!uid) {
+        setStatus('blocked', 'no-identity');
+        return Promise.resolve({ ok: false, reason: 'no-identity' });
+      }
+
+      var draft = readDraft(activityId, uid);
+      if (!draft || !draft.dirty) {
+        // Nothing unacknowledged. Do not spend a write.
+        return Promise.resolve({ ok: true, reason: 'clean' });
+      }
+
+      var bad = validatePayload(draft.payload);
+      if (bad) {
+        setStatus('blocked', bad);
+        return Promise.resolve({ ok: false, reason: bad });
+      }
+
+      if (typeof getToken !== 'function') {
+        setStatus('blocked', 'no-token-source');
+        return Promise.resolve({ ok: false, reason: 'no-token-source' });
+      }
+
+      inFlight = true;
+      setStatus('saving');
+
+      return Promise.resolve()
+        .then(function () {
+          // Per-request token: ID tokens expire in ~1h and tabs stay open across
+          // periods, so a cached token fails mid-class.
+          return getToken();
+        })
+        .then(function (token) {
+          return serverFetch(token, uid, activityId).then(function (server) {
+            return { token: token, server: server };
+          });
+        })
+        .then(function (ctx) {
+          var decision = reconcile(draft, ctx.server);
+
+          if (decision.action === 'ack') {
+            ackDraft(draft.payload, decision.rev, decision.updateTime);
+            return { ok: true, action: 'ack' };
+          }
+
+          if (decision.action === 'conflict') {
+            clearTimer();
+            setStatus('blocked', 'conflict');
+            if (typeof onConflict === 'function') {
+              try {
+                onConflict({
+                  draft: decision.draft,
+                  server: decision.server,
+                  reason: decision.reason,
+                });
+              } catch (e) { /* never break saving because a modal threw */ }
+            }
+            // Deliberately NOT retried. See the header comment.
+            return { ok: false, action: 'conflict', reason: decision.reason };
+          }
+
+          if (decision.action === 'discard-cache') {
+            clearDraft(activityId, uid);
+            setStatus('idle');
+            return { ok: true, action: 'discard-cache' };
+          }
+
+          if (decision.action === 'adopt') {
+            clearDraft(activityId, uid);
+            setStatus('idle');
+            return { ok: true, action: 'adopt', payload: decision.payload, rev: decision.rev };
+          }
+
+          if (decision.action === 'push') {
+            return serverCommit(
+              ctx.token, uid, activityId, draft.payload, decision.rev, schemaVersion, decision.expected,
+            ).then(function (res) {
+              if (res.ok) {
+                ackDraft(draft.payload, decision.rev, res.updateTime);
+                return { ok: true, action: 'push', rev: decision.rev };
+              }
+              lastError = res;
+              if (res.precondition) {
+                // The doc moved between our read and our commit. This is a REAL
+                // conflict (someone else wrote), not a retryable blip.
+                setStatus('blocked', 'conflict');
+                if (typeof onConflict === 'function') {
+                  try {
+                    onConflict({ draft: draft, server: null, reason: 'precondition' });
+                  } catch (e) { /* ignore */ }
+                }
+                return { ok: false, action: 'conflict', reason: 'precondition' };
+              }
+              // Network/transient: keep the draft dirty and retry later.
+              setStatus('pending', res.error || 'network');
+              return { ok: false, action: 'push', reason: res.error || 'error' };
+            });
+          }
+
+          return { ok: true, action: 'nothing' };
+        })
+        .catch(function (e) {
+          lastError = e;
+          // A thrown read (e.g. PERMISSION_DENIED after the whitelist gate) must
+          // be VISIBLE, not swallowed — otherwise the student believes a silent
+          // failure is a successful save.
+          setStatus('blocked', String((e && e.status) || e.message || e));
+          return { ok: false, reason: 'exception' };
+        })
+        .then(function (result) {
+          inFlight = false;
+          if (result && result.ok) {
+            lastWriteAt = Date.now();
+            pendingSince = null;
+          } else if (status !== 'blocked') {
+            // Let the remaining debounce/floor run so a transient failure retries.
+            schedule();
+          }
+          return result;
+        });
+    }
+
+    function ackDraft(payloadString, rev, updateTime) {
+      lastAckedPayload = payloadString;
+      lastAckedRev = rev;
+      lastAckedUpdateTime = updateTime || null;
+      // Delete-on-ack, but ONLY for the exact payload we just sent. A late
+      // response for an older write must never clear a newer draft.
+      var current = readDraft(activityId, uid);
+      if (current && current.payload === payloadString) {
+        clearDraft(activityId, uid);
+      } else if (current) {
+        writeDraft(activityId, uid, current.payload, true, rev, updateTime || null);
+      }
+      setStatus('saved');
+    }
+
+    /** Status for the UI. */
+    function getStatus() {
+      return {
+        status: status,
+        dirty: !!(pendingSince || status === 'pending'),
+        lastAckedRev: lastAckedRev,
+        lastError: lastError,
+      };
+    }
+
+    return {
+      markDirty: markDirty,
+      flush: flush,
+      setUid: setUid,
+      getStatus: getStatus,
+      hasIdentity: function () { return !!uid; },
+    };
+  }
+
   global.PortalSave = {
+    createController: createController,
     // Exposed for tests and for activities that want to inspect state.
     _internals: {
       draftKey: draftKey,
@@ -376,6 +649,7 @@
       reconcile: reconcile,
       validatePayload: validatePayload,
       decideSchedule: decideSchedule,
+      createController: createController,
       DEBOUNCE_MS: DEBOUNCE_MS,
       HARD_FLOOR_MS: HARD_FLOOR_MS,
       MAX_PAYLOAD_BYTES: MAX_PAYLOAD_BYTES,
@@ -387,8 +661,8 @@
     serverFetch: serverFetch,
     serverCommit: serverCommit
   };
-
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = global.PortalSave;
   }
+
 })(typeof window !== 'undefined' ? window : globalThis);

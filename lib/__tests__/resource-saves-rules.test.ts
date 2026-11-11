@@ -53,9 +53,19 @@ const STUDENT_A = 'studentA';
 const STUDENT_B = 'studentB';
 const ACTIVITY = 'cart-04-corrupted-lab';
 
+// The `resource_saves` rules gate writes on membership in `allowed_emails`
+// (the teacher-curated whitelist), because the project apiKey is public and any
+// Google account can otherwise create docs. Every authenticated context in this
+// file therefore carries a whitelisted email claim.
+const ROSTER: Record<string, string> = {
+  [STUDENT_A]: 'student.a@students.pahs.edu',
+  [STUDENT_B]: 'student.b@students.pahs.edu',
+};
+
 function db(uid: string) {
   if (!env) throw new Error('test environment not initialized');
-  return env.authenticatedContext(uid).firestore();
+  const email = ROSTER[uid];
+  return env.authenticatedContext(uid, email ? { email } : {}).firestore();
 }
 
 function docRef(uid: string, activityId = ACTIVITY) {
@@ -92,9 +102,28 @@ beforeAll(async () => {
       projectId: 'porters-portal-rules-test',
       firestore: { rules: readFileSync(resolve(__dirname, '../../firestore.rules'), 'utf8') },
     });
+    // Seed the teacher-maintained whitelist (rules bypassed).
+    //
+    // Ordering matters: this must be the FIRST Firestore operation in the file.
+    // If any authenticated client runs first, the SDK has already started its
+    // Firestore instance and `withSecurityRulesDisabled` throws
+    // "Firestore has already been started".
+    try {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        for (const email of Object.values(ROSTER)) {
+          await setDoc(doc(ctx.firestore(), 'allowed_emails', email), { classType: 'test' });
+        }
+      });
+    } catch (e) {
+      // The rules-disabled client writes successfully, then the SDK throws
+      // "Firestore has already been started" while tearing down. The writes land
+      // (proven: the allow-path tests below only pass when this runs), so this
+      // specific teardown error is not a failure of the seed.
+      if (!/already been started/.test(String(e))) throw e;
+    }
   } catch (e) {
     emulatorFailed = true;
-    console.warn('[rules] emulator unavailable:', String(e).slice(0, 200));
+    console.warn('[rules] emulator unavailable:', e);
   }
 });
 
@@ -140,15 +169,43 @@ suite('resource_saves rules', () => {
     await assertFails(setDoc(docRef(STUDENT_B, 'other-activity'), payload(5)));
   });
 
+  // NOTE: this test must build the doc path MANUALLY rather than using docRef().
+  // docRef(uid) derives the path from the same uid it authenticates as, so
+  // `docRef(STUDENT_A)` always means "A writing A's own doc" — which the rules
+  // are supposed to allow. An earlier version of this test used docRef(STUDENT_A)
+  // and therefore asserted that a legitimate rev 3 -> 4 write failed; it passed
+  // for A and could only ever fail on a rules regression, never test cross-
+  // student isolation. The identity and the target must be varied independently.
   it('REJECTS writing another student\'s save', async () => {
     await seed(STUDENT_A, 3);
-    await assertFails(setDoc(docRef(STUDENT_A), payload(4)));
+    if (!env) throw new Error('no env');
+    const other = env.authenticatedContext(STUDENT_B, { email: ROSTER[STUDENT_B] }).firestore();
+    await assertFails(
+      setDoc(doc(other, 'resource_saves', STUDENT_A, 'items', ACTIVITY), payload(4)),
+    );
+  });
+
+  it('REJECTS creating a save in another student\'s namespace', async () => {
+    await clear(STUDENT_A, 'foreign-create');
+    if (!env) throw new Error('no env');
+    const other = env.authenticatedContext(STUDENT_B, { email: ROSTER[STUDENT_B] }).firestore();
+    await assertFails(
+      setDoc(
+        doc(other, 'resource_saves', STUDENT_A, 'items', 'foreign-create'),
+        payload(1),
+      ),
+    );
+  });
+
+  it('CONTROL: the same write by the owner is ALLOWED (proves the denial above is isolation)', async () => {
+    await seed(STUDENT_A, 3);
+    await assertSucceeds(setDoc(docRef(STUDENT_A), payload(4)));
   });
 
   it('REJECTS reading another student\'s save', async () => {
     await seed(STUDENT_A, 3);
     if (!env) throw new Error('no env');
-    const other = env.authenticatedContext(STUDENT_B).firestore();
+    const other = env.authenticatedContext(STUDENT_B, { email: ROSTER[STUDENT_B] }).firestore();
     await assertFails(getDoc(doc(other, 'resource_saves', STUDENT_A, 'items', ACTIVITY)));
   });
 

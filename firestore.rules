@@ -78,15 +78,33 @@ service cloud.firestore {
     // device, or origin fail LOUDLY instead of silently overwriting newer work.
     // That check is the whole reason rev exists — do not relax it.
     match /resource_saves/{userId}/items/{activityId} {
-      allow read: if request.auth != null
+      // WHO MAY WRITE AT ALL
+      // The project's apiKey is public (it ships in every page). Any Google
+      // account can therefore complete a sign-in against this project. Without
+      // an account check, a stranger's personal Gmail could create documents —
+      // a storage cost on a low budget tier and a FERPA concern on a collection
+      // that holds student work.
+      //
+      // The gate is the existing `allowed_emails` whitelist (one doc per
+      // invited email, keyed by lowercased address), NOT a hardcoded school
+      // domain: the whitelist is what the teacher actually curates, and it
+      // survives a domain change. `email != null` guards the exists() lookup
+      // so an account without an email claim is denied rather than erroring.
+      function isWhitelistedStudent() {
+        return request.auth != null
+          && request.auth.token.email is string
+          && exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email.lower()));
+      }
+
+      allow read: if isWhitelistedStudent()
                   && (request.auth.uid == userId || isAdmin());
 
-      allow create: if request.auth != null
+      allow create: if isWhitelistedStudent()
                     && request.auth.uid == userId
                     && validResourceSave()
                     && request.resource.data.rev == 1;
 
-      allow update: if request.auth != null
+      allow update: if isWhitelistedStudent()
                     && request.auth.uid == userId
                     && validResourceSave()
                     && request.resource.data.rev == resource.data.rev + 1;
