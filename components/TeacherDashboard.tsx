@@ -6,6 +6,7 @@ import { User, Announcement, Assignment, Submission, StudentAlert, StudentBucket
 import { Users, Clock, FileText, Zap, Activity, Loader2, BarChart3, ClipboardCheck, Megaphone, Trophy, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
 import AnalyticsTab from './dashboard/AnalyticsTab';
 import DistrictCalendarTab from './dashboard/DistrictCalendarTab';
+import BellScheduleTab from './dashboard/BellScheduleTab';
 const LibraryTab = React.lazy(() => import('./library/LibraryTab'));
 import { dataService } from '../services/dataService';
 import { reportError } from '../lib/errorReporting';
@@ -38,7 +39,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
   const [bucketProfiles, setBucketProfiles] = useState<StudentBucketProfile[]>([]);
   const [activeSessions, setActiveSessions] = useState<Map<string, { assignmentId: string; assignmentTitle: string; startedAt: string }>>(new Map());
   const [showBehaviorAward, setShowBehaviorAward] = useState(false);
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'calendar' | 'library'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'analytics' | 'calendar' | 'bell-schedule' | 'library'>('dashboard');
   const [overviewTab, setOverviewTab] = useState<'alerts' | 'announcements' | 'students' | 'wellness' | 'bugs' | 'songs'>('alerts');
   // Set by the "New Announcement" quick action so the manager mounts with the composer open.
   // Consumed (reset) once the announcements tab has mounted with it — otherwise the latch
@@ -151,6 +152,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
           <button id="tab-calendar" role="tab" aria-selected={adminTab === 'calendar'} aria-controls="tabpanel-calendar" onClick={() => setAdminTab('calendar')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'calendar' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <CalendarIcon className="w-3.5 h-3.5" aria-hidden="true" /> Calendar
           </button>
+          <button id="tab-bell-schedule" role="tab" aria-selected={adminTab === 'bell-schedule'} aria-controls="tabpanel-bell-schedule" onClick={() => setAdminTab('bell-schedule')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'bell-schedule' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
+            <Clock className="w-3.5 h-3.5" aria-hidden="true" /> Bell Schedule
+          </button>
           <button id="tab-library" role="tab" aria-selected={adminTab === 'library'} aria-controls="tabpanel-library" onClick={() => setAdminTab('library')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${adminTab === 'library' ? 'bg-purple-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}>
             <BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> Library
           </button>
@@ -202,6 +206,14 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ users, assignments 
         <div role="tabpanel" id="tabpanel-calendar" aria-labelledby="tab-calendar">
           <FeatureErrorBoundary feature="District Calendar">
             <DistrictCalendarTab />
+          </FeatureErrorBoundary>
+        </div>
+      )}
+
+      {adminTab === 'bell-schedule' && (
+        <div role="tabpanel" id="tabpanel-bell-schedule" aria-labelledby="tab-bell-schedule">
+          <FeatureErrorBoundary feature="Bell Schedule">
+            <BellScheduleTab />
           </FeatureErrorBoundary>
         </div>
       )}

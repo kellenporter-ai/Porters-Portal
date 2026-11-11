@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T12:29:55.944Z",
+  "generatedAt": "2026-11-11T15:40:15.754Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -42,7 +42,8 @@
     "/friction-lab": "/friction-lab/index.html",
     "/friction-lab/": "/friction-lab/index.html",
     "/minutiae-hunt": "/minutiae-hunt.html",
-    "/domes-trip": "/domes-trip/index.html"
+    "/domes-trip": "/domes-trip/index.html",
+    "/schedule": "/schedule.html"
   },
   "dirs": [
     "/ap1-q1-review",

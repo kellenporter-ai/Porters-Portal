@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="slate">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="Live PAHS bell schedule with a countdown to the next period, passing time, and dismissal.">
+<title>PAHS Bell Schedule</title>
+<style>
+/* ==========================================================
+   TOKENS
+   Dark is the default (Portal theme). Light follows the OS.
+   Accent is switched by [data-accent] on <html> from SCHEDULES.
+   ========================================================== */
+:root{
+  --bg-a:#0a0a1a;
+  --bg-b:#1a1a2e;
+  --panel:#161b22;
+  --panel-2:#1c2330;
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.14);
+  --ink:#e6edf3;
+  --ink-2:#c3cdd8;
+  --muted:#8b949e;
+  --accent:#94a3b8;
+  --accent-soft:rgba(148,163,184,.16);
+  --accent-ink:#0a0a1a;
+  --good:#3fb950;
+  --warn:#f0883e;
+  --radius:12px;
+  --shadow:0 8px 28px rgba(0,0,0,.45);
+  --focus:#7cc4ff;
+}
+
+/* ---- accents ---- */
+html[data-accent="rose"]{ --accent:#f1768a; --accent-soft:rgba(241,118,138,.15); --accent-ink:#1a0a10; }
+html[data-accent="blue"]{ --accent:#58a6ff; --accent-soft:rgba(88,166,255,.15); --accent-ink:#0a1220; }
+html[data-accent="slate"]{ --accent:#94a3b8; --accent-soft:rgba(148,163,184,.16); --accent-ink:#0a0a1a; }
+html[data-accent="amber"]{ --accent:#f0b429; --accent-soft:rgba(240,180,41,.16); --accent-ink:#1a1205; }
+
+/* ---- light palette ---- */
+@media (prefers-color-scheme: light){
+  :root{
+    --bg-a:#f7f7f5;
+    --bg-b:#efeef0;
+    --panel:#ffffff;
+    --panel-2:#f2f2ef;
+    --line:rgba(20,20,20,.12);
+    --line-2:rgba(20,20,20,.22);
+    --ink:#1a1a1a;
+    --ink-2:#3a3a3a;
+    --muted:#5b5b5b;
+    --shadow:0 6px 20px rgba(0,0,0,.10);
+    --focus:#0b5fbf;
+  }
+  /* Light-mode accents: darkened so text on tint clears 4.5:1 */
+  html[data-accent="rose"]{ --accent:#b02a41; --accent-soft:rgba(176,42,65,.12); }
+  html[data-accent="blue"]{ --accent:#1a5fb4; --accent-soft:rgba(26,95,180,.12); }
+  html[data-accent="slate"]{ --accent:#475569; --accent-soft:rgba(71,85,105,.12); }
+  html[data-accent="amber"]{ --accent:#8a6200; --accent-soft:rgba(138,98,0,.13); }
+}
+
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(160deg,var(--bg-a),var(--bg-b));
+  background-attachment:fixed;
+  color:var(--ink);
+  font:400 16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,p,ul{margin:0;}
+ul{ padding:0; list-style:none; }
+button,select{ font:inherit; color:inherit; }
+a{ color:var(--accent); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+
+/* Visible focus ring everywhere (WCAG 2.4.11 / 2.4.13) */
+:focus-visible{
+  outline:2px solid var(--focus);
+  outline-offset:2px;
+  border-radius:6px;
+}
+
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%);
+  white-space:nowrap; border:0;
+}
+
+/* ==========================================================
+   SHELL  — centered single column, max 760px
+   ========================================================== */
+.shell{
+  max-width:760px;
+  margin:0 auto;
+  padding:10px 16px 28px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* ---- header (compact: must leave the timekeeper above the fold) ---- */
+.top{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:2px 0 10px;
+  border-bottom:1px solid var(--line);
+}
+.top-title{ font-size:20px; line-height:1.2; font-weight:650; letter-spacing:-.01em; }
+.top-title .dot{
+  display:inline-block; width:9px; height:9px; border-radius:50%;
+  background:var(--accent); margin-right:8px; vertical-align:middle;
+}
+.top-right{ margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.clock{
+  font-variant-numeric:tabular-nums;
+  font-size:15px;
+  color:var(--ink-2);
+  white-space:nowrap;
+}
+.clock b{ color:var(--ink); font-weight:650; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  min-height:44px; padding:0 14px;
+  background:var(--panel-2);
+  border:1px solid var(--line-2);
+  border-radius:10px;
+  font-size:14px; font-weight:600;
+  cursor:pointer;
+  text-decoration:none;
+}
+.btn:hover{ border-color:var(--accent); text-decoration:none; }
+.btn:active{ transform:translateY(1px); }
+
+/* ---- controls row ---- */
+.controls{
+  display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;
+}
+.field{ display:flex; flex-direction:column; gap:4px; min-width:0; flex:1 1 220px; }
+.field label{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+select{
+  min-height:44px;
+  width:100%;
+  padding:0 34px 0 12px;
+  background:var(--panel-2);
+  border:1px solid var(--line-2);
+  border-radius:10px;
+  font-size:15px;
+  appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;
+  background-size:6px 6px,6px 6px;
+  background-repeat:no-repeat;
+  cursor:pointer;
+}
+
+/* ---- notice ---- */
+.notice{
+  display:none;
+  align-items:flex-start; gap:10px;
+  padding:10px 12px;
+  border:1px solid var(--line-2);
+  border-left:4px solid var(--warn);
+  border-radius:10px;
+  background:var(--panel);
+  font-size:14px;
+  color:var(--ink-2);
+  line-height:1.45;
+}
+.notice.show{ display:flex; }
+.notice .nicon{ font-weight:800; color:var(--warn); line-height:1.45; }
+
+/* ==========================================================
+   TIMEKEEPER
+   ========================================================== */
+.tk{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.tk-body{ padding:16px 18px 14px; display:flex; flex-direction:column; gap:12px; }
+
+.tk-kicker{
+  font-size:12px; letter-spacing:.10em; text-transform:uppercase;
+  font-weight:700; color:var(--accent);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.tk-kicker .badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  background:var(--accent-soft);
+  border:1px solid var(--line-2);
+  color:var(--ink);
+  letter-spacing:.04em;
+}
+
+.tk-main{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+}
+.tk-title{
+  font-size:26px; font-weight:700; line-height:1.15; letter-spacing:-.01em;
+  word-break:break-word;
+}
+.tk-count{
+  margin-left:auto;
+  font-size:34px; font-weight:750; line-height:1;
+  font-variant-numeric:tabular-nums;
+  color:var(--accent);
+  letter-spacing:-.02em;
+  white-space:nowrap;
+}
+.tk-sub{ font-size:14px; color:var(--ink-2); line-height:1.5; }
+.tk-sub strong{ color:var(--ink); font-weight:650; }
+
+/* progress bar */
+.tk-bar{
+  height:10px;
+  border-radius:999px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  overflow:hidden;
+}
+.tk-bar-fill{
+  height:100%;
+  width:0%;
+  background:var(--accent);
+  border-radius:999px;
+  transition:width .5s linear;
+}
+.tk-bar-meta{
+  display:flex; justify-content:space-between; gap:10px;
+  font-size:13px; color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+
+/* empty state */
+.tk-empty{
+  padding:22px 18px;
+  display:flex; flex-direction:column; gap:8px;
+}
+/* Any `display:*` rule outranks the UA stylesheet's `[hidden]{display:none}`, so
+   class-based flex/grid panels stay visible when toggled via the `hidden`
+   attribute (this bit .tk-empty and #tkBody). Force the attribute to win. */
+[hidden]{ display:none !important; }
+.tk-empty h2{ font-size:20px; font-weight:700; }
+.tk-empty p{ font-size:14px; color:var(--ink-2); line-height:1.55; }
+
+/* Preview mode: the displayed schedule is not in effect today, so there is no
+   ticking clock. Visually de-emphasise the big figure and show a dashed edge so
+   it reads as a reference table rather than the live state. */
+.tk.is-preview .tk-count{ opacity:.55; font-variant-numeric:tabular-nums; }
+.tk.is-preview{ border-style:dashed; }
+
+/* ==========================================================
+   TABLE
+   ========================================================== */
+.table-wrap{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.table-head{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:12px 16px;
+  border-bottom:1px solid var(--line);
+}
+.table-head h2{ font-size:15px; font-weight:700; letter-spacing:.01em; }
+.table-head .count{ font-size:13px; color:var(--muted); }
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  font-size:15px;
+}
+thead th{
+  text-align:left;
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  font-weight:700; color:var(--muted);
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+}
+tbody th[scope="row"]{ text-align:left; font-weight:650; }
+tbody td, tbody th{ padding:10px; border-bottom:1px solid var(--line); }
+tbody tr:last-child td, tbody tr:last-child th{ border-bottom:0; }
+
+/* column widths — wide name column, tight numeric columns */
+.col-name{ width:38%; }
+.col-time{ width:17%; }
+.col-len{ width:14%; }
+.col-status{ width:14%; }
+
+.num{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+tbody tr{ color:var(--ink); }
+tbody tr .name-cell{
+  position:relative;
+  padding-left:16px;
+}
+tbody tr .name-cell::before{
+  content:"";
+  position:absolute;
+  left:0; top:8px; bottom:8px;
+  width:4px;
+  border-radius:0 3px 3px 0;
+  background:transparent;
+}
+/* past rows dimmed */
+tbody tr.is-past{ opacity:.55; }
+/* current row strongly highlighted */
+tbody tr.is-now{
+  background:var(--accent-soft);
+  font-weight:650;
+}
+tbody tr.is-now .name-cell::before{ background:var(--accent); }
+/* next row accented slightly (no text styling change) */
+tbody tr.is-next{
+  box-shadow:inset 3px 0 0 0 var(--line-2);
+}
+
+.pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:11px; font-weight:750;
+  letter-spacing:.06em; text-transform:uppercase;
+  background:var(--accent);
+  color:var(--accent-ink);
+  white-space:nowrap;
+}
+.status-cell{ color:var(--muted); font-size:13px; }
+
+/* ==========================================================
+   FOOTER
+   ========================================================== */
+.foot{
+  padding:4px 2px 0;
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.55;
+}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+@media (max-width:520px){
+  .shell{ padding:8px 12px 24px; gap:10px; }
+  .top-title{ font-size:18px; }
+  /* keep the header single-line where possible: link wraps under */
+  .top-right{ width:100%; margin-left:0; justify-content:space-between; }
+  .tk-body{ padding:13px 14px 12px; }
+  .tk-title{ font-size:21px; }
+  .tk-count{ font-size:28px; }
+  table{ font-size:14px; }
+  thead th{ padding:8px 6px; }
+  tbody td, tbody th{ padding:9px 6px; }
+  /* On narrow screens the Length column is the first to go */
+  .col-len,.cell-len{ display:none; }
+  .col-name{ width:40%; }
+  .col-time{ width:22%; }
+  .col-status{ width:16%; }
+}
+
+/* ==========================================================
+   REDUCED MOTION
+   ========================================================== */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+  .tk-bar-fill{ transition:none; }
+  .btn:active{ transform:none; }
+}
+
+/* When the page is embedded in the Portal iframe, drop the extra top gap */
+@media (max-width:900px) and (min-height:600px){
+  .shell{ padding-top:8px; }
+}
+</style>
+  <script src="/origin-guard.js"></script>
+  <!--
+    portal-auth supplies a Firebase identity for the override read below.
+    The config must match lib/firebase.ts — same project, same apiKey, same
+    default app name — so this page shares the Portal's signed-in session
+    instead of asking for a second sign-in.
+  -->
+  <script>
+    window.__PORTAL_FIREBASE_CONFIG__ = {
+      apiKey: 'AIzaSyAEbD7LIWGkS0vu6o1uPuKvMpLeSeeTMeo',
+      projectId: 'porters-portal',
+      authDomain: 'porters-portal.web.app'
+    };
+  </script>
+  <script src="/portal-auth.js"></script>
+</head>
+<body>
+<div class="shell">
+
+  <header class="top">
+    <h1 class="top-title"><span class="dot" aria-hidden="true"></span>PAHS Bell Schedule</h1>
+    <div class="top-right">
+      <span class="clock"><b id="clockNow">--:--:--</b> <span id="todayLabel"></span></span>
+      <a class="btn" href="/home">Back to Portal</a>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="field">
+      <label for="scheduleSelect">Schedule</label>
+      <select id="scheduleSelect" aria-describedby="scheduleHelp"></select>
+    </div>
+    <button class="btn" id="backToday" type="button" hidden>Back to today</button>
+  </div>
+  <p class="sr-only" id="scheduleHelp">
+    Choose any posted bell schedule to preview it. Changing this does not affect your classes.
+  </p>
+
+  <div class="notice" id="todayNotice" role="status">
+    <span class="nicon" aria-hidden="true">!</span>
+    <span id="todayNoticeText"></span>
+  </div>
+
+  <!-- ================= TIMEKEEPER ================= -->
+  <section class="tk" id="timekeeper" aria-labelledby="tkHeading">
+    <h2 class="sr-only" id="tkHeading">Live schedule status</h2>
+
+    <!-- populated state -->
+    <div class="tk-body" id="tkBody" hidden>
+      <div class="tk-kicker">
+        <span class="badge" id="stateBadge">In period</span>
+        <span id="tkScheduleName"></span>
+      </div>
+
+      <div class="tk-main">
+        <span class="tk-title" id="tkTitle">Period 1</span>
+        <!-- per-second digits: aria-live OFF so screen readers are not spammed -->
+        <span class="tk-count" id="tkCount" aria-live="off" aria-atomic="true">00:00</span>
+      </div>
+
+      <div class="tk-bar" id="tkBarWrap">
+        <div class="tk-bar-fill" id="tkBarFill"
+             role="progressbar" aria-labelledby="tkTitle"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+             aria-valuetext="0% elapsed"></div>
+      </div>
+      <div class="tk-bar-meta" id="tkBarMeta">
+        <span id="tkElapsed">0 min elapsed</span>
+        <span id="tkRange">8:00 AM &ndash; 8:30 AM</span>
+      </div>
+
+      <!-- This is the ONLY polite live region for the timekeeper.
+           It changes only when the state or period NAME changes. -->
+      <p class="tk-sub" id="tkSub" aria-live="polite" aria-atomic="true"></p>
+    </div>
+
+    <!-- empty / not-posted state -->
+    <div class="tk-empty" id="tkEmpty" hidden>
+      <h2 id="tkEmptyTitle">This schedule hasn&rsquo;t been posted yet</h2>
+      <p id="tkEmptyBody">
+        Check back later, or use the schedule menu above to look at a posted day.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= FULL TABLE ================= -->
+  <section class="table-wrap" aria-labelledby="tableHeading" id="tableSection">
+    <div class="table-head">
+      <h2 id="tableHeading">Full schedule</h2>
+      <span class="count" id="tableCount"></span>
+    </div>
+    <table id="scheduleTable">
+      <caption class="sr-only">
+        Every period in the selected bell schedule, with its start time, end time, length in minutes, and current status.
+      </caption>
+      <thead>
+        <tr>
+          <th class="col-name" scope="col">Period</th>
+          <th class="col-time" scope="col">Start</th>
+          <th class="col-time" scope="col">End</th>
+          <th class="col-len" scope="col">Length</th>
+          <th class="col-status" scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody id="scheduleBody"></tbody>
+    </table>
+    <div class="tk-empty" id="tableEmpty" hidden>
+      <p>No periods have been posted for this schedule yet.</p>
+    </div>
+  </section>
+
+  <p class="foot">Times are local. If a schedule looks wrong, ask your teacher.</p>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     SCHEDULE LIBRARY  (single source of truth)
+
+     Times are 24-hour "HH:MM" LOCAL strings. The UI renders 12-hour.
+     Length is DERIVED from start/end at render time, never stored —
+     a typo in one place cannot desync the table from the timekeeper.
+     ============================================================ */
+  var SCHEDULES = [
+    {
+      id: 'early-dismissal',
+      label: 'Early Dismissal Schedule',
+      shortLabel: 'Early Dismissal',
+      dates: [],          // set by an admin override, not by a baked-in date
+      accent: 'rose',
+      department: '',
+      periods: [
+        { name: 'Period 1', start: '08:00', end: '08:30' },
+        { name: 'Period 2', start: '08:34', end: '09:04' },
+        { name: 'Homeroom', start: '09:04', end: '09:12' },
+        { name: 'Period 3', start: '09:16', end: '09:46' },
+        { name: 'Period 4', start: '09:50', end: '10:20' },
+        { name: 'Period 5', start: '10:24', end: '10:54' },
+        { name: 'Period 6', start: '10:58', end: '11:28' },
+        { name: 'Period 7', start: '11:32', end: '12:02' },
+        { name: 'Period 8', start: '12:06', end: '12:36' },
+        { name: 'Period 9', start: '12:40', end: '13:10' }
+      ]
+    },
+    {
+      id: 'regular',
+      label: 'Regular Bell Schedule',
+      shortLabel: 'Regular',
+      dates: [],           // dateless = the default for every unlisted day
+      live: true,          // the ONLY entry allowed to run a live countdown by default
+      accent: 'slate',
+      department: '',
+      periods: [
+        { name: 'Period 1', start: '08:00', end: '08:42' },
+        { name: 'Period 2', start: '08:46', end: '09:28' },
+        { name: 'Homeroom', start: '09:28', end: '09:39' },
+        { name: 'Period 3', start: '09:43', end: '10:25' },
+        { name: 'Period 4', start: '10:29', end: '11:11' },
+        { name: 'Period 5', start: '11:15', end: '11:57' },
+        { name: 'Period 6', start: '12:01', end: '12:43' },
+        { name: 'Period 7', start: '12:47', end: '13:29' },
+        { name: 'Period 8', start: '13:33', end: '14:15' },
+        { name: 'Period 9', start: '14:19', end: '15:01' }
+      ]
+    },
+    {
+      id: 'evening-conferences',
+      label: 'Early Dismissal — Evening Conferences',
+      shortLabel: 'Evening Conferences',
+      dates: [],
+      accent: 'blue',
+      department: '6:00 p.m. – 7:30 p.m.',
+      periods: [
+        { name: 'Period 1', start: '08:00', end: '08:32' },
+        { name: 'Period 2', start: '08:36', end: '09:08' },
+        { name: 'Homeroom', start: '09:08', end: '09:18' },
+        { name: 'Period 3', start: '09:22', end: '09:54' },
+        { name: 'Period 4', start: '09:58', end: '10:30' },
+        { name: 'Period 5', start: '10:34', end: '11:06' },
+        { name: 'Period 6', start: '11:10', end: '11:42' },
+        { name: 'Period 7', start: '11:46', end: '12:18' },
+        { name: 'Period 8', start: '12:22', end: '12:54' },
+        { name: 'Period 9', start: '12:58', end: '13:30' }
+      ]
+    },
+    {
+      id: 'two-hour-delay',
+      label: 'Two-Hour Delay Schedule',
+      shortLabel: 'Two-Hour Delay',
+      dates: [],
+      accent: 'blue',
+      department: '',
+      // NOT YET SUPPLIED by the school. Empty means the UI shows an honest
+      // "not posted yet" state instead of inventing times.
+      periods: []
+    },
+    {
+      id: 'homeroom-hold',
+      label: 'Homeroom Hold Schedule',
+      shortLabel: 'Homeroom Hold',
+      dates: [],           // pattern, not date-bound — pick it from the menu
+      accent: 'amber',
+      department: '',
+      periods: [
+        { name: 'Period 1', start: '08:00', end: '08:39' },
+        { name: 'Period 2', start: '08:43', end: '09:22' },
+        { name: 'Homeroom', start: '09:22', end: '10:02' },
+        { name: 'Period 3', start: '10:06', end: '10:45' },
+        { name: 'Period 4', start: '10:49', end: '11:28' },
+        { name: 'Period 5', start: '11:32', end: '12:11' },
+        { name: 'Period 6', start: '12:15', end: '12:53' },
+        { name: 'Period 7', start: '12:57', end: '13:35' },
+        { name: 'Period 8', start: '13:39', end: '14:18' },
+        { name: 'Period 9', start: '14:22', end: '15:01' }
+      ]
+    }
+  ];
+
+  /* ============================================================
+     ELEMENT REFS
+     ============================================================ */
+  var els = {
+    html: document.documentElement,
+    clockNow: document.getElementById('clockNow'),
+    todayLabel: document.getElementById('todayLabel'),
+    select: document.getElementById('scheduleSelect'),
+    backToday: document.getElementById('backToday'),
+    notice: document.getElementById('todayNotice'),
+    noticeText: document.getElementById('todayNoticeText'),
+    timekeeper: document.getElementById('timekeeper'),
+    body: document.getElementById('tkBody'),
+    empty: document.getElementById('tkEmpty'),
+    emptyTitle: document.getElementById('tkEmptyTitle'),
+    emptyBody: document.getElementById('tkEmptyBody'),
+    badge: document.getElementById('stateBadge'),
+    schedName: document.getElementById('tkScheduleName'),
+    title: document.getElementById('tkTitle'),
+    count: document.getElementById('tkCount'),
+    barWrap: document.getElementById('tkBarWrap'),
+    barFill: document.getElementById('tkBarFill'),
+    barMeta: document.getElementById('tkBarMeta'),
+    elapsed: document.getElementById('tkElapsed'),
+    range: document.getElementById('tkRange'),
+    sub: document.getElementById('tkSub'),
+    tableBody: document.getElementById('scheduleBody'),
+    tableCount: document.getElementById('tableCount'),
+    tableEmpty: document.getElementById('tableEmpty'),
+    tableSection: document.getElementById('tableSection')
+  };
+
+  /* ============================================================
+     STATE
+     ============================================================ */
+  var state = {
+    todayId: null,       // schedule id auto-selected for today, or null
+    selectedId: null,    // currently displayed schedule id
+    overridden: false,   // true when the student picked a schedule manually
+    lastLiveKey: '',     // last announced (state + period name) — gates the polite region
+    override: null,      // admin override doc { dateKey, scheduleId } or null
+    overrideChecked: false
+  };
+
+  /* ============================================================
+     ADMIN OVERRIDE  (config/bell_schedule)
+
+     Homeroom Hold can be called at random, so the live schedule is set by the
+     office through the Portal's Bell Schedule admin tab. This page reads that
+     same document so the homepage banner and this page can never disagree.
+
+     Uses the Firestore REST API rather than the SDK: it needs no auth handshake
+     to try, adds no bundle weight, and the doc is readable by any signed-in
+     student. If the read fails for any reason we simply carry on with the
+     date-based default — a schedule page that renders is better than one that
+     blocks on the network.
+     ============================================================ */
+  var FIRESTORE_PROJECT = 'porters-portal';
+  var OVERRIDE_URL =
+    'https://firestore.googleapis.com/v1/projects/' + FIRESTORE_PROJECT +
+    '/databases/(default)/documents/config/bell_schedule';
+
+  /**
+   * Pull the override doc. Never rejects; leaves state.override null on failure.
+   *
+   * AUTH IS REQUIRED. The Firestore rule for config/bell_schedule is
+   * `allow read: if isAuthenticated()`, so an anonymous REST call gets 403 —
+   * which previously failed silently and left the page permanently on the date
+   * default while the signed-in homepage banner showed the real override. The
+   * page therefore borrows the Portal session through portal-auth.js (same
+   * origin, same Firebase app) and sends the resulting ID token.
+   *
+   * If nobody is signed in there is no token and the read is skipped — the page
+   * still renders on the date default rather than showing an error.
+   */
+  var authPromise = null;
+
+  function getAuthToken() {
+    if (typeof window.PortalAuth === 'undefined') return Promise.resolve(null);
+    if (!authPromise) {
+      authPromise = window.PortalAuth.bind().catch(function () {
+        return null;
+      });
+    }
+    return authPromise.then(function (session) {
+      if (!session || !session.uid) return null;
+      return session.getToken().catch(function () {
+        return null;
+      });
+    });
+  }
+
+  function fetchOverride() {
+    return getAuthToken()
+      .then(function (token) {
+        if (!token) return null;
+        return fetch(OVERRIDE_URL, {
+          cache: 'no-store',
+          headers: { Authorization: 'Bearer ' + token }
+        }).then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        });
+      })
+      .then(function (doc) {
+        var f = (doc && doc.fields) || {};
+        if (!f.scheduleId || !f.dateKey) {
+          state.override = null;
+          return;
+        }
+        state.override = {
+          scheduleId: f.scheduleId.stringValue,
+          dateKey: f.dateKey.stringValue
+        };
+      })
+      .catch(function () {
+        // Signed out, offline, or rules deny — fall back to the date default.
+        state.override = null;
+      })
+      .then(function () {
+        state.overrideChecked = true;
+      });
+  }
+
+  /** Re-resolve today's schedule from the (possibly updated) override. */
+  function applyToday() {
+    var resolved = resolveToday(new Date());
+    state.todayId = resolved.schedule ? resolved.schedule.id : null;
+    if (!state.overridden && state.todayId) {
+      state.selectedId = state.todayId;
+      els.select.value = state.todayId;
+    }
+    updateNotice(resolved);
+    render();
+  }
+
+  function updateNotice(resolved) {
+    var notBound = !resolved.bound && resolved.schedule;
+    if (notBound) {
+      setText(
+        els.noticeText,
+        'Today has no posted special schedule — showing ' + resolved.schedule.label + '.'
+      );
+      els.notice.classList.add('show');
+    } else {
+      els.notice.classList.remove('show');
+    }
+  }
+
+  /* ============================================================
+     DATE / TIME HELPERS
+     ============================================================ */
+
+  /** Zero-pad a number to 2 digits. */
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  /** Local-time date key "YYYY-MM-DD". Never uses toISOString (that is UTC). */
+  function dateKey(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  /** "HH:MM" -> minutes since local midnight. */
+  function toMinutes(hhmm) {
+    var parts = String(hhmm).split(':');
+    return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+  }
+
+  /** Minutes since midnight for a Date. */
+  function nowMinutes(d) {
+    return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 + d.getMilliseconds() / 60000;
+  }
+
+  /** 24h "HH:MM" -> "8:00 AM". */
+  function to12h(hhmm) {
+    var m = toMinutes(hhmm);
+    var h = Math.floor(m / 60);
+    var mm = m % 60;
+    var suffix = h >= 12 ? 'PM' : 'AM';
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return h12 + ':' + pad2(mm) + ' ' + suffix;
+  }
+
+  /** Whole minutes between two "HH:MM" strings. */
+  function minutesBetween(start, end) {
+    return toMinutes(end) - toMinutes(start);
+  }
+
+  /** Seconds -> "MM:SS" (or "H:MM:SS" once past an hour). */
+  function fmtMS(totalSeconds) {
+    var s = Math.max(0, Math.floor(totalSeconds));
+    var h = Math.floor(s / 3600);
+    var m = Math.floor((s % 3600) / 60);
+    var sec = s % 60;
+    if (h > 0) return h + ':' + pad2(m) + ':' + pad2(sec);
+    return pad2(m) + ':' + pad2(sec);
+  }
+
+  /** Seconds -> "HH:MM:SS" for before-school. */
+  function fmtHMS(totalSeconds) {
+    var s = Math.max(0, Math.floor(totalSeconds));
+    var h = Math.floor(s / 3600);
+    var m = Math.floor((s % 3600) / 60);
+    return pad2(h) + ':' + pad2(m) + ':' + pad2(s % 60);
+  }
+
+  /** Long readable date for the header. */
+  function fmtLongDate(d) {
+    try {
+      return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return dateKey(d);
+    }
+  }
+
+  /* ============================================================
+     SCHEDULE LOOKUP
+     ============================================================ */
+
+  function findSchedule(id) {
+    for (var i = 0; i < SCHEDULES.length; i++) {
+      if (SCHEDULES[i].id === id) return SCHEDULES[i];
+    }
+    return null;
+  }
+
+  function hasPeriods(sched) {
+    return !!sched && Array.isArray(sched.periods) && sched.periods.length > 0;
+  }
+
+  /**
+   * Date resolution, in priority order:
+   *   1. a schedule whose `dates` contains today (date-bound)
+   *   2. the dateless schedule with periods (the regular week)
+   *   3. the earliest dateless-with-periods, else the first schedule with periods
+   * Returns { schedule, bound } — bound is true only for case 1.
+   */
+  function resolveToday(now) {
+    var key = dateKey(now);
+    var i, s;
+
+    // 1. ADMIN OVERRIDE for today. The office can switch the live schedule to
+    //    Homeroom Hold or Early Dismissal at random; that decision outranks any
+    //    baked-in date table. It self-expires: an override whose dateKey is not
+    //    today is ignored, so a forgotten switch reverts to Regular at midnight.
+    if (state.override && state.override.dateKey === key) {
+      for (i = 0; i < SCHEDULES.length; i++) {
+        // Deliberately NOT gated on hasPeriods(): if the office selects a schedule
+        // whose times are not posted yet, the honest answer is a "not posted"
+        // state — silently showing Regular instead would misinform students.
+        if (SCHEDULES[i].id === state.override.scheduleId) {
+          return { schedule: SCHEDULES[i], bound: true, viaOverride: true };
+        }
+      }
+    }
+
+    for (i = 0; i < SCHEDULES.length; i++) {
+      s = SCHEDULES[i];
+      if (Array.isArray(s.dates) && s.dates.indexOf(key) !== -1 && hasPeriods(s)) {
+        return { schedule: s, bound: true };
+      }
+    }
+
+    for (i = 0; i < SCHEDULES.length; i++) {
+      s = SCHEDULES[i];
+      // `live: true` marks the everyday schedule. Do NOT fall through to any
+      // dateless entry: a pattern like homeroom-hold applies on some days and not
+      // others with no date signal, so auto-selecting it could show a wrong clock.
+      if (s.live === true && (!s.dates || s.dates.length === 0) && hasPeriods(s)) {
+        return { schedule: s, bound: false };
+      }
+    }
+
+    // NOTE: deliberately no "first schedule that has periods" fallback. Adopting a
+    // date-bound schedule here would render another day's dismissal as if it were
+    // live today, producing a wrong countdown with no signal that it is wrong.
+    // The picker still exposes every dated schedule; only the *auto* selection is
+    // restricted to today's date or a dateless regular schedule.
+
+    // Nothing has periods at all: show the first entry so the UI explains itself.
+    return { schedule: SCHEDULES[0] || null, bound: false };
+  }
+
+  /* ============================================================
+     TIMER  —  the core state machine
+
+     Inputs: a schedule (with periods[]) and "now".
+     Output: one of
+       'before'  BEFORE SCHOOL   — first period has not started
+       'in'      IN PERIOD       — inside a period row
+       'passing' PASSING         — between consecutive period rows
+       'after'   AFTER SCHOOL    — past the last period end
+       'empty'   NOT POSTED      — periods[] is empty
+
+     Passing windows are derived from consecutive rows, never hardcoded.
+     ============================================================ */
+  function computePhase(schedule, now) {
+    if (!hasPeriods(schedule)) {
+      return { kind: 'empty' };
+    }
+
+    var periods = schedule.periods;
+    var nowSec = nowMinutes(now) * 60;
+    var first = periods[0];
+    var last = periods[periods.length - 1];
+    var firstStart = toMinutes(first.start) * 60;
+    var lastEnd = toMinutes(last.end) * 60;
+    var i;
+
+    // 5. NOT POSTED — handled above; keep the ordering obvious for readers.
+
+    // 3. BEFORE SCHOOL
+    if (nowSec < firstStart) {
+      return {
+        kind: 'before',
+        nextIndex: 0,
+        next: first,
+        remaining: firstStart - nowSec
+      };
+    }
+
+    // 4. AFTER SCHOOL
+    if (nowSec >= lastEnd) {
+      return {
+        kind: 'after',
+        dismissedAt: last.end
+      };
+    }
+
+    // 1. IN PERIOD  /  2. PASSING
+    for (i = 0; i < periods.length; i++) {
+      var p = periods[i];
+      var ps = toMinutes(p.start) * 60;
+      var pe = toMinutes(p.end) * 60;
+
+      if (nowSec >= ps && nowSec < pe) {
+        return {
+          kind: 'in',
+          index: i,
+          period: p,
+          startSec: ps,
+          endSec: pe,
+          remaining: pe - nowSec,
+          total: pe - ps,
+          elapsed: nowSec - ps,
+          nextIndex: i + 1 < periods.length ? i + 1 : -1,
+          next: i + 1 < periods.length ? periods[i + 1] : null
+        };
+      }
+
+      // Between this period's end and the next period's start.
+      if (i + 1 < periods.length) {
+        var np = periods[i + 1];
+        var ns = toMinutes(np.start) * 60;
+        if (nowSec >= pe && nowSec < ns) {
+          return {
+            kind: 'passing',
+            index: i,
+            prev: p,
+            next: np,
+            nextIndex: i + 1,
+            remaining: ns - nowSec,
+            windowSec: ns - pe,
+            elapsed: nowSec - pe
+          };
+        }
+      }
+    }
+
+    // Defensive: unreachable for well-formed data, but never throw.
+    return { kind: 'after', dismissedAt: last.end };
+  }
+
+  /* ============================================================
+     TIMEKEEPER RENDER
+     ============================================================ */
+
+  function setText(el, value) {
+    if (el && el.textContent !== String(value)) el.textContent = String(value);
+  }
+
+  function setBadge(text) {
+    setText(els.badge, text);
+  }
+
+  function showEmpty(schedule) {
+    els.body.hidden = true;
+    els.empty.hidden = false;
+    var name = schedule && schedule.label ? schedule.label : 'This schedule';
+    setText(els.emptyTitle, 'This schedule hasn\u2019t been posted yet');
+    setText(
+      els.emptyBody,
+      name + ' has no periods listed. Check back later, or pick another schedule from the menu above.'
+    );
+  }
+
+  /**
+   * Preview state — the displayed schedule is NOT in effect today.
+   * Deliberately renders no countdown and no progress: there is no honest
+   * "time remaining" for a day that is not today. Shows the first period and
+   * the schedule's span so a student can still read it.
+   */
+  function renderPreview(schedule) {
+    if (!hasPeriods(schedule)) {
+      showEmpty(schedule);
+      return;
+    }
+    els.body.hidden = false;
+    els.empty.hidden = true;
+    setText(els.schedName, schedule.label);
+
+    var first = schedule.periods[0];
+    var last = schedule.periods[schedule.periods.length - 1];
+    setBadge('Preview');
+    setText(els.title, 'Not today');
+    setText(els.count, to12h(first.start));
+    setText(els.range, first.name + ' \u2013 ' + last.name);
+    setText(
+      els.elapsed,
+      to12h(first.start) + ' \u2013 ' + to12h(last.end)
+    );
+    // No progress bar: nothing is in progress.
+    els.barWrap.hidden = true;
+    els.barMeta.hidden = false;
+
+    var key = 'preview:' + schedule.id;
+    if (state.lastLiveKey !== key) {
+      state.lastLiveKey = key;
+      setText(
+        els.sub,
+        'Previewing ' + schedule.label + '. This is not today\u2019s schedule, so no countdown is shown.'
+      );
+    }
+  }
+
+  function renderPhase(schedule, now) {
+    if (!hasPeriods(schedule)) {
+      showEmpty(schedule);
+      return;
+    }
+    els.body.hidden = false;
+    els.empty.hidden = true;
+    setText(els.schedName, schedule.label);
+
+    var ph = computePhase(schedule, now);
+    var liveKey;
+
+    if (ph.kind === 'before') {
+      setBadge('Before school');
+      setText(els.title, 'School starts soon');
+      setText(els.count, fmtHMS(ph.remaining));
+      setText(els.range, 'First up: ' + ph.next.name + ' \u00b7 ' + to12h(ph.next.start));
+      setText(els.elapsed, 'Doors open at ' + to12h(ph.next.start));
+      els.barWrap.hidden = true;
+      els.barMeta.hidden = true;
+      setText(
+        els.sub,
+        'First bell: ' + ph.next.name + ' at ' + to12h(ph.next.start) + '.'
+      );
+      liveKey = 'before';
+    } else if (ph.kind === 'in') {
+      setBadge('In period');
+      setText(els.title, ph.period.name);
+      setText(els.count, fmtMS(ph.remaining));
+
+      var pct = ph.total > 0 ? Math.round((ph.elapsed / ph.total) * 100) : 0;
+      if (pct < 0) pct = 0;
+      if (pct > 100) pct = 100;
+      els.barWrap.hidden = false;
+      els.barMeta.hidden = false;
+      els.barFill.style.width = pct + '%';
+      els.barFill.setAttribute('aria-valuenow', String(pct));
+      els.barFill.setAttribute('aria-valuetext', pct + '% of ' + ph.period.name + ' elapsed');
+      setText(els.elapsed, Math.floor(ph.elapsed / 60) + ' of ' + Math.round(ph.total / 60) + ' min');
+      setText(els.range, to12h(ph.period.start) + ' \u2013 ' + to12h(ph.period.end));
+
+      if (ph.next) {
+        setText(els.sub, 'Next: ' + ph.next.name + ' \u00b7 ' + to12h(ph.next.start));
+      } else {
+        setText(els.sub, 'Last period of the day \u00b7 ends ' + to12h(ph.period.end));
+      }
+      liveKey = 'in:' + ph.index;
+    } else if (ph.kind === 'passing') {
+      setBadge('Passing');
+      setText(els.title, 'Passing to ' + ph.next.name);
+      setText(els.count, fmtMS(ph.remaining));
+
+      var ppct = ph.windowSec > 0 ? Math.round((ph.elapsed / ph.windowSec) * 100) : 0;
+      if (ppct < 0) ppct = 0;
+      if (ppct > 100) ppct = 100;
+      els.barWrap.hidden = false;
+      els.barMeta.hidden = false;
+      els.barFill.style.width = ppct + '%';
+      els.barFill.setAttribute('aria-valuenow', String(ppct));
+      els.barFill.setAttribute('aria-valuetext', ppct + '% of passing time elapsed');
+      setText(els.elapsed, 'Passing time');
+      setText(els.range, to12h(ph.prev.end) + ' \u2013 ' + to12h(ph.next.start));
+      setText(
+        els.sub,
+        ph.prev.name + ' ended ' + to12h(ph.prev.end) + ' \u00b7 ' +
+        ph.next.name + ' starts ' + to12h(ph.next.start)
+      );
+      liveKey = 'passing:' + ph.index;
+    } else {
+      // AFTER SCHOOL
+      setBadge('After school');
+      setText(els.title, 'Schedule complete');
+      setText(els.count, to12h(ph.dismissedAt));
+      els.barWrap.hidden = false;
+      els.barMeta.hidden = false;
+      els.barFill.style.width = '100%';
+      els.barFill.setAttribute('aria-valuenow', '100');
+      els.barFill.setAttribute('aria-valuetext', 'Day complete');
+      setText(els.elapsed, 'Dismissed');
+      setText(els.range, 'Last period ended ' + to12h(ph.dismissedAt));
+      setText(els.sub, 'Dismissal was at ' + to12h(ph.dismissedAt) + '.');
+      liveKey = 'after';
+    }
+
+    // Only write the polite live region when the state or period actually changes.
+    if (liveKey !== state.lastLiveKey) {
+      state.lastLiveKey = liveKey;
+      // Nudge the region so the announcement fires even if the text matches.
+      var msg = els.sub.textContent || '';
+      els.sub.textContent = msg;
+    }
+  }
+
+  /* ============================================================
+     TABLE RENDER
+     ============================================================ */
+
+  function statusFor(index, ph) {
+    if (ph.kind === 'in') {
+      if (index === ph.index) return 'now';
+      return index < ph.index ? 'past' : 'next';
+    }
+    if (ph.kind === 'passing') {
+      if (index === ph.index) return 'past';
+      if (index === ph.nextIndex) return 'now';
+      return index < ph.index ? 'past' : 'next';
+    }
+    if (ph.kind === 'after') return 'past';
+    return 'next'; // before school: everything is upcoming
+  }
+
+  /**
+   * Static table for the preview state: identical rows, but no NOW/next/past
+   * highlighting and no status column values, because none of it applies to a
+   * schedule that is not in effect today.
+   */
+  function renderTableStatic(schedule) {
+    var tbody = els.tableBody;
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+    if (!hasPeriods(schedule)) {
+      els.tableSection.hidden = false;
+      els.tableEmpty.hidden = false;
+      setText(els.tableCount, 'No periods posted');
+      return;
+    }
+    els.tableEmpty.hidden = true;
+
+    var periods = schedule.periods;
+    var totalMin = 0;
+
+    for (var i = 0; i < periods.length; i++) {
+      var p = periods[i];
+      var len = minutesBetween(p.start, p.end);
+      if (len > 0) totalMin += len;
+
+      var tr = document.createElement('tr');
+
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.className = 'name-cell';
+      th.textContent = p.name;
+      tr.appendChild(th);
+
+      var tdStart = document.createElement('td');
+      tdStart.className = 'num';
+      tdStart.textContent = to12h(p.start);
+      tr.appendChild(tdStart);
+
+      var tdEnd = document.createElement('td');
+      tdEnd.className = 'num';
+      tdEnd.textContent = to12h(p.end);
+      tr.appendChild(tdEnd);
+
+      var tdLen = document.createElement('td');
+      tdLen.className = 'num cell-len';
+      tdLen.textContent = len + ' min';
+      tr.appendChild(tdLen);
+
+      var tdStatus = document.createElement('td');
+      tdStatus.className = 'status-cell';
+      tdStatus.textContent = '\u2014';
+      tr.appendChild(tdStatus);
+
+      tbody.appendChild(tr);
+    }
+
+    setText(els.tableCount, periods.length + ' periods \u00b7 ' + totalMin + ' min of class');
+  }
+
+  function renderTable(schedule, now) {
+    var tbody = els.tableBody;
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+    if (!hasPeriods(schedule)) {
+      els.tableSection.hidden = false;
+      els.tableEmpty.hidden = false;
+      setText(els.tableCount, 'No periods posted');
+      return;
+    }
+    els.tableEmpty.hidden = true;
+
+    var ph = computePhase(schedule, now);
+    var periods = schedule.periods;
+    var totalMin = 0;
+
+    for (var i = 0; i < periods.length; i++) {
+      var p = periods[i];
+      var len = minutesBetween(p.start, p.end);
+      if (len > 0) totalMin += len;
+      var st = statusFor(i, ph);
+
+      var tr = document.createElement('tr');
+      if (st === 'now') tr.className = 'is-now';
+      else if (st === 'past') tr.className = 'is-past';
+      else if (st === 'next') tr.className = 'is-next';
+
+      // Period name — row header so screen readers announce it with the row.
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.className = 'name-cell';
+      th.textContent = p.name;
+      tr.appendChild(th);
+
+      var tdStart = document.createElement('td');
+      tdStart.className = 'num';
+      tdStart.textContent = to12h(p.start);
+      tr.appendChild(tdStart);
+
+      var tdEnd = document.createElement('td');
+      tdEnd.className = 'num';
+      tdEnd.textContent = to12h(p.end);
+      tr.appendChild(tdEnd);
+
+      var tdLen = document.createElement('td');
+      tdLen.className = 'num cell-len';
+      tdLen.textContent = len + ' min';
+      tr.appendChild(tdLen);
+
+      var tdStatus = document.createElement('td');
+      tdStatus.className = 'status-cell';
+      if (st === 'now') {
+        var pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.textContent = 'Now';
+        tdStatus.appendChild(pill);
+      } else if (st === 'past') {
+        tdStatus.textContent = 'Done';
+      } else if (ph.kind === 'passing' && i === ph.nextIndex) {
+        tdStatus.textContent = 'Next';
+      } else {
+        tdStatus.textContent = '\u2014';
+      }
+      tr.appendChild(tdStatus);
+
+      tbody.appendChild(tr);
+    }
+
+    setText(els.tableCount, periods.length + ' periods \u00b7 ' + totalMin + ' min of class');
+  }
+
+  /* ============================================================
+     MASTER TICK
+     ============================================================ */
+
+  function currentSchedule() {
+    return findSchedule(state.selectedId) || resolveToday(new Date()).schedule;
+  }
+
+  function applyAccent(schedule) {
+    var accent = (schedule && schedule.accent) || 'slate';
+    els.html.setAttribute('data-accent', accent);
+  }
+
+  /**
+   * True when the displayed schedule is actually in effect for the current date:
+   * either it is date-bound to today, or it is a dateless (regular) schedule.
+   * A date-bound schedule shown on any other day is a PREVIEW — the live clock
+   * must not tick against it, or a student sees another day's countdown
+   * presented as the present moment.
+   */
+  function isLiveForToday(schedule, now) {
+    if (!schedule) return false;
+    // An admin override for today makes this schedule live regardless of the
+    // date table or the `live` flag — that is the whole point of the override.
+    var key = dateKey(now);
+    if (state.override && state.override.dateKey === key && state.override.scheduleId === schedule.id) {
+      return true;
+    }
+    if (schedule.dates && schedule.dates.length > 0) {
+      return schedule.dates.indexOf(key) !== -1;
+    }
+    // Dateless: only the everyday schedule ("live: true") may drive a live clock.
+    // A dateless *pattern* (homeroom-hold) applies on some days and not others
+    // with no date signal, so a countdown from it could be silently wrong.
+    return schedule.live === true;
+  }
+
+  function render() {
+    var now = new Date();
+    var schedule = currentSchedule();
+    if (!schedule) return;
+
+    // Header clock
+    setText(els.clockNow, now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
+    setText(els.todayLabel, fmtLongDate(now));
+
+    applyAccent(schedule);
+    if (isLiveForToday(schedule, now)) {
+      renderPhase(schedule, now);
+      renderTable(schedule, now);
+      els.timekeeper.classList.remove('is-preview');
+    } else {
+      renderPreview(schedule);
+      renderTableStatic(schedule);
+      els.timekeeper.classList.add('is-preview');
+    }
+
+    // Override control visibility
+    els.backToday.hidden = !state.overridden;
+  }
+
+  function tick() {
+    // Recomputed from scratch every tick: survives tab suspend, sleep, DST.
+    render();
+  }
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+
+  function buildSelect() {
+    var sel = els.select;
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+
+    for (var i = 0; i < SCHEDULES.length; i++) {
+      var s = SCHEDULES[i];
+      var opt = document.createElement('option');
+      opt.value = s.id;
+      var text = s.label;
+      if (!hasPeriods(s)) text += ' (not posted)';
+      opt.textContent = text;
+      sel.appendChild(opt);
+    }
+  }
+
+  function setSelection(id, overridden) {
+    state.selectedId = id;
+    state.overridden = !!overridden;
+    state.lastLiveKey = ''; // force the live region to re-announce on schedule change
+    els.select.value = id;
+    if (els.select.value !== id) {
+      // id missing from options (bad data) — leave select as-is rather than blank
+      els.select.value = SCHEDULES[0] ? SCHEDULES[0].id : '';
+    }
+    render();
+  }
+
+  function boot() {
+    buildSelect();
+
+    els.select.addEventListener('change', function () {
+      var id = els.select.value;
+      // Selecting the auto-resolved schedule again clears the override.
+      setSelection(id, id !== state.todayId);
+    });
+
+    els.backToday.addEventListener('click', function () {
+      var r = resolveToday(new Date());
+      if (r.schedule) setSelection(r.schedule.id, false);
+    });
+
+    // Single 1s interval — the only timer in the page.
+    window.setInterval(tick, 1000);
+
+    // Recompute immediately when the tab comes back (Chromebook sleep).
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        state.lastLiveKey = ''; // re-announce current state after a long pause
+        tick();
+        refreshOverride();
+      }
+    });
+
+    /**
+     * Re-read the override and, if the LIVE schedule changed, swap to it.
+     * Open pages must follow an office switch without a reload — a student
+     * staring at a stale clock is the failure this whole mechanism exists to
+     * prevent. A manual preview by the student is respected and left alone.
+     */
+    function refreshOverride() {
+      var before = state.todayId;
+      fetchOverride().then(function () {
+        var after = resolveToday(new Date());
+        var newId = after.schedule ? after.schedule.id : null;
+        if (newId !== before) {
+          state.overridden = false; // a live change outranks a manual preview
+          applyToday();
+        } else if (!state.overridden) {
+          updateNotice(after);
+          render();
+        }
+      });
+    }
+
+    // Poll every 60s so an already-open tab picks up an office switch.
+    window.setInterval(refreshOverride, 60000);
+
+    // First paint: resolve from the date default immediately, then let the
+    // override correct it a moment later if one exists for today.
+    applyToday();
+    refreshOverride();
+
+    // Recompute on focus and on page restore (bfcache) as extra safety nets
+    // beyond visibilitychange.
+    window.addEventListener('focus', tick);
+    window.addEventListener('pageshow', function (ev) {
+      if (ev && ev.persisted) tick();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+
+  /* Expose for QA / debugging without polluting the console. */
+  window.__bellSchedule = {
+    computePhase: computePhase,
+    to12h: to12h,
+    fmtMS: fmtMS,
+    fmtHMS: fmtHMS,
+    dateKey: dateKey,
+    resolveToday: resolveToday,
+    schedules: SCHEDULES
+  };
+})();
+</script>
+</body>
+</html>

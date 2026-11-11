@@ -264,6 +264,10 @@
         "destination": "/domes-trip/index.html"
       },
       {
+        "source": "/schedule",
+        "destination": "/schedule.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

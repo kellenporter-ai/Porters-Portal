@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T12:29:55.905Z",
+  "generatedAt": "2026-11-11T15:40:15.711Z",
   "items": [
     {
       "path": "/ap1-course-recap.html",
@@ -245,6 +245,11 @@
       "path": "/rubbing-balloons.html",
       "fingerprint": "/rubbing-balloons.html",
       "sizeBytes": 813327
+    },
+    {
+      "path": "/schedule.html",
+      "fingerprint": "/schedule.html",
+      "sizeBytes": 50280
     },
     {
       "path": "/scientists-circle-toolkit.html",

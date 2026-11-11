@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Assignment, Submission, XPEvent } from '../../types';
 import {
   ArrowRight,
   Check,
   ChevronRight,
+  Clock,
   MessageSquare,
   Search,
   Sparkles,
@@ -15,6 +16,13 @@ import CortisolCheckIn from './CortisolCheckIn';
 import { dataService } from '../../services/dataService';
 import { useT, useInterpolate } from '../../lib/i18n';
 import { Card } from '../ui/card';
+import {
+  pad2,
+  to12h,
+  computeSchedulePhase,
+  resolveLiveSchedule,
+  type BellScheduleOverride,
+} from '../../lib/bellSchedule';
 
 /*
  * HomeTab — Variation D ("Anchored") rebuild.
@@ -116,6 +124,37 @@ function badgeClassFor(tone: 'danger' | 'warn' | 'info' | 'muted'): string {
   }
 }
 
+// ─── Today's schedule banner ─────────────────
+/*
+ * Schedule types, period tables and the timekeeper state machine live in
+ * lib/bellSchedule.ts — shared with the standalone /schedule page so the two
+ * cannot drift apart.
+ *
+ * The LIVE schedule is resolved from config/bell_schedule: an admin picks which
+ * schedule runs today (Homeroom Hold can be called at random by the office), and
+ * the override self-expires at midnight because resolveLiveSchedule() ignores a
+ * doc whose dateKey is not today. With no override, Regular is live.
+ */
+
+/** "MM:SS" (or "H:MM:SS" past an hour) for the in-period countdown. */
+function formatMS(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return h > 0 ? `${h}:${pad2(m)}:${pad2(sec)}` : `${pad2(m)}:${pad2(sec)}`;
+}
+
+/** "HH:MM:SS" — used where a fixed-width, always-hours clock reads better. */
+function formatHMS(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  return `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor((s % 3600) / 60))}:${pad2(s % 60)}`;
+}
+
+function clampPct(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 // ─── Main component ──────────────────────────
 
 const HomeTab: React.FC<HomeTabProps> = ({
@@ -158,6 +197,89 @@ const HomeTab: React.FC<HomeTabProps> = ({
       /* surfaced upstream */
     }
   }, [onTogglePerformanceMode, bannerPerfMode]);
+
+  // ── Today's schedule banner (live clock) ──
+  // `now` is always recomputed from new Date() — never accumulated — so a
+  // throttled or suspended tab recovers the correct time instantly on resume.
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  // The live schedule is admin-settable. Subscribe so an office switch reaches
+  // every open homepage without a reload. Until the first snapshot arrives we
+  // render the Regular default rather than nothing — a briefly stale schedule is
+  // far less harmful than an empty banner.
+  const [scheduleOverride, setScheduleOverride] = useState<BellScheduleOverride | null>(null);
+
+  useEffect(() => {
+    const unsub = dataService.subscribeToBellScheduleOverride(setScheduleOverride);
+    return () => unsub();
+  }, []);
+
+  const announcedPeriodKey = useRef<string>('');
+  const [announcement, setAnnouncement] = useState<string>('');
+
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
+
+  const schedule = useMemo(
+    () => resolveLiveSchedule(now, scheduleOverride).schedule,
+    [now, scheduleOverride],
+  );
+  const phase = useMemo(() => computeSchedulePhase(schedule, now), [schedule, now]);
+
+  // Announce ONLY on period/state change — a per-second countdown must never
+  // reach a live region. Keyed on kind + index so ticking seconds are silent.
+  useEffect(() => {
+    const key =
+      phase.kind === 'in'
+        ? `in:${phase.period.name}`
+        : phase.kind === 'passing'
+          ? `passing:${phase.next.name}`
+          : phase.kind === 'before'
+            ? `before:${phase.next.name}`
+            : phase.kind;
+    if (announcedPeriodKey.current === key) return;
+    announcedPeriodKey.current = key;
+    if (phase.kind === 'in') {
+      setAnnouncement(
+        interpolate('home.schedule.periodAnnounce', {
+          period: phase.period.name,
+          remaining: formatMS(phase.remainingSec),
+          time: to12h(phase.period.end),
+        }),
+      );
+    } else if (phase.kind === 'passing') {
+      setAnnouncement(
+        interpolate('home.schedule.passingAnnounce', {
+          period: phase.next.name,
+          time: to12h(phase.next.start),
+        }),
+      );
+    } else if (phase.kind === 'before') {
+      setAnnouncement(
+        interpolate('home.schedule.beforeAnnounce', {
+          remaining: formatHMS(phase.remainingSec),
+          period: phase.next.name,
+        }),
+      );
+    } else if (phase.kind === 'after') {
+      setAnnouncement(
+        interpolate('home.schedule.afterAnnounce', { time: to12h(phase.dismissedAt) }),
+      );
+    } else {
+      setAnnouncement(t('home.schedule.regularAnnounce'));
+    }
+  }, [phase, interpolate, t]);
 
   // ── Data derivations (mirror current HomeTab logic) ──
   const classAssignments = useMemo(() =>
@@ -347,6 +469,127 @@ const HomeTab: React.FC<HomeTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Today's schedule — live status strip, links to the /schedule page */}
+      <a
+        href="/schedule"
+        aria-label={t('home.schedule.openAria')}
+        className="group block w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-glass)] px-4 py-3 hover:bg-[var(--surface-glass-heavy)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Clock className="w-4 h-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
+            <span className="text-kicker uppercase font-bold text-[var(--text-muted)] whitespace-nowrap">
+              {t('home.schedule.label')}
+            </span>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {/* Countdown digits are decorative for AT — the polite region below
+                announces period changes only, never the ticking seconds. */}
+            {phase.kind === 'in' && (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span aria-live="off" className="text-sm font-black text-[var(--text-primary)]">
+                  {interpolate('home.schedule.inPeriod', { period: phase.period.name })}
+                </span>
+                <span aria-live="off" className="text-sm font-bold tabular-nums text-[var(--text-secondary)]">
+                  · {interpolate('home.schedule.inPeriodLeft', { remaining: formatMS(phase.remainingSec) })}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">
+                  {interpolate('home.schedule.endsAt', { time: to12h(phase.period.end) })}
+                </span>
+              </div>
+            )}
+
+            {phase.kind === 'passing' && (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span aria-live="off" className="text-sm font-black text-[var(--text-primary)]">
+                  {interpolate('home.schedule.passing', { period: phase.next.name })}
+                </span>
+                <span aria-live="off" className="text-sm font-bold tabular-nums text-[var(--text-secondary)]">
+                  · {formatMS(phase.remainingSec)}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">
+                  {interpolate('home.schedule.startsAt', { time: to12h(phase.next.start) })}
+                </span>
+              </div>
+            )}
+
+            {phase.kind === 'before' && (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span aria-live="off" className="text-sm font-bold tabular-nums text-[var(--text-primary)]">
+                  {interpolate('home.schedule.before', { remaining: formatHMS(phase.remainingSec) })}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">
+                  {interpolate('home.schedule.firstUp', {
+                    period: phase.next.name,
+                    time: to12h(phase.next.start),
+                  })}
+                </span>
+              </div>
+            )}
+
+            {phase.kind === 'after' && (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-sm font-black text-[var(--text-primary)]">
+                  {t('home.schedule.after')}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">
+                  {interpolate('home.schedule.dismissedAt', { time: to12h(phase.dismissedAt) })}
+                </span>
+              </div>
+            )}
+
+            {phase.kind === 'empty' && (
+              <span className="text-sm font-bold text-[var(--text-secondary)]">
+                {t('home.schedule.regular')}
+              </span>
+            )}
+          </div>
+
+          <span className="flex items-center gap-1 shrink-0 text-[11px] font-bold text-[var(--accent-text)]">
+            {t('home.schedule.fullSchedule')}
+            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </span>
+        </div>
+
+        {phase.kind === 'in' && (
+          <div
+            role="progressbar"
+            aria-label={interpolate('home.schedule.progressAria', { period: phase.period.name, pct: clampPct((phase.elapsedSec / phase.totalSec) * 100) })}
+            aria-valuenow={clampPct((phase.elapsedSec / phase.totalSec) * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)]"
+          >
+            <div
+              className="h-full rounded-full bg-[var(--accent-muted)] motion-safe:transition-[width] motion-safe:duration-500"
+              style={{ width: `${clampPct((phase.elapsedSec / phase.totalSec) * 100)}%` }}
+            />
+          </div>
+        )}
+
+        {phase.kind === 'passing' && (
+          <div
+            role="progressbar"
+            aria-label={interpolate('home.schedule.passingProgressAria', { pct: clampPct((phase.elapsedSec / phase.windowSec) * 100) })}
+            aria-valuenow={clampPct((phase.elapsedSec / phase.windowSec) * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)]"
+          >
+            <div
+              className="h-full rounded-full bg-[var(--accent-muted)] motion-safe:transition-[width] motion-safe:duration-500"
+              style={{ width: `${clampPct((phase.elapsedSec / phase.windowSec) * 100)}%` }}
+            />
+          </div>
+        )}
+      </a>
+
+      {/* Polite live region — updated only when the period/state changes. */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
 
       {/* ═══════════ ZONE 01 — HERO / "Now" ═══════════ */}
       <section

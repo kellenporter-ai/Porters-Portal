@@ -713,6 +713,24 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // BELL SCHEDULE OVERRIDE
+    // ==========================================
+    // Single doc `config/bell_schedule` naming which schedule is live TODAY.
+    // Homeroom Hold can be called at random by the office, so the live schedule
+    // is human-settable rather than purely date-derived.
+    //
+    // Read: every signed-in student (the homepage banner + /schedule both need it
+    // on page open). It carries no student data — only a schedule id and a date.
+    // Write: admins only. Students can never change the live clock.
+    //
+    // The doc is self-expiring: resolveLiveSchedule() ignores any override whose
+    // dateKey != today, so a forgotten switch cannot bleed into the next day.
+    match /config/bell_schedule {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
     // CATCH-ALL: Deny everything else
     // ==========================================
     match /{document=**} {

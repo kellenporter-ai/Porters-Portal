@@ -8,6 +8,7 @@ import { createInitialMetrics } from '../lib/telemetry';
 import { reportError } from '../lib/errorReporting';
 import type { IntegrityReport } from '../lib/integrityAnalysis';
 import { resilientSnapshot, clearDeniedCollections } from './resilientSnapshot';
+import { scheduleDateKey, type BellScheduleId, type BellScheduleOverride } from '../lib/bellSchedule';
 
 
 export { clearDeniedCollections };
@@ -1484,6 +1485,45 @@ export const dataService = {
     await updateDoc(doc(db, 'users', userId), {
         'gamification.dismissedAnnouncements': arrayUnion(announcementId)
     });
+  },
+
+  // --- BELL SCHEDULE OVERRIDE ---
+
+  /**
+   * Live-subscribe to the bell-schedule override document.
+   *
+   * Always emits a value (null when the doc does not exist), so callers can rely
+   * on the callback firing at least once. A stale doc from a previous day is
+   * still emitted as-is — resolveLiveSchedule() is what ignores it, keeping the
+   * "is this override current" rule in one testable place rather than duplicated
+   * across the network layer.
+   */
+  subscribeToBellScheduleOverride: (
+    callback: (override: BellScheduleOverride | null) => void
+  ) => {
+    return resilientSnapshot('config/bell_schedule', doc(db, 'config', 'bell_schedule') as any, (snapshot: any) => {
+      callback(snapshot.exists() ? (snapshot.data() as BellScheduleOverride) : null);
+    });
+  },
+
+  /** Admin-only: set which schedule is live for `dateKey` (defaults to today). */
+  setBellScheduleOverride: async (
+    scheduleId: BellScheduleId,
+    adminUid: string,
+    dateKey?: string
+  ) => {
+    const key = dateKey ?? scheduleDateKey(new Date());
+    await setDoc(doc(db, 'config', 'bell_schedule'), {
+      dateKey: key,
+      scheduleId,
+      setBy: adminUid,
+      setAt: new Date().toISOString(),
+    } satisfies BellScheduleOverride);
+  },
+
+  /** Admin-only: clear the override so the regular schedule takes over. */
+  clearBellScheduleOverride: async () => {
+    await deleteDoc(doc(db, 'config', 'bell_schedule'));
   },
 
   // --- NOTIFICATIONS ---
