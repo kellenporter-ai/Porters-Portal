@@ -72,8 +72,8 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions, buck
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: 'Total Time', value: `${stats.totalTime}m`, icon: <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400 print:text-blue-600" /> },
-          { label: 'Avg / Submission', value: `${stats.avgTime}m` },
-          { label: 'Submissions', value: String(stats.totalSubs) },
+          { label: 'Avg / Session', value: `${stats.avgTime}m` },
+          { label: 'Sessions', value: String(stats.totalSubs) },
           { label: 'Activity Days', value: String(stats.activityDays) },
           ...(stats.engagementScore !== null ? [{ label: 'Engagement Score', value: String(stats.engagementScore) }] : []),
         ].map(s => (
@@ -83,6 +83,13 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions, buck
           </div>
         ))}
       </div>
+
+      {/* Scope disclaimer — the numbers above come from completed-session records only.
+          In-session reading time is tracked separately and is not yet merged here. */}
+      <p className="text-[11.5px] leading-relaxed text-[var(--text-muted)] print:text-gray-600">
+        Counts completed sessions only (assessments and resources closed normally). Time spent reading without a completed
+        session is not included yet, so students who work mostly in drafts can show low numbers here while still being active.
+      </p>
 
       {/* Trend chart */}
       <div className="h-48 print:h-36 bg-[var(--surface-glass)] border border-[var(--border)] rounded-2xl p-4 print:border-gray-300 print:bg-white">
@@ -105,7 +112,7 @@ const EngagementSummary: React.FC<EngagementSummaryProps> = ({ submissions, buck
               labelStyle={{ color: chartTheme.tickColor }}
               formatter={(value: number, name: string) => [
                 `${value}${name === 'time' ? ' min' : ''}`,
-                name === 'time' ? 'Engagement' : 'Submissions'
+                name === 'time' ? 'Engagement' : 'Sessions'
               ]}
             />
             <Line type="monotone" dataKey="time" stroke="#8b5cf6" strokeWidth={2} dot={false} name="time" />

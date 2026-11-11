@@ -270,15 +270,22 @@ export const dailyAnalysis = onSchedule(
           });
         }
 
-        // NO ACTIVITY: Zero submissions in the analysis window
+        // NO ACTIVITY: Zero submissions in the analysis window.
+        // CAVEAT: `submissions` only ever contains rows written at the END of a
+        // session (assessments, and engagement closes). A student who did reading
+        // work every day but closed tabs, or who avoided assessments, has zero
+        // rows while being perfectly active. Until the in-session heartbeat
+        // rollup lands (see engagement_daily), this alert fires on assessment
+        // silence, not on disengagement. It is therefore reported at MODERATE and
+        // worded as such — do not restore it to HIGH.
         if (student.metrics.submissionCount === 0) {
           alerts.push({
             studentId: student.studentId,
             studentName: student.name,
             classType,
-            riskLevel: "HIGH",
+            riskLevel: "MODERATE",
             reason: "NO_ACTIVITY",
-            message: "No submissions recorded in the past 7 days. Student may be disengaged.",
+            message: "No completed sessions recorded in the past 7 days. Check the student's draft work in the resource viewer before treating this as disengagement.",
             engagementScore: 0,
             classMean: Math.round(mean * 10) / 10,
             classStdDev: Math.round(stdDev * 10) / 10,
@@ -309,6 +316,10 @@ export const dailyAnalysis = onSchedule(
         const minutesPerSchoolDay = m.totalTime / 60 / Math.max(1, schoolDaysInWindow7);
 
         let bucket = "ON_TRACK";
+        // INACTIVE requires BOTH no completed sessions and almost no tracked time.
+        // Same caveat as the NO_ACTIVITY alert: absence from `submissions` is not
+        // absence of work. This stays conservative (totalTime < 60s) so a student
+        // with any recorded engagement is never bucketed INACTIVE.
         if (m.submissionCount === 0 && m.totalTime < 60 && schoolDaysInWindow7 >= 3) {
           bucket = "INACTIVE";
         } else if (pasteRatio > 0.4 && m.submissionCount >= 2 && m.totalPastes > 8) {

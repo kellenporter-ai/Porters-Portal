@@ -261,7 +261,13 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
       lastActive: metrics.lastActive || 0,
       plausibilityScore,
       plausibilityFactors,
-      assistiveTechOverrides,
+      // MUST be spread-guarded: calculateFeedbackServerSide() omits this field on
+      // its default return branch, and Firestore rejects documents containing
+      // `undefined`. Writing it unguarded throws on every call where the student
+      // did not self-report assistive tech, which silently killed the entire
+      // non-assessment engagement path (181 failed writes, 2026-10-14 → 11-11).
+      // Mirrors the correct pattern in assessment.ts.
+      ...(assistiveTechOverrides ? { assistiveTechOverrides } : {}),
     },
     submittedAt: new Date().toISOString(),
     status: engagementStatus,
