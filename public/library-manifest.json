@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T15:59:42.476Z",
+  "generatedAt": "2026-11-11T01:57:23.342Z",
   "items": [
     {
       "path": "/ap1-course-recap.html",
@@ -55,6 +55,11 @@
       "path": "/crime-scene-sketch-rubric.html",
       "fingerprint": "/crime-scene-sketch-rubric.html",
       "sizeBytes": 49434
+    },
+    {
+      "path": "/domes-trip/",
+      "fingerprint": "/domes-trip/",
+      "sizeBytes": 55094
     },
     {
       "path": "/electroscope-charge-assessment.html",
@@ -164,7 +169,7 @@
     {
       "path": "/latent-print-lab/",
       "fingerprint": "/latent-print-lab/",
-      "sizeBytes": 462087
+      "sizeBytes": 468536
     },
     {
       "path": "/linearization-practice.html",

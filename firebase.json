@@ -256,6 +256,10 @@
         "destination": "/minutiae-hunt.html"
       },
       {
+        "source": "/domes-trip",
+        "destination": "/domes-trip/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

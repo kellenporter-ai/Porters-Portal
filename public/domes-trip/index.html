@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Overlook · Anniversary Trip · Nov 4–7, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F3EF; --ink:#1A1A1A;
+  --ink-55:rgba(26,26,26,.55); --ink-35:rgba(26,26,26,.35); --ink-15:rgba(26,26,26,.15);
+  --accent:#FF4D26; --accent-text:#C2350F; --card:#FBFAF7;
+  --display:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55)}
+h1,h2,h3,h4{font-family:var(--display);letter-spacing:-.03em;line-height:1.06;font-weight:800}
+a{color:inherit}
+
+.topbar{position:sticky;top:0;z-index:100;background:rgba(244,243,239,.92);backdrop-filter:blur(12px);border-bottom:1px dashed var(--ink-35)}
+.topbar-in{max-width:1180px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:28px}
+.brand{font-family:var(--display);font-weight:900;font-size:15px;letter-spacing:-.02em;white-space:nowrap}
+.brand span{color:var(--accent-text)}
+.nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.nav button{font-family:var(--body);font-size:13px;font-weight:500;background:none;border:1px solid transparent;border-radius:999px;padding:7px 14px;cursor:pointer;color:var(--ink-55);transition:color .15s,border-color .15s,background .15s}
+.nav button:hover{color:var(--ink);border-color:var(--ink-35)}
+.nav button[aria-current="true"]{color:var(--ink);border-color:var(--accent);background:#fff}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.view{display:none;animation:fade .32s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+section.pad{padding:64px 0}
+
+.hero{position:relative;min-height:68vh;display:flex;align-items:flex-end;overflow:hidden;border-bottom:1px dashed var(--ink-35)}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,14,22,.30) 0%,rgba(10,14,22,.55) 55%,rgba(10,14,22,.88) 100%)}
+.hero-in{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:0 28px 52px;width:100%;color:#fff}
+.hero .eyebrow{color:rgba(255,255,255,.72)}
+.hero h1{font-size:clamp(2.4rem,5.8vw,4.4rem);margin:16px 0 18px;max-width:18ch}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p.lede{font-size:clamp(1rem,1.6vw,1.18rem);color:rgba(255,255,255,.86);max-width:62ch}
+
+.facts{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px dashed var(--ink-35)}
+.fact{padding:24px 28px;border-right:1px dashed var(--ink-15)}
+.fact:last-child{border-right:none}
+.fact .k{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-55);margin-bottom:8px}
+.fact .v{font-family:var(--display);font-weight:800;font-size:1.3rem;letter-spacing:-.03em}
+.fact .s{font-size:13px;color:var(--ink-55);margin-top:3px}
+
+.h-sec{font-size:clamp(1.8rem,3.2vw,2.5rem);max-width:22ch;margin-bottom:14px}
+.sub{color:var(--ink-55);max-width:64ch;font-size:1.02rem}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:28px}
+.card{background:var(--card);border:1px dashed var(--ink-35);border-radius:14px;padding:24px;transition:transform .18s ease,border-color .18s ease}
+.card:hover{transform:translateY(-6px);border-color:var(--accent)}
+.card h4{font-size:1.08rem;margin-bottom:8px;letter-spacing:-.02em}
+.card p{font-size:14.5px;color:var(--ink-55)}
+.card .num{font-family:var(--display);font-weight:900;font-size:1.9rem;color:var(--accent-text);line-height:1;margin-bottom:12px}
+
+.recipe{background:var(--card);border:1px dashed var(--ink-35);border-radius:16px;padding:34px;margin-top:26px}
+.recipe-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;border-bottom:1px dashed var(--ink-15);padding-bottom:18px;margin-bottom:22px}
+.recipe-head h3{font-size:1.5rem}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:1px dashed var(--ink-35);border-radius:999px;padding:5px 12px;color:var(--ink-55);white-space:nowrap}
+.pill.hot{border-color:var(--accent);color:var(--accent-text)}
+.cols2{display:grid;grid-template-columns:1fr 1.35fr;gap:36px}
+.cols2 h5{font-family:var(--display);font-weight:800;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-55);margin-bottom:12px}
+ol.steps,ul.ing{list-style:none;counter-reset:s}
+ul.ing li{font-size:14.5px;padding:7px 0 7px 18px;position:relative;border-bottom:1px dashed var(--ink-15)}
+ul.ing li:last-child{border-bottom:none}
+ul.ing li::before{content:"";position:absolute;left:0;top:15px;width:6px;height:1px;background:var(--ink-35)}
+ol.steps li{counter-increment:s;position:relative;padding-left:40px;margin-bottom:15px;font-size:15px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;font-family:var(--display);font-weight:900;font-size:.82rem;width:26px;height:26px;border-radius:50%;border:1px dashed var(--ink-35);display:grid;place-items:center;color:var(--accent-text)}
+.tip{margin-top:18px;border-left:2px solid var(--accent);padding:12px 0 12px 18px;font-size:14px;color:var(--ink-55)}
+.tip b{color:var(--ink)}
+
+.rest-pick{display:grid;grid-template-columns:1.1fr .9fr;gap:0;border:1px solid var(--ink-15);border-radius:18px;overflow:hidden;background:var(--card);margin-top:26px}
+.rest-pick img{width:100%;height:100%;object-fit:cover;min-height:330px}
+.rest-body{padding:36px}
+.rest-body .eyebrow{margin-bottom:10px}
+.rest-body h3{font-size:1.9rem;margin-bottom:6px}
+.rest-body .where{color:var(--ink-55);font-size:14px;margin-bottom:18px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:10px 20px;font-size:14.5px;border-top:1px dashed var(--ink-15);padding-top:18px}
+.kv dt{color:var(--ink-55)}
+.kv dd{font-weight:500}
+.badge{display:inline-block;background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:5px 11px;border-radius:4px}
+
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:24px}
+.tw table.t{margin-top:0;min-width:560px}
+table.t{width:100%;border-collapse:collapse;margin-top:24px;font-size:14.5px}
+table.t th{text-align:left;font-family:var(--display);font-weight:800;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-55);padding:12px 14px;border-bottom:1px solid var(--ink-15)}
+table.t td{padding:15px 14px;border-bottom:1px dashed var(--ink-15);vertical-align:top}
+table.t tr:hover td{background:#fff}
+table.t .day{font-family:var(--display);font-weight:800;font-size:.95rem}
+table.t .sm{color:var(--ink-55);font-size:13px}
+
+/* day timeline */
+.dayblock{border:1px dashed var(--ink-35);border-radius:16px;background:var(--card);margin-top:24px;overflow:hidden}
+.dayblock-h{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 28px;border-bottom:1px dashed var(--ink-15);flex-wrap:wrap;background:#fff}
+.dayblock-h h3{font-size:1.35rem}
+.dayblock-h .dt{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);font-weight:600}
+.row{display:grid;grid-template-columns:110px 1fr;gap:20px;padding:16px 28px;border-bottom:1px dashed var(--ink-15)}
+.row:last-child{border-bottom:none}
+.row .time{font-family:var(--display);font-weight:800;font-size:.85rem;color:var(--accent-text);padding-top:2px}
+.row .what b{font-weight:600}
+.row .what p{font-size:14.5px;color:var(--ink-55)}
+.row .what .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border:1px dashed var(--ink-35);border-radius:4px;padding:2px 7px;margin-left:8px;vertical-align:2px;color:var(--ink-55)}
+
+.budget{margin-top:26px;border:1px dashed var(--ink-35);border-radius:16px;overflow:hidden;background:var(--card)}
+.budget-row{display:grid;grid-template-columns:1fr auto;gap:18px;padding:15px 26px;border-bottom:1px dashed var(--ink-15);align-items:center}
+.budget-row:last-child{border-bottom:none}
+.budget-row.total{background:#fff;font-weight:600}
+.budget-row .amt{font-family:var(--display);font-weight:800;font-size:1rem;text-align:right;min-width:120px}
+
+.callout{margin-top:26px;border:1px dashed var(--accent);border-radius:14px;padding:26px 30px;background:#fff}
+.callout .eyebrow{color:var(--accent-text);margin-bottom:10px}
+.callout h4{font-size:1.18rem;margin-bottom:10px}
+.callout p{font-size:14.5px;color:var(--ink-55)}
+.callout p + p{margin-top:12px}
+.callout ul{margin:12px 0 0;list-style:none}
+.callout li{font-size:14.5px;padding:6px 0 6px 20px;position:relative;color:var(--ink-55)}
+.callout li::before{content:"";position:absolute;left:0;top:14px;width:8px;height:1px;background:var(--accent)}
+
+.chk{margin-top:24px;border:1px dashed var(--ink-35);border-radius:14px;background:var(--card);overflow:hidden}
+.chk label{display:flex;gap:14px;align-items:flex-start;padding:14px 24px;border-bottom:1px dashed var(--ink-15);cursor:pointer;font-size:14.5px;transition:background .14s}
+.chk label:last-child{border-bottom:none}
+.chk label:hover{background:#fff}
+.chk input{appearance:none;width:18px;height:18px;border:1px dashed var(--ink-35);border-radius:4px;flex:none;margin-top:2px;cursor:pointer;transition:all .15s;position:relative}
+.chk input:checked{background:var(--accent);border-color:var(--accent)}
+.chk input:checked::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.chk input:checked + span{color:var(--ink-35);text-decoration:line-through}
+.chk .grp{padding:14px 24px 8px;font-family:var(--display);font-weight:800;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);background:var(--paper)}
+
+.band{position:relative;border-radius:18px;overflow:hidden;margin-top:30px;border:1px solid var(--ink-15)}
+.band img{width:100%;height:300px;object-fit:cover;display:block}
+.band .cap{position:absolute;left:0;right:0;bottom:0;padding:24px 28px;background:linear-gradient(transparent,rgba(10,14,22,.85));color:#fff;font-size:14px}
+
+footer{border-top:1px dashed var(--ink-35);padding:40px 0 60px;margin-top:40px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--ink-55)}
+
+.pager{display:flex;justify-content:space-between;gap:14px;margin-top:52px;padding-top:26px;border-top:1px dashed var(--ink-35)}
+.btn{font-family:var(--body);font-size:14px;font-weight:600;background:none;border:1px solid var(--ink-35);border-radius:999px;padding:12px 24px;cursor:pointer;transition:all .16s;color:var(--ink)}
+.btn:hover{border-color:var(--accent);color:var(--accent-text)}
+.btn.next{margin-left:auto}
+
+@media(max-width:900px){
+  .facts{grid-template-columns:repeat(2,1fr)}
+  .fact:nth-child(2){border-right:none}
+  .split,.cols2,.rest-pick{grid-template-columns:1fr}
+  .topbar-in{flex-wrap:wrap;gap:12px}
+  .nav{margin-left:0;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .rest-pick img{min-height:210px}
+  section.pad{padding:44px 0}
+  .hero{min-height:60vh}
+  .row{grid-template-columns:1fr;gap:6px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">The Overlook <span>/</span> Nov 4–7</div>
+    <nav class="nav" id="nav">
+      <button data-view="plan" aria-current="true">The plan</button>
+      <button data-view="weather">Weather</button>
+      <button data-view="kitchen">Kitchen</button>
+      <button data-view="shop">Shopping</button>
+      <button data-view="food">Meals</button>
+      <button data-view="out">Friday out</button>
+      <button data-view="budget">Budget</button>
+      <button data-view="pack">Pack &amp; go</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ THE PLAN ============ -->
+<div class="view active" id="view-plan">
+  <div class="hero">
+    <img src="img/dome-night.png" alt="A lit geodesic dome in a bare November forest at dusk">
+    <div class="hero-in">
+      <div class="eyebrow">Domes at Catskills · The Overlook · Swan Lake, NY</div>
+      <h1>A <em>rain day</em>, a hike, and pork ribs in a pot.</h1>
+      <p class="lede">Wednesday Nov 4 to Saturday Nov 7. Thursday rains all day, so the hike moves to Friday morning, Woodstock fills Friday afternoon, and the anniversary dinner is in Narrowsburg that evening.</p>
+    </div>
+  </div>
+
+  <div class="facts">
+    <div class="fact"><div class="k">Wed Nov 4</div><div class="v">Arrive</div><div class="s">3:00 PM check-in</div></div>
+    <div class="fact"><div class="k">Thu Nov 5</div><div class="v">Rain day</div><div class="s">Indoors, ribs in the pot</div></div>
+    <div class="fact"><div class="k">Fri Nov 6</div><div class="v">Hike + museum</div><div class="s">Trail morning, dinner out</div></div>
+    <div class="fact"><div class="k">Sat Nov 7</div><div class="v">Anniversary</div><div class="s">Out by 11 AM</div></div>
+  </div>
+
+  <section class="pad">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <div class="eyebrow">What changed from the first draft</div>
+          <h2 class="h-sec">The itinerary drives the menu, not the other way around.</h2>
+          <p class="sub">The first version planned dinners in a vacuum. Once the hike and the museum are on the calendar, the whole food plan shifts: you need a breakfast that can get you out the door at 9, a lunch that can travel into a forest, and a dinner that's waiting for you when you get back.</p>
+        </div>
+        <div>
+          <p class="sub" style="margin-bottom:16px">Two things you flagged are now fixed. <b>Breakfast was almost an afterthought</b> — it's now planned as four real mornings, because on hike day it's the difference between a good hike and a hungry one. And <b>lunch is now a trail lunch</b>, not leftovers eaten at home that you won't be at.</p>
+          <p class="sub">The big food change is Thursday: <b>pork ribs instead of steak</b>. That's better for this dome anyway, because ribs want a low, slow, two-hour cook — on the grill if it's dry, in the lidded pot if it isn't.</p>
+        </div>
+      </div>
+
+      <div class="callout" style="border-color:var(--accent)">
+        <div class="eyebrow">The weather changed the plan</div>
+        <h4>Thursday is a 93% rain day. The hike moved to Friday.</h4>
+        <p>Four forecast sources agree: Thursday is steady rain, roughly a third of an inch, mostly in the morning. Friday is light showers and Saturday clears but turns cold.</p>
+        <p>So the week re-sequences. <b>Thursday becomes the indoor day</b> — a long slow morning, the ribs braised in the lidded pot on the stove, a fire and a bottle. <b>Friday morning becomes the hike</b>, Friday afternoon the museum, Friday evening the anniversary dinner. <a href="#weather" data-go="weather" style="color:var(--accent-text);font-weight:600">See the full forecast →</a></p>
+      </div>
+
+      <div class="callout">
+        <div class="eyebrow">Geography worth knowing</div>
+        <h4>Everything is closer than it looks.</h4>
+        <p><b>Bethel Woods is about 12 minutes from the dome</b> — Swan Lake to Bethel is a straight shot west. That's what makes a Friday hike, then museum, then a 5 PM dinner in Narrowsburg actually work.</p>
+        <p>The <b>Biscuit Brook trailhead is about 30 minutes</b> up Route 47 to Claryville. <b>Giant Ledge is about 55 minutes</b>, on the same road but further along, past Frost Valley.</p>
+      </div>
+
+      <div class="cardgrid">
+        <div class="card"><div class="num">Wed</div><h4>Arrival · the good day</h4><p>Sunny and 72, the best weather of the trip. Shop, check in, one-pot dinner by 7.</p></div>
+        <div class="card"><div class="num">Thu</div><h4>Rain day, indoors</h4><p>93% rain. Slow breakfast, ribs braising in the pot, fire in the evening. No driving.</p></div>
+        <div class="card"><div class="num">Fri</div><h4>Hike, museum, dinner</h4><p>Light showers. Trail at 9, Bethel Woods 1:30–3:30, Narrowsburg for 5.</p></div>
+        <div class="card"><div class="num">Sat</div><h4>Anniversary morning</h4><p>Your actual anniversary. Cold and clearing. Breakfast, cake, coffee, out by 11.</p></div>
+      </div>
+
+      <div class="pager"><span></span><button class="btn next" data-go="kitchen">Next: what the kitchen can do →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ WEATHER ============ -->
+<div class="view" id="view-weather">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">Four sources, read together</div>
+      <h2 class="h-sec">The forecast, and what it changed.</h2>
+      <p class="sub">Pulled Nov 3 from Apple Weather, the Weather Channel, Weather Underground, and a web search. They agree on the shape of the week, which is what makes this actionable.</p>
+
+      <div class="tw"><table class="t">
+        <thead><tr><th style="width:12%">Day</th><th style="width:26%">Conditions</th><th>High / Low</th><th>Rain</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td class="day">Wed 4</td><td><b>Sunny to partly sunny</b></td><td>72–73° / 52–55°</td><td class="sm">2–9%</td><td>Best day of the trip</td></tr>
+          <tr style="background:#FFF3F0"><td class="day">Thu 5</td><td><b>Rain all day</b></td><td>63–66° / 53–58°</td><td class="sm"><b>88–93%</b><br>~0.36 in</td><td><b>Stay in. Hike moves to Friday.</b></td></tr>
+          <tr><td class="day">Fri 6</td><td>Showers, mostly cloudy</td><td>65–67° / 46–51°</td><td class="sm">30–47%<br>~0.23 in</td><td>Hikeable, damp</td></tr>
+          <tr><td class="day">Sat 7</td><td>Partly cloudy</td><td>54–56° / 39–45°</td><td class="sm">14–24%</td><td>Clearing, and cold</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="callout" style="margin-top:32px">
+        <div class="eyebrow">Where the sources disagree</div>
+        <h4>They don't, really — but the details wobble.</h4>
+        <p>Highs for Thursday range from 63° to 66° depending on the source, and Friday's rain chance ranges from 30% to 47%. The Weather Channel and Weather Underground both put Thursday around 90% with a third of an inch of rain, which is the number that matters. Friday's spread is the wide one — worth re-checking Thursday night before committing to the trail.</p>
+        <p><b>What none of them say:</b> freezing. Thursday sits in the low 60s. This is a wet day, not a cold one. That's why the response is re-sequencing rather than cancelling.</p>
+      </div>
+
+      <div class="cardgrid" style="margin-top:44px">
+        <div class="card"><div class="num">Thu</div><h4>The hike moved to Friday</h4><p>Friday is light showers, not a downpour, and a forest valley walk in rain with proper layers is genuinely pleasant. Biscuit Brook's tree cover helps.</p></div>
+        <div class="card"><div class="num">Thu</div><h4>The ribs moved to the pot</h4><p>Grilling in rain is miserable. The braise is the same dinner — sear, cider, cover, two hours on low induction. See the Meals page.</p></div>
+        <div class="card"><div class="num">Wed</div><h4>Wednesday is your outside day</h4><p>72 and sunny is rare for early November here. If there's anything you want to do outdoors that isn't the hike, do it Wednesday afternoon.</p></div>
+        <div class="card"><div class="num">Sat</div><h4>Saturday is cold, not wet</h4><p>Lows in the upper 30s. Pack real layers for the drive out, and expect the dome to be chilly when you leave at 11.</p></div>
+      </div>
+
+      <div class="callout" style="margin-top:36px">
+        <div class="eyebrow">Daylight</div>
+        <h4>Sunset is about 4:47 PM. Every day this week.</h4>
+        <p>Daylight saving ended Sunday, so it's dark by five. That's why the hike starts at 9 rather than 10, why the ribs go on mid-afternoon rather than at dinner time, and why the Narrowsburg drive home on Friday is in full dark.</p>
+      </div>
+
+      <div class="pager"><button class="btn" data-go="plan">← Back</button><button class="btn next" data-go="kitchen">Next: the kitchen →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ KITCHEN ============ -->
+<div class="view" id="view-kitchen">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">The constraint that shapes everything</div>
+      <h2 class="h-sec">No oven. The grill does that job.</h2>
+      <p class="sub">Pulled from the property's own page for The Overlook. It has a galley kitchen with an induction cooktop, a fridge and an espresso machine, and a propane grill on the deck. There is no oven.</p>
+
+      <div class="cardgrid">
+        <div class="card"><div class="num">✓</div><h4>Induction cooktop</h4><p>Fast and precise. Great for searing and simmering, poor for anything that needs a box of hot air.</p></div>
+        <div class="card"><div class="num">✓</div><h4>Propane grill</h4><p>Hard-lined to gas, with utensils and a prep station. This is your oven, and it's what the ribs need.</p></div>
+        <div class="card"><div class="num">✓</div><h4>Firepit</h4><p>Wood-burning with unlimited firewood and kindling supplied. Fire up for s'mores after the ribs.</p></div>
+        <div class="card"><div class="num">✕</div><h4>No oven</h4><p>No roasting, no baking, no broiler. Everything here is built around that, not around workarounds.</p></div>
+      </div>
+
+      <div class="band">
+        <img src="img/hero-table.png" alt="Overhead view of a one-pot stew on an induction hob with bread, wine and cast iron">
+        <div class="cap">What carries the week: one heavy pot, one cast iron skillet, good bread, and the grill outside.</div>
+      </div>
+
+      <h2 class="h-sec" style="margin-top:64px">The equipment traps</h2>
+      <p class="sub">"Induction cooktop" and "full array of cookware" are reassuring phrases that hide two real risks. Both have cheap fixes.</p>
+
+      <div class="cardgrid">
+        <div class="card"><h4>Induction needs magnetic pans</h4><p>Rentals are often stocked with aluminum, which physically won't heat. Pack <b>one cast iron or clad stainless skillet</b>. You're driving, so trunk space is free.</p></div>
+        <div class="card"><h4>You may get one burner</h4><p>Many galley kitchens use a single portable hob. None of the recipes here need two pans going at once.</p></div>
+        <div class="card"><h4>No microwave</h4><p>Reheating stew on induction scorches fast. Go gentle, add a splash of broth, stir.</p></div>
+        <div class="card"><h4>Grill in the dark</h4><p>Sunset is about 4:45. The ribs go on in daylight, which means starting the cook mid-afternoon, not at dinner time.</p></div>
+      </div>
+
+      <div class="callout">
+        <div class="eyebrow">Pack this in the car</div>
+        <h4>A short list that saves the trip</h4>
+        <ul>
+          <li>Cast iron or clad stainless skillet (12 inch)</li>
+          <li>A lidded pot big enough for stew</li>
+          <li>Chef's knife and a cutting board</li>
+          <li>Can opener, corkscrew, bottle opener</li>
+          <li>Headlamp for the grill deck</li>
+          <li>Instant-read thermometer and grill gloves</li>
+          <li>Foil (heavy duty, for the ribs and potatoes), zip bags</li>
+          <li>Dish soap, sponge, paper towels, lighter, fire starters</li>
+        </ul>
+      </div>
+
+      <div class="pager"><button class="btn" data-go="plan">← Back</button><button class="btn next" data-go="shop">Next: the shopping run →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ SHOPPING ============ -->
+<div class="view" id="view-shop">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">Get this right and the rest is easy</div>
+      <h2 class="h-sec">Shop before the dome, not after.</h2>
+      <p class="sub">You have a free morning Wednesday, which is the gift here. Shop in daylight, arrive relaxed, and don't drive back out for anything.</p>
+
+      <div class="callout">
+        <div class="eyebrow">The one rule people get wrong</div>
+        <h4>New York supermarkets can't sell wine.</h4>
+        <p>New York licenses liquor separately. ShopRite will sell you beer and cider, but wine means a <b>liquor store</b> or buying it in New Jersey before you leave. Plan for it instead of finding out in the aisle.</p>
+      </div>
+
+      <div class="split" style="margin-top:52px">
+        <div>
+          <h3 style="font-size:1.35rem;margin-bottom:14px">Buy in New Jersey</h3>
+          <ul class="ing">
+            <li>Wine for the ribs and sparkling for Saturday</li>
+            <li>Olive oil, salt, the spices you actually use</li>
+            <li>Coffee, if you don't trust the pods</li>
+            <li>Canned beans, tomatoes, broth (saves weight and time)</li>
+            <li>A cooler bag for the meat</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="font-size:1.35rem;margin-bottom:14px">Buy on the way up</h3>
+          <p class="sub" style="margin-bottom:16px"><b>ShopRite of Liberty</b> is the reliable full grocery, about 8 minutes from the dome and on Route 17 before the Swan Lake turnoff. Real meat counter, which matters because <b>you want a rack of pork ribs</b> — ask the counter, don't rely on the cooler being stocked.</p>
+          <p class="sub">Ignore the small market in Swan Lake. It's a seasonal summer-colony store and won't be there in November.</p>
+        </div>
+      </div>
+
+      <h2 class="h-sec" style="margin-top:64px">The actual list</h2>
+      <p class="sub">Two cooked dinners, three breakfasts, and one trail lunch. Breakfast is split down the middle — you eat eggs, Joyce doesn't.</p>
+
+      <div class="tw">
+
+      <table class="t">
+        <thead><tr><th style="width:22%">Section</th><th>What</th></tr></thead>
+        <tbody>
+          <tr><td class="day">Meat</td><td><b>1 rack pork ribs</b> (2–3 lb, ask the counter) <span class="sm">·</span> 1 lb Italian sausage</td></tr>
+          <tr><td class="day">Produce</td><td>Baby potatoes <span class="sm">·</span> broccolini or green beans <span class="sm">·</span> garlic <span class="sm">·</span> onion <span class="sm">·</span> lemon <span class="sm">·</span> thyme <span class="sm">·</span> parsley <span class="sm">·</span> apples</td></tr>
+          <tr><td class="day">Cans &amp; jars</td><td>2 cans white beans <span class="sm">·</span> diced tomatoes <span class="sm">·</span> broth <span class="sm">·</span> BBQ sauce <span class="sm">·</span> honey <span class="sm">·</span> olive oil</td></tr>
+          <tr><td class="day">Bread</td><td>Sourdough loaf <span class="sm">·</span> baguette <span class="sm">·</span> English muffins or rolls for breakfast</td></tr>
+          <tr><td class="day">Breakfast &mdash; you</td><td><b>12 eggs</b> <span class="sm">·</span> butter <span class="sm">·</span> bacon or breakfast sausage <span class="sm">·</span> milk</td></tr>
+          <tr style="background:#FFF9F7"><td class="day">Breakfast &mdash; Joyce <span class="sm" style="display:block;font-weight:400;text-transform:none;letter-spacing:0">no eggs</span></td><td>Greek yogurt <span class="sm">·</span> granola <span class="sm">·</span> berries (fresh or frozen) <span class="sm">·</span> honey <span class="sm">·</span> oats <span class="sm">·</span> peanut butter <span class="sm">·</span> bananas <span class="sm">·</span> avocado <span class="sm">·</span> cream cheese <span class="sm">·</span> smoked salmon <span class="sm">·</span> extra bagels</td></tr>
+          <tr><td class="day">Trail lunch</td><td>Cheese <span class="sm">·</span> salami <span class="sm">·</span> trail mix <span class="sm">·</span> apples <span class="sm">·</span> chocolate <span class="sm">·</span> sandwich rolls</td></tr>
+          <tr><td class="day">Logistics</td><td>Heavy-duty foil <span class="sm">·</span> zip bags <span class="sm">·</span> water bottles <span class="sm">·</span> graham crackers, marshmallows, skewers</td></tr>
+          <tr><td class="day">Drinks</td><td>Red wine <span class="sm">·</span> sparkling <span class="sm">·</span> seltzer <span class="sm">·</span> beer or cider</td></tr>
+        </tbody>
+      </table>
+
+      </div>
+
+      <div class="pager"><button class="btn" data-go="kitchen">← Back</button><button class="btn next" data-go="food">Next: the meals →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ MEALS ============ -->
+<div class="view" id="view-food">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">All four mornings, both dinners, and lunch on the trail</div>
+      <h2 class="h-sec">The meals, rebuilt around the days.</h2>
+      <p class="sub">Breakfasts are now four real meals instead of a wave in the direction of eggs. The two dinners are built for one heavy pan at a time and no oven.</p>
+
+      <!-- BREAKFAST -->
+      <div class="recipe">
+        <div class="recipe-head">
+          <div><div class="eyebrow" style="margin-bottom:8px">Breakfasts · all four mornings</div><h3>Two breakfasts, one kitchen</h3></div>
+          <div class="meta"><span class="pill">2–15 min</span><span class="pill">One pan</span><span class="pill hot">Joyce: egg-free</span></div>
+        </div>
+        <div class="cols2">
+          <div>
+            <h5>Plan by day</h5>
+            <ul class="ing">
+              <li><b>Wed:</b> nothing — you arrive at 3 PM</li>
+              <li><b>Thu:</b> slow one, no rush <span style="color:var(--ink-35)">· rain day</span></li>
+              <li><b>Fri:</b> quick and filling <span style="color:var(--ink-35)">· hike day</span></li>
+              <li><b>Sat:</b> bagels, cake, coffee <span style="color:var(--ink-35)">· anniversary</span></li>
+            </ul>
+          </div>
+          <div>
+            <h5>The short version</h5>
+            <ol class="steps">
+              <li><b>You:</b> bacon first in the skillet, then eggs in the fat. One pan, five minutes, almost no cleanup.</li>
+              <li><b>Joyce:</b> pick from the four options below. None need a second pan.</li>
+              <li>Coffee from the Nespresso. Check whether it takes Original or Vertuo pods before buying.</li>
+              <li><b>Friday matters most.</b> You're hiking at 9, so both breakfasts need to be quick and hold you for hours.</li>
+            </ol>
+          </div>
+        </div>
+
+        <h5 style="margin-top:30px;border-top:1px dashed var(--ink-15);padding-top:22px">For Joyce — no eggs</h5>
+        <div class="cardgrid" style="margin-top:16px">
+          <div class="card"><div class="num">01</div><h4>Yogurt parfait</h4><p>Greek yogurt, granola, berries, honey. <b>Two minutes, zero cooking.</b> The most reliable option in a dome with one burner.</p></div>
+          <div class="card"><div class="num">02</div><h4>Oats, peanut butter, banana</h4><p>Five minutes, one pot. <b>Best choice on hike day</b> — it sticks with you far longer than eggs do.</p></div>
+          <div class="card"><div class="num">03</div><h4>Avocado toast</h4><p>Good bread from the Wednesday shop, lemon, chile flakes, salt. Five minutes. Feels deliberate rather than like a fallback.</p></div>
+          <div class="card"><div class="num">04</div><h4>Bagel, cream cheese, smoked salmon</h4><p>Three minutes, nothing but a toaster or the skillet. The obvious <b>Saturday anniversary</b> breakfast.</p></div>
+        </div>
+        <div class="tip" style="margin-top:22px"><b>Also easy if you want a change:</b> peanut butter and banana toast with honey (four minutes, no washing up), or a black-bean and cheese burrito warmed in the skillet. <b>Skip pancakes</b> — they're fiddly in a small pan and the syrup travels badly.</div>
+      </div>
+
+      <!-- WED DINNER -->
+      <div class="recipe">
+        <div class="recipe-head">
+          <div><div class="eyebrow" style="margin-bottom:8px">Wednesday · arrival night</div><h3>White bean &amp; sausage stew</h3></div>
+          <div class="meta"><span class="pill">35 min</span><span class="pill">One pot</span><span class="pill hot">Leftovers Thursday</span></div>
+        </div>
+        <div class="cols2">
+          <div>
+            <h5>You need</h5>
+            <ul class="ing">
+              <li>1 lb Italian sausage, casings off</li>
+              <li>1 onion, 3 cloves garlic</li>
+              <li>2 cans white beans, drained</li>
+              <li>1 can diced tomatoes, 2 cups broth</li>
+              <li>Thyme, salt, pepper, chile flakes</li>
+              <li>Bag of spinach or kale</li>
+              <li>Sourdough for toast</li>
+            </ul>
+          </div>
+          <div>
+            <h5>Do this</h5>
+            <ol class="steps">
+              <li>Get the pot hot, crumble in the sausage, brown it properly. This is most of the flavor.</li>
+              <li>Add onion and garlic, 3 minutes until soft. Scrape the bottom as you go.</li>
+              <li>Tip in beans, tomatoes, broth, a pinch of chile. Simmer 20 minutes uncovered.</li>
+              <li>Stir in greens at the end. Taste and salt properly — beans need more than you think.</li>
+              <li>Butter the sourdough and toast it in a dry skillet, or just dunk it in the bowl.</li>
+            </ol>
+            <div class="tip"><b>Why it's on Wednesday:</b> you've driven three hours. This is one pot and a fork. The rest becomes Thursday's lunch, which is handy because Thursday is a rain day and nobody wants to go out.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THU DINNER -->
+      <div class="recipe">
+        <div class="recipe-head">
+          <div><div class="eyebrow" style="margin-bottom:8px">Thursday · rain day, indoors</div><h3>Braised pork ribs, potatoes, greens</h3></div>
+          <div class="meta"><span class="pill hot">2 hours in the pot</span><span class="pill">One pot</span></div>
+        </div>
+        <div class="band" style="margin-top:0;margin-bottom:26px">
+          <img src="img/ribs-grill.png" alt="A glazed rack of pork ribs and foil packets of baby potatoes on a propane grill at night">
+        </div>
+        <div class="callout" style="margin-top:0;margin-bottom:26px">
+          <div class="eyebrow">Why this changed</div>
+          <h4>Thursday is 93% rain. Grilling is off.</h4>
+          <p>Same dinner, same flavour, done on the induction hob with a lid on. The braise is honestly the easier version — you can't burn it, and it fills the dome with the smell of a slow Sunday.</p>
+        </div>
+        <div class="cols2">
+          <div>
+            <h5>You need</h5>
+            <ul class="ing">
+              <li>1 rack pork ribs, cut into 3–4 rib sections</li>
+              <li>Dry rub: brown sugar, paprika, garlic powder, salt, pepper</li>
+              <li>1 cup apple cider or beer</li>
+              <li>1 onion, 3 cloves garlic</li>
+              <li>BBQ sauce, a spoon of honey</li>
+              <li>Baby potatoes, broccolini</li>
+              <li>A pot with a lid</li>
+            </ul>
+          </div>
+          <div>
+            <h5>Do this</h5>
+            <ol class="steps">
+              <li>Rub the ribs in the morning, or the night before. The longer it sits, the better it is.</li>
+              <li>Get the pot hot. Sear the rib sections on all sides, about 8 minutes total. Do it in batches so you get color instead of steam.</li>
+              <li>Take the ribs out. Soften the onion and garlic in the same pot.</li>
+              <li>Put the ribs back, pour in the cider, add a splash of water. <b>Lid on, low heat, 90 minutes.</b> Check once at the halfway mark that it isn't dry — add water if it is.</li>
+              <li>Meanwhile boil the baby potatoes in a second round of hot water, or roast them in the skillet in the last 25 minutes. Greens charred in the skillet at the end.</li>
+              <li>Take the ribs out, brush with sauce and honey, and give them 5 minutes under the broiler — there's no broiler, so just return them to the pot sauce for a minute to glaze.</li>
+              <li>Eat at the window. It's raining. That's the point.</li>
+            </ol>
+            <div class="tip"><b>If the rain clears by mid-afternoon:</b> switch to the grill version. Rub the rack, foil it with cider and butter, low heat 90 minutes lid down, then unwrap, sauce and char 10–15 minutes to 195–200°F. Both work; pick based on what the sky is doing at 2 PM.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRAIL LUNCH -->
+      <div class="recipe">
+        <div class="recipe-head">
+          <div><div class="eyebrow" style="margin-bottom:8px">Friday, on the trail</div><h3>Lunch that fits in a pack</h3></div>
+          <div class="meta"><span class="pill">No cooking</span></div>
+        </div>
+        <div class="cols2">
+          <div>
+            <h5>Pack for two</h5>
+            <ul class="ing">
+              <li>Sandwich rolls with salami and cheese</li>
+              <li>Apples</li>
+              <li>Trail mix, chocolate</li>
+              <li>Two full water bottles each</li>
+              <li>Small towel or sit pad</li>
+            </ul>
+          </div>
+          <div>
+            <h5>Why this and not leftovers</h5>
+            <ol class="steps">
+              <li>You won't be at the dome at lunch. Friday is the one day the kitchen can't help you.</li>
+              <li>Assemble the sandwiches Thursday night, or Friday morning while the bacon cooks.</li>
+              <li>Water matters more than food. November air is dry and you'll drink more than you expect.</li>
+            </ol>
+            <div class="tip"><b>Hike-day habit:</b> eat the sandwich at the top, not on the drive home. It's the reward, and it keeps the mood up on the last mile down.</div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h-sec" style="margin-top:64px">The whole trip, one table</h2>
+      <div class="tw">
+      <table class="t">
+        <thead><tr><th style="width:12%">Day</th><th style="width:20%">Breakfast</th><th style="width:24%">Lunch</th><th>Dinner</th></tr></thead>
+        <tbody>
+          <tr><td class="day">Wed 4</td><td class="sm">Travel</td><td class="sm">On the road</td><td>Bean &amp; sausage stew <span class="sm">· dome</span></td></tr>
+          <tr><td class="day">Thu 5</td><td>Slow — eggs or yogurt parfait</td><td>Stew leftovers <span class="sm">· dome, raining</span></td><td><b>Braised pork ribs</b> <span class="sm">· dome, in the pot</span></td></tr>
+          <tr><td class="day">Fri 6</td><td>Quick — oats or eggs</td><td>Trail lunch <span class="sm">· on Biscuit Brook</span></td><td><b>The Heron</b> <span class="sm">· Narrowsburg</span></td></tr>
+          <tr><td class="day">Sat 7</td><td>Bagels &amp; cake</td><td class="sm">Drive home</td><td class="sm">Home</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="pager"><button class="btn" data-go="shop">← Back</button><button class="btn next" data-go="out">Next: Friday out →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ FRIDAY OUT ============ -->
+<div class="view" id="view-out">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">Friday Nov 6 · trail, museum, anniversary evening</div>
+      <h2 class="h-sec">Trail, Woodstock, then Narrowsburg.</h2>
+      <p class="sub">The hike moved to Friday morning because Thursday is a washout. Bethel Woods is twelve minutes from the dome, so the trail, the museum and the drive west to dinner all fit in one day.</p>
+
+      <div class="dayblock">
+        <div class="dayblock-h"><div><div class="dt">Friday, Nov 6</div><h3>Hike, museum, then the anniversary dinner</h3></div><div class="pill">Light showers · 65°</div></div>
+        <div class="row"><div class="time">7:30</div><div class="what"><b>Quick breakfast</b><span class="tag">dome</span><p>You have a trail to get to. Oats with peanut butter and banana, or eggs if you'd rather. Pack the sandwiches you made Thursday night.</p></div></div>
+        <div class="row"><div class="time">9:00</div><div class="what"><b>Drive to Biscuit Brook</b><p>About 30 minutes up Route 47 to Claryville. Light showers — bring layers and a shell, not a heavy coat.</p></div></div>
+        <div class="row"><div class="time">9:30–12:30</div><div class="what"><b>Hike</b><span class="tag">valley walk</span><p>Blue-blazed trail along the brook, about 2 miles to the lean-to. Turn around whenever you want. Treetop cover makes showers genuinely pleasant for most of it.</p></div></div>
+        <div class="row"><div class="time">12:30</div><div class="what"><b>Trail lunch</b><p>Eat at the turnaround, not on the drive home. Then head back.</p></div></div>
+        <div class="row"><div class="time">1:30</div><div class="what"><b>Back at the dome, change</b><p>Dry socks matter. You're 12 minutes from the museum, so there's time.</p></div></div>
+        <div class="row"><div class="time">1:45–3:30</div><div class="what"><b>Bethel Woods museum</b><span class="tag">open daily 10–5</span><p>200 Hurd Road, Bethel. The 1960s museum on the actual 1969 Woodstock site. About 90 minutes is right on a hiking day.</p></div></div>
+        <div class="row"><div class="time">3:45</div><div class="what"><b>Home, rest, dress</b><p>An hour of downtime before the evening — which you'll want after a morning outside.</p></div></div>
+        <div class="row"><div class="time">4:20</div><div class="what"><b>Drive to Narrowsburg</b><p>About 35–40 minutes on routes 52 and 97, west into the sunset.</p></div></div>
+        <div class="row"><div class="time">5:00</div><div class="what"><b>The Heron</b><span class="tag">anniversary</span><p>Happy hour runs 5–6. Be seated at 5 so you catch it and you're not rushed by the 8 PM close.</p></div></div>
+        <div class="row"><div class="time">7:15</div><div class="what"><b>Home</b><p>Back at the dome by about 8. Firepit, or just sit.</p></div></div>
+      </div>
+
+      <div class="callout" style="margin-top:26px">
+        <div class="eyebrow">Thursday, meanwhile</div>
+        <h4>The rain day has its own shape.</h4>
+        <p>No driving, no trail. Sleep in, make a proper breakfast, get the ribs into the pot around 2, and let them go 90 minutes while the dome fills up. Read, play cards, light the fire. If the sky unexpectedly clears, switch to the grill — the recipe page has both versions.</p>
+      </div>
+
+      <div class="rest-pick">
+        <img src="img/river-town.png" alt="A quiet river town main street at dusk in late autumn">
+        <div class="rest-body">
+          <div class="badge">Recommended</div>
+          <div class="eyebrow" style="margin-top:16px">Narrowsburg, NY</div>
+          <h3>The Heron</h3>
+          <div class="where">40 Main Street · (845) 252-3333</div>
+          <dl class="kv">
+            <dt>Friday hours</dt><dd>5:00 – 8:00 PM</dd>
+            <dt>Happy hour</dt><dd>Thu &amp; Fri, 5:00 – 6:00</dd>
+            <dt>Menu</dt><dd>Southern farm-to-table. Mains mostly $29–49</dd>
+            <dt>Feel</dt><dd>Small room, Delaware River, old wood</dd>
+            <dt>Book</dt><dd>By phone, this week</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:24px">
+        <div class="eyebrow">Timing</div>
+        <h4>Sunset is around 4:45 PM.</h4>
+        <p>You'll drive the last stretch in dusk and arrive in the dark. That's fine from Bethel, but slow down on 97 — November is peak deer season upstate, and the drive back is fully dark. Decide who's driving before you order, not after.</p>
+        <p><b>Book early.</b> The NJEA convention usually lands around this weekend, which puts a lot of New Jersey families in the Catskills. Small dining rooms fill up. Call The Heron first, and hold a second reservation elsewhere — then cancel the one you don't use.</p>
+      </div>
+
+      <h2 class="h-sec" style="margin-top:64px">If The Heron is booked</h2>
+      <div class="cardgrid">
+        <div class="card"><div class="num">1</div><h4>The Homestead</h4><p>Eldred Preserve, about 25 minutes. Lodging dining room with a fireplace, open Thursday to Monday until 9 PM. Steaks and chops, but also pastas and chicken in the $28–38 range so you can stay in budget.</p></div>
+        <div class="card"><div class="num">2</div><h4>Solaia</h4><p>Monticello, about 22 minutes. White-tablecloth Italian, house-made pasta, lamb bolognese. Open Friday until 10 PM, which is later than almost anything else around here.</p></div>
+        <div class="card"><div class="num">3</div><h4>The Kaatskeller</h4><p>Livingston Manor, about 18 minutes. Wood-fired pizza, fire pit, right off Route 17. Good value and a relaxed backup — but mostly outdoor seating, so it's a fair-weather pick only.</p></div>
+      </div>
+
+      <div class="callout" style="margin-top:36px">
+        <div class="eyebrow">Staying in budget</div>
+        <h4>Skip the $49 steak.</h4>
+        <p>A $49 entrée for two, plus a second main, a starter, two drinks, 8% tax and a 20% tip lands around $165–195. That's over your range. Order two mains near $30, share one starter, arrive for happy hour, and have one person limited to a single drink. That gets you in under $150 all in.</p>
+      </div>
+
+      <div class="pager"><button class="btn" data-go="food">← Back</button><button class="btn next" data-go="budget">Next: what it costs →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ BUDGET ============ -->
+<div class="view" id="view-budget">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">Honest numbers</div>
+      <h2 class="h-sec">What this trip actually costs to eat.</h2>
+      <p class="sub">Corrected from the first draft, which forgot wine, tax, tip, trail food, and three of the four breakfasts.</p>
+
+      <div class="budget">
+        <div class="budget-row"><div>Groceries for the dome (incl. ribs &amp; breakfasts)</div><div class="amt">$150 – 200</div></div>
+        <div class="budget-row"><div>Wine and sparkling</div><div class="amt">$40 – 70</div></div>
+        <div class="budget-row"><div>Anniversary dinner, all in</div><div class="amt">$145 – 195</div></div>
+        <div class="budget-row"><div>Bethel Woods museum, 2 tickets</div><div class="amt">$30 – 40</div></div>
+        <div class="budget-row"><div>Saturday breakfast</div><div class="amt">$0 <span class="sm" style="color:var(--ink-55)">· in the dome</span></div></div>
+        <div class="budget-row total"><div>Total</div><div class="amt">$365 – 505</div></div>
+      </div>
+
+      <div class="callout">
+        <div class="eyebrow">The real argument for cooking</div>
+        <h4>Five restaurant meals would have cost more than the hotel.</h4>
+        <p>You're eating out once in four days. The other three dinners, four breakfasts, and two lunches come out of one grocery run. That's the whole reason the dome pays for itself, and it's why Thursday's ribs matter — a two-hour cook, whether braised or grilled, is something a restaurant would charge you $30 a plate for.</p>
+      </div>
+
+      <div class="pager"><button class="btn" data-go="out">← Back</button><button class="btn next" data-go="pack">Next: the checklist →</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ PACK ============ -->
+<div class="view" id="view-pack">
+  <section class="pad">
+    <div class="wrap">
+      <div class="eyebrow">Before and during</div>
+      <h2 class="h-sec">The short version.</h2>
+      <p class="sub">Tick these off. It saves to your browser, so you can close the page and come back.</p>
+
+      <div class="chk" id="chk">
+        <div class="grp">This week</div>
+        <label><input type="checkbox"><span>Call The Heron — Friday Nov 6, 5:00 PM, table for two</span></label>
+        <label><input type="checkbox"><span>Hold a backup reservation at The Homestead or Solaia</span></label>
+        <label><input type="checkbox"><span>Buy wine and sparkling in New Jersey, not New York</span></label>
+        <label><input type="checkbox"><span>Check the weather for Nov 5 — a wet day changes the hike plan</span></label>
+        <label><input type="checkbox"><span>Call the dome (845-317-7776): pan type, and is there a pot with a tight lid</span></label>
+
+        <div class="grp">Trail gear</div>
+        <label><input type="checkbox"><span>Sturdy shoes or boots — leaf cover hides rocks and roots</span></label>
+        <label><input type="checkbox"><span>Layers, hat, gloves. It will be 30s at elevation</span></label>
+        <label><input type="checkbox"><span>Two water bottles each</span></label>
+        <label><input type="checkbox"><span>Trekking poles if you have them — they take load off the back on the descent</span></label>
+        <label><input type="checkbox"><span>Headlamp, even for a day hike — sunset is 4:45</span></label>
+
+        <div class="grp">Pack in the car</div>
+        <label><input type="checkbox"><span>Cast iron or clad stainless skillet, lidded pot</span></label>
+        <label><input type="checkbox"><span>Chef's knife, cutting board</span></label>
+        <label><input type="checkbox"><span>Can opener, corkscrew, heavy-duty foil, zip bags</span></label>
+        <label><input type="checkbox"><span>Headlamp, thermometer, grill gloves</span></label>
+        <label><input type="checkbox"><span>Cooler bag for the ribs and sausage</span></label>
+        <label><input type="checkbox"><span>Heating pad, medication, lumbar pillow</span></label>
+
+        <div class="grp">Wednesday</div>
+        <label><input type="checkbox"><span>Chores done by midday, shop at ShopRite of Liberty</span></label>
+        <label><input type="checkbox"><span>Ask the meat counter for a rack of pork ribs</span></label>
+        <label><input type="checkbox"><span>Arrive at 3:00, daylight to spare</span></label>
+        <label><input type="checkbox"><span>Build trail sandwiches for Friday</span></label>
+
+        <div class="grp">Thursday · rain day</div>
+        <label><input type="checkbox"><span>Rub the ribs in the morning</span></label>
+        <label><input type="checkbox"><span>No rush this morning. Eggs for you, oats or parfait for Joyce</span></label>
+        <label><input type="checkbox"><span>Stay in. Re-check the forecast at noon — if it clears, switch to the grill</span></label>
+
+        <div class="grp">Friday · hike, museum, dinner</div>
+        <label><input type="checkbox"><span>Quick breakfast, sandwiches packed from Thursday night</span></label>
+        <label><input type="checkbox"><span>Biscuit Brook trailhead by 9:30 — about 30 min up Route 47</span></label>
+        <label><input type="checkbox"><span>Layers and a rain shell, not a heavy coat</span></label>
+        <label><input type="checkbox"><span>Back at the dome by 1:30, museum by 1:45</span></label>
+        <label><input type="checkbox"><span>The Heron at 5:00 — happy hour ends at 6</span></label>
+        <label><input type="checkbox"><span>Ribs into the pot by 2:00 — lid on, low, 90 minutes</span></label>
+
+        <div class="grp">Friday &amp; Saturday</div>
+        <label><input type="checkbox"><span>Museum 1:30–3:30 — it closes at 5</span></label>
+        <label><input type="checkbox"><span>Tell the restaurant it's your anniversary</span></label>
+        <label><input type="checkbox"><span>Saturday: cake, coffee, and a proper anniversary morning</span></label>
+        <label><input type="checkbox"><span>Pack before 9:45 — out by 11</span></label>
+      </div>
+
+      <div class="callout" style="margin-top:36px">
+        <div class="eyebrow">Two things worth protecting</div>
+        <h4>The back, and the anniversary morning.</h4>
+        <p><b>On the back:</b> Giant Ledge climbs about 1,050 feet in 1.7 miles and the trail is steep in spots. Biscuit Brook is the gentler call — a valley walk along a brook, about two miles to a lean-to, with modest climbing. Take the poles, and treat turning around as a successful hike, not a failure.</p>
+        <p><b>On the firewood:</b> "unlimited firewood" usually means a communal pile that's a walk away. The uninjured partner hauls it, in daylight. Same for luggage on Saturday.</p>
+        <p><b>On Saturday morning:</b> you check out on your anniversary. Coffee, the cake you bought Wednesday, and an hour that's actually about the two of you before the packing starts.</p>
+      </div>
+
+      <div class="pager"><button class="btn" data-go="budget">← Back</button><button class="btn next" data-go="plan">Back to the plan →</button></div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>The Overlook · Domes at Catskills · Swan Lake, NY</div>
+    <div>Nov 4 – 7, 2026 · Built for Kellen &amp; Joyce</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const VIEWS = ['plan','weather','kitchen','shop','food','out','budget','pack'];
+  const navBtns = Array.from(document.querySelectorAll('#nav button'));
+  const nodes = Object.fromEntries(VIEWS.map(v => [v, document.getElementById('view-'+v)]));
+
+  function show(name, push){
+    if(!nodes[name]) name = 'plan';
+    VIEWS.forEach(v => nodes[v].classList.toggle('active', v === name));
+    navBtns.forEach(b => b.setAttribute('aria-current', String(b.dataset.view === name)));
+    if(push !== false) history.replaceState(null, '', '#' + name);
+    window.scrollTo({top:0, behavior:'instant'});
+  }
+
+  navBtns.forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
+  document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
+  window.addEventListener('hashchange', () => show(location.hash.replace('#',''), false));
+
+  const boxes = Array.from(document.querySelectorAll('#chk input'));
+  const KEY = 'domes-trip-checklist-v3';
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ saved = {}; }
+  boxes.forEach((box, i) => {
+    box.checked = !!saved[i];
+    box.addEventListener('change', () => {
+      saved[i] = box.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch(e){}
+    });
+  });
+
+  show(location.hash.replace('#','') || 'plan', false);
+})();
+</script>
+</body>
+</html>

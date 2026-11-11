@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T15:59:42.508Z",
+  "generatedAt": "2026-11-11T01:57:23.381Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -41,12 +41,11 @@
     "/friction-lab": "/friction-lab/index.html",
     "/friction-lab/": "/friction-lab/index.html",
     "/minutiae-hunt": "/minutiae-hunt.html",
-    "/latent-print-lab": "/latent-print-lab/index.html",
-    "/latent-print-lab/prints/**": "/latent-print-lab/prints/**",
-    "/latent-print-lab/portraits/**": "/latent-print-lab/portraits/**"
+    "/domes-trip": "/domes-trip/index.html"
   },
   "dirs": [
     "/ap1-q1-review",
+    "/domes-trip",
     "/evidence-types",
     "/forensic-branches",
     "/friction-lab",
