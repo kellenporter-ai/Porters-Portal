@@ -76,24 +76,58 @@ export async function earliestSessionStartMs(
 ): Promise<number | null> {
   try {
     // Query by (userId, assignmentId) only — no orderBy, so this needs no new
-    // composite index and cannot fail with failed-precondition in production.
-    // Session cardinality per student+resource is tiny (a handful at most), so
-    // min() over the returned docs is cheaper than an indexed aggregate.
-    const snap = await db.collection(collection)
-      .where("userId", "==", uid)
-      .where("assignmentId", "==", assignmentId)
-      .limit(50)
-      .get();
-    if (snap.empty) return null;
-
+    // composite index and cannot fail with failed-precondition in production
+    // (adding an index would make this path depend on an index deploy landing
+    // before the next class, which is exactly the failure mode to avoid).
+    //
+    // ORDERING MATTERS HERE. Without an orderBy, `limit(n)` returns an
+    // ARBITRARY subset of this pair's docs — it is the n with the LOWEST
+    // document IDs, not the most recent. Swept debris from earlier terms can
+    // outrank a live session by ID, which would silently hide the anchor and
+    // re-open the very bug this fixes. So we page: the loop only stops early
+    // when a page is short, which (given the monotonic __name__ cursor) means
+    // the pair has been fully enumerated. MAX_ANCHOR_DOCS is a runaway guard,
+    // not an expected ceiling.
+    const MAX_ANCHOR_DOCS = 500;
+    const PAGE = 100;
     const cutoff = Date.now() - lookbackMs;
+    // A session cannot be a valid anchor if it started before the lookback
+    // OR if it expired longer ago than the sweep grace (it is debris). Filtering
+    // by expiry here — rather than in the query — keeps the index requirement
+    // at the existing (userId, assignmentId) pair.
+    const staleBefore = Date.now() - SESSION_DEBRIS_AGE_MS;
+
     let earliest: number | null = null;
-    snap.docs.forEach((d) => {
-      const startedAt = d.data().startedAt;
-      const ms = startedAt?.toMillis?.() ?? Number(startedAt) ?? NaN;
-      if (!Number.isFinite(ms) || ms <= 0 || ms < cutoff) return;
-      if (earliest === null || ms < earliest) earliest = ms;
-    });
+    let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+    let scanned = 0;
+
+    while (scanned < MAX_ANCHOR_DOCS) {
+      let q: FirebaseFirestore.Query = db.collection(collection)
+        .where("userId", "==", uid)
+        .where("assignmentId", "==", assignmentId)
+        .orderBy("__name__")
+        .limit(PAGE);
+      if (cursor) q = q.startAfter(cursor);
+
+      const snap = await q.get();
+      if (snap.empty) break;
+
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        // Skip swept/stale debris so it cannot shadow a real session.
+        const expiresMs = toMillis(data.expiresAt);
+        if (expiresMs !== null && expiresMs < staleBefore) return;
+
+        const ms = toMillis(data.startedAt);
+        if (ms === null || ms <= 0 || ms < cutoff) return;
+        if (earliest === null || ms < earliest) earliest = ms;
+      });
+
+      scanned += snap.size;
+      cursor = snap.docs[snap.docs.length - 1];
+      if (snap.size < PAGE) break; // fully enumerated
+    }
+
     return earliest;
   } catch (err) {
     // A lookup failure must NOT be mistaken for "no session exists" — that
@@ -104,6 +138,34 @@ export async function earliestSessionStartMs(
     });
     return null;
   }
+}
+
+/**
+ * Sessions whose expiry is older than this are debris — well past the anchor
+ * lookback and past the sweeper's own grace. Matches SESSION_SWEEP_GRACE_MS.
+ */
+const SESSION_DEBRIS_AGE_MS = 24 * 60 * 60 * 1000;
+
+/** Firestore Timestamp | Date | epoch-ms | ISO string -> epoch ms, or null. */
+function toMillis(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string") {
+    const t = Date.parse(value);
+    return Number.isFinite(t) ? t : null;
+  }
+  if (typeof value === "object") {
+    const v = value as { toMillis?: () => number; getTime?: () => number };
+    if (typeof v.toMillis === "function") {
+      const t = v.toMillis();
+      return Number.isFinite(t) ? t : null;
+    }
+    if (typeof v.getTime === "function") {
+      const t = v.getTime();
+      return Number.isFinite(t) ? t : null;
+    }
+  }
+  return null;
 }
 
 // ==========================================
