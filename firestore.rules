@@ -319,6 +319,28 @@ service cloud.firestore {
       allow read, write: if false; // Admin SDK only
     }
 
+    // Server-credited presence seconds, one doc per student per LOCAL day.
+    // Written only by the heartbeat callable (Admin SDK). Teachers may read so
+    // the report can show measured time; students may read their own.
+    match /engagement_daily/{docId} {
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false; // Admin SDK only — never client-supplied durations
+    }
+
+    // Timing evidence rescued from session docs before the nightly sweep
+    // deletes them. Admin-only: this is forensics, not a student-facing record.
+    match /session_archive/{docId} {
+      allow read, write: if false; // Admin SDK only
+    }
+
+    // Daily engagement-integrity reports written by the scheduled invariant
+    // check. Admin-only.
+    match /integrity_reports/{docId} {
+      allow read: if isAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
 
     // ==========================================
     // PRACTICE PROGRESS (Proctor Bridge)

@@ -14,6 +14,7 @@ import {
 } from "./core";
 import { resolveEngagement } from "./engagement-resolution";
 import { earliestSessionStartMs } from "./engagement";
+import { creditEngagement, localDayKey } from "./engagement-daily";
 
 // Mirror of the module-private validateClassType in ./core (core.ts:122).
 // VALID_CLASS_TYPES is exported from core; the validator itself is not.
@@ -1578,12 +1579,15 @@ export const heartbeat = onCall({ memory: "256MiB", timeoutSeconds: 30 }, async 
   }
 
   const db = admin.firestore();
-  const sessionRef = db.collection("assessment_sessions").doc(sessionToken);
-  const sessionDoc = await sessionRef.get();
+  // Tokens are opaque, so resolve which collection owns this one. Assessments
+  // keep their full expiry/used gate; resource sessions are a simple presence
+  // beacon and only need to be live and owned by the caller.
+  const assessmentRef = db.collection("assessment_sessions").doc(sessionToken);
+  const sessionDoc = await assessmentRef.get();
+  const isResource = !sessionDoc.exists;
 
-  if (!sessionDoc.exists) {
-    console.log('[heartbeat] not-found', { durationMs: Date.now() - start });
-    throw new HttpsError("not-found", "Session not found.");
+  if (isResource) {
+    return await heartbeatResource(db, request.auth!.uid, sessionToken, start);
   }
 
   const sessionData = sessionDoc.data()!;
@@ -1606,10 +1610,86 @@ export const heartbeat = onCall({ memory: "256MiB", timeoutSeconds: 30 }, async 
     throw new HttpsError("failed-precondition", "Session already used for submission.");
   }
 
-  await sessionRef.update({
+  // Capture incremental presence time BEFORE overwriting lastHeartbeatAt —
+  // the previous value is what makes this interval measurable. A swallowed
+  // failure here must never break the heartbeat itself (which gates the
+  // student's session), but it is logged so a rollup outage is visible.
+  const priorHeartbeat = sessionData.lastHeartbeatAt as admin.firestore.Timestamp | undefined;
+  try {
+    await creditEngagement(
+      db,
+      request.auth!.uid,
+      localDayKey(new Date()),
+      priorHeartbeat ? priorHeartbeat.toMillis() : null,
+      Date.now(),
+      {
+        assignmentId: sessionData.assignmentId as string | undefined,
+        classType: sessionData.classType as string | undefined,
+        source: "assessment_heartbeat",
+      },
+    );
+  } catch (creditErr) {
+    console.error('[heartbeat] engagement credit failed', { error: String(creditErr) });
+  }
+
+  await assessmentRef.update({
     lastHeartbeatAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
   console.log('[heartbeat] ok', { durationMs: Date.now() - start });
   return { ok: true, expiresAt: expiresAt ? expiresAt.toDate().toISOString() : undefined };
 });
+
+/**
+ * Presence beacon for a non-assessment resource session.
+ *
+ * Resource sessions used to have NO heartbeat at all, so reading work — the
+ * majority of daily student activity — produced no duration evidence until the
+ * session ended, and none at all if the tab was closed. This credits
+ * server-measured presence time to the student's daily rollup.
+ */
+async function heartbeatResource(
+  db: FirebaseFirestore.Firestore,
+  uid: string,
+  sessionToken: string,
+  start: number,
+) {
+  const ref = db.collection("resource_sessions").doc(sessionToken);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    console.log('[heartbeat] resource not-found', { durationMs: Date.now() - start });
+    throw new HttpsError("not-found", "Session not found.");
+  }
+  const data = snap.data()!;
+  if (data.userId !== uid) {
+    console.log('[heartbeat] resource permission-denied', { durationMs: Date.now() - start });
+    throw new HttpsError("permission-denied", "Session token does not match your account.");
+  }
+  const nowMs = Date.now();
+  const expiresAt = data.expiresAt as admin.firestore.Timestamp | undefined;
+  if (expiresAt && expiresAt.toMillis() < nowMs) {
+    throw new HttpsError("deadline-exceeded", "Resource session has expired.");
+  }
+
+  const priorHeartbeat = data.lastHeartbeatAt as admin.firestore.Timestamp | undefined;
+  try {
+    await creditEngagement(
+      db,
+      uid,
+      localDayKey(new Date(nowMs)),
+      priorHeartbeat ? priorHeartbeat.toMillis() : null,
+      nowMs,
+      {
+        assignmentId: data.assignmentId as string | undefined,
+        classType: data.classType as string | undefined,
+        source: "resource_heartbeat",
+      },
+    );
+  } catch (creditErr) {
+    console.error('[heartbeat] resource credit failed', { error: String(creditErr) });
+  }
+
+  await ref.update({ lastHeartbeatAt: admin.firestore.FieldValue.serverTimestamp() });
+  console.log('[heartbeat] resource ok', { durationMs: Date.now() - start });
+  return { ok: true };
+}

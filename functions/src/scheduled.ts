@@ -847,6 +847,66 @@ export const checkStreaksAtRisk = onSchedule(
 // the practical defense; expiry enforcement lives in the Cloud Functions.
 const SESSION_SWEEP_GRACE_MS = 24 * 60 * 60 * 1000; // 24h
 
+/**
+ * Archives a session doc's evidence BEFORE it is deleted.
+ *
+ * WHY: the 2026-11-12 clock-reset investigation needed session `startedAt`
+ * values to recover true engagement times, and they were gone — the nightly
+ * sweep had deleted them. That made a recoverable class of data loss
+ * unrecoverable. The archive keeps the timing evidence forever at negligible
+ * cost (~1 small doc per session, no indexes needed on it).
+ *
+ * Written in the SAME transaction as the delete so a session can never be
+ * destroyed without its archive landing, and never archived twice-by-accident
+ * in a way that loses the delete.
+ */
+async function archiveAndDelete(
+  collectionName: "assessment_sessions" | "resource_sessions",
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
+  correlationId: string,
+): Promise<number> {
+  const db = admin.firestore();
+  let archived = 0;
+
+  // Chunked so a large page cannot exceed Firestore's 500-write transaction cap
+  // (each session costs 2 writes: archive + delete).
+  const CHUNK = 200;
+  for (let i = 0; i < docs.length; i += CHUNK) {
+    const slice = docs.slice(i, i + CHUNK);
+    try {
+      await db.runTransaction(async (tx) => {
+        for (const d of slice) {
+          const x = d.data();
+          const archiveRef = db.collection("session_archive").doc();
+          tx.set(archiveRef, {
+            originalId: d.id,
+            sourceCollection: collectionName,
+            userId: x.userId ?? null,
+            assignmentId: x.assignmentId ?? null,
+            // The evidence that matters: the server-observed span.
+            startedAt: x.startedAt ?? null,
+            expiresAt: x.expiresAt ?? null,
+            lastHeartbeatAt: x.lastHeartbeatAt ?? null,
+            used: x.used ?? null,
+            archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+            correlationId,
+          });
+          tx.delete(d.ref);
+        }
+      });
+      archived += slice.length;
+    } catch (err) {
+      // Do NOT delete what we could not archive. Leaving a stale session doc in
+      // place is harmless; losing its timing evidence is not.
+      logWithCorrelation('error', `sessionSweep: ${collectionName} archive+delete failed, leaving batch in place.`, correlationId, {
+        error: err instanceof Error ? err.message : String(err),
+        batchSize: slice.length,
+      });
+    }
+  }
+  return archived;
+}
+
 async function sweepExpiredSessions(
   collectionName: "assessment_sessions" | "resource_sessions",
   cutoffMs: number,
@@ -873,14 +933,7 @@ async function sweepExpiredSessions(
     }
     if (snap.empty) break;
 
-    const batch = db.batch();
-    snap.docs.forEach(d => batch.delete(d.ref));
-    try {
-      await batch.commit();
-      deleted += snap.size;
-    } catch (err) {
-      logWithCorrelation('error', `sessionSweep: ${collectionName} batch delete failed, skipping to next batch.`, correlationId, { error: err instanceof Error ? err.message : String(err) });
-    }
+    deleted += await archiveAndDelete(collectionName, snap.docs, correlationId);
 
     lastDoc = snap.docs[snap.docs.length - 1];
     if (snap.size < 499) break;
@@ -895,10 +948,10 @@ export const sessionSweep = onSchedule(
     const cutoffMs = Date.now() - SESSION_SWEEP_GRACE_MS;
 
     const assessmentDeleted = await sweepExpiredSessions("assessment_sessions", cutoffMs, correlationId);
-    logWithCorrelation('info', 'sessionSweep: assessment_sessions cleaned', correlationId, { deleted: assessmentDeleted });
+    logWithCorrelation('info', 'sessionSweep: assessment_sessions archived + cleaned', correlationId, { deleted: assessmentDeleted });
 
     const resourceDeleted = await sweepExpiredSessions("resource_sessions", cutoffMs, correlationId);
-    logWithCorrelation('info', 'sessionSweep: resource_sessions cleaned', correlationId, { deleted: resourceDeleted });
+    logWithCorrelation('info', 'sessionSweep: resource_sessions archived + cleaned', correlationId, { deleted: resourceDeleted });
   },
 );
 

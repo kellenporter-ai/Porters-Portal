@@ -1803,6 +1803,40 @@ const Proctor: React.FC<ProctorProps> = ({ onComplete, onBlockProgress, contentU
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAssessment, previewMode, sessionToken, assignmentId, userId]);
 
+  // Resource-session presence beacon.
+  //
+  // Reading work never produced duration evidence except at session close, so a
+  // closed tab meant the time was simply gone. Pinging every 30s lets the server
+  // credit measured presence to the student's daily rollup as it happens.
+  // Deliberately simple: no token-refresh dance (a resource token is reusable
+  // for 24h), and every failure is swallowed because this must never disturb
+  // the student's work.
+  useEffect(() => {
+    if (isAssessment || previewMode || !userId || !assignmentId) return;
+    let cancelled = false;
+    let timeoutId: number | null = null;
+
+    const ping = async () => {
+      if (cancelled) return;
+      const token = metricsRef.current.sessionToken;
+      // Only ping while the tab is visible — a backgrounded tab is not presence.
+      if (token && typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        try {
+          await callHeartbeat({ sessionToken: token });
+        } catch {
+          /* presence beacon is best-effort; never surface to the student */
+        }
+      }
+      if (!cancelled) timeoutId = window.setTimeout(ping, 30000);
+    };
+
+    timeoutId = window.setTimeout(ping, 30000);
+    return () => {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [isAssessment, previewMode, userId, assignmentId]);
+
   // LaTeX Rendering + TTS text extraction
   useEffect(() => {
     if (contentRef.current && htmlContent) {
