@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import { verifyAdmin, generateCorrelationId, logWithCorrelation } from "./core";
 import { queueEmail } from "./classroom";
 import { isSchoolDay, schoolDaysInWindow } from "./schoolCalendar";
+import { isReportedTimeInconsistent } from "./engagement-resolution";
 
 // ==========================================
 // SCHEDULED FUNCTIONS
@@ -898,5 +899,106 @@ export const sessionSweep = onSchedule(
 
     const resourceDeleted = await sweepExpiredSessions("resource_sessions", cutoffMs, correlationId);
     logWithCorrelation('info', 'sessionSweep: resource_sessions cleaned', correlationId, { deleted: resourceDeleted });
+  },
+);
+
+/**
+ * Engagement integrity invariant — the guard that was missing on 2026-11-12.
+ *
+ * A clock-reset bug silently destroyed 28 of 114 submission rows (25%) between
+ * September and November: stored engagement collapsed to a 5-7.2s band while
+ * the client reported thousands of seconds. Nothing alerted, because nothing
+ * was watching the RATIO between the two stored fields. A deploy "succeeding"
+ * was mistaken for the fix working.
+ *
+ * This job asserts the ratio invariant daily. Expected violation count: ZERO.
+ * Any non-zero count means a new clock-reset path, an anchor-lookup outage, or
+ * tampering — all three worth knowing within a day.
+ *
+ * It deliberately writes an `integrity_reports` row EVERY run (not only on
+ * failure) so a silent absence of output is itself detectable.
+ */
+export const engagementIntegrityCheck = onSchedule(
+  { schedule: "15 5 * * *", timeZone: "America/New_York", memory: "512MiB", timeoutSeconds: 300 },
+  async () => {
+    const correlationId = generateCorrelationId();
+    const db = admin.firestore();
+
+    // Compare yesterday's rows against today's — a 48h window catches a
+    // weekend-deployed regression on the next school Monday.
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+    const snap = await db.collection("submissions")
+      .where("submittedAt", ">=", since)
+      .limit(2000)
+      .get();
+
+    const inconsistent: Array<Record<string, unknown>> = [];
+    const unverified: Array<Record<string, unknown>> = [];
+    let scanned = 0;
+    let withClientReport = 0;
+
+    snap.forEach((d) => {
+      const x = d.data();
+      const engagement = Number(x.metrics?.engagementTime) || 0;
+      const clientReported = Number(x.metrics?.clientReportedEngagement) || 0;
+      const timeSource = x.metrics?.timeSource as string | undefined;
+      scanned++;
+      if (clientReported <= 0) return;
+      withClientReport++;
+
+      if (isReportedTimeInconsistent(engagement, clientReported, timeSource as never)) {
+        inconsistent.push({
+          submissionId: d.id,
+          userId: x.userId,
+          assignmentId: x.assignmentId,
+          engagementTime: engagement,
+          clientReportedEngagement: clientReported,
+          ratio: +(engagement / clientReported).toFixed(4),
+          timeSource: timeSource ?? "absent",
+          submittedAt: x.submittedAt,
+        });
+      }
+      if (timeSource === "unverified") {
+        unverified.push({
+          submissionId: d.id,
+          userId: x.userId,
+          engagementTime: engagement,
+          clientReportedEngagement: clientReported,
+          submittedAt: x.submittedAt,
+        });
+      }
+    });
+
+    const unverifiedRate = withClientReport > 0 ? unverified.length / withClientReport : 0;
+
+    const report = {
+      checkedAt: new Date().toISOString(),
+      windowStart: since,
+      scanned,
+      withClientReport,
+      inconsistentCount: inconsistent.length,
+      unverifiedCount: unverified.length,
+      unverifiedRate: +(unverifiedRate * 100).toFixed(2),
+      // Expected 0. Anything else is a live defect.
+      ok: inconsistent.length === 0 && unverifiedRate < 0.02,
+      inconsistent: inconsistent.slice(0, 50),
+      unverified: unverified.slice(0, 50),
+      correlationId,
+    };
+
+    await db.collection("integrity_reports").add(report);
+
+    if (!report.ok) {
+      logWithCorrelation("error", "engagementIntegrityCheck: INVARIANT VIOLATED", correlationId, {
+        inconsistentCount: inconsistent.length,
+        unverifiedRate: report.unverifiedRate,
+        sample: inconsistent.slice(0, 5),
+      });
+    } else {
+      logWithCorrelation("info", "engagementIntegrityCheck: ok", correlationId, {
+        scanned, withClientReport, unverifiedRate: report.unverifiedRate,
+      });
+    }
   },
 );

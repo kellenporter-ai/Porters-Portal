@@ -25,6 +25,10 @@ import {
 import { sumSpentSkillPoints } from "./boss-combat";
 import { LootItem } from "./core";
 import { checkAndUnlockAchievements } from "./achievements";
+import {
+  resolveEngagement,
+  type EngagementResolution,
+} from "./engagement-resolution";
 
 function assertEnrolled(userData: Record<string, unknown>, classType: string): void {
   const enrolledClasses: string[] = (userData.enrolledClasses as string[]) || [];
@@ -48,6 +52,58 @@ export function clampEngagementTime(engagementTime: number, serverElapsedSec: nu
   return serverElapsedSec > 0
     ? Math.min(engagementTime, serverElapsedSec + 5)
     : Math.min(engagementTime, 14400);
+}
+
+/**
+ * Earliest server-minted session start for this (userId, resourceId) inside the
+ * 4h lookback.
+ *
+ * WHY: engagement used to be clamped against ONE token's startedAt, but three
+ * paths mint a fresh token mid-session (submit-retry forceNew, handleFreshStart,
+ * idle-stale). Each reset the clock to ~0 and collapsed real work into a 5-7.2s
+ * band. The earlier session document is NOT erased by a new token, so querying
+ * by (userId, resourceId) recovers the true start that the token lookup lost.
+ *
+ * @param collection "resource_sessions" | "assessment_sessions"
+ * @returns epoch ms of the earliest start, or null when none survives
+ */
+export async function earliestSessionStartMs(
+  db: FirebaseFirestore.Firestore,
+  collection: "resource_sessions" | "assessment_sessions",
+  uid: string,
+  assignmentId: string,
+  lookbackMs = 14400 * 1000,
+): Promise<number | null> {
+  try {
+    // Query by (userId, assignmentId) only — no orderBy, so this needs no new
+    // composite index and cannot fail with failed-precondition in production.
+    // Session cardinality per student+resource is tiny (a handful at most), so
+    // min() over the returned docs is cheaper than an indexed aggregate.
+    const snap = await db.collection(collection)
+      .where("userId", "==", uid)
+      .where("assignmentId", "==", assignmentId)
+      .limit(50)
+      .get();
+    if (snap.empty) return null;
+
+    const cutoff = Date.now() - lookbackMs;
+    let earliest: number | null = null;
+    snap.docs.forEach((d) => {
+      const startedAt = d.data().startedAt;
+      const ms = startedAt?.toMillis?.() ?? Number(startedAt) ?? NaN;
+      if (!Number.isFinite(ms) || ms <= 0 || ms < cutoff) return;
+      if (earliest === null || ms < earliest) earliest = ms;
+    });
+    return earliest;
+  } catch (err) {
+    // A lookup failure must NOT be mistaken for "no session exists" — that
+    // distinction decides between an outage and tampering. Log and fail to the
+    // token-only path (which still clamps, never trusts the client outright).
+    console.error("earliestSessionStartMs: anchor lookup failed", {
+      collection, uid, assignmentId, error: String(err),
+    });
+    return null;
+  }
 }
 
 // ==========================================
@@ -141,12 +197,14 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
 
   // Server-side elapsed validation (v2)
   let serverElapsedSec = 0;
+  let tokenStartedAtMs: number | null = null;
   if (sessionToken) {
     const sessionSnap = await db.collection("resource_sessions").doc(sessionToken).get();
     if (sessionSnap.exists) {
       const sData = sessionSnap.data()!;
       const startedAt = sData.startedAt;
       const startedMs = startedAt?.toMillis?.() || Number(startedAt) || Date.now();
+      tokenStartedAtMs = startedMs;
       serverElapsedSec = Math.max(0, (Date.now() - startedMs) / 1000);
       // Reject if session expired
       const expiresAt = sData.expiresAt?.toMillis?.() || Number(sData.expiresAt) || 0;
@@ -156,9 +214,24 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     }
   }
 
-  // Clamp engagementTime to server-elapsed + 5s when session available;
-  // fallback to hard bounds when client hasn't adopted session tokens yet.
-  const validatedEngagement = clampEngagementTime(engagementTime, serverElapsedSec);
+  // Recover the original start from any surviving session doc for this
+  // student+resource. A fresh token must never make the session look younger
+  // than it is (see engagement-resolution.ts for the 2026-11-12 incident).
+  const anchorStartedAtMs = await earliestSessionStartMs(
+    db, "resource_sessions", uid, assignmentId,
+  );
+
+  const resolution: EngagementResolution = resolveEngagement({
+    clientReportedSeconds: engagementTime,
+    tokenStartedAtMs,
+    anchorStartedAtMs,
+    nowMs: Date.now(),
+  });
+
+  // Reported time is the best estimate (never silently truncated); XP is paid
+  // only on server-verified seconds.
+  const validatedEngagement = resolution.engagementTime;
+  const xpBasisEngagement = resolution.xpBasisSeconds;
 
   // Reject impossible values
   if (validatedEngagement < 10) {
@@ -183,7 +256,7 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     }
   }
 
-  const minutes = validatedEngagement / 60;
+  const minutes = xpBasisEngagement / 60;
   const baseXP = Math.min(
     Math.round(minutes * xpPerMinute),
     MAX_XP_PER_SUBMISSION,
@@ -252,6 +325,12 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     metrics: {
       engagementTime: validatedEngagement,
       clientReportedEngagement: metrics.engagementTime || 0,
+      // Provenance for the reported figure. "unverified" means no server
+      // timestamp corroborated the claim — the daily invariant alert watches
+      // for this rate rising above ~0%.
+      timeSource: resolution.timeSource,
+      verifiedEngagement: xpBasisEngagement,
+      serverSpanSeconds: Math.round(resolution.serverSpanSeconds),
       keystrokes,
       pasteCount,
       clickCount,

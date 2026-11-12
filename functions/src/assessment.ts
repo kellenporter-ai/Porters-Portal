@@ -12,6 +12,8 @@ import {
   logWithCorrelation,
   validateMetricsIntegrity,
 } from "./core";
+import { resolveEngagement } from "./engagement-resolution";
+import { earliestSessionStartMs } from "./engagement";
 
 // Mirror of the module-private validateClassType in ./core (core.ts:122).
 // VALID_CLASS_TYPES is exported from core; the validator itself is not.
@@ -646,12 +648,24 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
 
     // 5a. Server-side elapsed time validation
     const serverNow = Date.now();
-    const effectiveStartTime = sessionStartedAt || metrics.firstInteractionTime || metrics.startTime || serverNow;
-    const serverElapsedSec = Math.max(0, (serverNow - effectiveStartTime) / 1000);
-    // Use the lesser of client-reported engagement and server-computed elapsed time.
-    const validatedEngagement = metrics.engagementTime > 0
-      ? Math.min(metrics.engagementTime, serverElapsedSec + 5)
-      : 0;
+    // Recover the original start from any surviving session doc for this
+    // student+assignment. A token refresh (submit-retry forceNew,
+    // handleFreshStart, idle-stale) must not make the session look younger
+    // than it was — see engagement-resolution.ts for the 2026-11-12 incident.
+    const anchorStartedAtMs = await earliestSessionStartMs(
+      db, "assessment_sessions", uid, assignmentId,
+    );
+    const resolution = resolveEngagement({
+      clientReportedSeconds: metrics.engagementTime || 0,
+      tokenStartedAtMs: sessionStartedAt,
+      anchorStartedAtMs,
+      nowMs: serverNow,
+    });
+    // Reported time = best estimate (labelled by timeSource); XP = verified only.
+    const validatedEngagement = resolution.engagementTime;
+    const xpBasisEngagement = resolution.xpBasisSeconds;
+    // Keep the downstream integrity checks on the server-observed span.
+    const serverElapsedSec = resolution.serverSpanSeconds;
 
     // Count non-empty responses to assess plausibility
     const responseKeys = Object.keys(cleanedResponses || {});
@@ -837,6 +851,9 @@ export const submitAssessment = onCall({ memory: "512MiB", timeoutSeconds: 120, 
       metrics: {
         engagementTime: validatedEngagement,
         clientReportedEngagement: metrics.engagementTime || 0,
+        // Provenance for the reported figure (see engagement-resolution.ts).
+        timeSource: resolution.timeSource,
+        verifiedEngagement: xpBasisEngagement,
         keystrokes: (clampedMetrics.keystrokes as number) || 0,
         pasteCount: (clampedMetrics.pasteCount as number) || 0,
         clickCount: (clampedMetrics.clickCount as number) || 0,
