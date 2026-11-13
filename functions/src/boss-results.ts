@@ -68,7 +68,11 @@ export const getBossEventStats = onCall({ memory: "512MiB", timeoutSeconds: 120 
 
   while (scanned < MAX_ANSWER_SCAN) {
     const pageLimit = Math.min(PAGE_SIZE, MAX_ANSWER_SCAN - scanned);
-    let pageQuery = answersRef.orderBy("answeredAt").limit(pageLimit);
+    // DESCENDING to match the deployed boss_event_answers composite index
+    // (eventId ASC, answeredAt DESC, __name__ DESC). Sorting ASC here demanded
+    // a second index that did not exist and failed the callable at runtime with
+    // FAILED_PRECONDITION. Direction does not matter for aggregation.
+    let pageQuery = answersRef.orderBy("answeredAt", "desc").limit(pageLimit);
     if (cursor) pageQuery = pageQuery.startAfter(cursor);
 
     const page = await pageQuery.get();
@@ -105,7 +109,9 @@ export const getBossEventStats = onCall({ memory: "512MiB", timeoutSeconds: 120 
   // Only flag truncation if there is provably more to read: a scan that
   // stopped exactly at the cap with an empty next page is complete.
   if (scanned >= MAX_ANSWER_SCAN) {
-    const probe = await answersRef.orderBy("answeredAt").startAfter(cursor!).limit(1).get();
+    // Same DESCENDING order as the scan above; a probe in the other direction
+    // would hit the same missing-index failure.
+    const probe = await answersRef.orderBy("answeredAt", "desc").startAfter(cursor!).limit(1).get();
     truncated = !probe.empty;
   }
 
