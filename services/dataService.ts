@@ -2,6 +2,7 @@
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
 import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress, callMedevacBoss, callRespecSpecialization } from '../lib/firebase';
 import { stripBossEventForClient } from '../lib/bossRedaction';
+import { findUndefinedPath } from '../lib/firestoreSanitize';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createInitialMetrics } from '../lib/telemetry';
@@ -1931,6 +1932,12 @@ export const dataService = {
   },
 
   saveBossEvent: async (event: import('../types').BossEvent) => {
+    // Fail loudly with the offending field path. The SDK's own message is accurate but
+    // generic; naming the path here makes a bad write diagnosable from the toast alone.
+    const undefinedPath = findUndefinedPath(event);
+    if (undefinedPath) {
+      throw new Error(`Boss save rejected: field "${undefinedPath}" is undefined.`);
+    }
     const ref = doc(db, 'boss_events', event.id);
     await setDoc(ref, event, { merge: true });
   },

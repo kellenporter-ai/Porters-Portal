@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BossEvent, BossQuestionBank } from '../../types';
+import { stripUndefinedDeep } from '../../lib/firestoreSanitize';
 import { Brain, Trash2, Pencil, Plus, Swords, Database, BarChart3, Copy } from 'lucide-react';
 
 interface BossOpsTabProps {
@@ -180,9 +181,16 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                         activeAbilities: [],
                         currentPhase: 0,
                         triggeredAbilityIds: [],
-                        scaledMaxHp: undefined,
                       };
-                      onCloneQuizBoss(cloned);
+                      // The clone resets to base maxHp, so scaledMaxHp must not survive. Omit the
+                      // key entirely rather than assigning `undefined` — Firestore rejects
+                      // documents containing undefined values.
+                      delete (cloned as { scaledMaxHp?: number }).scaledMaxHp;
+                      // A copy is a NEW boss: it must not inherit the original's creation or
+                      // edit history, which belongs to the source document.
+                      delete (cloned as { createdAt?: string }).createdAt;
+                      delete (cloned as { updatedAt?: string }).updatedAt;
+                      onCloneQuizBoss(stripUndefinedDeep(cloned));
                     }}
                     className="px-3 py-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-500/20 transition border border-purple-500/20 text-[11.5px] font-bold uppercase tracking-wide"
                   >

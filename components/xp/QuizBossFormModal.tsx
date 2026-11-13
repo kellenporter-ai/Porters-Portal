@@ -8,6 +8,7 @@ import { useToast } from '../ToastProvider';
 import { useClassConfig } from '../../lib/AppDataContext';
 import Modal from '../Modal';
 import { reportError } from '../../lib/errorReporting';
+import { stripUndefinedDeep } from '../../lib/firestoreSanitize';
 
 interface QuizBossFormModalProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export function buildBossSavePayload(
   id?: string,
 ): BossEvent {
   const usedBankIds = [...new Set(formState.questions.map(q => q.bankId).filter(Boolean))] as string[];
-  return {
+  const payload = {
     ...existingBoss,
     id: existingBoss?.id || id || Math.random().toString(36).substring(2, 12),
     mode: 'QUIZ',
@@ -87,6 +88,9 @@ export function buildBossSavePayload(
       ? { questionBankIds: usedBankIds }
       : existingBoss ? { questionBankIds: [] } : {}),
   } as BossEvent;
+  // Defense in depth: the spread above deliberately preserves unknown/legacy fields, which may
+  // include `undefined` values that Firestore would reject. Strip them before handoff.
+  return stripUndefinedDeep(payload);
 }
 
 export function normalizeImportedQuestion(question: Record<string, unknown>): QuizQuestion {
