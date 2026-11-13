@@ -245,6 +245,15 @@ interface BossProgress {
   correctCount?: number;
   activeAttempt?: BossAttempt | null;
   lastCompletedAttempt?: BossAttempt | null;
+  /**
+   * ISO timestamp of the most recent answer submitted to this event. Written on
+   * every progress write so the teacher's live results screen can tell a student
+   * who is still working from one who went quiet. Absent on documents written
+   * before this field existed — absent means UNKNOWN, never "idle".
+   */
+  lastAnsweredAt?: string;
+  /** Completed 5-question attempts for this event. Partial attempts do not count. */
+  attemptCount?: number;
   // legacy fields (read-only): attempts, totalDamageDealt, participationMet, rewardClaimed
   attempts?: unknown[];
   [key: string]: unknown;
@@ -741,6 +750,14 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
     });
 
     // Progress write (legacy `attempts` field is no longer written)
+    //
+    // `lastAnsweredAt` shares `txNow` with the answer record's `answeredAt` so
+    // the two documents can never disagree about when this answer landed. It is
+    // the ONLY activity timestamp on a progress doc — nothing else on it moves.
+    //
+    // `attemptCount` counts COMPLETED attempts only (partial attempts are not a
+    // session the student finished). It is additive, never recomputed, so it
+    // stays correct even if an old doc had no value.
     const answeredQuestionIds = [...(latestProgress.answeredQuestionIds || []), question.id];
     t.set(progressRef, {
       userId: uid,
@@ -754,6 +771,8 @@ export const answerBossEvent = onCall({ memory: "512MiB", timeoutSeconds: 120 },
       answeredQuestionIds,
       answeredCount: (latestProgress.answeredCount || 0) + 1,
       correctCount: (latestProgress.correctCount || 0) + (isCorrect ? 1 : 0),
+      lastAnsweredAt: new Date(txNow).toISOString(),
+      attemptCount: (latestProgress.attemptCount || 0) + (attemptComplete ? 1 : 0),
       ...(legacySubmission ? {} : {
         activeAttempt: attempt,
         ...(attemptComplete ? { lastCompletedAttempt: completedAttempt } : {}),

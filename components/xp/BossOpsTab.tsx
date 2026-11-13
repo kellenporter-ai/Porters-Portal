@@ -75,12 +75,12 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
           )}
 
           {quizBosses.map((quiz) => {
-            const hpPercent =
-              quiz.maxHp > 0
-                ? Math.max(0, ((quiz.currentHp ?? quiz.maxHp) / quiz.maxHp) * 100)
-                : 0;
             const isExpired = new Date(quiz.deadline) < new Date();
-            const isDefeated = (quiz.currentHp ?? quiz.maxHp) <= 0 || !quiz.isActive;
+            // There is no shared HP pool in the async model — each student
+            // fights their own copy — so this badge reports how many students
+            // have engaged, and is omitted entirely when we don't know.
+            const fighterCount =
+              typeof quiz.participantCount === 'number' ? quiz.participantCount : null;
 
             return (
               <div
@@ -109,7 +109,13 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                         {(quiz.questions || []).length} Questions
                       </span>
                       <span className="text-[11.5px] font-bold text-red-700 dark:text-red-400 bg-red-500/10 dark:bg-red-900/30 px-2 py-0.5 rounded border border-red-500/20">
-                        HP: {(quiz.currentHp ?? (quiz.scaledMaxHp ?? quiz.maxHp)).toLocaleString()}/{(quiz.scaledMaxHp ?? quiz.maxHp).toLocaleString()}{quiz.scaledMaxHp && quiz.scaledMaxHp !== quiz.maxHp ? ` (base: ${quiz.maxHp.toLocaleString()})` : ''}
+                        {fighterCount === null ? (
+                          <>
+                            {quiz.maxHp.toLocaleString()} HP each
+                          </>
+                        ) : (
+                          <>{fighterCount.toLocaleString()} {fighterCount === 1 ? 'fighter' : 'fighters'}</>
+                        )}
                       </span>
                       <span className="text-[11.5px] font-bold text-green-700 dark:text-green-400 bg-green-500/10 dark:bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
                         {quiz.damagePerCorrect} dmg/correct
@@ -127,36 +133,17 @@ const BossOpsTab: React.FC<BossOpsTabProps> = ({
                           EXPIRED
                         </span>
                       )}
-                      {isDefeated && (
-                        <span className="text-[11.5px] font-bold text-green-600 dark:text-green-400 bg-green-900/30 px-2 py-0.5 rounded border border-green-500/20">
-                          DEFEATED
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 w-full max-w-xs h-2 bg-[var(--panel-bg)] rounded-full overflow-hidden border border-[var(--border)]">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          hpPercent > 50
-                            ? 'bg-amber-500'
-                            : hpPercent > 20
-                              ? 'bg-orange-500'
-                              : 'bg-red-500'
-                        }`}
-                        style={{ width: `${hpPercent}%` }}
-                      />
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isDefeated && (
-                    <button
-                      onClick={() => onOpenEndgameView(quiz)}
-                      className="px-3 py-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition border border-emerald-500/20 text-[11.5px] font-bold uppercase tracking-wide"
-                    >
-                      <BarChart3 className="w-3 h-3 inline mr-1" />
-                      Endgame
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onOpenEndgameView(quiz)}
+                    className="px-3 py-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition border border-emerald-500/20 text-[11.5px] font-bold uppercase tracking-wide"
+                  >
+                    <BarChart3 className="w-3 h-3 inline mr-1" />
+                    Results
+                  </button>
                   <button
                     onClick={() => onEditQuizBoss(quiz)}
                     className="px-3 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 text-[11.5px] font-bold uppercase tracking-wide"

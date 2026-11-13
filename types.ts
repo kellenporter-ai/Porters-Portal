@@ -1150,15 +1150,55 @@ export interface BossEventAttempt {
 export interface BossEventProgress {
   userId: string;
   eventId: string;
+
+  // ── Fields the async engine actually writes (functions/src/bosses.ts) ──
+  /** PPI-scaled spawn HP snapshot. Absent on pre-async (legacy) documents. */
+  bossMaxHp?: number;
+  /** Remaining boss HP, clamped at 0 by the engine. */
+  bossHp?: number;
+  /** Total answers submitted to this boss across all attempts. */
+  answeredCount?: number;
+  /** Total correct answers across all attempts. */
+  correctCount?: number;
+  /** True once the student has actually killed the boss. */
+  victoryClaimed?: boolean;
+  /** Times the student was knocked out in this encounter. */
+  knockoutCount?: number;
+  answeredQuestionIds?: string[];
+  /** Non-null while a fight is open. */
+  activeAttempt?: unknown;
+  lastCompletedAttempt?: unknown;
+  /**
+   * ISO timestamp of the student's most recent answer to this event. Written by
+   * the async engine on every progress write. ABSENT on documents written
+   * before the field existed — absent means unknown, not idle. Render an em
+   * dash for those and never classify them as stalled.
+   */
+  lastAnsweredAt?: string;
+  /** Completed 5-question attempts. Partial attempts are not counted. 0 when absent. */
+  attemptCount?: number;
+
+  // ── Legacy / dead fields — NOT written by the async engine ──
+  // Read display values through `deriveBossResult` (lib/bossResults.ts) instead
+  // of touching any of these. Kept only because EndgameStatsModal still
+  // references them; a later phase removes both the modal and these fields.
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   attempts: BossEventAttempt[];
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   bestAttemptNumber?: number;
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   totalDamageDealt: number;
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   participationMet: boolean;
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   rewardClaimed: boolean;
-  // Legacy fields for migration
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   answeredQuestions?: string[];
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   currentHp?: number;
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   maxHp?: number;
+  /** @deprecated Not written by the async engine — read through deriveBossResult. */
   combatStats?: BossQuizCombatStats;
 }
 

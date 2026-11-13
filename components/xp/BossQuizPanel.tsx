@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BossEvent, BossEventProgress, BossIntent, BossModifier, BOSS_MODIFIER_DEFS, BossModifierType, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT, SpecializationId } from '../../types';
-import { dataService } from '../../services/dataService';
+import { dataService, type BossClassSummary } from '../../services/dataService';
 import { sfx } from '../../lib/sfx';
 import { useToast } from '../ToastProvider';
 import { Brain, CheckCircle2, XCircle, Zap, Heart, Shield, Flame, Crown, Target, TrendingUp, Swords, BrainCircuit, Award, RotateCcw, ArrowRight } from 'lucide-react';
 import { deriveCombatStats } from '../../lib/gamification';
+import { deriveBossResult, computeBossPar, classifyVictorBand, BOSS_COMPARISON_MIN_VICTORS_COUNT, BOSS_COMPARISON_MIN_FIGHTERS } from '../../lib/bossResults';
 import { useIsMounted } from '../../lib/useIsMounted';
 import { getDifficultyClasses, getBossTierClasses } from '../../lib/difficultyPills';
 import BattleScene from './BattleScene';
@@ -43,31 +44,54 @@ const ModifierBadge: React.FC<{ modifier: BossModifier }> = ({ modifier }) => {
   );
 };
 
-// Student endgame view after boss is defeated
+/**
+ * Student endgame view — shown once the student's fight is over (victory,
+ * closure, or any recorded result).
+ *
+ * Every number here comes from `deriveBossResult` / `computeBossPar`. Nothing is
+ * read off the progress document directly: the async engine writes only
+ * bossMaxHp/bossHp/answeredCount/correctCount/victoryClaimed/knockoutCount, and
+ * the pre-async `combatStats` / `participated` fields no longer exist. Reading
+ * them is what produced the blank screen this component used to render.
+ */
 const StudentEndgame: React.FC<{
   quiz: BossEvent;
   progress: BossEventProgress | null;
 }> = ({ quiz, progress }) => {
   const t = useT();
   const interpolate = useInterpolate();
-  const stats = progress?.combatStats;
-  const participated = (progress as Record<string, unknown> | null)?.participated as boolean | undefined;
 
-  const attempted = stats?.questionsAttempted || 0;
-  const correct = stats?.questionsCorrect || 0;
-  const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+  const result = deriveBossResult(
+    progress as unknown as Record<string, unknown> | null,
+    BOSS_PARTICIPATION_MIN_ATTEMPTS,
+    BOSS_PARTICIPATION_MIN_CORRECT,
+  );
+  const par = result ? computeBossPar(result.bossMaxHp, result.answeredCount, result.correctCount) : null;
+
+  // A legacy doc (or an unknown bossMaxHp) has no damage figure. Render an em
+  // dash — never `0`, which would read as "did nothing".
+  const damageLabel = result?.damage != null ? result.damage.toLocaleString() : '—';
+  const pctDefeatedLabel = result?.pctDefeated != null ? `${Math.round(result.pctDefeated * 100)}%` : '—';
+  const accuracyLabel = result?.accuracy != null ? `${Math.round(result.accuracy * 100)}%` : '—';
+  const remainingHp = result?.bossHp != null ? Math.max(0, result.bossHp) : null;
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Victory Banner */}
+      {/* Banner */}
       <div className="text-center py-4">
         <Crown className="w-10 h-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
-        <h4 className="text-lg font-black text-yellow-600 dark:text-yellow-400">{t('boss.defeatedTitle')}</h4>
-        <p className="text-xs text-[var(--text-muted)]">{interpolate('boss.defeatedSub', { boss: quiz.bossName })}</p>
+        <h4 className="text-lg font-black text-yellow-600 dark:text-yellow-400">
+          {result?.victory === true ? t('boss.defeatedTitle') : t('boss.yourResults')}
+        </h4>
+        <p className="text-xs text-[var(--text-muted)]">
+          {result?.victory === true
+            ? interpolate('boss.defeatedSub', { boss: quiz.bossName })
+            : quiz.bossName}
+        </p>
       </div>
 
-      {/* Victory Rewards */}
-      {participated ? (
+      {/* Victory rewards */}
+      {result?.victory === true ? (
         <div className="text-center p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-yellow-500/20">
           <div className="text-[11.5px] font-bold uppercase text-[var(--text-tertiary)] mb-2">{t('boss.victoryRewards')}</div>
           <div className="flex items-center justify-center gap-4 text-sm">
@@ -78,69 +102,246 @@ const StudentEndgame: React.FC<{
             )}
           </div>
         </div>
-      ) : participated === false ? (
+      ) : result && result.participationMet ? (
+        /* Cleared the participation bar, boss not finished */
+        <div className="text-center p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+          <p className="text-sm text-amber-700 dark:text-amber-400 font-bold">{t('boss.participatedNoWin')}</p>
+        </div>
+      ) : result ? (
+        /* Did not clear the participation bar */
         <div className="text-center p-3 rounded-xl bg-red-500/5 border border-red-500/20">
           <p className="text-sm text-red-600 dark:text-red-400 font-bold">{t('boss.notQualified')}</p>
           <p className="text-[11.5px] text-[var(--text-muted)] mt-1">{interpolate('boss.requirement', { attempts: BOSS_PARTICIPATION_MIN_ATTEMPTS, correct: BOSS_PARTICIPATION_MIN_CORRECT })}</p>
         </div>
-      ) : null}
+      ) : (
+        /* No progress document at all — never crash */
+        <p className="text-center text-xs text-[var(--text-muted)]">{t('boss.noRecord')}</p>
+      )}
 
-      {/* Personal Stats Grid */}
-      {stats && (
+      {/* Personal stats grid — derived values only */}
+      {result && (
         <div className="grid grid-cols-2 gap-2">
+          {/* 1. Damage Dealt */}
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Swords className="w-3 h-3" /> {t('boss.damageDealt')}</div>
-            <div className="text-lg font-black text-amber-600 dark:text-amber-400">{stats.totalDamageDealt.toLocaleString()}</div>
+            <div className="text-lg font-black text-amber-600 dark:text-amber-400">{damageLabel}</div>
           </div>
+          {/* 2. Accuracy */}
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Target className="w-3 h-3" /> {t('boss.accuracy')}</div>
-            <div className="text-lg font-black text-green-600 dark:text-green-400">{accuracy}%</div>
-            <div className="text-[11.5px] text-[var(--text-muted)]">{correct}/{attempted}</div>
+            <div className="text-lg font-black text-green-600 dark:text-green-400">{accuracyLabel}</div>
+            <div className="text-[11.5px] text-[var(--text-muted)]">{result.correctCount}/{result.answeredCount}</div>
           </div>
+          {/* 3. Boss Defeated */}
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Zap className="w-3 h-3" /> {t('boss.criticalHits')}</div>
-            <div className="text-lg font-black text-red-600 dark:text-red-400">{stats.criticalHits}</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Zap className="w-3 h-3" /> {t('boss.bossDefeatedPct')}</div>
+            <div className="text-lg font-black text-red-600 dark:text-red-400">{pctDefeatedLabel}</div>
+            {remainingHp != null && remainingHp > 0 && (
+              <div className="text-[11.5px] text-[var(--text-muted)]">{interpolate('boss.remainingHp', { hp: remainingHp.toLocaleString() })}</div>
+            )}
           </div>
+          {/* 4. Questions Answered */}
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Shield className="w-3 h-3" /> {t('boss.damageMitigated')}</div>
-            <div className="text-lg font-black text-cyan-700 dark:text-cyan-400">{stats.damageReduced}</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Shield className="w-3 h-3" /> {t('boss.questionsAnswered')}</div>
+            <div className="text-lg font-black text-cyan-700 dark:text-cyan-400">{result.answeredCount}</div>
           </div>
+          {/* 5. Answers to Victory — strokes vs par for victors, correct answers otherwise */}
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> {t('boss.longestStreak')}</div>
-            <div className="text-lg font-black text-purple-600 dark:text-purple-400">{stats.longestStreak}</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><TrendingUp className="w-3 h-3" /> {t('boss.answersToVictory')}</div>
+            <div className="text-lg font-black text-purple-600 dark:text-purple-400">
+              {result.victory ? (par?.strokes ?? result.answeredCount) : result.correctCount}
+            </div>
+            {result.victory && par?.par != null && (
+              <div className="text-[11.5px] text-[var(--text-muted)]">par {par.par}</div>
+            )}
           </div>
+          {/* 6. Knockouts */}
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Heart className="w-3 h-3" /> {t('boss.healingReceived')}</div>
-            <div className="text-lg font-black text-emerald-700 dark:text-emerald-400">{stats.healingReceived}</div>
+            <div className="flex items-center gap-1 text-[11.5px] text-[var(--text-tertiary)] uppercase font-bold mb-1"><Heart className="w-3 h-3" /> {t('boss.knockouts')}</div>
+            <div className="text-lg font-black text-emerald-700 dark:text-emerald-400">{result.knockoutCount}</div>
           </div>
         </div>
       )}
 
-      {/* Difficulty Breakdown */}
-      {stats && (
-        <div className="grid grid-cols-3 gap-2">
-          {(['EASY', 'MEDIUM', 'HARD'] as const).map(diff => {
-            const c = stats.correctByDifficulty[diff] || 0;
-            const ic = stats.incorrectByDifficulty[diff] || 0;
-            const t = c + ic;
-            const pct = t > 0 ? Math.round((c / t) * 100) : 0;
-            return (
-              <div key={diff} className={`rounded-lg p-2 border text-center ${
-                diff === 'EASY' ? 'border-green-500/20 bg-green-500/5' :
-                diff === 'MEDIUM' ? 'border-yellow-500/20 bg-yellow-500/5' :
-                'border-red-500/20 bg-red-500/5'
-              }`}>
-                <div className={`text-[11.5px] font-bold uppercase ${getDifficultyClasses(diff)}`}>{diff}</div>
-                <div className="text-sm font-black text-white">{pct}%</div>
-                <div className="text-[11.5px] text-[var(--text-tertiary)]">{c}/{t}</div>
-              </div>
-            );
-          })}
-        </div>
+      {/* Over-par line — victors only. No rank or percentile by design. */}
+      {result?.victory === true && par?.overPar != null && par.par != null && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {interpolate('boss.parLine', { strokes: par.strokes, par: par.par })}
+        </p>
+      )}
+
+      {/* BOSS_CLASS_SUMMARY_SLOT — populated by BossClassSummaryCard below. */}
+      <BossClassSummaryCard quiz={quiz} result={result} par={par} />
+    </div>
+  );
+};
+
+/**
+ * Student close-of-event comparison.
+ *
+ * LOCKED PRODUCT RULES (do not relitigate, see the endgame spec):
+ *
+ *   own strokes / par / damage / sessions   victor, on kill, persists, no minimum
+ *   "N students have won so far"            victor, mid-window, min 5 victors
+ *   victor/fighter totals                   victors, after close, min 5 fighters
+ *   own over-par                            victor, after close, no minimum
+ *   median victor over-par                  victors, after close, min 5 victors
+ *   band sentence (ahead/typical/behind)    victors, after close, min 10 victors
+ *   ordinal rank / percentile / histogram   NEVER
+ *   any comparison to others                never, for a non-victor
+ *   own progress % + "~X more correct"      non-victor who fought, after close
+ *   the whole surface                       never, for a student who never fought
+ *
+ * Every line is gated independently and suppressed SERVER-SIDE where the data
+ * comes from the callable. A student who clears no threshold gets NO card at
+ * all rather than an empty header full of "N/A".
+ *
+ * Class data is fetched only for victors, because comparison is victor-only.
+ * A non-victor's two lines are computed locally from `result` and `par`.
+ */
+const BossClassSummaryCard: React.FC<{
+  quiz: BossEvent;
+  result: ReturnType<typeof deriveBossResult>;
+  par: ReturnType<typeof computeBossPar> | null;
+}> = ({ quiz, result, par }) => {
+  const t = useT();
+  const interpolate = useInterpolate();
+  const [summary, setSummary] = useState<BossClassSummary | null>(null);
+
+  const isVictor = result?.victory === true;
+  const answeredCount = result?.answeredCount ?? 0;
+  const closed = useMemo(() => {
+    const deadline = quiz.deadline ? Date.parse(quiz.deadline) : Number.NaN;
+    if (Number.isNaN(deadline)) return false;
+    return Date.now() > deadline;
+  }, [quiz.deadline]);
+
+  // Victor-only: comparison to other students is never offered to a non-victor,
+  // so there is nothing to fetch for them and we do not call the function.
+  useEffect(() => {
+    if (!isVictor) {
+      setSummary(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await dataService.getBossClassSummary(quiz.id);
+        if (!cancelled) setSummary(data);
+      } catch {
+        // Comparison is an enhancement. If it cannot be fetched the card
+        // renders the student's own lines only, which is still correct.
+        if (!cancelled) setSummary(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isVictor, quiz.id]);
+
+  // ── Victor lines ──
+  const showWonSoFar =
+    isVictor &&
+    !closed &&
+    summary !== null &&
+    summary.victors >= BOSS_COMPARISON_MIN_VICTORS_COUNT;
+
+  const showFinalTotals =
+    isVictor &&
+    closed &&
+    summary !== null &&
+    summary.fighters >= BOSS_COMPARISON_MIN_FIGHTERS;
+
+  const median = summary?.medianVictorOverPar ?? null;
+  const showMedian = isVictor && closed && median !== null;
+
+  const band = useMemo(() => {
+    if (!isVictor || !closed) return null;
+    if (summary?.victorOverParBand == null) return null;
+    if (par?.overPar == null || median === null) return null;
+    return classifyVictorBand(par.overPar, median, summary.victors);
+  }, [isVictor, closed, summary, par, median]);
+
+  // "Class results unlock when the event closes" — a victor mid-window, once
+  // they have cleared the mid-window line's threshold or not.
+  const showCloseComing = isVictor && !closed;
+
+  // ── Non-victor lines (no class data involved) ──
+  const showNonVictor = !isVictor && closed && answeredCount > 0;
+
+  // Fights remaining ≈ correct answers still needed to finish the boss.
+  const moreToWin = useMemo(() => {
+    if (!showNonVictor || !result || par?.par == null) return null;
+    const bossMaxHp = result.bossMaxHp;
+    const bossHp = result.bossHp;
+    if (bossMaxHp == null || bossHp == null) return null;
+    const remaining = Math.max(0, bossHp);
+    if (remaining <= 0) return null;
+    // Use the student's own observed damage-per-correct when they have any,
+    // otherwise fall back to their par-implied rate. Both land on the same
+    // figure by construction on par, but observed rate respects a bad streak.
+    const perCorrect =
+      result.correctCount > 0
+        ? (result.damage ?? 0) / result.correctCount
+        : bossMaxHp / Math.max(1, par.par);
+    if (!Number.isFinite(perCorrect) || perCorrect <= 0) return null;
+    return Math.max(1, Math.ceil(remaining / perCorrect));
+  }, [showNonVictor, result, par]);
+
+  const tookToPct = useMemo(() => {
+    if (!showNonVictor || !result || result.pctDefeated == null) return null;
+    // Remaining health percentage, rounded. 0 would read as "dead", which the
+    // student is not, so floor the display at 1 when any health is left.
+    const remaining = Math.round((1 - result.pctDefeated) * 100);
+    return Math.max(1, remaining);
+  }, [showNonVictor, result]);
+
+  // Nothing to say: a student who never fought, or a mid-window non-victor.
+  const hasVictorLines = showWonSoFar || showFinalTotals || showMedian || band !== null;
+  if (!hasVictorLines && !showCloseComing && !showNonVictor) return null;
+  if (showNonVictor && tookToPct === null && moreToWin === null) return null;
+
+  return (
+    <div className="rounded-xl bg-black/30 border border-white/5 p-3 space-y-1.5" data-testid="boss-class-summary">
+      {showWonSoFar && summary && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {interpolate('boss.wonSoFar', { n: summary.victors })}
+        </p>
+      )}
+      {showCloseComing && !hasVictorLines && (
+        <p className="text-center text-xs text-[var(--text-muted)]">{t('boss.closeComing')}</p>
+      )}
+      {showFinalTotals && summary && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {interpolate('boss.finalTotals', { fighters: summary.fighters, victors: summary.victors })}
+        </p>
+      )}
+      {showMedian && median !== null && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {median < 0
+            ? interpolate('boss.victorMedianUnder', { n: Math.abs(median) })
+            : interpolate('boss.victorMedian', { n: median })}
+        </p>
+      )}
+      {band !== null && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {band === 'ahead' ? t('boss.bandAhead') : band === 'behind' ? t('boss.bandBehind') : t('boss.bandTypical')}
+        </p>
+      )}
+      {showNonVictor && tookToPct !== null && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {interpolate('boss.tookToPct', { pct: tookToPct })}
+        </p>
+      )}
+      {showNonVictor && moreToWin !== null && (
+        <p className="text-center text-xs text-[var(--text-muted)]">
+          {interpolate('boss.moreToWin', { n: moreToWin })}
+        </p>
       )}
     </div>
   );
 };
+
 
 // Trial completion endgame — shown when tutorial is finished (pass or fail)
 const TrialEndgame: React.FC<{
@@ -431,6 +632,16 @@ const QuizBossCard: React.FC<{
   const allAnswered = questionsComplete;
   const bossDefeated = bossHp <= 0;
 
+  // The endgame must also render for a student whose fight is already over —
+  // e.g. a victory recorded server-side (victoryClaimed) or a result that
+  // arrived before the HP state did. Derived, never read off the doc.
+  const studentResult = deriveBossResult(
+    progress as unknown as Record<string, unknown> | null,
+    BOSS_PARTICIPATION_MIN_ATTEMPTS,
+    BOSS_PARTICIPATION_MIN_CORRECT,
+  );
+  const showEndgame = bossDefeated || victoryClaimed || (eventClosed && !!progress) || (studentResult?.victory === true);
+
   // Countdown — ticks every 10s (battery-friendly on Chromebooks); auto re-fetch at zero
   const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
@@ -657,7 +868,7 @@ const QuizBossCard: React.FC<{
       )}
 
       {/* Boss Defeated Endgame */}
-      {(bossDefeated || victoryClaimed || (eventClosed && !!progress)) ? (
+      {showEndgame ? (
         <StudentEndgame quiz={quiz} progress={progress} />
       ) : (
         <>
@@ -820,23 +1031,15 @@ const QuizBossCard: React.FC<{
                 </div>
               )}
 
-              {/* Study Report Mini */}
-              {progress?.combatStats && (
+              {/* Study Report Mini — derived values only, never the dead pre-async fields */}
+              {studentResult && (
                 <div className="bg-black/30 rounded-xl p-4 border border-white/5 text-left space-y-2">
                   <div className="text-[11.5px] font-bold text-[var(--text-tertiary)] uppercase">{t('boss.studyReport')}</div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>{interpolate('boss.accuracyShort', { pct: Math.round((progress.combatStats.questionsCorrect / Math.max(1, progress.combatStats.questionsAttempted)) * 100) })}</div>
-                    <div>{interpolate('boss.damageShort', { dmg: progress.combatStats.totalDamageDealt })}</div>
-                    <div>{interpolate('boss.bestStreakShort', { streak: progress.combatStats.longestStreak })}</div>
-                    <div>{interpolate('boss.critsShort', { crits: progress.combatStats.criticalHits })}</div>
-                  </div>
-                  <div className="text-[11.5px] text-[var(--text-muted)] pt-1 border-t border-white/5">
-                    {progress.combatStats.incorrectByDifficulty.HARD > 0 && (
-                      <span>{interpolate('boss.hardFocus', { count: progress.combatStats.incorrectByDifficulty.HARD })}</span>
-                    )}
-                    {progress.combatStats.bossDamageTaken > 50 && (
-                      <span>{t('boss.armorAdvice')}</span>
-                    )}
+                    <div>{studentResult.accuracy != null ? interpolate('boss.accuracyShort', { pct: Math.round(studentResult.accuracy * 100) }) : '—'}</div>
+                    <div>{studentResult.damage != null ? interpolate('boss.damageShort', { dmg: studentResult.damage.toLocaleString() }) : '—'}</div>
+                    <div>{interpolate('boss.knockoutsShort', { n: studentResult.knockoutCount })}</div>
+                    <div>{interpolate('boss.attemptAnswered', { count: studentResult.answeredCount })}</div>
                   </div>
                 </div>
               )}
@@ -949,12 +1152,12 @@ const QuizBossCard: React.FC<{
             </div>
           ) : null}
 
-          {/* Participation requirement (subtle) */}
-          {progress && !bossDefeated && !knockedOut && !allAnswered && (
+          {/* Participation requirement (subtle) — derived counters, never combatStats */}
+          {studentResult && !bossDefeated && !knockedOut && !allAnswered && (
             <div className="text-[11.5px] text-[var(--text-tertiary)] text-center pt-1">
-              {(progress.combatStats?.questionsAttempted || 0) < BOSS_PARTICIPATION_MIN_ATTEMPTS || (progress.combatStats?.questionsCorrect || 0) < BOSS_PARTICIPATION_MIN_CORRECT ? (
+              {!studentResult.participationMet ? (
                 <span>
-                  {interpolate('boss.rewardsProgress', { attempts: progress.combatStats?.questionsAttempted || 0, minAttempts: BOSS_PARTICIPATION_MIN_ATTEMPTS, correct: progress.combatStats?.questionsCorrect || 0, minCorrect: BOSS_PARTICIPATION_MIN_CORRECT })}
+                  {interpolate('boss.rewardsProgress', { attempts: studentResult.answeredCount, minAttempts: BOSS_PARTICIPATION_MIN_ATTEMPTS, correct: studentResult.correctCount, minCorrect: BOSS_PARTICIPATION_MIN_CORRECT })}
                 </span>
               ) : (
                 <span className="text-green-600">{t('boss.rewardsMet')}</span>

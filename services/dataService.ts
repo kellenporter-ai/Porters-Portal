@@ -1,6 +1,6 @@
 
 import { User, ClassType, ClassConfig, Assignment, Submission, AssignmentStatus, Comment, WhitelistedUser, LabReport, UserSettings, XPEvent, RPGItem, EquipmentSlot, Announcement, Notification, TelemetryMetrics, BossEncounter, BossQuizEvent, SeasonalCosmetic, KnowledgeGate, DailyChallenge, StudentAlert, StudentBucketProfile, BugReport, SongRequest, EnrollmentCode, BehaviorAward, CustomItem, RubricGrade, AISuggestedGrade, GradingCorrection, ActiveBoost, StreakData, ClassroomLink, ClassroomLinkEntry, DraftFeedbackMessage, LessonBlock } from '../types';
-import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callSaveRubricGrade, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress, callMedevacBoss, callRespecSpecialization } from '../lib/firebase';
+import { db, storage, callAwardXP, callEquipItem, callUnequipItem, callDisenchantItem, callCraftItem, callAdminUpdateInventory, callAdminUpdateEquipped, callSubmitEngagement, callUpdateStreak, callClaimDailyLogin, callSpinFortuneWheel, callUnlockSkill, callAddSocket, callSocketGem, callUnsocketGem, callAnswerBossEvent, callGetNextBossQuestion, callStartSpecializationTrial, callCompleteSpecializationTrial, callCommitSpecialization, callDeclineSpecialization, callUseConsumable, callClaimKnowledgeLoot, callPurchaseCosmetic, callClaimDailyChallenge, callDismissAlert, callDismissAlertsBatch, callAdminGrantItem, callAdminEditItem, callSubmitAssessment, callGetAssessmentStats, callGetAssessmentStatsBatch, callGetBossEventStats, callGetBossClassSummary, callSaveRubricGrade, callPurchaseFluxItem, callEquipFluxCosmetic, callRedeemEnrollmentCode, callAwardBehaviorXP, callAdminAddToWhitelist, callMigrateBossesToEvents, callMigrateBossQuizProgress, callMedevacBoss, callRespecSpecialization } from '../lib/firebase';
 import { stripBossEventForClient } from '../lib/bossRedaction';
 import { findUndefinedPath } from '../lib/firestoreSanitize';
 import { collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, query, where, getDoc, onSnapshot, orderBy, limit, arrayUnion, runTransaction, increment, deleteField, writeBatch } from 'firebase/firestore';
@@ -36,6 +36,56 @@ export interface AssessmentStats {
 
 /** Strip undefined values from an object before passing to Firestore setDoc(). */
 const stripUndefined = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
+
+/**
+ * Per-question answer aggregate for one boss event, returned by the
+ * `getBossEventStats` Cloud Function. Aggregates only — the function never
+ * returns student-level rows (the client already holds the roster from the
+ * live `boss_event_progress` listener).
+ */
+export interface BossEventStats {
+  eventId: string;
+  /** true when the answer scan hit the server-side 20,000-doc cap. */
+  truncated: boolean;
+  /** Non-revision answers read. */
+  totalAnswers: number;
+  perQuestion: Array<{
+    questionId: string;
+    /** Non-revision answers for this question. */
+    answers: number;
+    correct: number;
+    /** correct / answers as 0..1; null when answers === 0. */
+    accuracy: number | null;
+    /** Revision retries recorded for this question. */
+    revisions: number;
+    /** How many of those revisions ended correct. */
+    correctAfterRevision: number;
+  }>;
+  /** Sorted question ids that received at least one answer. */
+  answeredQuestionIds: string[];
+}
+
+/**
+ * Class-wide boss aggregates for a STUDENT, returned by `getBossClassSummary`.
+ *
+ * AGGREGATES ONLY — there is no per-student field here and there must never be
+ * one. Every suppression threshold (min 5 victors for the median, min 10 for
+ * the band) is applied SERVER-SIDE; `null` means "not enough comparators, do
+ * not display", never "unknown, go compute it yourself".
+ */
+export interface BossClassSummary {
+  eventId: string;
+  /** true when the event deadline has passed. */
+  closed: boolean;
+  /** Students who answered at least one question. */
+  fighters: number;
+  /** Students who killed the boss. */
+  victors: number;
+  /** Median victor over-par. null below 5 victors. */
+  medianVictorOverPar: number | null;
+  /** Victor over-par p25/p75. null below 10 victors. */
+  victorOverParBand: { p25: number; p75: number } | null;
+}
 
 /** Strip answer-key fields from lesson blocks before they reach any client. */
 const stripBlockKeys = (blocks: LessonBlock[]): LessonBlock[] =>
@@ -1963,6 +2013,56 @@ export const dataService = {
     const q = query(collection(db, 'boss_event_progress'), where('eventId', '==', eventId));
     const snap = await getDocs(q);
     return snap.docs.map(d => d.data() as import('../types').BossEventProgress);
+  },
+
+  /**
+   * Live roster for one boss event — every student's progress doc as it changes.
+   *
+   * This is what makes async boss monitoring possible: there is no shared HP
+   * pool to watch any more, so the teacher's only view of "who is fighting
+   * right now" is each student's own progress document. A one-shot getDocs
+   * shows a snapshot that is stale the moment it lands.
+   *
+   * Security: `firestore.rules` grants admins read access to every
+   * `boss_event_progress` doc (`allow read: if isAdmin() || resource.data.userId
+   * == request.auth.uid`), so a collection-wide query for an admin is legal —
+   * no rules change is needed for this listener.
+   *
+   * On a listener error the callback receives `[]` (matching
+   * `subscribeToBossEventProgress`) so the caller renders an empty roster
+   * instead of hanging on a permanent skeleton.
+   */
+  subscribeToBossEventAllProgress: (
+    eventId: string,
+    callback: (progress: import('../types').BossEventProgress[]) => void,
+  ) => {
+    const q = query(collection(db, 'boss_event_progress'), where('eventId', '==', eventId));
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map(d => d.data() as import('../types').BossEventProgress));
+    }, (error: unknown) => {
+      reportError(error, { subscription: 'boss_event_progress', eventId });
+      callback([]);
+    });
+  },
+
+  /**
+   * Per-question answer analytics for one boss event (Cloud Function
+   * `getBossEventStats`). Admin-gated server-side; returns aggregates only —
+   * never student-level rows.
+   */
+  getBossEventStats: async (eventId: string): Promise<BossEventStats> => {
+    const result = await callGetBossEventStats({ eventId });
+    return result.data as BossEventStats;
+  },
+
+  /**
+   * Class aggregates for the STUDENT endgame comparison card (Cloud Function
+   * `getBossClassSummary`). Not admin-gated; the caller must hold a progress
+   * doc for the event or be in its target sections. Aggregates only.
+   */
+  getBossClassSummary: async (eventId: string): Promise<BossClassSummary> => {
+    const result = await callGetBossClassSummary({ eventId });
+    return result.data as BossClassSummary;
   },
 
   // --- KNOWLEDGE-GATED LOOT ---

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { User, XPEvent, RPGItem, EquipmentSlot, BossEvent, BossQuestionBank, BossEventProgress, getSectionsForClass, CustomItem } from '../types';
 import { useClassConfig } from '../lib/AppDataContext';
 import { Zap, Plus, Trash2, Brain } from 'lucide-react';
@@ -55,10 +55,14 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
   const [isQuestionBankModalOpen, setIsQuestionBankModalOpen] = useState(false);
   const [editingBank, setEditingBank] = useState<BossQuestionBank | null>(null);
 
-  // Admin endgame view state
+  // Admin results view state
   const [endgameQuiz, setEndgameQuiz] = useState<BossEvent | null>(null);
   const [endgameProgress, setEndgameProgress] = useState<BossEventProgress[]>([]);
+  // True until the live listener delivers its first snapshot — the results
+  // screen shows a skeleton rather than a misleading "0 students".
   const [loadingEndgame, setLoadingEndgame] = useState(false);
+  // Held in a ref so a double-click can never leak a second listener.
+  const endgameUnsubRef = useRef<(() => void) | null>(null);
 
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
 
@@ -216,15 +220,42 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
       toast.success('Question bank deleted.');
   };
 
-  const openEndgameView = async (quiz: BossEvent) => {
+  /**
+   * Open the live results screen for one boss.
+   *
+   * Subscribes to every `boss_event_progress` doc for the event so the roster
+   * updates while students fight. Tear down any previous subscription first —
+   * switching bosses mid-session must not leave the old listener writing into
+   * the new boss's roster.
+   */
+  const openEndgameView = useCallback((quiz: BossEvent) => {
+      endgameUnsubRef.current?.();
+      endgameUnsubRef.current = null;
+
       setEndgameQuiz(quiz);
+      setEndgameProgress([]);
       setLoadingEndgame(true);
-      try {
-          const progress = await dataService.getBossEventAllProgress(quiz.id);
-          setEndgameProgress(progress);
-      } catch { toast.error('Failed to load endgame data.'); }
+
+      endgameUnsubRef.current = dataService.subscribeToBossEventAllProgress(quiz.id, (rows) => {
+          setEndgameProgress(rows);
+          setLoadingEndgame(false);
+      });
+  }, []);
+
+  const closeEndgameView = useCallback(() => {
+      endgameUnsubRef.current?.();
+      endgameUnsubRef.current = null;
+      setEndgameQuiz(null);
+      setEndgameProgress([]);
       setLoadingEndgame(false);
-  };
+  }, []);
+
+  // Unmount teardown — a listener left open on a route change keeps billing
+  // reads for the lifetime of the tab.
+  useEffect(() => () => {
+      endgameUnsubRef.current?.();
+      endgameUnsubRef.current = null;
+  }, []);
 
   const TAB_TITLES: Record<XPTab, string> = {
     OPERATIVES: 'Operatives',
@@ -347,7 +378,7 @@ const XPManagement: React.FC<XPManagementProps> = ({ users, initialTab }) => {
         progress={endgameProgress}
         loading={loadingEndgame}
         users={users}
-        onClose={() => { setEndgameQuiz(null); setEndgameProgress([]); }}
+        onClose={closeEndgameView}
       />
 
     </div>

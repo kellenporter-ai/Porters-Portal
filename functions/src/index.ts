@@ -8,6 +8,7 @@ export * from "./assessment";
 export * from "./assessment-stats";
 export * from "./grading";
 export * from "./bosses";
+export * from "./boss-results";
 export * from "./classroom";
 export * from "./scheduled";
 export * from "./migrations";

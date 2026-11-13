@@ -157,6 +157,8 @@ export const callStartResourceSession = httpsCallable(functions, 'startResourceS
 export const callSubmitAssessment = httpsCallable(functions, 'submitAssessment');
 export const callGetAssessmentStats = httpsCallable(functions, 'getAssessmentStats');
 export const callGetAssessmentStatsBatch = httpsCallable(functions, 'getAssessmentStatsBatch');
+export const callGetBossEventStats = httpsCallable(functions, 'getBossEventStats');
+export const callGetBossClassSummary = httpsCallable(functions, 'getBossClassSummary');
 export const callSaveRubricGrade = httpsCallable(functions, 'saveRubricGrade');
 
 // One-time admin utilities

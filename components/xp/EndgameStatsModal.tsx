@@ -1,9 +1,27 @@
-
-import React, { useMemo, useCallback } from 'react';
-import { User, BossEvent, BossEventProgress, BOSS_REWARD_TIERS, BOSS_PARTICIPATION_MIN_ATTEMPTS, BOSS_PARTICIPATION_MIN_CORRECT } from '../../types';
-import { Crown, Eye, Download, AlertTriangle } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { User, BossEvent, BossEventProgress } from '../../types';
+import {
+  ArrowDown,
+  ArrowUp,
+  BarChart3,
+  Check,
+  Download,
+  ListChecks,
+  Loader2,
+  RefreshCw,
+  Radio,
+  DownloadCloud,
+} from 'lucide-react';
 import Modal from '../Modal';
 import { getDifficultyClasses } from '../../lib/difficultyPills';
+import {
+  BOSS_COMPARISON_MIN_VICTORS_MEDIAN,
+  computeBossPar,
+  deriveBossResult,
+  median,
+  type BossResult,
+} from '../../lib/bossResults';
+import { dataService, type BossEventStats } from '../../services/dataService';
 
 interface EndgameStatsModalProps {
   quiz: BossEvent | null;
@@ -13,346 +31,727 @@ interface EndgameStatsModalProps {
   onClose: () => void;
 }
 
-// Helper: normalize combat stats from legacy top-level or attempts array
-function getCombatStats(p: BossEventProgress): import('../../types').BossQuizCombatStats | undefined {
-  if (p.combatStats) return p.combatStats;
-  const attempts = p.attempts || [];
-  if (attempts.length === 0) return undefined;
-  // Aggregate across all attempts
-  const agg = attempts[0].combatStats;
-  for (let i = 1; i < attempts.length; i++) {
-    const cs = attempts[i].combatStats;
-    if (!cs) continue;
-    agg.totalDamageDealt += cs.totalDamageDealt;
-    agg.criticalHits += cs.criticalHits;
-    agg.damageReduced += cs.damageReduced;
-    agg.bossDamageTaken += cs.bossDamageTaken;
-    agg.correctByDifficulty.EASY += cs.correctByDifficulty.EASY;
-    agg.correctByDifficulty.MEDIUM += cs.correctByDifficulty.MEDIUM;
-    agg.correctByDifficulty.HARD += cs.correctByDifficulty.HARD;
-    agg.incorrectByDifficulty.EASY += cs.incorrectByDifficulty.EASY;
-    agg.incorrectByDifficulty.MEDIUM += cs.incorrectByDifficulty.MEDIUM;
-    agg.incorrectByDifficulty.HARD += cs.incorrectByDifficulty.HARD;
-    agg.longestStreak = Math.max(agg.longestStreak, cs.longestStreak);
-    agg.currentStreak = Math.max(agg.currentStreak, cs.currentStreak);
-    agg.shieldBlocksUsed += cs.shieldBlocksUsed;
-    agg.healingReceived += cs.healingReceived;
-    agg.questionsAttempted += cs.questionsAttempted;
-    agg.questionsCorrect += cs.questionsCorrect;
-  }
-  return agg;
+// ─── Status model ────────────────────────────────────────────────────────────
+
+type RosterStatus = 'VICTOR' | 'FIGHTING' | 'STALLED' | 'NOT_STARTED';
+
+/** Sort weight — the default order the teacher wants: winners first, idle last. */
+const STATUS_ORDER: Record<RosterStatus, number> = {
+  VICTOR: 0,
+  FIGHTING: 1,
+  STALLED: 2,
+  NOT_STARTED: 3,
+};
+
+const STATUS_LABEL: Record<RosterStatus, string> = {
+  VICTOR: 'VICTOR',
+  FIGHTING: 'FIGHTING',
+  STALLED: 'STALLED',
+  NOT_STARTED: 'NOT STARTED',
+};
+
+const STATUS_CLASSES: Record<RosterStatus, string> = {
+  VICTOR: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  FIGHTING: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  STALLED: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  NOT_STARTED: 'bg-[var(--surface-glass)] text-[var(--text-muted)] border-[var(--border)]',
+};
+
+/** A fight with no answer in this long is considered abandoned. */
+const STALL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Most recent answer timestamp, taken from the DERIVED result — never off the
+ * raw document.
+ *
+ * `deriveBossResult` is the single read path for boss progress: it validates
+ * the stored `lastAnsweredAt` and collapses anything missing or unparseable to
+ * null. Reading the doc here would bypass that validation and let a corrupt
+ * value through as if it were a real timestamp.
+ *
+ * null means UNKNOWN activity (every document written before the field
+ * existed). Callers must show an em dash and refuse to classify the student as
+ * stalled — guessing activity from `bossHp` or `answeredCount` would fabricate
+ * a timestamp.
+ */
+function lastActivityIso(result: BossResult): string | null {
+  return result.lastAnsweredAt;
 }
 
-function getAnsweredQuestions(p: BossEventProgress): string[] {
-  if (p.answeredQuestions) return p.answeredQuestions;
-  return (p.attempts || []).flatMap(a => a.answeredQuestions || []);
+function formatLastActivity(iso: string | null): string {
+  if (!iso) return '—';
+  const parsed = Date.parse(iso);
+  if (Number.isNaN(parsed)) return '—';
+  return new Date(parsed).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
+
+function resolveStatus(result: BossResult, lastActivity: string | null): RosterStatus {
+  if (result.victory) return 'VICTOR';
+  if (result.inProgress) return 'FIGHTING';
+  if (result.answeredCount === 0) return 'NOT_STARTED';
+  if (lastActivity) {
+    const parsed = Date.parse(lastActivity);
+    if (!Number.isNaN(parsed) && Date.now() - parsed > STALL_MS) return 'STALLED';
+  }
+  // Answered, not currently in a fight, no usable timestamp — we cannot prove
+  // the student has gone quiet, so surface the weaker signal rather than
+  // inventing a stall.
+  return 'FIGHTING';
+}
+
+// ─── Roster row model ────────────────────────────────────────────────────────
+
+type SortKey =
+  | 'student'
+  | 'status'
+  | 'answered'
+  | 'correct'
+  | 'accuracy'
+  | 'damage'
+  | 'pctDefeated'
+  | 'overPar'
+  | 'knockouts'
+  | 'lastActivity';
+
+type SortDir = 'asc' | 'desc';
+
+interface RosterRow {
+  /** React key. */
+  key: string;
+  userId: string;
+  studentName: string;
+  status: RosterStatus;
+  answered: number;
+  correct: number;
+  /** 0..1, null when nothing answered. */
+  accuracy: number | null;
+  /** null on a legacy doc — must render as an em dash, never 0. */
+  damage: number | null;
+  /** 0..1, null on a legacy doc. */
+  pctDefeated: number | null;
+  /** null for non-victors, legacy docs, and legacy boss HP. */
+  overPar: number | null;
+  knockouts: number;
+  lastActivity: string | null;
+  /** Non-victor placeholder for sorting. */
+  result: BossResult;
+}
+
+const EM_DASH = '—';
+
+function buildRow(progress: BossEventProgress, users: User[]): RosterRow | null {
+  const result = deriveBossResult(
+    progress as unknown as Record<string, unknown>,
+    0,
+    0,
+  );
+  if (!result) return null;
+
+  const lastActivity = lastActivityIso(result);
+  const status = resolveStatus(result, lastActivity);
+
+  // Over-par compares each victor against their OWN fight: bossMaxHp is
+  // PPI-scaled per student, so par differs per build. Non-victors have no
+  // meaningful "swings to kill" figure — an in-progress student showing
+  // over-par would read as a failure they have not earned yet.
+  let overPar: number | null = null;
+  if (result.victory && !result.isLegacy) {
+    const par = computeBossPar(result.bossMaxHp, result.answeredCount, result.correctCount);
+    overPar = par.overPar;
+  }
+
+  const matched = users.find(u => u.id === result.userId);
+
+  return {
+    key: `${result.userId}:${result.eventId}`,
+    userId: result.userId,
+    studentName: matched?.name || result.userId.slice(0, 8),
+    status,
+    answered: result.answeredCount,
+    correct: result.correctCount,
+    accuracy: result.accuracy,
+    damage: result.damage,
+    pctDefeated: result.pctDefeated,
+    overPar,
+    knockouts: result.knockoutCount,
+    lastActivity,
+    result,
+  };
+}
+
+/** nulls always sort to the bottom regardless of direction. */
+function compareNullable(a: number | null, b: number | null, dir: SortDir): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return dir === 'asc' ? a - b : b - a;
+}
+
+function sortRows(rows: RosterRow[], key: SortKey, dir: SortDir): RosterRow[] {
+  const sorted = [...rows].sort((a, b) => {
+    switch (key) {
+      case 'student':
+        return dir === 'asc'
+          ? a.studentName.localeCompare(b.studentName)
+          : b.studentName.localeCompare(a.studentName);
+      case 'status': {
+        const delta = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+        return dir === 'asc' ? delta : -delta;
+      }
+      case 'answered':
+        return compareNullable(a.answered, b.answered, dir);
+      case 'correct':
+        return compareNullable(a.correct, b.correct, dir);
+      case 'accuracy':
+        return compareNullable(a.accuracy, b.accuracy, dir);
+      case 'damage':
+        return compareNullable(a.damage, b.damage, dir);
+      case 'pctDefeated':
+        return compareNullable(a.pctDefeated, b.pctDefeated, dir);
+      case 'overPar':
+        return compareNullable(a.overPar, b.overPar, dir);
+      case 'knockouts':
+        return compareNullable(a.knockouts, b.knockouts, dir);
+      case 'lastActivity':
+        return compareNullable(
+          a.lastActivity ? Date.parse(a.lastActivity) : null,
+          b.lastActivity ? Date.parse(b.lastActivity) : null,
+          dir,
+        );
+      default:
+        return 0;
+    }
+  });
+  return sorted;
+}
+
+/**
+ * Default order: status band (VICTOR → FIGHTING → STALLED → NOT STARTED), then
+ * % defeated descending inside the band.
+ *
+ * Deliberately NOT by raw damage: damage scales with each student's own gear,
+ * so a well-equipped student and a bare one are not comparable on that number.
+ */
+function defaultSort(rows: RosterRow[]): RosterRow[] {
+  return [...rows].sort((a, b) => {
+    const band = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+    if (band !== 0) return band;
+    return compareNullable(a.pctDefeated, b.pctDefeated, 'desc');
+  });
+}
+
+function pctLabel(value: number | null): string {
+  return value === null ? EM_DASH : `${Math.round(value * 100)}%`;
+}
+
+function overParLabel(value: number | null): string {
+  if (value === null) return EM_DASH;
+  if (value > 0) return `+${value}`;
+  if (value < 0) return `${value}`;
+  return '0';
+}
+
+function csvCell(value: string | number | null): string {
+  if (value === null) return '';
+  const str = String(value);
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+type Tab = 'roster' | 'questions';
 
 const EndgameStatsModal: React.FC<EndgameStatsModalProps> = ({ quiz, progress, loading, users, onClose }) => {
-  // --- Per-question analytics ---
-  const questionAnalytics = useMemo(() => {
+  const [tab, setTab] = useState<Tab>('roster');
+  const [sortKey, setSortKey] = useState<SortKey>('status');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  // Per-question analytics are NOT fetched on mount — the roster is what the
+  // teacher watches during a live fight, and the answer scan is the expensive
+  // half of this screen.
+  const [stats, setStats] = useState<BossEventStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const statsRequestId = useRef(0);
+
+  const eventId = quiz?.id ?? null;
+
+  const loadStats = useCallback(async () => {
+    if (!eventId) return;
+    const requestId = ++statsRequestId.current;
+    setStatsLoading(true);
+    setStatsError(null);
+    try {
+      const result = await dataService.getBossEventStats(eventId);
+      if (requestId !== statsRequestId.current) return; // a newer request won
+      setStats(result);
+    } catch (error) {
+      if (requestId !== statsRequestId.current) return;
+      const message =
+        error instanceof Error && error.message
+          ? error.message.replace(/^FirebaseError:\s*/, '')
+          : 'Could not load question analytics.';
+      setStatsError(message);
+    } finally {
+      if (requestId === statsRequestId.current) setStatsLoading(false);
+    }
+  }, [eventId]);
+
+  // Reset all per-event state when the teacher switches boss.
+  useEffect(() => {
+    setStats(null);
+    setStatsError(null);
+    setStatsLoading(false);
+    setTab('roster');
+    statsRequestId.current += 1;
+  }, [eventId]);
+
+  const openQuestionTab = useCallback(() => {
+    setTab('questions');
+    if (!stats && !statsLoading) void loadStats();
+  }, [stats, statsLoading, loadStats]);
+
+  const refresh = useCallback(() => {
+    // In LIVE mode the listener is authoritative for the roster; only the
+    // analytics callable is refreshed. In CLOSED mode nothing is changing on
+    // its own any more, so a refresh is still just the analytics call.
+    void loadStats();
+  }, [loadStats]);
+
+  const isLive = useMemo(() => {
+    if (!quiz) return false;
+    if (!quiz.isActive) return false;
+    const deadline = quiz.deadline ? Date.parse(quiz.deadline) : Number.NaN;
+    if (Number.isNaN(deadline)) return true;
+    return Date.now() <= deadline;
+  }, [quiz]);
+
+  // ── Derived roster ──
+  const rows = useMemo(() => {
+    return progress
+      .map(p => buildRow(p, users))
+      .filter((r): r is RosterRow => r !== null);
+  }, [progress, users]);
+
+  const visibleRows = useMemo(() => {
+    if (sortKey === 'status' && sortDir === 'asc') return defaultSort(rows);
+    return sortRows(rows, sortKey, sortDir);
+  }, [rows, sortKey, sortDir]);
+
+  const summary = useMemo(() => {
+    const fighters = rows.filter(r => r.answered > 0).length;
+    const victors = rows.filter(r => r.result.victory).length;
+
+    const accuracies = rows
+      .map(r => r.accuracy)
+      .filter((a): a is number => a !== null);
+    // Median over two students is noise; require a real sample.
+    const medianAccuracy = accuracies.length >= 3 ? median(accuracies) : null;
+
+    const victorOverPar = rows
+      .filter(r => r.result.victory && r.overPar !== null)
+      .map(r => r.overPar as number);
+    const medianOverPar =
+      victorOverPar.length >= BOSS_COMPARISON_MIN_VICTORS_MEDIAN ? median(victorOverPar) : null;
+
+    return { fighters, victors, medianAccuracy, medianOverPar, victorSamples: victorOverPar.length };
+  }, [rows]);
+
+  // ── Per-question table ──
+  const questionRows = useMemo(() => {
     if (!quiz) return [];
-    return (quiz.questions || []).map(q => {
-      let attempts = 0;
-      progress.forEach(p => {
-        if (getAnsweredQuestions(p).includes(q.id)) {
-          attempts++;
-        }
-      });
-      // Use difficulty-based aggregation as best approximation
-      const diff = q.difficulty;
-      const totalCorrectDiff = progress.reduce((s, p) => s + (getCombatStats(p)?.correctByDifficulty?.[diff] || 0), 0);
-      const totalIncorrectDiff = progress.reduce((s, p) => s + (getCombatStats(p)?.incorrectByDifficulty?.[diff] || 0), 0);
-      const totalDiff = totalCorrectDiff + totalIncorrectDiff;
-      // Per-question estimate: use total attempts for this question and difficulty-level accuracy
-      const diffAccuracy = totalDiff > 0 ? totalCorrectDiff / totalDiff : 0;
-      return {
-        ...q,
-        attempts,
-        estimatedAccuracy: Math.round(diffAccuracy * 100),
-        difficultyAccuracy: diffAccuracy,
-      };
+    const byId = new Map(stats?.perQuestion.map(q => [q.questionId, q]) ?? []);
+    const ordered = (quiz.questions || []).map((q, index) => ({
+      index,
+      question: q,
+      stats: byId.get(q.id) ?? null,
+    }));
+    // Worst accuracy first — the re-teach list IS the top of this table.
+    return ordered.sort((a, b) => {
+      const aAcc = a.stats?.accuracy ?? null;
+      const bAcc = b.stats?.accuracy ?? null;
+      if (aAcc === null && bAcc === null) return a.index - b.index;
+      if (aAcc === null) return 1;
+      if (bAcc === null) return -1;
+      return aAcc - bAcc;
     });
-  }, [quiz, progress]);
+  }, [quiz, stats]);
 
-  // Most-missed questions (lowest accuracy, sorted)
-  const mostMissed = useMemo(() => {
-    return [...questionAnalytics]
-      .sort((a, b) => a.estimatedAccuracy - b.estimatedAccuracy)
-      .slice(0, 5);
-  }, [questionAnalytics]);
+  const handleSort = useCallback((key: SortKey) => {
+    setSortKey(prev => {
+      if (prev === key) {
+        setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setSortDir(key === 'student' || key === 'status' ? 'asc' : 'desc');
+      return key;
+    });
+  }, []);
 
-  // --- CSV Export ---
+  // ── CSV export ──
+  // Exports exactly what is on screen: same rows, same order, same derived
+  // values (em dash for missing), so the file and the table cannot disagree.
   const handleExportCSV = useCallback(() => {
     if (!quiz) return;
-    const headers = ['Rank', 'Student', 'Email', 'Damage', 'Correct', 'Attempted', 'Accuracy%', 'Crits', 'Streak', 'Mitigated', 'Status'];
-    const sorted = [...progress].sort((a, b) => (b.totalDamageDealt || 0) - (a.totalDamageDealt || 0));
-    const rows = sorted.map((prog, idx) => {
-      const student = users.find(u => u.id === prog.userId);
-      const s = getCombatStats(prog);
-      const attempted = s?.questionsAttempted || 0;
-      const correct = s?.questionsCorrect || 0;
-      const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
-      const participated = attempted >= BOSS_PARTICIPATION_MIN_ATTEMPTS && correct >= BOSS_PARTICIPATION_MIN_CORRECT;
-      return [idx + 1, student?.name || prog.userId, student?.email || '', s?.totalDamageDealt || 0, correct, attempted, accuracy, s?.criticalHits || 0, s?.longestStreak || 0, s?.damageReduced || 0, participated ? 'QUALIFIED' : 'DNQ'].join(',');
-    });
 
-    const questionHeaders = ['Question#', 'Stem', 'Difficulty', 'CorrectAnswer', 'EstimatedAccuracy%'];
-    const questionRows = questionAnalytics.map((q, i) => [
-      i + 1,
-      `"${q.stem.replace(/"/g, '""')}"`,
-      q.difficulty,
-      `"${q.options[q.correctAnswer]?.replace(/"/g, '""') || ''}"`,
-      q.estimatedAccuracy,
+    const headers = [
+      'Student',
+      'Status',
+      'Answered',
+      'Correct',
+      'Accuracy%',
+      'Damage',
+      'Defeated%',
+      'OverPar',
+      'Knockouts',
+      'LastActivity',
+    ];
+    const rosterRows = visibleRows.map(row => [
+      csvCell(row.studentName),
+      csvCell(STATUS_LABEL[row.status]),
+      row.answered,
+      row.correct,
+      row.accuracy === null ? EM_DASH : Math.round(row.accuracy * 100),
+      row.damage === null ? EM_DASH : row.damage,
+      row.pctDefeated === null ? EM_DASH : Math.round(row.pctDefeated * 100),
+      overParLabel(row.overPar),
+      row.knockouts,
+      row.lastActivity ? formatLastActivity(row.lastActivity) : EM_DASH,
     ].join(','));
 
-    const csv = [
-      `Boss Quiz: ${quiz.bossName}`,
+    const sections: string[] = [
+      csvCell(`Boss Results: ${quiz.bossName}`),
+      csvCell(`Mode: ${isLive ? 'LIVE' : 'CLOSED'}`),
       '',
-      'PARTICIPANT DATA',
+      'ROSTER',
       headers.join(','),
-      ...rows,
-      '',
-      'QUESTION DATA',
-      questionHeaders.join(','),
-      ...questionRows,
-    ].join('\n');
+      ...rosterRows,
+    ];
 
+    if (stats) {
+      sections.push(
+        '',
+        'QUESTION ANALYTICS',
+        ['Question#', 'Stem', 'Difficulty', 'AnswerKey', 'Answers', 'Accuracy%', 'Revisions', 'CorrectAfterRevision'].join(','),
+        ...questionRows.map(({ index, question, stats: qStats }) => [
+          index + 1,
+          csvCell(question.stem),
+          csvCell(question.difficulty),
+          csvCell(question.options?.[question.correctAnswer] ?? ''),
+          qStats?.answers ?? '',
+          qStats?.accuracy === null || qStats === null || qStats.accuracy === undefined
+            ? ''
+            : Math.round(qStats.accuracy * 100),
+          qStats?.revisions ?? '',
+          qStats?.correctAfterRevision ?? '',
+        ].join(',')),
+      );
+    }
+
+    const csv = sections.join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `boss-quiz-${quiz.bossName.replace(/\s+/g, '-').toLowerCase()}-results.csv`;
+    a.download = `boss-results-${quiz.bossName.replace(/\s+/g, '-').toLowerCase()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [quiz, progress, users, questionAnalytics]);
+  }, [quiz, isLive, visibleRows, stats, questionRows]);
+
+  const sortIndicator = (key: SortKey) => {
+    if (sortKey !== key) return null;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3 h-3 inline ml-1" aria-hidden="true" />
+      : <ArrowDown className="w-3 h-3 inline ml-1" aria-hidden="true" />;
+  };
+
+  const headerButton = (key: SortKey, label: string, align: 'left' | 'center' = 'left') => (
+    <th
+      className={`pb-2 ${align === 'center' ? 'text-center' : 'text-left pl-2'}`}
+      aria-sort={sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <button
+        type="button"
+        onClick={() => handleSort(key)}
+        className="font-bold uppercase tracking-wide text-[11.5px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
+      >
+        {label}
+        {sortIndicator(key)}
+      </button>
+    </th>
+  );
 
   return (
-    <Modal isOpen={!!quiz} onClose={onClose} title={quiz ? `Endgame: ${quiz.bossName}` : 'Endgame'} maxWidth="max-w-4xl w-[95vw]">
-      {loading ? (
-        <div className="text-center py-12 text-[var(--text-muted)]">Loading endgame data...</div>
-      ) : quiz && (
-        <div className="space-y-6 p-2 max-h-[75vh] overflow-y-auto">
-          {/* Summary + Export */}
-          <div className="flex items-center justify-between">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
-              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-[var(--text-primary)]">{progress.length}</div>
-                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Participants</div>
-              </div>
-              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{progress.reduce((s, p) => s + (p.totalDamageDealt || 0), 0).toLocaleString()}</div>
-                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Damage</div>
-              </div>
-              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-green-600 dark:text-green-400">{progress.reduce((s, p) => s + (getCombatStats(p)?.questionsCorrect || 0), 0)}</div>
-                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Correct</div>
-              </div>
-              <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
-                <div className="text-2xl font-black text-red-600 dark:text-red-400">{progress.reduce((s, p) => s + (getCombatStats(p)?.criticalHits || 0), 0)}</div>
-                <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Total Crits</div>
-              </div>
+    <Modal
+      isOpen={!!quiz}
+      onClose={onClose}
+      title={quiz ? `Results: ${quiz.bossName}` : 'Results'}
+      maxWidth="max-w-6xl w-[95vw]"
+    >
+      {!quiz ? null : loading ? (
+        <div className="text-center py-12 text-[var(--text-muted)]" role="status">
+          <Loader2 className="w-6 h-6 mx-auto mb-3 animate-spin opacity-60" />
+          Waiting for the first progress snapshot…
+        </div>
+      ) : (
+        <div className="space-y-5 p-2 max-h-[75vh] overflow-y-auto">
+          {/* Header: mode badge + refresh + export */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {isLive ? (
+                <span
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[11.5px] font-black uppercase tracking-widest"
+                  role="status"
+                >
+                  <Radio className="w-3 h-3 animate-pulse" aria-hidden="true" /> LIVE
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--surface-glass)] border border-[var(--border)] text-[var(--text-muted)] text-[11.5px] font-black uppercase tracking-widest">
+                  CLOSED
+                </span>
+              )}
+              <span className="text-[11.5px] text-[var(--text-muted)]">
+                {isLive ? 'Roster updates as students fight.' : 'Boss window has ended.'}
+              </span>
             </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={refresh}
+                disabled={statsLoading}
+                className="px-3 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition flex items-center gap-1.5 disabled:opacity-50"
+                title={isLive ? 'Roster is live; refreshes question analytics' : 'Re-fetch question analytics'}
+              >
+                {statsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                Refresh
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="px-4 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition flex items-center gap-1.5"
+                title="Export to CSV"
+              >
+                <Download className="w-3.5 h-3.5" /> CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Summary tiles */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
+              <div className="text-2xl font-black text-[var(--text-primary)]">{summary.fighters}</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Fighters</div>
+            </div>
+            <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
+              <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{summary.victors}</div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Victors</div>
+            </div>
+            <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
+              <div className="text-2xl font-black text-[var(--text-primary)]">
+                {summary.medianAccuracy === null ? EM_DASH : `${Math.round(summary.medianAccuracy * 100)}%`}
+              </div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Median Accuracy</div>
+            </div>
+            <div className="bg-[var(--panel-bg)] rounded-xl p-3 border border-[var(--border)] text-center">
+              <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                {summary.medianOverPar === null ? EM_DASH : overParLabel(Math.round(summary.medianOverPar))}
+              </div>
+              <div className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold">Median Over-Par</div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2">
             <button
-              onClick={handleExportCSV}
-              className="ml-3 px-4 py-2 bg-[var(--surface-glass)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-glass-heavy)] transition flex items-center gap-1.5 flex-shrink-0"
-              title="Export to CSV"
+              onClick={() => setTab('roster')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                tab === 'roster'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
+              }`}
             >
-              <Download className="w-3.5 h-3.5" /> CSV
+              <ListChecks className="w-3.5 h-3.5" /> Roster ({rows.length})
+            </button>
+            <button
+              onClick={openQuestionTab}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                tab === 'questions'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-[var(--surface-glass)] text-[var(--text-tertiary)] hover:bg-[var(--surface-glass-heavy)]'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" /> Question Analytics
             </button>
           </div>
 
-          {/* Top 5 Leaderboard */}
-          <div>
-            <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2 mb-3"><Crown className="w-4 h-4" /> Top Damage Dealers</h4>
-            <div className="space-y-2">
-              {[...progress]
-                .sort((a, b) => (b.totalDamageDealt || 0) - (a.totalDamageDealt || 0))
-                .slice(0, 5)
-                .map((prog, idx) => {
-                  const student = users.find(u => u.id === prog.userId);
-                  const stats = getCombatStats(prog);
-                  const multiplier = idx < BOSS_REWARD_TIERS.length ? BOSS_REWARD_TIERS[idx] : 1;
-                  const participated = (stats?.questionsAttempted || 0) >= BOSS_PARTICIPATION_MIN_ATTEMPTS && (stats?.questionsCorrect || 0) >= BOSS_PARTICIPATION_MIN_CORRECT;
-                  const medalColors = ['text-yellow-600 dark:text-yellow-400', 'text-gray-300', 'text-amber-600', 'text-blue-600 dark:text-blue-400', 'text-purple-600 dark:text-purple-400'];
-                  return (
-                    <div key={prog.userId} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-[var(--panel-bg)] border-[var(--border)]'}`}>
-                      <div className={`text-xl font-black w-8 text-center ${medalColors[idx] || 'text-[var(--text-muted)]'}`}>#{idx + 1}</div>
-                      {student?.avatarUrl && <img src={student.avatarUrl} className="w-8 h-8 rounded-lg border border-[var(--border)]" alt="" loading="lazy" />}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-[var(--text-primary)] truncate">{student?.name || prog.userId}</div>
-                        <div className="flex gap-2 text-[11.5px] text-[var(--text-muted)]">
-                          <span className="text-amber-600 dark:text-amber-400 font-bold">{stats?.totalDamageDealt?.toLocaleString() || 0} dmg</span>
-                          <span>{stats?.questionsCorrect || 0}/{stats?.questionsAttempted || 0} correct</span>
-                          <span>{stats?.criticalHits || 0} crits</span>
-                          <span>Streak: {stats?.longestStreak || 0}</span>
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        {participated ? (
-                          <span className={`text-xs font-bold ${idx < 5 ? medalColors[idx] : 'text-[var(--text-tertiary)]'}`}>{multiplier}x</span>
-                        ) : (
-                          <span className="text-[11.5px] text-red-600 dark:text-red-400 font-bold">DNQ</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Per-Question Analytics */}
-          {(quiz.questions || []).length > 0 && (
-            <div>
-              <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" /> Question Analytics</h4>
-              <div className="text-[11.5px] text-[var(--text-muted)] mb-3">Accuracy rates based on per-difficulty aggregation across all participants.</div>
-
-              {/* Most Missed */}
-              {mostMissed.length > 0 && mostMissed[0].estimatedAccuracy < 70 && (
-                <div className="mb-4 p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
-                  <div className="text-[11.5px] font-bold text-red-600 dark:text-red-400 uppercase mb-2">Most Challenging Questions (Consider Re-teaching)</div>
-                  <div className="space-y-2">
-                    {mostMissed.filter(q => q.estimatedAccuracy < 70).map(q => (
-                      <div key={q.id} className="flex items-start gap-2">
-                        <span className="text-[11.5px] text-red-600 dark:text-red-400 font-bold mt-0.5">Q{(quiz.questions || []).indexOf(q) + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs text-[var(--text-primary)] truncate">{q.stem}</div>
-                          <div className="flex gap-2 mt-0.5">
-                            <span className={`text-[11.5px] px-1.5 py-0.5 rounded font-bold ${getDifficultyClasses(q.difficulty)}`}>{q.difficulty}</span>
-                            <span className="text-[11.5px] text-[var(--text-muted)]">{q.estimatedAccuracy}% accuracy</span>
-                            <span className="text-[11.5px] text-green-600 dark:text-green-400">Answer: {q.options[q.correctAnswer]}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+          {/* ── Roster ── */}
+          {tab === 'roster' && (
+            <div className="overflow-x-auto">
+              {rows.length === 0 ? (
+                <div className="text-center py-10 text-[var(--text-muted)]">
+                  No students have started this boss yet.
                 </div>
-              )}
-
-              {/* Full Question Table */}
-              <div className="overflow-x-auto">
+              ) : (
                 <table className="w-full text-left text-xs">
-                  <thead><tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
-                    <th className="pb-2 pl-2">#</th>
-                    <th className="pb-2">Question</th>
-                    <th className="pb-2 text-center">Difficulty</th>
-                    <th className="pb-2 text-center">Est. Accuracy</th>
-                    <th className="pb-2">Correct Answer</th>
-                  </tr></thead>
+                  <thead>
+                    <tr className="border-b border-[var(--border)]">
+                      {headerButton('student', 'Student')}
+                      {headerButton('status', 'Status')}
+                      {headerButton('answered', 'Answered', 'center')}
+                      {headerButton('correct', 'Correct', 'center')}
+                      {headerButton('accuracy', 'Accuracy', 'center')}
+                      {headerButton('damage', 'Damage', 'center')}
+                      {headerButton('pctDefeated', '% Defeated', 'center')}
+                      {headerButton('overPar', 'Over Par', 'center')}
+                      {headerButton('knockouts', 'Knockouts', 'center')}
+                      {headerButton('lastActivity', 'Last Activity', 'center')}
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-[var(--border)]">
-                    {questionAnalytics.map((q, idx) => (
-                      <tr key={q.id} className={`hover:bg-[var(--surface-glass)] ${q.estimatedAccuracy < 50 ? 'bg-red-500/5' : ''}`}>
-                        <td className="py-2 pl-2 font-bold text-[var(--text-muted)]">{idx + 1}</td>
-                        <td className="py-2 text-[var(--text-primary)] max-w-[300px] truncate">{q.stem}</td>
-                        <td className="py-2 text-center">
-                          <span className={`text-[11.5px] px-1.5 py-0.5 rounded font-bold ${getDifficultyClasses(q.difficulty)}`}>{q.difficulty}</span>
+                    {visibleRows.map(row => (
+                      <tr key={row.key} className="hover:bg-[var(--surface-glass)]">
+                        <td className="py-2 pl-2 font-bold text-[var(--text-primary)] max-w-[180px] truncate">
+                          {row.studentName}
                         </td>
-                        <td className="py-2 text-center">
-                          <span className={`font-bold ${q.estimatedAccuracy >= 70 ? 'text-green-600 dark:text-green-400' : q.estimatedAccuracy >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {q.estimatedAccuracy}%
+                        <td className="py-2">
+                          <span
+                            className={`text-[10.5px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border ${STATUS_CLASSES[row.status]}`}
+                          >
+                            {STATUS_LABEL[row.status]}
                           </span>
                         </td>
-                        <td className="py-2 text-[var(--text-tertiary)] max-w-[200px] truncate">{q.options[q.correctAnswer]}</td>
+                        <td className="py-2 text-center text-[var(--text-tertiary)]">{row.answered}</td>
+                        <td className="py-2 text-center text-green-600 dark:text-green-400">
+                          {row.answered === 0 && row.correct === 0 ? EM_DASH : row.correct}
+                        </td>
+                        <td className="py-2 text-center text-[var(--text-secondary)]">{pctLabel(row.accuracy)}</td>
+                        <td className="py-2 text-center text-amber-600 dark:text-amber-400 font-bold">
+                          {row.damage === null ? EM_DASH : row.damage.toLocaleString()}
+                        </td>
+                        <td className="py-2 text-center text-[var(--text-secondary)]">{pctLabel(row.pctDefeated)}</td>
+                        <td className="py-2 text-center text-[var(--text-secondary)]">{overParLabel(row.overPar)}</td>
+                        <td className="py-2 text-center text-red-600 dark:text-red-400">{row.knockouts}</td>
+                        <td className="py-2 text-center text-[var(--text-muted)]">
+                          {formatLastActivity(row.lastActivity)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Suggested Difficulty Adjustments */}
-              {questionAnalytics.some(q => (q.difficulty === 'EASY' && q.estimatedAccuracy < 50) || (q.difficulty === 'HARD' && q.estimatedAccuracy > 80)) && (
-                <div className="mt-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-                  <div className="text-[11.5px] font-bold text-amber-600 dark:text-amber-400 uppercase mb-2">Suggested Difficulty Adjustments</div>
-                  <div className="space-y-1">
-                    {questionAnalytics
-                      .filter(q => (q.difficulty === 'EASY' && q.estimatedAccuracy < 50) || (q.difficulty === 'HARD' && q.estimatedAccuracy > 80))
-                      .map(q => (
-                        <div key={q.id} className="text-[11.5px] text-[var(--text-tertiary)] flex items-center gap-2">
-                          <span className="font-bold text-[var(--text-primary)]">Q{(quiz.questions || []).indexOf(q) + 1}:</span>
-                          {q.difficulty === 'EASY' && q.estimatedAccuracy < 50 && (
-                            <span>Marked as <span className="text-green-600 dark:text-green-400">EASY</span> but only {q.estimatedAccuracy}% accuracy — consider upgrading to <span className="text-yellow-600 dark:text-yellow-400">MEDIUM</span></span>
-                          )}
-                          {q.difficulty === 'HARD' && q.estimatedAccuracy > 80 && (
-                            <span>Marked as <span className="text-red-600 dark:text-red-400">HARD</span> but {q.estimatedAccuracy}% accuracy — consider downgrading to <span className="text-yellow-600 dark:text-yellow-400">MEDIUM</span></span>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </div>
               )}
             </div>
           )}
 
-          {/* Full Participant Table */}
-          <div>
-            <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mb-3"><Eye className="w-4 h-4" /> All Participants</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead><tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
-                  <th className="pb-2 pl-2">#</th>
-                  <th className="pb-2">Student</th>
-                  <th className="pb-2 text-center">Damage</th>
-                  <th className="pb-2 text-center">Correct</th>
-                  <th className="pb-2 text-center">Attempted</th>
-                  <th className="pb-2 text-center">Accuracy</th>
-                  <th className="pb-2 text-center">Crits</th>
-                  <th className="pb-2 text-center">Streak</th>
-                  <th className="pb-2 text-center">Mitigated</th>
-                  <th className="pb-2 text-center">Status</th>
-                </tr></thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {[...progress]
-                    .sort((a, b) => (b.combatStats?.totalDamageDealt || 0) - (a.combatStats?.totalDamageDealt || 0))
-                    .map((prog, idx) => {
-                      const student = users.find(u => u.id === prog.userId);
-                      const s = prog.combatStats;
-                      const attempted = s?.questionsAttempted || 0;
-                      const correct = s?.questionsCorrect || 0;
-                      const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
-                      const participated = attempted >= BOSS_PARTICIPATION_MIN_ATTEMPTS && correct >= BOSS_PARTICIPATION_MIN_CORRECT;
-                      return (
-                        <tr key={prog.userId} className="hover:bg-[var(--surface-glass)]">
-                          <td className="py-2 pl-2 font-bold text-[var(--text-muted)]">{idx + 1}</td>
-                          <td className="py-2 font-bold text-[var(--text-primary)]">{student?.name || prog.userId.slice(0, 8)}</td>
-                          <td className="py-2 text-center text-amber-600 dark:text-amber-400 font-bold">{(s?.totalDamageDealt || 0).toLocaleString()}</td>
-                          <td className="py-2 text-center text-green-600 dark:text-green-400">{correct}</td>
-                          <td className="py-2 text-center text-[var(--text-tertiary)]">{attempted}</td>
-                          <td className="py-2 text-center text-[var(--text-secondary)]">{accuracy}%</td>
-                          <td className="py-2 text-center text-red-600 dark:text-red-400">{s?.criticalHits || 0}</td>
-                          <td className="py-2 text-center text-purple-600 dark:text-purple-400">{s?.longestStreak || 0}</td>
-                          <td className="py-2 text-center text-cyan-700 dark:text-cyan-400">{s?.damageReduced || 0}</td>
-                          <td className="py-2 text-center">{participated
-                            ? <span className="text-green-600 dark:text-green-400 text-[11.5px] font-bold">QUALIFIED</span>
-                            : <span className="text-red-600 dark:text-red-400 text-[11.5px] font-bold">DNQ</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Difficulty Breakdown */}
-          <div>
-            <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3">Performance by Difficulty</h4>
-            <div className="grid grid-cols-3 gap-3">
-              {(['EASY', 'MEDIUM', 'HARD'] as const).map(diff => {
-                const totalCorrect = progress.reduce((s, p) => s + (p.combatStats?.correctByDifficulty?.[diff] || 0), 0);
-                const totalIncorrect = progress.reduce((s, p) => s + (p.combatStats?.incorrectByDifficulty?.[diff] || 0), 0);
-                const total = totalCorrect + totalIncorrect;
-                const accuracy = total > 0 ? Math.round((totalCorrect / total) * 100) : 0;
-                const color = diff === 'EASY' ? 'green' : diff === 'MEDIUM' ? 'yellow' : 'red';
-                return (
-                  <div key={diff} className={`bg-${color}-500/5 border border-${color}-500/20 rounded-xl p-3 text-center`}>
-                    <div className={`text-[11.5px] font-bold text-${color}-400 uppercase mb-1`}>{diff}</div>
-                    <div className="text-lg font-black text-[var(--text-primary)]">{accuracy}%</div>
-                    <div className="text-[11.5px] text-[var(--text-muted)]">{totalCorrect}/{total} correct</div>
+          {/* ── Per-question analytics ── */}
+          {tab === 'questions' && (
+            <div className="space-y-3">
+              {statsError ? (
+                <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl text-center">
+                  <div className="text-xs text-red-600 dark:text-red-400 mb-3">{statsError}</div>
+                  <button
+                    onClick={loadStats}
+                    className="px-3 py-1.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-500/20 transition border border-red-500/20 text-[11.5px] font-bold uppercase"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : statsLoading || !stats ? (
+                <div className="space-y-2" role="status" aria-label="Loading question analytics">
+                  {[0, 1, 2, 3, 4].map(i => (
+                    <div
+                      key={i}
+                      className="h-8 rounded-lg bg-[var(--surface-glass)] animate-pulse"
+                      style={{ animationDelay: `${i * 80}ms` }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {stats.truncated && (
+                    <div
+                      className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-[11.5px] font-bold text-amber-700 dark:text-amber-400 flex items-start gap-2"
+                      role="alert"
+                    >
+                      <DownloadCloud className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                      <span>
+                        Question analytics hit the 20,000-answer cap for this event. Counts may be incomplete.
+                      </span>
+                    </div>
+                  )}
+                  <div className="text-[11.5px] text-[var(--text-muted)]">
+                    Sorted by accuracy, worst first — the top of this list is your re-teach set. Revision
+                    retries are counted separately and excluded from the Answers/Accuracy columns.
                   </div>
-                );
-              })}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="text-[11.5px] text-[var(--text-muted)] uppercase font-bold border-b border-[var(--border)]">
+                          <th className="pb-2 pl-2">#</th>
+                          <th className="pb-2">Question</th>
+                          <th className="pb-2 text-center">Difficulty</th>
+                          <th className="pb-2 text-center">Answers</th>
+                          <th className="pb-2 text-center">Accuracy</th>
+                          <th className="pb-2 text-center">Revisions</th>
+                          <th className="pb-2">Answer key</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--border)]">
+                        {questionRows.map(({ index, question, stats: qStats }) => {
+                          const accuracy = qStats?.accuracy ?? null;
+                          return (
+                            <tr
+                              key={question.id}
+                              className={`hover:bg-[var(--surface-glass)] ${
+                                accuracy !== null && accuracy < 0.5 ? 'bg-red-500/5' : ''
+                              }`}
+                            >
+                              <td className="py-2 pl-2 font-bold text-[var(--text-muted)]">{index + 1}</td>
+                              <td className="py-2 text-[var(--text-primary)] max-w-[280px] truncate">{question.stem}</td>
+                              <td className="py-2 text-center">
+                                <span
+                                  className={`text-[11.5px] px-1.5 py-0.5 rounded font-bold ${getDifficultyClasses(question.difficulty)}`}
+                                >
+                                  {question.difficulty}
+                                </span>
+                              </td>
+                              <td className="py-2 text-center text-[var(--text-tertiary)]">
+                                {qStats ? qStats.answers : EM_DASH}
+                              </td>
+                              <td className="py-2 text-center">
+                                <span
+                                  className={`font-bold ${
+                                    accuracy === null
+                                      ? 'text-[var(--text-muted)]'
+                                      : accuracy >= 0.7
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : accuracy >= 0.5
+                                          ? 'text-yellow-600 dark:text-yellow-400'
+                                          : 'text-red-600 dark:text-red-400'
+                                  }`}
+                                >
+                                  {qStats ? pctLabel(accuracy) : EM_DASH}
+                                </span>
+                              </td>
+                              <td className="py-2 text-center text-[var(--text-tertiary)]">
+                                {qStats ? qStats.revisions : EM_DASH}
+                              </td>
+                              <td className="py-2 text-green-600 dark:text-green-400 max-w-[200px] truncate flex items-center gap-1">
+                                <Check className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                                {question.options?.[question.correctAnswer] ?? EM_DASH}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
     </Modal>
