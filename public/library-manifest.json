@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T23:46:28.063Z",
+  "generatedAt": "2026-11-13T17:19:02.868Z",
   "items": [
     {
       "path": "/ap1-course-recap.html",
@@ -120,6 +120,11 @@
       "path": "/forensic-branches/toxicologist.html",
       "fingerprint": "/forensic-branches/toxicologist.html",
       "sizeBytes": 24913
+    },
+    {
+      "path": "/forensic-lens-critique.html",
+      "fingerprint": "/forensic-lens-critique.html",
+      "sizeBytes": 464848
     },
     {
       "path": "/forensic-science-course-recap.html",

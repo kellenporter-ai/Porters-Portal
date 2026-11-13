@@ -302,6 +302,34 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/rubbing-balloons.html',
   },
   {
+    title: 'Electrostatic Rubbing: What Actually Moves Between the Materials',
+    description:
+      'Atomic-scale simulator for what rubbing does to a material. Two neutral atoms sit side by side and students choose a pair to rub, ' +
+      'balloon against plastic or fur against balloon, then press RUB and watch three electrons leave one atom and arrive in the other. ' +
+      'Nuclei stay put while electrons migrate, surplus electrons settle onto a third shell, and depleted valence slots remain behind as gaps in the orbit line, ' +
+      'so which material gained electrons is something students see rather than read on a label. ' +
+      'Only the two scenes ship, which keeps the complementary pair sharp: the same balloon turns negative against plastic and positive against fur. ' +
+      'Pairs with the OpenSciEd P.1 rubbing balloons investigation as the microscopic follow-up to that lab\'s macro observations.',
+    url: '/electrostatic-rubbing',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Physics',
+    tags: [
+      'physics',
+      'electrostatics',
+      'charge',
+      'atomic-model',
+      'microscopic-model',
+      'simulation',
+      'openscied',
+      'balloons',
+      'friction',
+      'activity',
+    ],
+    suggestedCategory: 'Simulation',
+    sourceFingerprint: '/electrostatic-rubbing.html',
+  },
+  {
     title: 'AP Physics 1 Q1 Review',
     description: 'Quarter 1 review for AP Physics 1, covering Chapters 2 through 4 (kinematics, forces, Newton\'s laws, and vectors). Ten skills each get eight practice questions with instant per-distractor feedback, common-misconception notes, and mastery tracking. Ends with a fresh 30-question multiple-choice mock quarterly plus a five-part free response that students self-score against a checklist. Questions are new versions, not the quarter exam.',
     url: '/ap1-q1-review/',
@@ -411,6 +439,34 @@ const SEED_ITEMS: SeedItem[] = [
     ],
     suggestedCategory: 'Activity',
     sourceFingerprint: '/your-own-investigation.html',
+  },
+  {
+    title: 'Forensic Lens Critique: Judge a Crime Show Like a Forensic Scientist',
+    description: 'A marking period extra credit where a student takes a crime show or movie they already watch and turns it into a forensic case study, then judges it. Students identify what they watched with the season and episode when it is a series, then build up to four claim cards worth 2.5 points each. Every claim picks a side (done correctly or done incorrectly) and a lens from the three Marking Period 1 topics: evidence types, the seven S\'s of crime scene investigation, or fingerprints. Choosing a lens unlocks that lens\'s specific terms in a dropdown, so the claim is anchored to a named concept before a single sentence is written. Two writing boxes follow: what happened on screen and why it matches or violates the term, then a box that changes its question depending on the claim type, asking for the correct real-world protocol when the show got it wrong and for the consequence the investigator avoided when the show got it right. Submissions are modular, so one complete claim earns 2.5 points and a student with one good scene still submits and keeps it. A reference panel lists the terminology as a word bank with definitions hidden until a student chooses to reveal them, and the four-part rubric is on the page naming the specific failure that costs each level. A media choice warning steers students toward scenes that actually show scene or lab work rather than courtroom talk. Work autosaves, toggles EN/ES, and exports a PDF with name and period on every page. Pairs with the latent print lab, the evidence types page, and the seven S\'s review as the transfer task that closes out Marking Period 1.',
+    url: '/forensic-lens-critique',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'evidence-types',
+      'seven-ss',
+      'fingerprints',
+      'latent-prints',
+      'case-study',
+      'critique',
+      'extra-credit',
+      'assessment',
+      'grading',
+      'rubric',
+      'bilingual',
+      'pdf-export',
+      'autosave',
+      'chromebook-friendly',
+      'activity',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/forensic-lens-critique.html',
   },
 ];
 

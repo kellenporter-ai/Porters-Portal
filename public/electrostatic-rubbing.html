@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electrostatic Rubbing</title>
+  <style>
+    :root {
+      --bg: #07090d;
+      --amber: #f0b429;
+      --cyan: #4fd1c5;
+      --ink-dim: rgba(255, 255, 255, 0.42);
+      --ink-faint: rgba(255, 255, 255, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg);
+      color: #e8e8e8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ---------- tab strip ---------- */
+    #materialTabs {
+      flex: 0 0 auto;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      z-index: 3;
+    }
+
+    #materialTabs .tab {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 14px 22px;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      position: relative;
+      transition: color 180ms ease;
+    }
+
+    #materialTabs .tab::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 6px;
+      width: 0;
+      height: 1px;
+      background: var(--ink-faint);
+      transform: translateX(-50%);
+      transition: width 180ms ease;
+    }
+
+    #materialTabs .tab:hover { color: #fff; }
+
+    #materialTabs .tab.is-active { color: #fff; }
+
+    #materialTabs .tab.is-active::after {
+      width: calc(100% - 30px);
+    }
+
+    #materialTabs .tab:focus-visible,
+    #rubBtn:focus-visible,
+    #resetBtn:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 4px;
+    }
+
+    /* ---------- stage ---------- */
+    #stage {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #sim {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    /* ---------- material labels ----------
+       Positioned from JS so each name sits under its own atom. A flex row
+       cannot: the atoms are at W/2 +/- gap/2, not at the 25%/75% points a
+       space-around row would place them. */
+    #materialLabels {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .mat-label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 16px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.66);
+      transition: color 300ms ease;
+      white-space: nowrap;
+    }
+
+    /* ---------- controls ---------- */
+    #controls {
+      position: absolute;
+      bottom: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      z-index: 3;
+    }
+
+    #rubBtn {
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #e8e8e8;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      padding: 13px 34px;
+      cursor: pointer;
+      transition: border-color 200ms ease, background 200ms ease,
+        letter-spacing 200ms ease;
+    }
+
+    #rubBtn:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    #rubBtn:active { transform: translateY(1px); }
+
+    #resetBtn {
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 2px;
+      transition: color 200ms ease;
+    }
+
+    #resetBtn:hover { color: var(--ink-dim); }
+
+    #resetBtn[disabled] {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    /* ---------- reduced motion ---------- */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <nav id="materialTabs" aria-label="Material pair">
+    <button class="tab is-active" data-scene="plastic" type="button">plastic</button>
+    <button class="tab" data-scene="fur" type="button">fur</button>
+  </nav>
+
+  <main id="stage">
+    <canvas id="sim"></canvas>
+
+    <div id="materialLabels" aria-hidden="true">
+      <span class="mat-label" id="labelLeft">plastic</span>
+      <span class="mat-label" id="labelRight">balloon</span>
+    </div>
+
+    <div id="controls">
+      <button id="rubBtn" type="button">RUB</button>
+      <button id="resetBtn" type="button" aria-label="reset">reset</button>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ---------------------------------------------------------------
+       Constants
+       --------------------------------------------------------------- */
+    var C = {
+      amber: '#f0b429',
+      cyan:  '#4fd1c5',
+      bg:    '#07090d',
+      inkDim:   'rgba(255,255,255,0.42)',
+      inkFaint: 'rgba(255,255,255,0.16)'
+    };
+
+    // Nested orbits need DIFFERENT tilts, not just different rotations.
+    // Identical tilt reads as one plane rotated on screen; differing tilt
+    // reads as separate planes in space.
+    var TILT_INNER = 0.50;
+    var TILT_OUTER = 0.40;
+    var TILT3 = 0.36;
+    var ROT_INNER = -0.28;
+    var ROT_OUTER = 0.22;
+    var ROT_3 = -0.04;
+    var SPIN3_RATE = 0.09;
+    var OUTER_SLOTS = 8;
+    var INNER_SLOTS = 2;
+    var TRANSFER_MS = 780;      // each electron's flight time (eased)
+    var CONTACT_MS = 900;
+    var SETTLE_MS = 1100;   // long enough for the outward migration to read as motion
+    var HEAT_MS = 900;
+    var PULSE_MS = 500;
+
+    var SCENES = {
+      plastic: {
+        left:  { name: 'plastic', inner: 2, outer: 8, protons: 10, neutrons: 10 },
+        right: { name: 'balloon', inner: 2, outer: 8, protons: 10, neutrons: 10 },
+        donor: 'right',
+        count: 3
+      },
+      fur: {
+        left:  { name: 'fur',     inner: 2, outer: 8, protons: 10, neutrons: 10 },
+        right: { name: 'balloon', inner: 2, outer: 8, protons: 10, neutrons: 10 },
+        donor: 'left',
+        count: 3
+      }
+    };
+
+    var prefersReduced = false;
+    try {
+      prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) { prefersReduced = false; }
+
+    /* ---------------------------------------------------------------
+       DOM
+       --------------------------------------------------------------- */
+    var canvas = document.getElementById('sim');
+    var ctx = canvas ? canvas.getContext('2d') : null;
+    var tabsEl = document.getElementById('materialTabs');
+    var labelLeft = document.getElementById('labelLeft');
+    var labelRight = document.getElementById('labelRight');
+    var rubBtn = document.getElementById('rubBtn');
+    var resetBtn = document.getElementById('resetBtn');
+
+    var missingLogged = false;
+    function domOk() {
+      if (!canvas || !ctx) {
+        if (!missingLogged) { missingLogged = true; console.warn('sim: canvas unavailable'); }
+        return false;
+      }
+      return true;
+    }
+
+    /* ---------------------------------------------------------------
+       Layout (recomputed on resize, scene state preserved)
+       --------------------------------------------------------------- */
+    var W = 1, H = 1;
+    var gap = 1, cy = 1, leftX = 1, rightX = 1, R = 1;
+    var r1 = 1, r2 = 1, r3 = 1, re = 1, nucR = 1;
+
+    function layout() {
+      // Shell 3 raises the atom's visual radius to 1.36R, so gap and scale
+      // account for it: the atoms must not overlap once the acceptor grows.
+      R = Math.min(H * 0.25, W * 0.15, 190);
+      r1 = R * 0.62;
+      r2 = R * 1.00;
+      r3 = R * 1.36;
+      gap = Math.min(R * 2.62, W * 0.50);
+      cy = H * 0.46;
+      leftX = W / 2 - gap / 2;
+      rightX = W / 2 + gap / 2;
+      re = Math.max(4, R * 0.052);
+      nucR = R * 0.20;
+
+      // Bind each material name to its own atom, from JS. A flex row would
+      // put them at 25%/75% of the viewport while the atoms sit at
+      // W/2 +/- gap/2, so the names would float under empty space.
+      var labelY = cy + R * 1.5;
+      if (labelLeft) {
+        labelLeft.style.transform =
+          'translate(' + leftX + 'px,' + labelY + 'px) translateX(-50%)';
+      }
+      if (labelRight) {
+        labelRight.style.transform =
+          'translate(' + rightX + 'px,' + labelY + 'px) translateX(-50%)';
+      }
+    }
+
+    function fit() {
+      if (!domOk()) return;
+      var r = canvas.getBoundingClientRect();
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(r.width * dpr));
+      canvas.height = Math.max(1, Math.round(r.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      W = Math.max(1, r.width);
+      H = Math.max(1, r.height);
+      layout();
+    }
+
+    /* ---------------------------------------------------------------
+       Geometry helpers
+       --------------------------------------------------------------- */
+    function shellPoint(cx, cyy, r, tilt, rot, t) {
+      var ex = Math.cos(t) * r;
+      var ey = Math.sin(t) * r * tilt;
+      return {
+        x: cx + ex * Math.cos(rot) - ey * Math.sin(rot),
+        y: cyy + ex * Math.sin(rot) + ey * Math.cos(rot)
+      };
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+
+    /* ---------------------------------------------------------------
+       Nucleus packing (computed once)
+       --------------------------------------------------------------- */
+    var NUCLEON_COUNT = 20;
+    var nucleons = [];
+    (function buildNucleons() {
+      for (var i = 0; i < NUCLEON_COUNT; i++) {
+        var angle = i * 2.399963;
+        var rad = Math.sqrt(i / NUCLEON_COUNT);
+        var depth = 0.82 + 0.18 * Math.sin(i * 1.7);
+        nucleons.push({
+          ux: Math.cos(angle) * rad,
+          uy: Math.sin(angle) * rad,
+          depth: depth,
+          proton: (i % 2 === 0)
+        });
+      }
+    })();
+
+    /* ---------------------------------------------------------------
+       Atom model
+       --------------------------------------------------------------- */
+    function makeAtom(spec) {
+      var outerFilled = [];
+      var i;
+      for (i = 0; i < OUTER_SLOTS; i++) outerFilled.push(i < spec.outer);
+      var innerFilled = [];
+      for (i = 0; i < INNER_SLOTS; i++) innerFilled.push(i < spec.inner);
+      return {
+        name: spec.name,
+        protons: spec.protons,
+        neutrons: spec.neutrons,
+        outerFilled: outerFilled,
+        innerFilled: innerFilled,
+        // Surplus electrons live on a THIRD shell, which exists only once the
+        // atom holds more electrons than its valence ring can. For a 2,8 core
+        // that is physically correct (n=3), not a visual metaphor. Each entry
+        // is an angular offset from the shell's spin, so it keeps orbiting.
+        halo: [],          // [{ off, target }]
+        shell3: 0,         // 0..1 visibility ramp for the third shell
+        heat: [],          // per outer slot, 1 = normal
+        pulse: 0,          // nucleus landing pulse 1 -> 0
+        offset: 0          // horizontal slide toward the other atom
+      };
+    }
+
+    function resetHeat(atom) {
+      atom.heat = [];
+      for (var i = 0; i < OUTER_SLOTS; i++) atom.heat.push(1);
+    }
+
+    /* ---------------------------------------------------------------
+       Scene state
+       --------------------------------------------------------------- */
+    var sceneKey = 'plastic';
+    var phase = 'idle';        // idle | contact | transfer | settle | frozen
+    var phaseT = 0;            // ms elapsed in current phase
+    var leftAtom = null;
+    var rightAtom = null;
+    var donorAtom = null;
+    var acceptorAtom = null;
+    var donorSide = 'right';
+    var transferCount = 3;
+
+    var transfers = [];        // in-flight electrons
+    var departed = 0;          // how many have left the donor
+    var landed = 0;            // how many have arrived
+    var nextDepartAt = 0;      // ms into transfer phase
+    var seamGlow = 0;          // 0..1 contact seam
+
+    var spinOuter = 0;
+    var spinInner = 0;
+    var spin3 = 0;
+    var last = 0;
+
+    var surplusMigrate = 0;
+
+    function buildScene(key) {
+      sceneKey = key;
+      var sc = SCENES[key] || SCENES.plastic;
+      leftAtom = makeAtom(sc.left);
+      rightAtom = makeAtom(sc.right);
+      resetHeat(leftAtom);
+      resetHeat(rightAtom);
+      donorSide = sc.donor;
+      donorAtom = donorSide === 'left' ? leftAtom : rightAtom;
+      acceptorAtom = donorSide === 'left' ? rightAtom : leftAtom;
+      transferCount = sc.count;
+      transfers = [];
+      departed = 0;
+      landed = 0;
+      nextDepartAt = 0;
+      seamGlow = 0;
+      surplusMigrate = 0;
+      phase = 'idle';
+      phaseT = 0;
+      leftAtom.offset = 0;
+      rightAtom.offset = 0;
+      if (labelLeft) labelLeft.textContent = sc.left.name;
+      if (labelRight) labelRight.textContent = sc.right.name;
+      if (labelLeft) labelLeft.style.color = '';
+      if (labelRight) labelRight.style.color = '';
+      if (resetBtn) resetBtn.disabled = true;
+    }
+
+    /* ---------------------------------------------------------------
+       Atom geometry accessors
+       --------------------------------------------------------------- */
+    function atomCenter(atom) {
+      var base = atom === leftAtom ? leftX : rightX;
+      var dir = atom === leftAtom ? 1 : -1;
+      return { x: base + dir * atom.offset, y: cy };
+    }
+
+    function outerSlotPoint(atom, slotIndex) {
+      var c = atomCenter(atom);
+      var t = (slotIndex / OUTER_SLOTS) * Math.PI * 2 + spinOuter;
+      return shellPoint(c.x, c.y, r2, TILT_OUTER, ROT_OUTER, t);
+    }
+
+    function innerSlotPoint(atom, slotIndex) {
+      var c = atomCenter(atom);
+      var t = (slotIndex / INNER_SLOTS) * Math.PI * 2 + spinInner;
+      return shellPoint(c.x, c.y, r1, TILT_INNER, ROT_INNER, t);
+    }
+
+    /* A surplus electron's live position on the third shell. `off` is its
+       angular offset from the shared spin, so it orbits continuously. */
+    function shell3Point(atom, off) {
+      var c = atomCenter(atom);
+      return shellPoint(c.x, c.y, r3, TILT3, ROT_3, spin3 + off);
+    }
+
+    function firstEmptyOuterSlot(atom) {
+      for (var i = 0; i < OUTER_SLOTS; i++) {
+        if (!atom.outerFilled[i]) return i;
+      }
+      return -1;
+    }
+
+    /* The acceptor starts with a FULL valence ring (8/8). Incoming electrons
+       therefore have nowhere to sit on the ring itself: they become a surplus
+       that lives OUTSIDE it. Track that surplus explicitly instead of trying
+       to find an empty ring slot. */
+    function surplusCount(atom) {
+      return atom === acceptorAtom ? landed : 0;
+    }
+
+    /* ---------------------------------------------------------------
+       Transfer orchestration
+       --------------------------------------------------------------- */
+    function departNext() {
+      // Launch from the filled donor slot NEAREST the contact point. Picking
+      // "first by index" could start an electron on the far side of the atom,
+      // sweeping it across the whole model.
+      var donorSlot = -1;
+      var bestD = Infinity;
+      var i, p, dx, dy, d;
+      for (i = 0; i < OUTER_SLOTS; i++) {
+        if (!donorAtom.outerFilled[i]) continue;
+        p = outerSlotPoint(donorAtom, i);
+        dx = p.x - W / 2;
+        dy = p.y - cy;
+        d = dx * dx + dy * dy;
+        if (d < bestD) { bestD = d; donorSlot = i; }
+      }
+      if (donorSlot < 0) return;
+
+      var start = outerSlotPoint(donorAtom, donorSlot);
+
+      // Endpoint is resolved LIVE each frame (see transferPoint), because the
+      // shell keeps spinning. Caching it here caused a visible pop on landing.
+      var arrivalOff = -Math.PI / 2 - ROT_3 - spin3;   // top of the shell
+
+      transfers.push({
+        sx: start.x, sy: start.y,
+        off: arrivalOff,
+        t: 0,
+        done: false
+      });
+
+      donorAtom.outerFilled[donorSlot] = false;
+      departed++;
+    }
+
+    /* Surplus electrons spread evenly as more arrive: free, wordless evidence
+       of electron-electron repulsion. */
+    function respreadHalo(atom) {
+      var h = atom.halo;
+      var n = h.length;
+      if (n === 0) return;
+      var mean = 0;
+      var k;
+      for (k = 0; k < n; k++) mean += h[k].off;
+      mean /= n;
+      for (k = 0; k < n; k++) {
+        h[k].target = mean + (k - (n - 1) / 2) * (Math.PI * 2 / n);
+      }
+    }
+
+    function updateTransfer(dtMs) {
+      var i, tr;
+      for (i = 0; i < transfers.length; i++) {
+        tr = transfers[i];
+        if (tr.done) continue;
+        tr.t += dtMs;
+        if (tr.t >= TRANSFER_MS) {
+          tr.t = TRANSFER_MS;
+          tr.done = true;
+          // The valence ring is full, so the arriving electron joins the third
+          // shell, and the shell re-spaces itself evenly.
+          acceptorAtom.halo.push({ off: tr.off, target: tr.off });
+          respreadHalo(acceptorAtom);
+          landed++;
+        }
+      }
+      // drop finished ones
+      var keep = [];
+      for (i = 0; i < transfers.length; i++) {
+        if (!transfers[i].done) keep.push(transfers[i]);
+      }
+      transfers = keep;
+    }
+
+    /* Live bezier: recomputed from the CURRENT shell-3 position each frame, so
+       the electron arrives exactly where it will orbit, with no snap. */
+    function bezierPoint(tr, p) {
+      var end = shell3Point(acceptorAtom, tr.off);
+      var dx = end.x - tr.sx;
+      var dy = end.y - tr.sy;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var nx = -dy / len;
+      var ny = dx / len;
+      var lift = R * 0.30 * (tr.sx < end.x ? -1 : 1);
+      var cx = (tr.sx + end.x) / 2 + nx * lift;
+      var cyy = (tr.sy + end.y) / 2 + ny * lift;
+      var u = 1 - p;
+      return {
+        x: u * u * tr.sx + 2 * u * p * cx + p * p * end.x,
+        y: u * u * tr.sy + 2 * u * p * cyy + p * p * end.y
+      };
+    }
+
+    /* ---------------------------------------------------------------
+       Phase machine
+       --------------------------------------------------------------- */
+    function startRub() {
+      if (phase !== 'idle') return;
+      phase = 'contact';
+      phaseT = 0;
+      seamGlow = 0;
+      if (resetBtn) resetBtn.disabled = false;
+    }
+
+    function doReset() {
+      buildScene(sceneKey);
+    }
+
+    function updatePhases(dtMs) {
+      phaseT += dtMs;
+
+      if (phase === 'contact') {
+        var p = clamp01(phaseT / CONTACT_MS);
+        var e = easeOutCubic(p);
+        var slide = R * 0.10 * e;
+        leftAtom.offset = slide;
+        rightAtom.offset = slide;
+        // seam blooms at the midpoint then fades
+        seamGlow = Math.sin(Math.PI * p);
+        if (p >= 1) {
+          phase = 'transfer';
+          phaseT = 0;
+          nextDepartAt = 0;
+          departed = 0;
+          landed = 0;
+        }
+      } else if (phase === 'transfer') {
+        seamGlow = Math.max(0, seamGlow - dtMs / 400);
+        if (departed < transferCount && phaseT >= nextDepartAt) {
+          departNext();
+          // stagger the next departure at ~55% of the flight time so the
+          // electrons overlap into a continuous stream rather than
+          // three discrete stop-start jumps
+          nextDepartAt = phaseT + TRANSFER_MS * 0.55;
+        }
+        updateTransfer(dtMs);
+        if (landed >= transferCount && transfers.length === 0) {
+          phase = 'settle';
+          phaseT = 0;
+        }
+      } else if (phase === 'settle') {
+        var q = clamp01(phaseT / SETTLE_MS);
+        var e2 = easeInOutCubic(q);
+        var slide2 = R * 0.10 * (1 - e2);
+        leftAtom.offset = slide2;
+        rightAtom.offset = slide2;
+        // surplus electrons ease outward while the atoms separate
+        surplusMigrate = e2;
+        if (q >= 1) {
+          leftAtom.offset = 0;
+          rightAtom.offset = 0;
+          surplusMigrate = 1;
+          phase = 'frozen';
+          phaseT = 0;
+        }
+      }
+
+      // heat decay
+      var decay = dtMs / HEAT_MS;
+      var a, i;
+      var atoms = [leftAtom, rightAtom];
+      for (a = 0; a < atoms.length; a++) {
+        var at = atoms[a];
+        for (i = 0; i < OUTER_SLOTS; i++) {
+          if (at.heat[i] > 1) {
+            at.heat[i] = Math.max(1, at.heat[i] - decay * 0.9);
+          }
+        }
+        if (at.pulse > 0) {
+          at.pulse = Math.max(0, at.pulse - dtMs / PULSE_MS);
+        }
+      }
+    }
+
+    /* ---------------------------------------------------------------
+       Drawing: nucleus
+       --------------------------------------------------------------- */
+    function drawNucleus(atom) {
+      var c = atomCenter(atom);
+      var g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, nucR * 2.6);
+      g.addColorStop(0, 'rgba(79,209,197,0.22)');
+      g.addColorStop(0.5, 'rgba(79,209,197,0.07)');
+      g.addColorStop(1, 'rgba(79,209,197,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, nucR * 2.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      var sr = R * 0.045;
+      var i, n, px, py;
+      for (i = 0; i < nucleons.length; i++) {
+        n = nucleons[i];
+        px = c.x + n.ux * nucR * n.depth;
+        py = c.y + n.uy * nucR * n.depth;
+        ctx.beginPath();
+        ctx.arc(px, py, sr, 0, Math.PI * 2);
+        ctx.fillStyle = n.proton ? 'rgba(79,209,197,0.92)' : 'rgba(158,168,180,0.72)';
+        ctx.fill();
+      }
+
+      if (atom.pulse > 0) {
+        var pr = nucR + (R * 0.55 - nucR) * (1 - atom.pulse);
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, pr, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(79,209,197,' + (0.55 * atom.pulse).toFixed(3) + ')';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+        function strokeShell(cx, cyy, r, tilt, rot, pass, holes) {
+      var N = 120;
+      for (var i = 0; i < N; i++) {
+        var t0 = i / N * Math.PI * 2;
+        var t1 = (i + 1) / N * Math.PI * 2;
+        var tm = (t0 + t1) / 2;
+        var z = Math.sin(tm);
+        if ((pass === 'front') !== (z >= 0)) continue;
+        var m = shellPoint(cx, cyy, r, tilt, rot, tm);
+        var skip = false;
+        for (var h = 0; h < holes.length; h++) {
+          var dx = m.x - holes[h].x, dy = m.y - holes[h].y;
+          // Tight hole radius: the gap should read as "a slot is empty",
+          // not as "the orbit line is broken".
+          if (dx * dx + dy * dy < (re * 1.15) * (re * 1.15)) { skip = true; break; }
+        }
+        if (skip) continue;
+        var d = 0.5 + 0.5 * z;
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.10 + 0.30 * d).toFixed(3) + ')';
+        ctx.lineWidth = 1 + 0.9 * d;
+        ctx.beginPath();
+        ctx.ellipse(cx, cyy, r, r * tilt, rot, t0, t1);
+        ctx.stroke();
+      }
+    }
+
+    /* Empty valence slots become HOLES in the orbit line. A gap is pure
+       absence: it reads from the back of a room where a faint dot does not. */
+    function valenceHoles(atom) {
+      var out = [];
+      if (phase === 'idle') return out;
+      for (var i = 0; i < OUTER_SLOTS; i++) {
+        if (!atom.outerFilled[i]) out.push(outerSlotPoint(atom, i));
+      }
+      return out;
+    }
+
+    function drawShellPass(atom, pass) {
+      var c = atomCenter(atom);
+      strokeShell(c.x, c.y, r1, TILT_INNER, ROT_INNER, pass, []);
+      if (atom.shell3 > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = atom.shell3;
+        strokeShell(c.x, c.y, r3, TILT3, ROT_3, pass, []);
+        ctx.restore();
+      }
+      strokeShell(c.x, c.y, r2, TILT_OUTER, ROT_OUTER, pass, valenceHoles(atom));
+    }
+
+    function drawElectron(x, y, r, depth) {
+      var d = (depth === undefined) ? 1 : depth;
+      var rr = r * (0.82 + 0.32 * d);
+      var bloomA = 0.30 + 0.70 * d;
+      var coreA = 0.62 + 0.38 * d;
+
+      var g = ctx.createRadialGradient(x, y, 0, x, y, rr * 3.4);
+      g.addColorStop(0, 'rgba(255,200,90,0.55)');
+      g.addColorStop(0.34, 'rgba(240,180,41,' + (0.26 * (0.4 + 0.6 * d)).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(240,180,41,0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = bloomA;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, rr * 3.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      var gc = ctx.createRadialGradient(
+        x - rr * 0.24, y - rr * 0.32, 0, x, y, rr);
+      gc.addColorStop(0, '#fffbea');
+      gc.addColorStop(0.30, '#ffd877');
+      gc.addColorStop(0.80, '#e39b14');
+      gc.addColorStop(1, '#9a650c');
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = coreA;
+      ctx.fillStyle = gc;
+      ctx.beginPath();
+      ctx.arc(x, y, rr, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
+    }
+
+    /* Electrons split into back and front halves around the nucleus, and are
+       size/brightness modulated by depth. Without this, tilted ellipses read
+       as squashed circles rather than planes in space. */
+    function drawElectronPass(atom, pass) {
+      var i, p, t, z;
+      for (i = 0; i < INNER_SLOTS; i++) {
+        if (!atom.innerFilled[i]) continue;
+        t = (i / INNER_SLOTS) * Math.PI * 2 + spinInner;
+        z = Math.sin(t);
+        if ((pass === 'front') !== (z >= 0)) continue;
+        p = innerSlotPoint(atom, i);
+        drawElectron(p.x, p.y, re * 0.86, 0.5 + 0.5 * z);
+      }
+      for (i = 0; i < OUTER_SLOTS; i++) {
+        if (!atom.outerFilled[i]) continue;
+        t = (i / OUTER_SLOTS) * Math.PI * 2 + spinOuter;
+        z = Math.sin(t);
+        if ((pass === 'front') !== (z >= 0)) continue;
+        p = outerSlotPoint(atom, i);
+        drawElectron(p.x, p.y, re, 0.5 + 0.5 * z);
+      }
+      for (i = 0; i < atom.halo.length; i++) {
+        z = Math.sin(spin3 + atom.halo[i].off);
+        if ((pass === 'front') !== (z >= 0)) continue;
+        p = shell3Point(atom, atom.halo[i].off);
+        drawElectron(p.x, p.y, re, 0.5 + 0.5 * z);
+      }
+    }
+
+    /* ---------------------------------------------------------------
+       Drawing: seam glow
+       --------------------------------------------------------------- */
+    function drawSeam() {
+      if (seamGlow <= 0.001) return;
+      // An elongated glow along the vertical contact plane, not a disc: a
+      // round bloom reads as a spark or explosion, friction along a surface
+      // reads as contact.
+      ctx.save();
+      ctx.translate(W / 2, cy);
+      ctx.scale(0.30, 1);
+      ctx.globalCompositeOperation = 'lighter';
+      var rad = R * 0.7;
+      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, rad);
+      g.addColorStop(0, 'rgba(255,214,140,' + (0.16 * seamGlow).toFixed(3) + ')');
+      g.addColorStop(0.5, 'rgba(240,180,41,' + (0.07 * seamGlow).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(240,180,41,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* ---------------------------------------------------------------
+       Drawing: vignette
+       --------------------------------------------------------------- */
+    function drawVignette() {
+      var g = ctx.createRadialGradient(W / 2, H * 0.42, Math.min(W, H) * 0.18,
+                                       W / 2, H * 0.42, Math.max(W, H) * 0.78);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,0.55)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    /* ---------------------------------------------------------------
+       Render
+       --------------------------------------------------------------- */
+    /* A very soft elliptical glow under each atom. Without it the scene
+       floats in a void with no spatial anchor. */
+    function drawGroundGlow() {
+      var xs = [leftX, rightX];
+      for (var i = 0; i < xs.length; i++) {
+        ctx.save();
+        ctx.translate(xs[i], cy + R * 0.95);
+        ctx.scale(1, 0.18);
+        var g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 1.5);
+        g.addColorStop(0, 'rgba(255,255,255,0.035)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    /* Depth order per atom: back shell, back electrons, nucleus, front shell,
+       front electrons. This is the cheapest cue that turns a flat diagram
+       into an object sitting in space. */
+    function drawAtomPass(atom) {
+      drawShellPass(atom, 'back');
+      drawElectronPass(atom, 'back');
+      drawNucleus(atom);
+      drawShellPass(atom, 'front');
+      drawElectronPass(atom, 'front');
+    }
+
+    function render() {
+      if (!domOk()) return;
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, W, H);
+      drawVignette();
+      drawGroundGlow();
+      drawSeam();
+
+      drawAtomPass(leftAtom);
+      drawAtomPass(rightAtom);
+
+      var i, tr, p, pt;
+      for (i = 0; i < transfers.length; i++) {
+        tr = transfers[i];
+        p = easeInOutCubic(clamp01(tr.t / TRANSFER_MS));
+        pt = bezierPoint(tr, p);
+        drawElectron(pt.x, pt.y, re, 1);
+      }
+    }
+
+    /* ---------------------------------------------------------------
+       Loop
+       --------------------------------------------------------------- */
+    function frame(now) {
+      if (!last) last = now;
+      var dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      var spinScale = prefersReduced ? 0.15 : 1;
+      spinOuter += dt * 0.16 * spinScale;
+      spinInner += dt * -0.26 * spinScale;
+      spin3 += dt * SPIN3_RATE * spinScale;
+
+      // Surplus electrons ease toward evenly-spaced targets; the third shell
+      // fades in while any surplus exists.
+      var pair = [leftAtom, rightAtom];
+      var ai, k, at;
+      for (ai = 0; ai < pair.length; ai++) {
+        at = pair[ai];
+        if (!at) continue;
+        for (k = 0; k < at.halo.length; k++) {
+          at.halo[k].off += (at.halo[k].target - at.halo[k].off) * Math.min(1, dt * 3.2);
+        }
+        if (at.halo.length > 0) {
+          at.shell3 = Math.min(1, at.shell3 + dt / 0.6);
+        }
+      }
+
+      updatePhases(dt * 1000);
+      render();
+      requestAnimationFrame(frame);
+    }
+
+    /* ---------------------------------------------------------------
+       Wiring
+       --------------------------------------------------------------- */
+    function init() {
+      if (!domOk()) return;
+      fit();
+      buildScene('plastic');
+
+      if (rubBtn) rubBtn.addEventListener('click', startRub);
+      if (resetBtn) resetBtn.addEventListener('click', doReset);
+
+      if (tabsEl) {
+        tabsEl.addEventListener('click', function (ev) {
+          var btn = ev.target && ev.target.closest ? ev.target.closest('.tab') : null;
+          if (!btn) return;
+          var key = btn.getAttribute('data-scene');
+          if (!key || !SCENES[key] || key === sceneKey) return;
+          var all = tabsEl.querySelectorAll('.tab');
+          for (var i = 0; i < all.length; i++) {
+            all[i].classList.toggle('is-active', all[i] === btn);
+          }
+          buildScene(key);
+        });
+      }
+
+      window.addEventListener('resize', fit);
+      requestAnimationFrame(frame);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>

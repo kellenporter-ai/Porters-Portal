@@ -48,6 +48,7 @@ function titleFromFilename(path: string): string {
  */
 const CLEAN_URL_REWRITES = new Set([
   "/your-own-investigation",
+  "/forensic-lens-critique",
   "/minutiae-hunt",
   "/privacy",
   "/circuit-diagram-builder",
@@ -83,6 +84,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/ap1-course-recap",
   "/physics-course-recap",
   "/forensic-science-course-recap",
+  "/electrostatic-rubbing",
 ]);
 
 /**

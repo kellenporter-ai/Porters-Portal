@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T23:46:28.096Z",
+  "generatedAt": "2026-11-13T17:19:02.907Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -44,7 +44,8 @@
     "/minutiae-hunt": "/minutiae-hunt.html",
     "/domes-trip": "/domes-trip/index.html",
     "/schedule": "/schedule.html",
-    "/electrostatic-rubbing": "/electrostatic-rubbing.html"
+    "/electrostatic-rubbing": "/electrostatic-rubbing.html",
+    "/forensic-lens-critique": "/forensic-lens-critique.html"
   },
   "dirs": [
     "/ap1-q1-review",
