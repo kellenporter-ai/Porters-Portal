@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polarization Sim</title>
+<style>
+  :root{
+    --bg:#12120F; --ink:#F4F3EF; --ink-quiet:#A8A49A;
+    --accent:#FF4D26; --accent-soft:rgba(255,77,38,.16);
+    --warm:#FFB27A; --white:#FBF7EE;
+    --border:rgba(244,243,239,.16);
+    --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden}
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #stage{width:1920px;height:1080px;position:relative;transform-origin:center center;background:var(--bg)}
+  canvas{display:block;width:1920px;height:1080px}
+  h1{position:absolute;left:96px;top:64px;font-size:38px;font-weight:800;letter-spacing:-.02em}
+  #controls{position:absolute;left:96px;bottom:52px;display:flex;gap:14px;flex-wrap:wrap}
+  button{
+    font:inherit;font-size:19px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink);background:rgba(244,243,239,.06);border:1px solid var(--border);
+    padding:13px 22px;border-radius:4px;cursor:pointer;transition:background .15s,border-color .15s;
+  }
+  button:hover{background:rgba(244,243,239,.13);border-color:rgba(244,243,239,.34)}
+  button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:#FF8B6E}
+  #hint{position:absolute;right:96px;bottom:58px;font-size:19px;color:var(--ink-quiet)}
+  .lang-es{display:none}
+  body.i18n-es .lang-en{display:none}
+  body.i18n-es .lang-es{display:inline}
+</style>
+</head>
+<body class="i18n-en">
+<div id="viewport">
+  <div id="stage">
+    <h1><span class="lang-en">What are the particles doing?</span><span class="lang-es">&iquest;Qu&eacute; est&aacute;n haciendo las part&iacute;culas?</span></h1>
+    <canvas id="sim" width="1920" height="1080"></canvas>
+    <div id="controls">
+      <button id="btnSystem" type="button">
+        <span class="lang-en">Show conductor</span><span class="lang-es">Ver conductor</span>
+      </button>
+      <button id="btnSign" type="button" aria-label="sign">&minus;</button>
+      <button id="btnObj" type="button">
+        <span class="lang-en">Hide object</span><span class="lang-es">Ocultar objeto</span>
+      </button>
+      <button id="btnView" type="button">
+        <span class="lang-en">Cloud</span><span class="lang-es">Nube</span>
+      </button>
+      <button id="btnFreeze" type="button">
+        <span class="lang-en">Freeze</span><span class="lang-es">Congelar</span>
+      </button>
+      <button id="btnLang" type="button">ES</button>
+      <button id="btnReset" type="button">
+        <span class="lang-en">Reset</span><span class="lang-es">Reiniciar</span>
+      </button>
+    </div>
+    <div id="hint"><span class="lang-en" id="hintEn">Drag the charged object around the material.</span><span class="lang-es" id="hintEs">Arrastra el objeto cargado alrededor del material.</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------------------------------------------------------- geometry */
+var W = 1920, H = 1080;
+var CX = 960, CY = 545;             // centre of the material sample
+var SAMPLE_R = 210;                 // radius of the circular sample
+var OBJ_R = 58;                     // charged object half-size
+var ORBIT_R = 320;                  // drag radius around the sample
+var DT = 16.666;                    // fixed timestep, ms
+
+/* ---------------------------------------------------------------- particles */
+var ATOM_R = 58;                    // outer visual radius of an atom
+var BOUND_MAX = 0.55 * (ATOM_R * 0.72);   // cap the shift against the ORBIT radius, not the atom box
+var FREE_R = 15;                    // free electron half-width (matches atom minus)
+var MIN_EE = 4.2 * FREE_R;          // minimum spacing between free electrons
+var JITTER = 2.2;
+
+var COL = {
+  ink:'#F4F3EF', quiet:'#A8A49A', accent:'#FF4D26',
+  warm:'#FFB27A', white:'#FBF7EE',
+  shell:'rgba(244,243,239,.42)', shellDim:'rgba(244,243,239,.24)'
+};
+
+var canvas = document.getElementById('sim');
+var ctx = canvas.getContext('2d');
+
+/* ---------------------------------------------------------------- state */
+var state = {
+  system: 'conductor',   // 'conductor' | 'insulator'
+  sign: -1,
+  view: 'orbit',
+  frozen: false,
+  objHidden: false,      // true = no charged object, material is genuinely neutral
+  objAngle: -Math.PI/2,  // above the sample, in radians
+  objDist: ORBIT_R,
+  frame: 0
+};
+
+var uid = 0;
+
+/* Build a circular lattice. Conductor: 12 sites (9 atoms + 3 ions, 3 free e-).
+   Insulator: 6 atoms, no free electrons. */
+function buildSystem(kind){
+  var sites = [];
+  var nuclei = [];
+  var electrons = [];
+  uid = 1;
+
+  if (kind === 'insulator') {
+    // 6 atoms: one centre + 5 on an inner ring
+    var pts = [{x:CX, y:CY}];
+    for (var i = 0; i < 5; i++){
+      var a = -Math.PI/2 + i * (2*Math.PI/5);
+      pts.push({x: CX + Math.cos(a)*118, y: CY + Math.sin(a)*118});
+    }
+    pts.forEach(function(p, i){
+      var id = 'i' + (uid++);
+      nuclei.push({id:id, x:p.x, y:p.y, homeX:p.x, homeY:p.y, ion:false, bound:true});
+      electrons.push({id:'e'+(uid++), owner:'bound', ownerAtom:id,
+                      x:p.x, y:p.y, angle:i*1.4, vx:0, vy:0, jx:0, jy:0, slot:0});
+    });
+  } else {
+    // 12 sites on two rings: 6 outer, 6 inner
+    var outer = [], inner = [];
+    for (var k = 0; k < 6; k++){
+      var ao = -Math.PI/2 + k*(Math.PI/3);
+      outer.push({x: CX + Math.cos(ao)*SAMPLE_R*0.72, y: CY + Math.sin(ao)*SAMPLE_R*0.72});
+      var ai = -Math.PI/2 + (k+0.5)*(Math.PI/3);
+      inner.push({x: CX + Math.cos(ai)*SAMPLE_R*0.34, y: CY + Math.sin(ai)*SAMPLE_R*0.34});
+    }
+    var all = outer.concat(inner);
+    var ionIdx = [1, 6, 9];      // three sites are ions
+    var freeCount = 0;
+    all.forEach(function(p, i){
+      var id = 'c' + (uid++);
+      var isIon = ionIdx.indexOf(i) !== -1;
+      nuclei.push({id:id, x:p.x, y:p.y, homeX:p.x, homeY:p.y, ion:isIon, bound:!isIon});
+      if (!isIon){
+        electrons.push({id:'e'+(uid++), owner:'bound', ownerAtom:id,
+                        x:p.x, y:p.y, angle:i*1.1, vx:0, vy:0, jx:0, jy:0, slot:0});
+      }
+    });
+    // three free electrons, starting spread inside the sample
+    for (var f = 0; f < 3; f++){
+      var af = -Math.PI/2 + f*(2*Math.PI/3);
+      electrons.push({id:'e'+(uid++), owner:'free', ownerAtom:null,
+                      x: CX + Math.cos(af)*70, y: CY + Math.sin(af)*70,
+                      angle:0, vx:0, vy:0, jx:0, jy:0, slot:f});
+      freeCount++;
+    }
+  }
+  return {kind:kind, nuclei:nuclei, electrons:electrons};
+}
+
+var system = buildSystem('conductor');
+
+/* ---------------------------------------------------------------- helpers */
+function objPos(){
+  return {
+    x: CX + Math.cos(state.objAngle) * state.objDist,
+    y: CY + Math.sin(state.objAngle) * state.objDist
+  };
+}
+function unitToObject(){
+  return {ux: Math.cos(state.objAngle), uy: Math.sin(state.objAngle)};
+}
+/* How strongly the object acts, by distance. Closer = stronger.
+   With the object hidden there is no charge influence at all, so the material
+   must read as genuinely neutral: strength is exactly 0, which centres every
+   bound shell on its nucleus and leaves the free electrons un-biased. */
+function strength(){
+  if (state.objHidden) return 0;
+  var gap = Math.max(1, state.objDist - SAMPLE_R);
+  var D0 = 420;
+  return 1 / (1 + (gap/D0)*(gap/D0));
+}
+
+/* Direction an electron is pulled: toward a + object, away from a - object. */
+function pullSign(){ return state.sign > 0 ? 1 : -1; }
+
+/* ---------------------------------------------------------------- physics */
+function stepBound(strengthNow){
+  var u = unitToObject(), s = pullSign();
+  for (var i = 0; i < system.electrons.length; i++){
+    var e = system.electrons[i];
+    if (e.owner !== 'bound') continue;
+    var nuc = null;
+    for (var j = 0; j < system.nuclei.length; j++){
+      if (system.nuclei[j].id === e.ownerAtom){ nuc = system.nuclei[j]; break; }
+    }
+    if (!nuc) continue;
+
+    /* The orbit centre is shifted toward a + object and away from a - object.
+       That shift is what makes the electron cloud asymmetric. */
+    var shift = BOUND_MAX * strengthNow * s;
+    var ocx = nuc.x + u.ux * shift;
+    var ocy = nuc.y + u.uy * shift;
+    var rx = ATOM_R * 0.72, ry = ATOM_R * 0.72 * 0.66;
+
+    /* WHERE IS IT LIKELY TO BE FOUND?
+       The electron should spend the most time on the side of the NUCLEUS that the
+       pull acts toward, because that is where the probability density peaks. The
+       dwell must therefore be keyed to the electron's ACTUAL offset from the
+       NUCLEUS projected onto the pull axis, not to its phase around the orbit.
+       Keying to phase (the old behaviour) slowed the electron wherever its orbit
+       angle happened to point, which for a shifted ellipse is the side NEAREST the
+       nucleus: it lingered exactly where it is LEAST likely, teaching the opposite
+       of the truth.
+
+       offsetFrac runs -1 (extreme anti-pull side) .. +1 (extreme pull side). */
+    var ex = ocx + Math.cos(e.angle) * rx - nuc.x;
+    var ey = ocy + Math.sin(e.angle) * ry - nuc.y;
+    /* MEASURE ALONG THE PULL AXIS, NOT THE OBJECT AXIS.
+       A positive object PULLS the electron toward itself, so the pull axis points
+       at the object. A negative object PUSHES it away, so the pull axis points
+       AWAY from the object. Multiplying by the pull sign is what makes both signs
+       peak on the physically correct side; without it, a negative object biased
+       the dwell toward the object, which is exactly backwards. */
+    var proj = (u.ux * ex + u.uy * ey) * s;
+    var maxProj = Math.sqrt(rx*rx + shift*shift) + 0.001;
+    var offsetFrac = Math.max(-1, Math.min(1, proj / maxProj));   // -1..+1 along the PULL axis
+
+    /* Time spent is proportional to probability. Speed goes as 1/density:
+       slow where density is high (pull side), fast where it is low (far side). */
+    var base = 0.050;
+    var bias = 0.86 * (0.35 + 0.65*strengthNow);       // how sharply it favours the pull side
+    var speed = base * (1 - bias * offsetFrac);
+    if (speed < base * 0.10) speed = base * 0.10;
+    e.angle += speed;
+    if (e.angle > Math.PI*2) e.angle -= Math.PI*2;
+
+    e.x = ocx + Math.cos(e.angle) * rx;
+    e.y = ocy + Math.sin(e.angle) * ry;
+  }
+}
+
+function stepFree(strengthNow){
+  var u = unitToObject(), s = pullSign();
+  var frees = [];
+  for (var i = 0; i < system.electrons.length; i++){
+    if (system.electrons[i].owner === 'free') frees.push(system.electrons[i]);
+  }
+  if (!frees.length) return;
+
+  var surfR = SAMPLE_R - FREE_R - 6;             // the surface they can reach
+  var obj = objPos();
+
+  frees.forEach(function(e, idx){
+    // target: a point on the surface facing the object (attracted) or away (repelled)
+    var targetAngle = state.objAngle + (s > 0 ? 0 : Math.PI);
+    // spread the free electrons ALONG the surface, not into one spot
+    var spread = (frees.length === 1) ? 0 : (idx - (frees.length-1)/2) * 0.72;
+    var ta = targetAngle + spread;
+    var tx = CX + Math.cos(ta) * surfR;
+    var ty = CY + Math.sin(ta) * surfR;
+
+    // how far they commit to the surface scales with strength
+    var pull = Math.min(1, strengthNow * 1.45);
+    var gx = CX + (tx - CX) * pull;
+    var gy = CY + (ty - CY) * pull;
+
+    e.vx += (gx - e.x) * 0.020;
+    e.vy += (gy - e.y) * 0.020;
+    e.vx *= 0.86; e.vy *= 0.86;
+    e.x += e.vx; e.y += e.vy;
+  });
+
+  // mutual repulsion keeps them apart
+  for (var a = 0; a < frees.length; a++){
+    for (var b = a+1; b < frees.length; b++){
+      var p = frees[a], q = frees[b];
+      var dx = q.x - p.x, dy = q.y - p.y;
+      var d = Math.sqrt(dx*dx + dy*dy) || 0.001;
+      if (d < MIN_EE){
+        var push = (MIN_EE - d) * 0.5;
+        var ux = dx/d, uy = dy/d;
+        p.x -= ux*push; p.y -= uy*push;
+        q.x += ux*push; q.y += uy*push;
+      }
+    }
+  }
+
+  // clamp inside the sample
+  frees.forEach(function(e){
+    var dx = e.x - CX, dy = e.y - CY;
+    var d = Math.sqrt(dx*dx + dy*dy);
+    var lim = SAMPLE_R - FREE_R - 4;
+    if (d > lim){
+      e.x = CX + dx/d*lim;
+      e.y = CY + dy/d*lim;
+      e.vx *= 0.4; e.vy *= 0.4;
+    }
+  });
+}
+
+function stepJitter(){
+  for (var i = 0; i < system.electrons.length; i++){
+    var e = system.electrons[i];
+    if (e.owner !== 'free') continue;
+    e.jx = (Math.random()*2 - 1) * JITTER;
+    e.jy = (Math.random()*2 - 1) * JITTER;
+  }
+}
+
+function step(){
+  if (state.frozen) return;
+  state.frame++;
+  var s = strength();
+  stepBound(s);
+  stepFree(s);
+  stepJitter();
+}
+
+/* ---------------------------------------------------------------- drawing */
+/* Shared symbol language, matched to the printed tiles:
+     atom     = solid oval, centre dot, + left, - right
+     ion      = dashed oval with ONLY a +       (orbit view only)
+     electron = bare minus, no enclosure        */
+function drawMinus(x, y, w, h, col){
+  ctx.fillStyle = col || COL.white;
+  var r = Math.min(h*0.30, 3);
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - w/2, y - h/2, w, h, r);
+  else ctx.rect(x - w/2, y - h/2, w, h);
+  ctx.fill();
+}
+function drawPlus(x, y, size, col){
+  ctx.strokeStyle = col || COL.ink;
+  ctx.lineWidth = Math.max(2.4, size*0.24);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - size, y); ctx.lineTo(x + size, y);
+  ctx.moveTo(x, y - size); ctx.lineTo(x, y + size);
+  ctx.stroke();
+}
+function drawNucleus(x, y){
+  var g = ctx.createRadialGradient(x-2, y-2, 0.5, x, y, ATOM_R*0.17);
+  g.addColorStop(0, '#FFE0C4');
+  g.addColorStop(0.6, COL.warm);
+  g.addColorStop(1, '#C9762F');
+  ctx.beginPath();
+  ctx.arc(x, y, ATOM_R*0.17, 0, Math.PI*2);
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+/* Fixed nucleus marker, ORBIT VIEW ONLY.
+   The orbit ellipse slides toward the pull while the nucleus does not move, so
+   the nucleus needs its own delimited container to read as "the thing that
+   stayed". A thin ring plus a faint inset disc, both centred on nuc.x/nuc.y,
+   never on the shifted orbit centre. Drawn BEFORE the nucleus so the dot sits
+   on top of its own ring. */
+function drawNucleusAnchor(x, y){
+  var r = ATOM_R*0.30;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,178,122,.10)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,178,122,.62)';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAtomOrbit(nuc){
+  var s = strength(), u = unitToObject(), ps = pullSign();
+  var shift = BOUND_MAX * s * ps;
+  var ocx = nuc.x + u.ux * shift, ocy = nuc.y + u.uy * shift;
+  var rx = ATOM_R*0.72, ry = rx*0.66;
+
+  var bound = null;
+  for (var i = 0; i < system.electrons.length; i++){
+    var e = system.electrons[i];
+    if (e.owner === 'bound' && e.ownerAtom === nuc.id){ bound = e; break; }
+  }
+
+  ctx.save();
+  ctx.strokeStyle = nuc.ion ? COL.shellDim : COL.shell;
+  ctx.lineWidth = 2.6;
+  if (nuc.ion){
+    // an ion's orbit is BROKEN where its electron left. A gap is pure absence,
+    // which reads at distance; a faint ghost dot would not.
+    var segs = 72, gapSpan = 1.15, gapCentre = state.objAngle + Math.PI;
+    ctx.beginPath();
+    for (var k = 0; k < segs; k++){
+      var a0 = (k/segs)*Math.PI*2, a1 = ((k+1)/segs)*Math.PI*2;
+      var mid = (a0+a1)/2;
+      var dd = Math.atan2(Math.sin(mid-gapCentre), Math.cos(mid-gapCentre));
+      if (Math.abs(dd) < gapSpan/2) continue;
+      ctx.moveTo(ocx + Math.cos(a0)*rx, ocy + Math.sin(a0)*ry);
+      ctx.lineTo(ocx + Math.cos(a1)*rx, ocy + Math.sin(a1)*ry);
+    }
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(ocx, ocy, rx, ry, 0, 0, Math.PI*2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  drawNucleusAnchor(nuc.x, nuc.y);
+  drawNucleus(nuc.x, nuc.y);
+
+  if (bound){
+    drawMinus(bound.x, bound.y, FREE_R*1.0, FREE_R*0.36, COL.white);
+  }
+}
+
+/* Cloud view: bound electron becomes a soft oval cloud whose centroid slides
+   toward the pull while the nucleus stays at the true centre. Ions are NOT
+   drawn as ion tiles here, because a dashed oval plus a plus reads as clutter;
+   the cloud model shows the atom's CLOUD, which is the point of this view. */
+function drawAtomCloud(nuc){
+  var s = strength(), u = unitToObject(), ps = pullSign();
+  var shift = BOUND_MAX * 0.95 * s * ps;
+  var ccx = nuc.x + u.ux * shift, ccy = nuc.y + u.uy * shift;
+  var rx = ATOM_R * 0.78, ry = rx * 0.66;
+
+  var g = ctx.createRadialGradient(ccx, ccy, 1, ccx, ccy, Math.max(rx, ry));
+  g.addColorStop(0, 'rgba(244,243,239,.40)');
+  g.addColorStop(0.55, 'rgba(244,243,239,.18)');
+  g.addColorStop(1, 'rgba(244,243,239,0)');
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(ccx, ccy, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(nuc.x, nuc.y, rx, ry, 0, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(244,243,239,.13)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.restore();
+
+  drawNucleus(nuc.x, nuc.y);
+}
+
+function drawSample(){
+  // soft boundary of the material
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(CX, CY, SAMPLE_R, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(244,243,239,.035)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(244,243,239,.14)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  var drawer = (state.view === 'cloud') ? drawAtomCloud : drawAtomOrbit;
+  for (var i = 0; i < system.nuclei.length; i++){
+    drawer(system.nuclei[i]);
+  }
+
+  for (var j = 0; j < system.electrons.length; j++){
+    var e = system.electrons[j];
+    if (e.owner !== 'free') continue;
+    // A free electron is painted with EXACTLY the same minus as a bound electron:
+    // same width, same height, same colour, no ring, no halo, no enclosure. An
+    // orange circle around a minus reads as the negative-ion symbol from the
+    // printed tiles, which would teach that negative ions drift through a metal.
+    drawMinus(e.x + e.jx, e.y + e.jy, FREE_R*1.0, FREE_R*0.36, COL.white);
+  }
+}
+
+function drawChargedObject(){
+  var p = objPos();
+  ctx.save();
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(p.x-OBJ_R, p.y-OBJ_R, OBJ_R*2, OBJ_R*2, 14);
+  else ctx.rect(p.x-OBJ_R, p.y-OBJ_R, OBJ_R*2, OBJ_R*2);
+  ctx.fillStyle = 'rgba(255,77,38,.16)';
+  ctx.fill();
+  ctx.strokeStyle = COL.accent;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.restore();
+  if (state.sign > 0) drawPlus(p.x, p.y, OBJ_R*0.42, COL.ink);
+  else drawMinus(p.x, p.y, OBJ_R*0.92, OBJ_R*0.26, COL.ink);
+}
+
+function render(){
+  ctx.clearRect(0, 0, W, H);
+  drawSample();
+  if (!state.objHidden) drawChargedObject();
+}
+
+/* ---------------------------------------------------------------- tween */
+function loop(){
+  step();
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ---------------------------------------------------------------- controls */
+var btnSystem = document.getElementById('btnSystem');
+var btnSign = document.getElementById('btnSign');
+var btnObj = document.getElementById('btnObj');
+var btnView = document.getElementById('btnView');
+var btnFreeze = document.getElementById('btnFreeze');
+var btnLang = document.getElementById('btnLang');
+var btnReset = document.getElementById('btnReset');
+
+function syncSystem(){
+  var isC = state.system === 'conductor';
+  btnSystem.querySelector('.lang-en').textContent = isC ? 'Show insulator' : 'Show conductor';
+  btnSystem.querySelector('.lang-es').textContent = isC ? 'Ver aislante' : 'Ver conductor';
+}
+function syncSign(){ btnSign.textContent = state.sign > 0 ? '+' : '\u2212'; }
+/* The object toggle flips its own label the same way btnSystem does, and keeps
+   aria-pressed in step with the hidden state. */
+function syncObj(){
+  var hidden = state.objHidden;
+  btnObj.querySelector('.lang-en').textContent = hidden ? 'Show object' : 'Hide object';
+  btnObj.querySelector('.lang-es').textContent = hidden ? 'Mostrar objeto' : 'Ocultar objeto';
+  btnObj.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+}
+/* The drag hint is wrong once there is nothing to drag, so the two language
+   spans swap their text rather than being replaced wholesale. */
+function syncHint(){
+  var hidden = state.objHidden;
+  document.getElementById('hintEn').textContent = hidden
+    ? 'No charged object. Compare the neutral material.'
+    : 'Drag the charged object around the material.';
+  document.getElementById('hintEs').textContent = hidden
+    ? 'Sin objeto cargado. Compara el material neutro.'
+    : 'Arrastra el objeto cargado alrededor del material.';
+}
+
+btnSystem.addEventListener('click', function(){
+  state.system = (state.system === 'conductor') ? 'insulator' : 'conductor';
+  system = buildSystem(state.system);
+  syncSystem();
+});
+btnSign.addEventListener('click', function(){
+  state.sign = -state.sign;
+  syncSign();
+});
+btnObj.addEventListener('click', function(){
+  state.objHidden = !state.objHidden;
+  syncObj();
+  syncHint();
+});
+btnView.addEventListener('click', function(){
+  state.view = (state.view === 'orbit') ? 'cloud' : 'orbit';
+  btnView.setAttribute('aria-pressed', state.view === 'cloud' ? 'true' : 'false');
+});
+btnFreeze.addEventListener('click', function(){
+  state.frozen = !state.frozen;
+  btnFreeze.setAttribute('aria-pressed', state.frozen ? 'true' : 'false');
+});
+btnLang.addEventListener('click', function(){
+  var es = !document.body.classList.contains('i18n-es');
+  document.body.classList.toggle('i18n-es', es);
+  btnLang.textContent = es ? 'EN' : 'ES';
+  try { localStorage.setItem('polarizationSimLang', es ? 'es' : 'en'); } catch(e){}
+});
+btnReset.addEventListener('click', function(){
+  system = buildSystem(state.system);
+  state.objAngle = -Math.PI/2;
+  state.objDist = ORBIT_R;
+  state.sign = -1;
+  state.objHidden = false;
+  syncSign();
+  syncObj();
+  syncHint();
+});
+
+/* ---------------------------------------------------------------- drag */
+function stageToLogical(clientX, clientY){
+  var stage = document.getElementById('stage');
+  var r = stage.getBoundingClientRect();
+  var scale = r.width / W;
+  return { x: (clientX - r.left) / scale, y: (clientY - r.top) / scale };
+}
+var dragging = false;
+canvas.addEventListener('pointerdown', function(ev){
+  // Nothing to grab while the object is hidden: a drag is a no-op.
+  if (state.objHidden) return;
+  var p = stageToLogical(ev.clientX, ev.clientY);
+  var o = objPos();
+  var d = Math.hypot(p.x - o.x, p.y - o.y);
+  if (d <= OBJ_R + 26){
+    dragging = true;
+    canvas.setPointerCapture(ev.pointerId);
+    canvas.style.cursor = 'grabbing';
+  }
+});
+canvas.addEventListener('pointermove', function(ev){
+  var p = stageToLogical(ev.clientX, ev.clientY);
+  if (dragging){
+    var a = Math.atan2(p.y - CY, p.x - CX);
+    state.objAngle = a;
+    var d = Math.hypot(p.x - CX, p.y - CY);
+    state.objDist = Math.max(SAMPLE_R + OBJ_R + 26, d);
+  } else {
+    if (state.objHidden){ canvas.style.cursor = 'default'; return; }
+    var o = objPos();
+    canvas.style.cursor = (Math.hypot(p.x - o.x, p.y - o.y) <= OBJ_R + 26) ? 'grab' : 'default';
+  }
+});
+canvas.addEventListener('pointerup', function(ev){
+  dragging = false;
+  canvas.style.cursor = 'default';
+  try { canvas.releasePointerCapture(ev.pointerId); } catch(e){}
+});
+canvas.addEventListener('pointercancel', function(){ dragging = false; });
+
+window.addEventListener('keydown', function(ev){
+  if (ev.key === 'ArrowLeft') { state.objAngle -= 0.09; ev.preventDefault(); }
+  else if (ev.key === 'ArrowRight') { state.objAngle += 0.09; ev.preventDefault(); }
+  else if (ev.key === 'ArrowUp') { state.objDist = Math.max(SAMPLE_R+OBJ_R+26, state.objDist-18); ev.preventDefault(); }
+  else if (ev.key === 'ArrowDown') { state.objDist = Math.min(ORBIT_R+130, state.objDist+18); ev.preventDefault(); }
+  else if (ev.key === 'e' || ev.key === 'E') { btnLang.click(); }
+});
+
+/* ---------------------------------------------------------------- fit */
+function fit(){
+  var stage = document.getElementById('stage');
+  var s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  stage.style.transform = 'scale(' + s + ')';
+}
+window.addEventListener('resize', fit);
+
+/* ---------------------------------------------------------------- public hooks */
+function copyState(){
+  return {
+    system: state.system,
+    view: state.view,
+    frozen: state.frozen,
+    objHidden: state.objHidden,
+    frame: state.frame,
+    sign: state.sign,
+    objAngle: state.objAngle,
+    objDist: state.objDist,
+    strength: strength(),
+    object: objPos(),
+    centre: {x:CX, y:CY},
+    sampleRadius: SAMPLE_R,
+    nuclei: system.nuclei.map(function(n){
+      return {id:n.id, x:n.x, y:n.y, homeX:n.homeX, homeY:n.homeY, ion:!!n.ion};
+    }),
+    electrons: system.electrons.map(function(e){
+      return {id:e.id, x:e.x+(e.owner==='free'?e.jx:0), y:e.y+(e.owner==='free'?e.jy:0),
+              owner:e.owner, ownerAtomId:e.ownerAtom};
+    })
+  };
+}
+window.__simState = function(){ return JSON.parse(JSON.stringify(copyState())); };
+window.__simCounts = function(){
+  var split = state.objAngle;
+  var ux = Math.cos(split), uy = Math.sin(split);
+  function side(p){
+    // projection onto the axis pointing at the object
+    return (p.x - CX)*ux + (p.y - CY)*uy >= 0 ? 'near' : 'far';
+  }
+  var out = {near:0, far:0, whole:0, freeNear:0, freeFar:0};
+  system.nuclei.forEach(function(n){ out[side(n)] += 1; });
+  system.electrons.forEach(function(e){
+    var s = side(e);
+    out[s] -= 1;
+    if (e.owner === 'free'){ if (s === 'near') out.freeNear++; else out.freeFar++; }
+  });
+  out.whole = out.near + out.far;
+  return out;
+};
+
+/* ---------------------------------------------------------------- boot */
+try {
+  if (localStorage.getItem('polarizationSimLang') === 'es'){
+    document.body.classList.add('i18n-es');
+    btnLang.textContent = 'EN';
+  }
+} catch(e){}
+syncSystem(); syncSign(); syncObj(); syncHint(); fit();
+btnView.setAttribute('aria-pressed','false');
+btnFreeze.setAttribute('aria-pressed','false');
+loop();
+
+})();
+</script>
+</body>
+</html>

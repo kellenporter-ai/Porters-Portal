@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Physics 1: Two-Dimensional Kinematics Practice</title>
+<style>
+:root{
+  --navy:#002147; --navy2:#003359; --gold:#d4a941; --bg:#eef2f6;
+  --card:#ffffff; --line:#c9d4e0; --ink:#1a2430; --muted:#5a6b7d;
+  --sel:#e8f0fb; --green:#1e7d3c; --greenbg:#e6f4ea; --red:#b3261e; --redbg:#fdecea;
+  --mark:#e8730c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+button{font-family:inherit;cursor:pointer}
+
+.hd{background:var(--navy);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:20}
+.hd .brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9fb6d4}
+.hd .title{font-size:17px;font-weight:600}
+.hd .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.hd .tag{font-size:11px;border:1px solid #4d6a8f;color:#bcd0ea;padding:3px 10px;border-radius:999px;letter-spacing:.06em;text-transform:uppercase}
+.subhd{background:#e2e9f2;border-bottom:1px solid var(--line);padding:8px 20px;font-size:13px;color:var(--muted)}
+.subhd b{color:var(--navy)}
+
+.wrap{display:flex;gap:20px;padding:20px;max-width:1280px;margin:0 auto;align-items:flex-start}
+.main{flex:1;min-width:0}
+.side{width:320px;flex-shrink:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px rgba(16,35,60,.08)}
+.qfoot{display:flex;align-items:center;justify-content:space-between;margin-top:22px;gap:10px;flex-wrap:wrap}
+.btn{border-radius:6px;font-size:15px;padding:9px 18px;border:1.5px solid transparent;font-weight:600}
+.btn.primary{background:var(--navy);color:#fff}
+.btn.primary:hover{background:var(--navy2)}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--navy)}
+.btn.ghost:hover{background:#f2f6fb}
+.btn.warn{background:var(--red);color:#fff}
+.btnrow{display:flex;gap:10px}
+
+.side .card{padding:16px;position:sticky;top:76px}
+.side h3{font-size:14px;color:var(--navy);margin-bottom:4px}
+.side .count{font-size:12px;color:var(--muted);margin-bottom:12px}
+.legend{margin-top:14px;font-size:12px;color:var(--muted);display:grid;gap:6px}
+.legend .row{display:flex;align-items:center;gap:8px}
+.sw{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line);background:#fff}
+.sw.done{background:var(--navy);border-color:var(--navy)}
+
+.welcome ul.plain{padding-left:22px;font-size:14.5px;line-height:1.7}
+.welcome ul.plain li{margin:4px 0}
+.welcome p.body{font-size:14.5px;line-height:1.7}
+.welcome{max-width:760px;margin:40px auto;padding:40px 44px}
+.welcome .brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d1f;font-weight:700}
+.welcome h1{font-size:28px;color:var(--navy);margin:10px 0 6px;line-height:1.3}
+.welcome .meta{color:var(--muted);font-size:14px;margin-bottom:22px}
+.welcome .box{background:#f5f8fc;border:1px solid var(--line);border-radius:8px;padding:18px 22px;margin-bottom:24px}
+.welcome .box h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.welcome .actions{display:flex;gap:12px;flex-wrap:wrap}
+
+.callout{margin-top:16px;background:#fff7e8;border:1px solid #ecd9a8;border-radius:8px;padding:12px 16px;font-size:14.5px}
+.callout b{color:#8a5a00}
+
+.modal-bg{position:fixed;inset:0;background:rgba(10,25,45,.55);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:#fff;border-radius:12px;max-width:460px;width:92%;padding:28px}
+.modal h3{color:var(--navy);font-size:20px;margin-bottom:10px}
+.modal p{font-size:15px;line-height:1.6;color:var(--muted);margin-bottom:20px}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ---- 2D kinematics practice additions ---- */
+body{background:var(--bg)}
+.hd .title{font-size:16px;line-height:1.25}
+.gk{font-size:12px;color:#9fb6d4;white-space:nowrap}
+.hd .right{flex-wrap:nowrap}
+.hd .title{max-width:none}
+.gk b{color:#fff;font-weight:600}
+.opt:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.opt[disabled]{cursor:default}
+.opt.locked:hover{border-color:inherit}
+
+.qhead{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.qhead .qn{font-size:15px;font-weight:700;color:var(--navy)}
+.topic{font-size:12px;background:#eaf1fa;color:#28518c;padding:3px 10px;border-radius:999px}
+.stem{font-size:17px;line-height:1.6;margin-bottom:18px}
+.fig{max-width:540px;margin:0 auto 18px;border:1px solid #e1e8f0;border-radius:8px;padding:10px;background:#fff}
+.fig svg{display:block;width:100%;height:auto}
+
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;font-size:16px;line-height:1.45;transition:border-color .1s,background .1s}
+.opt:hover{border-color:#8aa5c4}
+.opt .radio{flex-shrink:0;width:20px;height:20px;border-radius:50%;border:2px solid #8aa5c4;margin-top:2px;position:relative}
+.opt .ltr{flex-shrink:0;font-weight:700;color:var(--navy);width:20px}
+.opt .txt{flex:1}
+.opt.sel{border-color:var(--navy);background:var(--sel)}
+.opt.sel .radio{border-color:var(--navy)}
+.opt.sel .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--navy)}
+.opt.disabled{cursor:default}
+.opt.good{border-color:var(--green);background:var(--greenbg)}
+.opt.good .radio{border-color:var(--green)}
+.opt.good .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--green)}
+.opt.bad{border-color:var(--red);background:var(--redbg)}
+.opt.bad .radio{border-color:var(--red)}
+.opt.disabled.locked:not(.good):not(.bad){opacity:.92}
+.opt .tagline{font-size:13px;font-weight:700;margin-left:6px}
+.opt.good .tagline{color:var(--green)}
+.opt.bad .tagline{color:var(--red)}
+
+.welcome ul.plain{padding-left:22px;font-size:14.5px;line-height:1.75;margin-top:2px}
+.welcome p.body{font-size:14.5px;line-height:1.75;color:var(--ink)}
+
+.stn{margin:26px 0 0}
+.stn:first-of-type{margin-top:8px}
+.stn-head{padding:20px 28px;border-left:5px solid var(--navy);border-radius:10px;background:#fff;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 1px 3px rgba(16,35,60,.08);margin-bottom:16px}
+.stn-head .sn{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:#8a6d1f;font-weight:700}
+.stn-head h2{font-size:21px;color:var(--navy);margin:5px 0 6px;line-height:1.3}
+.stn-head p{font-size:14.5px;line-height:1.6;color:var(--muted);max-width:74ch}
+
+.ich{padding:24px 28px;margin-bottom:16px}
+.ihead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ihead .iid{font-size:13px;font-weight:700;color:#fff;background:var(--navy);border-radius:5px;padding:2px 9px;letter-spacing:.04em}
+.ihead .topic{font-size:12px}
+.ihead .ibadge{margin-left:auto}
+.istate{font-size:12.5px;font-weight:700;padding:3px 11px;border-radius:999px;white-space:nowrap}
+.istate.pending{background:#eef0f3;color:var(--muted)}
+.istate.good{background:var(--greenbg);color:var(--green)}
+.istate.bad{background:var(--redbg);color:var(--red)}
+.istate.good::before{content:"\2713 "}
+.istate.bad::before{content:"\2715 "}
+
+.expl{margin-top:18px;border-top:1px solid #e4ebf3;padding-top:14px;font-size:14.5px;line-height:1.65}
+.expl .block{margin-top:12px}
+.expl .block:first-child{margin-top:0}
+.expl .c{color:var(--green);font-weight:700}
+.expl .w{color:var(--red);font-weight:700}
+.expl .glabel{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px}
+.expl .glabel.c{color:var(--green)}
+.expl .glabel.w{color:var(--red)}
+.iplain{font-size:13.5px;color:var(--muted)}
+
+.side .card{max-height:calc(100vh - 92px);overflow:auto}
+.sgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:6px}
+.nbtn.st{aspect-ratio:1;border:1.5px solid var(--line);background:#fff;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink);position:relative;line-height:1}
+.nbtn.st.checked{background:var(--navy);border-color:var(--navy);color:#fff}
+.nbtn.st.right{border-color:var(--green);box-shadow:inset 0 0 0 1.5px var(--green)}
+.nbtn.st.wrong{border-color:var(--red);box-shadow:inset 0 0 0 1.5px var(--red)}
+.nbtn.st.checked.right{background:var(--green);border-color:var(--green)}
+.nbtn.st.checked.wrong{background:var(--red);border-color:var(--red)}
+.stnlabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 5px}
+.stncount{float:right;font-weight:600;letter-spacing:0;text-transform:none;color:#8aa5c4}
+.pbar{height:10px;background:#e4ebf3;border-radius:5px;overflow:hidden;margin:6px 0 10px}
+.pbar i{display:block;height:100%;background:var(--navy);border-radius:5px;transition:width .2s}
+
+.done-banner{background:var(--greenbg);border:1px solid #b7ddc2;border-left:5px solid var(--green);color:#14532d;border-radius:10px;padding:12px 18px;margin:0 0 16px;font-size:14.5px;font-weight:600}
+.sumcard{padding:28px 32px;margin-bottom:20px}
+.sumcard h2{font-size:20px;color:var(--navy);margin-bottom:6px}
+.sumcard .big{font-size:34px;font-weight:800;color:var(--navy);line-height:1.1}
+.sumcard .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.trowroom{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+.trowroom .tl{width:230px;flex-shrink:0}
+.trowroom .tv{width:76px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+
+footer.pfoot{max-width:1280px;margin:0 auto;padding:6px 20px 40px;font-size:12.5px;color:var(--muted)}
+
+@media (max-width:1180px){
+  /* Below 1180 the two-column layout starves the item cards, so the progress
+     panel moves above the content as a compact strip and stops being sticky. */
+  .wrap{flex-direction:column}
+  .side{width:100%;order:-1}
+  .side .card{position:static;max-height:none;padding:12px 14px}
+  .side h3,.side .count{display:none}
+  .stnlabel{display:block;margin:8px 0 4px}
+  .sgrid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:0}
+  .nbtn.st{width:38px;height:30px;aspect-ratio:auto;font-size:12px;border-radius:5px}
+  .legend{display:flex;gap:16px;margin-top:8px}
+}
+@media (max-width:1000px){
+  .stn-head{padding:16px 18px}
+  .ich{padding:18px 16px}
+  .sumcard{padding:22px 18px}
+  .trowroom .tl{width:auto;flex:1}
+}
+@media (max-width:820px){
+  .hd{flex-wrap:wrap;gap:8px}
+  .hd .right{width:100%;justify-content:space-between}
+  .gk{font-size:11px}
+  .welcome{margin:16px;padding:24px 20px}
+  .stem{font-size:16px}
+}
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<header class="hd">
+  <div>
+    <div class="brand">AP&reg; Physics 1: Algebra-Based</div>
+    <div class="title">Two-Dimensional Kinematics: Projectile Practice</div>
+  </div>
+  <div class="right">
+    <span class="gk"><b id="progawk">0</b> <span id="progof">of 20</span> checked</span>
+    <span class="tag">AP Physics 1</span>
+    <button class="btn ghost" id="b-reset2" style="padding:6px 14px;font-size:13px">Reset progress</button>
+  </div>
+</header>
+<div class="subhd">Optional practice &middot; <b>not graded</b> &middot; 20 items across four stations &middot; commit an answer, then check it &middot; <span id="progresslive" aria-live="polite">0 of 20 checked</span></div>
+<noscript><div style="max-width:760px;margin:24px auto;padding:18px 22px;background:#fff7e8;border:1px solid #ecd9a8;border-radius:8px;font-size:15px">This practice page needs JavaScript turned on to work. Ask your teacher if it stays like this.</div></noscript>
+<main id="app"></main>
+<div id="modal-root"></div>
+<footer class="pfoot">Practice set, 2D kinematics and projectile motion. Use g = 9.8 m/s&sup2; unless an item states otherwise. Your answers save on this device only.</footer>
+
+<script>
+/* ============================================================
+   Two-Dimensional Kinematics: Projectile Practice
+   Optional, ungraded practice. Commit an answer, then check it.
+   Single self-contained file. No network, no external assets.
+   ============================================================ */
+
+/* ---------------- item data ----------------
+   Every field is plain text. Figures are inline SVG built by FIG below.
+   expChosen is indexed the same way as options, so the explanation that
+   appears after Check always matches the option the student committed. */
+const STATIONS = [
+{
+  key: "A",
+  name: "Vector Components",
+  frame: "Any vector can be replaced by a horizontal part and a vertical part. Those two parts, taken together, do everything the original vector does.",
+  intro: "A velocity vector can be split into a horizontal part and a vertical part. Everything that follows in this set depends on that split, so start here.",
+  items: [
+  {
+    id: "A1",
+    topic: "Components",
+    fig: "a1",
+    stem: "A velocity vector has magnitude 20 m/s and points 30° above the horizontal. What are its horizontal and vertical components?",
+    options: [
+      "vₓ = 17.3 m/s, vᵧ = 10.0 m/s",
+      "vₓ = 10.0 m/s, vᵧ = 17.3 m/s",
+      "vₓ = 20 m/s, vᵧ = 20 m/s",
+      "vₓ = 11.5 m/s, vᵧ = 11.5 m/s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. vₓ = v cos θ = 20 cos 30 = 17.3 m/s, and vᵧ = v sin θ = 20 sin 30 = 10.0 m/s. The two components combine back to 20 m/s: √(17.3² + 10.0²) is 20.",
+      "The sine and cosine are swapped. The angle is measured from the horizontal, so the horizontal component takes the cosine: vₓ = 20 cos 30 = 17.3 m/s. Swapping them gives a vector that points steeply upward, not at 30° above the horizontal.",
+      "A vector's components are almost never equal to the vector's own magnitude. If both components were 20 m/s the vector would have magnitude 28.3 m/s, not 20. Components are always smaller than (or equal to) the magnitude.",
+      "Splitting the magnitude evenly would give a 45 degree vector, not a 30 degree one. The angle tells you the split is uneven: a shallow angle means a large horizontal part and a small vertical part."
+    ],
+    expCorrect: "vₓ = v cos θ and vᵧ = v sin θ. A 30 degree angle is closer to the horizontal than to the vertical, so the horizontal component has to be the larger of the two: 17.3 m/s against 10.0 m/s."
+  },
+  {
+    id: "A2",
+    topic: "Vector Addition",
+    fig: "a2",
+    stem: "Two velocity vectors each have magnitude 10 m/s and the angle between them is 60°. What is the magnitude of their sum?",
+    options: [
+      "17.3 m/s",
+      "20 m/s",
+      "10 m/s",
+      "0 m/s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Adding two equal vectors that meet at 60° gives 2v cos(30) = 20 × 0.866 = 17.3 m/s. The sum points along the bisector of the pair, and it is longer than either vector but shorter than their full sum.",
+      "20 m/s is what you get if the two vectors point the same way, with 0° between them. Here they are 60° apart, so part of each one fights the other and the sum is less than 20 m/s.",
+      "10 m/s would require the two vectors to partially cancel. Vectors 60° apart are still mostly pointing the same general way, so their sum is longer than either one, not equal to it.",
+      "Zero requires the vectors to point in exactly opposite directions, 180° apart. At 60° they reinforce each other, so nothing cancels."
+    ],
+    expCorrect: "Line the vectors up tail to tail and find the diagonal of the parallelogram they span. For two equal vectors the sum is 2v cos(θ/2) = 2(10) cos 30 = 17.3 m/s. Only vectors pointing exactly the same way add up to the full 20 m/s."
+  },
+  {
+    id: "A3",
+    topic: "At the Apex",
+    fig: "a3",
+    stem: "A projectile is at the highest point of its parabolic path. Which statement about its velocity and acceleration at that instant is true?",
+    options: [
+      "The velocity is horizontal, with magnitude vₓ. The acceleration is vertical, downward, and equals g.",
+      "The velocity is zero. The acceleration is vertical, downward, and equals g.",
+      "The velocity is zero and the acceleration is zero.",
+      "The velocity is horizontal and the acceleration is horizontal too."
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. At the apex the vertical component of velocity passes through zero, but the horizontal component never changes because nothing pushes sideways on the projectile. So the speed at the top is vₓ, not zero. Gravity is still pulling down the whole time, at g.",
+      "Only the vertical component is zero at the apex. The horizontal component carries on unchanged, so the projectile still has a speed there. Saying the velocity is zero would also mean the projectile stops moving forward, which it does not.",
+      "This would only be true if the projectile were sitting at rest on the ground. In flight, gravity acts on it at every instant, including the very top of the arc.",
+      "Gravity acts vertically, so the acceleration is always vertical and points down. There is no horizontal force on a projectile once it has left the launcher, so the horizontal acceleration is zero."
+    ],
+    expCorrect: "The vertical component passes through zero at the apex, but the horizontal component never changes (ignoring air resistance). So the speed at the apex is vₓ, not zero. The acceleration is g, downward, at every instant of the flight."
+  },
+  {
+    id: "A4",
+    topic: "Trajectory Shape",
+    fig: null,
+    stem: "An object moves with constant velocity in the horizontal direction and constant acceleration downward. What shape is its trajectory?",
+    options: [
+      "A parabola",
+      "A straight diagonal line",
+      "A circle",
+      "A horizontal line"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Constant horizontal velocity means x grows steadily with time, and constant downward acceleration means y falls off like t². Combining those gives a parabola.",
+      "A straight diagonal line would need equal constant rates on both axes, which means zero vertical acceleration. Here the vertical motion is accelerated, so the path curves downward more and more.",
+      "A circle needs a force that keeps turning the object toward the center of the circle. Here the only force is a constant downward one, so the path keeps bending further downward instead of curving back on itself.",
+      "A horizontal line means no vertical motion at all. The object here accelerates downward from the very first instant, so it must leave any horizontal line."
+    ],
+    expCorrect: "Constant horizontal velocity plus constant downward acceleration gives y = (g / 2vₓ²) x², measured downward from the launch point. That is a parabola. A straight line would need zero vertical acceleration."
+  }
+  ]
+},
+{
+  key: "B",
+  name: "Projectile Basics",
+  frame: "Horizontal and vertical motion run on separate clocks. The horizontal motion never affects how long the fall takes.",
+  intro: "Once a projectile is in the air, the horizontal and vertical motions can be handled one at a time. That habit solves almost every item in this station.",
+  items: [
+  {
+    id: "B1",
+    topic: "Horizontal Launch",
+    fig: "b1",
+    stem: "A ball rolls off a 45 m high cliff horizontally at 8 m/s. How long does it take to reach the ground, and how far from the base of the cliff does it land? Use g = 10 m/s² for this item.",
+    options: [
+      "t = 3 s, d = 24 m",
+      "t = 3 s, d = 8 m",
+      "t = 9 s, d = 72 m",
+      "t = 4.5 s, d = 36 m"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. The fall time comes from the vertical motion alone: 45 = (1/2)(10) t², so t = 3 s. The horizontal distance then comes from the horizontal motion alone: d = vₓ t = 8 × 3 = 24 m.",
+      "The fall time is right, but the horizontal speed was treated as the distance. Speed in m/s is not a distance. The horizontal distance is vₓ multiplied by the time in the air, 8 × 3 = 24 m.",
+      "This used 45 = 5 t² but solved it as t = 9. Check the arithmetic: t² = 45 / 5 = 9, so t = 3 s, not 9 s. The distance follows from the corrected time.",
+      "This used the full 45 m with 10 m/s as if the ball fell at a steady speed, which gives 4.5 s. Free fall speeds up, so the real fall time is shorter: 3 s. The distance is then 8 × 3 = 24 m."
+    ],
+    expCorrect: "Vertical motion sets the fall time: 45 = (1/2)(10) t², so t = 3 s. Horizontal motion sets the range: d = vₓ t = 8 × 3 = 24 m. The horizontal speed has no effect on how long the ball stays in the air."
+  },
+  {
+    id: "B2",
+    topic: "Fall Time",
+    fig: null,
+    stem: "Two balls leave the same table edge at the same instant. One is pushed off at a high horizontal speed and the other at a low horizontal speed. Which one hits the floor first?",
+    options: [
+      "They hit at the same time",
+      "The faster one",
+      "The slower one",
+      "It depends on the heights they fall from"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Both balls leave the table edge with zero vertical velocity and fall the same height, so they take the same time to reach the floor. The horizontal speed only decides where each one lands.",
+      "A larger horizontal speed makes the ball travel farther, not fall faster. The vertical drop is governed only by the starting height and by g.",
+      "A smaller horizontal speed makes the ball land closer to the table, not sooner. The vertical drop is unchanged.",
+      "Both balls leave the same table edge, so the heights are identical. The height question would matter only if the two balls started from different heights."
+    ],
+    expCorrect: "Fall time is set entirely by the vertical drop: h = (1/2) g t². Same height means the same t, regardless of how fast each ball moves sideways."
+  },
+  {
+    id: "B3",
+    topic: "Velocity at Apex",
+    fig: "b3",
+    stem: "A projectile is launched at 25 m/s at 53° above the horizontal. Ignoring air resistance, what are its velocity components at the highest point of its path? Use g = 9.8 m/s².",
+    options: [
+      "vₓ = 15.0 m/s, vᵧ = 0 m/s",
+      "vₓ = 15.0 m/s, vᵧ = 20.0 m/s",
+      "vₓ = 0 m/s, vᵧ = 20.0 m/s",
+      "vₓ = 20.0 m/s, vᵧ = 15.0 m/s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. At launch vₓ = 25 cos 53 = 15.0 m/s and vᵧ = 25 sin 53 = 20.0 m/s. The horizontal component never changes, and the vertical component reaches zero at the apex.",
+      "The horizontal component is right, but vᵧ at the apex is zero. The 20.0 m/s value belongs to the instant of launch, before gravity has had time to eat into it.",
+      "This swaps the two values. At launch vₓ = 25 cos 53 = 15.0 m/s, the larger one, and vᵧ = 25 sin 53 = 20.0 m/s. Neither component reaches 20.0 m/s at the apex, where vᵧ is zero.",
+      "The sine and cosine are swapped. At 53° the vertical component is the larger one: vᵧ = 25 sin 53 = 20.0 m/s at launch. At the apex vᵧ has dropped to zero and vₓ is still 15.0 m/s."
+    ],
+    expCorrect: "Take the components first: vₓ = 25 cos 53 = 15.0 m/s (constant) and vᵧ = 25 sin 53 = 20.0 m/s at launch. At the apex the vertical component has dropped to zero, so the velocity there is 15.0 m/s, purely horizontal."
+  },
+  {
+    id: "B4",
+    topic: "Speed in Flight",
+    fig: null,
+    stem: "For a projectile launched and landing at the same height, at what point in the flight is its speed the same as at launch?",
+    options: [
+      "At the same height, on the way down",
+      "Only at the very top of the path",
+      "Just before hitting the ground, always",
+      "Never, the speed decreases the whole time"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. The horizontal component never changes, and the vertical component has the same size at equal heights, just pointing the other way. So the speed matches the launch speed every time the projectile returns to its starting height.",
+      "At the top the vertical component is zero, so the speed there is only vₓ. That is the slowest point of the flight, not a match for the launch speed.",
+      "The speed is the same just before landing as at launch only so long as the projectile comes back to the same height it started from. The general statement is about matching heights, not about the ground.",
+      "The speed falls on the way up and then rises again on the way down as the vertical component rebuilds. It does not keep decreasing."
+    ],
+    expCorrect: "The horizontal component is constant, and the vertical component has the same size at equal heights. So the speed at a given height on the way down equals the speed at that height on the way up, including the launch height."
+  },
+  {
+    id: "B5",
+    topic: "Time of Flight",
+    fig: null,
+    stem: "A projectile is fired at 40 m/s at 30° above the horizontal and lands at the same height it was launched from. About how long is it in the air? Use g = 9.8 m/s².",
+    options: [
+      "About 4.1 s",
+      "About 2.0 s",
+      "About 8.2 s",
+      "About 3.5 s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. vᵧ₀ = 40 sin 30 = 20 m/s. The full trip takes 2 vᵧ₀ / g = 40 / 9.8, which is about 4.1 s: roughly 2.0 s up and 2.0 s down.",
+      "2.0 s is only the trip up to the top. A projectile that lands at the height it started from is in the air for the climb and the descent, so the time doubles.",
+      "8.2 s double-counts. The round trip already includes the way up and the way down. Start from vᵧ₀ = 20 m/s and the round trip is 2 vᵧ₀ / g = 40 / 9.8. Doubling that again treats the climb as if it had to be added twice.",
+      "There is no step in this calculation that produces 3.5 s. Start from vᵧ₀ = 40 sin 30 = 20 m/s and divide twice that by 9.8."
+    ],
+    expCorrect: "vᵧ₀ = 40 sin 30 = 20 m/s. For a symmetric flight the total time is 2 vᵧ₀ / g = 40 / 9.8, which is about 4.1 s."
+  },
+  {
+    id: "B6",
+    topic: "Concept Check",
+    fig: null,
+    stem: "Ignoring air resistance, which statement about a projectile in flight is true?",
+    options: [
+      "The horizontal velocity stays constant while the vertical velocity changes",
+      "Both the horizontal and the vertical velocity stay constant",
+      "The horizontal velocity changes while the vertical velocity stays constant",
+      "The speed stays constant through the whole flight"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Nothing pushes sideways on a projectile once it is in the air, so vₓ is constant. Gravity acts vertically and changes vᵧ by g every second.",
+      "The vertical velocity cannot stay constant because gravity acts on it continuously. Only the horizontal velocity behaves that way.",
+      "This reverses the physics. There is no horizontal force on a projectile, so the horizontal velocity is the one that stays constant.",
+      "The speed is the size of the velocity vector, so it changes whenever any component changes. Because vᵧ keeps changing, the speed changes too."
+    ],
+    expCorrect: "The horizontal motion has no force acting on it, so vₓ is constant. Gravity acts vertically and changes vᵧ. Since vᵧ changes, the speed changes along the path."
+  }
+  ]
+},
+{
+  key: "C",
+  name: "Launch Angle, Range, Height",
+  frame: "The launch angle splits the same speed into a horizontal part and a vertical part. A steeper angle buys height and spends range.",
+  intro: "Same launcher, same speed, different angle. Watch how the trade between height and horizontal distance shows up in these items.",
+  items: [
+  {
+    id: "C1",
+    topic: "Complementary Angles",
+    fig: "c1",
+    stem: "Two projectiles are launched at the same speed on level ground, one at 30° and one at 60° above the horizontal. Which one lands farther away?",
+    options: [
+      "They land at the same horizontal distance",
+      "The one launched at 60°",
+      "The one launched at 30°",
+      "There is not enough information to tell"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Angles that add to 90° give the same range for the same launch speed on level ground. Range depends on sin of twice the angle, and sin 60 = sin 120.",
+      "The 60 degree shot has the larger vertical component, so it is the one that goes highest. Its horizontal component is smaller, which costs exactly as much range as the extra air time provides.",
+      "The 30 degree shot has the larger horizontal component, but it is in the air for less time. The two effects cancel, so it lands at the same distance as the 60 degree shot.",
+      "Everything the range depends on is given: the launch speed is the same and the ground is level. Adding the angle is all the extra information needed."
+    ],
+    expCorrect: "The range on level ground is v² sin 2θ divided by g. For 30° that is sin 60, and for 60° that is sin 120, and those are equal (about 0.866). Complementary angles therefore give equal range."
+  },
+  {
+    id: "C2",
+    topic: "Maximum Height",
+    fig: null,
+    stem: "Two projectiles are launched at the same speed, one at 30° and one at 45° above the horizontal. Which one reaches the greater maximum height?",
+    options: [
+      "The one launched at 45°",
+      "The one launched at 30°",
+      "They reach the same height",
+      "It depends on the launch speed, not the angle"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Maximum height depends only on the vertical launch component, and a steeper angle gives a larger one. At the same speed, 45° lifts the projectile higher than 30°.",
+      "The 30 degree shot has the larger horizontal component, which is why it travels far. Height, though, comes from the vertical component, and 30° gives a smaller one than 45°.",
+      "The two shots have the same speed but different angles, so their vertical components differ. Equal height would need equal vertical launch speeds.",
+      "The launch speed is the same for both, so it cannot be what separates them. At a fixed speed it is the angle that sets the vertical component."
+    ],
+    expCorrect: "Maximum height is h = vᵧ₀²/2g, so it depends only on the vertical launch component. A larger angle means a larger vᵧ₀ at the same speed, and 45° beats 30° on that measure."
+  },
+  {
+    id: "C3",
+    topic: "Height Calculation",
+    fig: null,
+    stem: "A ball is launched at 20 m/s at 60° above the horizontal. What is its maximum height above the launch point? Use g = 9.8 m/s².",
+    options: [
+      "About 15.3 m",
+      "About 20.4 m",
+      "About 10.2 m",
+      "About 30.6 m"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. vᵧ₀ = 20 sin 60 = 17.3 m/s. Then h = vᵧ₀²/2g = 300/19.6, which is about 15.3 m.",
+      "20.4 m comes from dividing vᵧ₀² by g instead of by 2g, which drops the factor of 2 in the height relation.",
+      "10.2 m comes from using half of the vertical launch component, 8.65 m/s, in the height relation. The vertical launch component is 20 sin 60 = 17.3 m/s, and the constant in front of g is one half, not another factor of two on the speed.",
+      "30.6 m is exactly twice the correct value, which is what you get by multiplying instead of dividing by 2g."
+    ],
+    expCorrect: "Maximum height is h = vᵧ₀²/2g. Here vᵧ₀ = 20 sin 60 = 17.3 m/s, so h = (17.3²) / (2 × 9.8) = 300 / 19.6, which is about 15.3 m."
+  },
+  {
+    id: "C4",
+    topic: "Range Calculation",
+    fig: null,
+    stem: "A ball is kicked at 20 m/s at 30° above the horizontal on level ground. What is its horizontal range? Use g = 9.8 m/s².",
+    options: [
+      "About 35.3 m",
+      "About 17.7 m",
+      "About 40.8 m",
+      "About 70.6 m"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. The range is v² sin 2θ divided by g = (400)(sin 60) / 9.8 = (400)(0.866) / 9.8, which is about 35.3 m.",
+      "17.7 m is half the correct range, which shows up if the range formula is divided by 2g instead of by g.",
+      "40.8 m uses sin 90 in place of sin 60, which treats the launch angle as 45°.",
+      "70.6 m is exactly double the correct value, the result of multiplying by 2g instead of dividing by g."
+    ],
+    expCorrect: "Range on level ground is R = v² sin 2θ divided by g. With v = 20 m/s and θ = 30°, sin 60 is about 0.866, so R = 400 × 0.866 / 9.8, which is about 35.3 m."
+  },
+  {
+    id: "C5",
+    topic: "Fall Time Again",
+    fig: "c5",
+    stem: "A projectile is launched horizontally from a height of 20 m. How long does it take to land? Use g = 10 m/s² for this item.",
+    options: [
+      "2 s",
+      "4 s",
+      "20 s",
+      "1 s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. 20 = (1/2)(10) t² gives t² = 4, so t = 2 s. The horizontal speed does not enter at all.",
+      "4 s is t² rather than t. After solving t² = 4, take the square root to get the time.",
+      "20 s would be the answer if the projectile fell at a steady 1 m/s. Free fall speeds up as it goes, so the fall takes far less time than that.",
+      "1 s would come from t² = 1, which needs a height of 5 m at g = 10 m/s². At 20 m the time is longer."
+    ],
+    expCorrect: "Vertical drop depends only on height and g: h = (1/2) g t², so 20 = 5 t² and t = 2 s. The horizontal launch speed only decides how far away the projectile lands."
+  },
+  {
+    id: "C6",
+    topic: "Thrown vs Dropped",
+    fig: null,
+    stem: "One object is dropped from rest and another is thrown horizontally, both from the same height and at the same instant. Which one reaches the ground first? Assume no air resistance.",
+    options: [
+      "They reach the ground at the same time",
+      "The thrown one",
+      "The dropped one",
+      "It depends on the horizontal speed of the thrown one"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Both objects start with zero vertical velocity and fall the same distance, so they land together. The horizontal speed of the thrown one only changes where it lands, not when.",
+      "Throwing the object sideways does not help it fall faster. Gravity still starts pulling from rest in the vertical direction.",
+      "The dropped object has no advantage either. Its vertical motion and the thrown object's vertical motion are identical.",
+      "The horizontal speed cannot matter, because the vertical motion is unaffected by it. This is the same idea as two balls leaving a table at different speeds."
+    ],
+    expCorrect: "The two objects share the same vertical motion: zero initial vertical velocity and the same drop height. They therefore take the same time to land. The horizontal velocity is a completely separate story."
+  }
+  ]
+}
+];
+STATIONS[3] = {
+  key: "D",
+  name: "Two-Dimensional Reasoning",
+  frame: "Most 2D items come down to rebuilding a vector from its parts, or to noticing that one part changed while the other did not.",
+  intro: "Last station. These items combine the vector work from Station A with the projectile habits from Stations B and C.",
+  items: [
+  {
+    id: "D1",
+    topic: "Recombining",
+    fig: null,
+    stem: "A projectile has velocity components vₓ = 12 m/s and vᵧ = 5 m/s. What is its speed?",
+    options: [
+      "13 m/s",
+      "17 m/s",
+      "7 m/s",
+      "60 m/s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. Speed is the size of the velocity vector: √(12² + 5²) = √(144 + 25) = √169 = 13 m/s. This is a 5-12-13 triangle.",
+      "17 m/s adds the components as plain numbers. Components are perpendicular, so they combine through the Pythagorean relation, not by simple addition.",
+      "7 m/s subtracts the components. Perpendicular components do not cancel each other; they combine at right angles.",
+      "60 m/s multiplies the two components. Multiplying would give an area, not the length of a vector."
+    ],
+    expCorrect: "The speed is the magnitude of the velocity vector: v = √(vₓ² + vᵧ²) = √(144 + 25) = 13 m/s."
+  },
+  {
+    id: "D2",
+    topic: "Velocity vs Speed",
+    fig: null,
+    stem: "A projectile is launched from level ground and lands at the same height. Which statement about its launch and landing is true?",
+    options: [
+      "The vertical velocity has reversed direction, and the speed matches the launch speed",
+      "The speed is lower than at launch",
+      "The speed is higher than at launch",
+      "The velocity is unchanged in every way"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. On the way down the vertical component has the same size as at launch but points downward, so the velocity vector has changed direction. The horizontal component never changed, so the speed is the same.",
+      "The only way speed could drop is if part of the velocity were lost. Nothing is lost: returning to the same height restores the same size of vertical component, so the speed comes back to its launch value.",
+      "The speed cannot exceed the launch speed on level ground without another force adding energy. Gravity only stores and returns energy on the way up and down.",
+      "The vertical component flips sign, so the velocity vector genuinely changes. Calling it unchanged overlooks the reversal of the vertical part."
+    ],
+    expCorrect: "vᵧ goes from +vᵧ₀ at launch to -vᵧ₀ on the way down, so the velocity vector reverses its vertical direction. vₓ is unchanged, so the speed, which is the size of the vector, is the same at both heights."
+  },
+  {
+    id: "D3",
+    topic: "Frames of Reference",
+    fig: "d3",
+    stem: "A package is dropped from a plane that is flying horizontally at 60 m/s. Relative to the ground, what is the shape of the package's trajectory?",
+    options: [
+      "A parabola that moves forward as it falls",
+      "A straight vertical line down",
+      "A horizontal line",
+      "An upward curve"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. The package leaves the plane already moving forward at 60 m/s and keeps that horizontal velocity while gravity pulls it down. From the ground it traces a forward-moving parabola.",
+      "A straight vertical drop is what the pilot sees from the plane, because the plane moves forward at the same horizontal speed as the package. From the ground, the package keeps moving forward the whole time.",
+      "The package falls, so its path cannot stay horizontal. Gravity acts on it from the moment it is released.",
+      "Gravity pulls downward, so the path bends downward. There is no upward force on a falling package after release."
+    ],
+    expCorrect: "The package keeps the plane's horizontal velocity and accelerates downward, so from the ground it follows a forward-moving parabola. Seen from the plane, which moves forward with the same horizontal velocity, it looks like a straight drop."
+  },
+  {
+    id: "D4",
+    topic: "Launch Speed",
+    fig: null,
+    stem: "A projectile is launched at 53° above the horizontal with a horizontal velocity component vₓ = 18 m/s. What is its launch speed? Use cos 53 = 0.60.",
+    options: [
+      "30 m/s",
+      "22.5 m/s",
+      "10.8 m/s",
+      "24 m/s"
+    ],
+    correct: 0,
+    expChosen: [
+      "Right. vₓ = v cos θ, so v = vₓ / cos 53 = 18 / 0.60 = 30 m/s.",
+      "22.5 m/s comes from dividing 18 by 0.80, which is sin 53 in place of cos 53. The horizontal component uses the cosine.",
+      "10.8 m/s multiplies 18 by 0.60 instead of dividing by it. Dividing is what recovers the original speed from a component. Multiplying shrinks the number further, when the speed must be larger than its horizontal part.",
+      "24 m/s does not follow from the given component and angle. Using 18 / 0.75 gives 24, but no quantity in this item is 0.75. The horizontal component is v cos 53, and 24 × 0.60 is 14.4, not 18."
+    ],
+    expCorrect: "The horizontal component is vₓ = v cos θ = 0.60 v, so v = vₓ / 0.60 = 18 / 0.60 = 30 m/s. At that speed the vertical component would be 30 sin 53 = 24 m/s."
+  }
+  ]
+};
+/* ---------------- figures ----------------
+   Inline SVG only. Every figure shows the geometry the stem describes and
+   nothing more: no landing markers, no answer values, no drawn-to-scale
+   proportion that would give the answer away before Check. */
+const NAVY = "#002147";
+const FIG = {};
+
+/* A1: one vector plus its dashed components. Drawn at a generic 40°,
+   not at the 30° named in the stem, so the proportions do not state the answer. */
+FIG.a1 = `<svg viewBox="0 0 400 200" role="img" aria-label="A velocity vector 30° above the horizontal from the origin, with a dashed horizontal component and a dashed vertical component forming a right triangle">
+  <rect width="400" height="200" fill="#ffffff" rx="4"/>
+  <line x1="46" y1="164" x2="352" y2="164" stroke="#94a3b8" stroke-width="1.4"/>
+  <line x1="46" y1="164" x2="46" y2="22" stroke="#94a3b8" stroke-width="1.4"/>
+  <line x1="46" y1="164" x2="278" y2="30" stroke="${NAVY}" stroke-width="3"/>
+  <polygon points="278,30 263,33 269,45" fill="${NAVY}"/>
+  <line x1="278" y1="30" x2="278" y2="164" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 5"/>
+  <line x1="46" y1="164" x2="278" y2="164" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 5"/>
+  <path d="M 100 164 A 54 54 0 0 0 92.8 137" fill="none" stroke="#8a6d1f" stroke-width="1.8"/>
+  <text x="103" y="150" font-size="14" fill="#8a6d1f" font-weight="bold">&#952;</text>
+  <text x="286" y="24" font-size="14" fill="${NAVY}" font-weight="bold">v</text>
+  <text x="286" y="100" font-size="14" fill="#475569">v<tspan font-size="10" dy="3">y</tspan></text>
+  <text x="160" y="182" font-size="14" fill="#475569">v<tspan font-size="10" dy="3">x</tspan></text>
+</svg>`;
+
+/* A2: two equal vectors tail to tail with the angle between them, plus the
+   parallelogram outline. No sum diagonal is drawn, since the sum is the question. */
+FIG.a2 = `<svg viewBox="0 0 400 200" role="img" aria-label="Two velocity vectors of equal length drawn tail to tail at the origin with a 60 degree angle marked between them, and the diagonal of the parallelogram drawn as their sum">
+  <rect width="400" height="200" fill="#ffffff" rx="4"/>
+  <line x1="210" y1="160" x2="285" y2="30.1" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <line x1="135" y1="30.1" x2="285" y2="30.1" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <line x1="60" y1="160" x2="210" y2="160" stroke="${NAVY}" stroke-width="3"/>
+  <line x1="60" y1="160" x2="135" y2="30.1" stroke="${NAVY}" stroke-width="3"/>
+  <polygon points="210,160 194,153 194,167" fill="${NAVY}"/>
+  <polygon points="135,30.1 120,37 129,47" fill="${NAVY}"/>
+  <line x1="60" y1="160" x2="285" y2="30.1" stroke="#8f4f14" stroke-width="2.6"/>
+  <polygon points="285,30.1 268,32 275,46" fill="#8f4f14"/>
+  <path d="M 106 160 A 46 46 0 0 0 83 120.2" fill="none" stroke="#8a6d1f" stroke-width="1.8"/>
+  <text x="112" y="152" font-size="13" fill="#8a6d1f" font-weight="bold">60&#176;</text>
+  <text x="108" y="182" font-size="13" fill="${NAVY}">10 m/s</text>
+  <text x="8" y="96" font-size="13" fill="${NAVY}">10 m/s</text>
+  <text x="292" y="24" font-size="13" fill="#8f4f14" font-weight="bold">sum</text>
+  <text x="42" y="182" font-size="13" fill="#64748b">O</text>
+</svg>`;
+
+/* A3: a symmetric arc with the apex called out, and a vertical arrow marking
+   the direction of the acceleration at the apex. */
+FIG.a3 = `<svg viewBox="0 0 400 200" role="img" aria-label="A symmetric projectile arc with the highest point marked, a horizontal velocity arrow and a downward acceleration arrow at that point">
+  <rect width="400" height="200" fill="#ffffff" rx="4"/>
+  <line x1="30" y1="172" x2="370" y2="172" stroke="#94a3b8" stroke-width="1.6"/>
+  <path d="M 50 172 Q 200 -8 350 172" fill="none" stroke="${NAVY}" stroke-width="2.6"/>
+  <circle cx="200" cy="82" r="5.5" fill="#ffffff" stroke="${NAVY}" stroke-width="2.6"/>
+  <line x1="200" y1="96" x2="200" y2="146" stroke="#b3261e" stroke-width="2.6"/>
+  <polygon points="200,152 193,138 207,138" fill="#b3261e"/>
+  <line x1="208" y1="82" x2="256" y2="82" stroke="${NAVY}" stroke-width="2.4"/>
+  <polygon points="262,82 248,76 248,88" fill="${NAVY}"/>
+  <text x="212" y="128" font-size="13" fill="#b3261e" font-weight="bold">a</text>
+  <text x="264" y="72" font-size="13" fill="${NAVY}" font-weight="bold">v</text>
+  <text x="176" y="66" font-size="12" fill="#475569">apex</text>
+  <text x="330" y="192" font-size="12" fill="#64748b">ground</text>
+</svg>`;
+
+/* B1: horizontal launch off a cliff. Cliff height labeled, the flight path
+   dashed, and the horizontal launch velocity an arrow. No landing distance marked. */
+FIG.b1 = `<svg viewBox="0 0 400 210" role="img" aria-label="A ball leaving the top of a cliff travelling horizontally, with a dashed curved path that continues out past the edge of the frame">
+  <rect width="400" height="210" fill="#ffffff" rx="4"/>
+  <line x1="24" y1="188" x2="376" y2="188" stroke="#94a3b8" stroke-width="1.6"/>
+  <path d="M 24 188 L 24 46 L 118 46 L 118 188 Z" fill="#dde5ee" stroke="#94a3b8" stroke-width="1.4"/>
+  <circle cx="118" cy="46" r="5.5" fill="${NAVY}"/>
+  <line x1="124" y1="46" x2="182" y2="46" stroke="${NAVY}" stroke-width="2.6"/>
+  <polygon points="192,46 176,40 176,52" fill="${NAVY}"/>
+  <path d="M 124 46 Q 232 58 300 196" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="6 5"/>
+  <line x1="66" y1="46" x2="66" y2="188" stroke="#8a6d1f" stroke-width="1.4"/>
+  <line x1="60" y1="46" x2="72" y2="46" stroke="#8a6d1f" stroke-width="1.4"/>
+  <line x1="60" y1="188" x2="72" y2="188" stroke="#8a6d1f" stroke-width="1.4"/>
+  <text x="74" y="122" font-size="13" fill="#8a6d1f" font-weight="bold">45 m</text>
+  <text x="196" y="36" font-size="13" fill="${NAVY}" font-weight="bold">8 m/s</text>
+</svg>`;
+
+/* B3: a launch at a steeper angle with the components of the launch velocity
+   dashed at the origin. Drawn at a generic angle, not exactly 53°. */
+FIG.b3 = `<svg viewBox="0 0 400 200" role="img" aria-label="A projectile launched at 53 degrees above the horizontal, with the dashed horizontal and vertical components of the launch velocity drawn to the same scale as each other">
+  <rect width="400" height="200" fill="#ffffff" rx="4"/>
+  <line x1="34" y1="168" x2="366" y2="168" stroke="#94a3b8" stroke-width="1.6"/>
+  <path d="M 70 168 Q 142.2 72.2 330 168" fill="none" stroke="#c3ceda" stroke-width="2"/>
+  <line x1="70" y1="168" x2="160.3" y2="48.2" stroke="${NAVY}" stroke-width="3"/>
+  <polygon points="160.3,48.2 155.1,66.8 143.9,58.4" fill="${NAVY}"/>
+  <line x1="70" y1="168" x2="160.3" y2="168" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 5"/>
+  <line x1="160.3" y1="168" x2="160.3" y2="48.2" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 5"/>
+  <path d="M 110 168 A 40 40 0 0 0 94 136" fill="none" stroke="#8a6d1f" stroke-width="1.8"/>
+  <text x="60" y="142" font-size="13" fill="#8a6d1f" font-weight="bold">53&#176;</text>
+  <circle cx="171" cy="120" r="4.5" fill="#ffffff" stroke="${NAVY}" stroke-width="2.4"/>
+  <text x="182" y="114" font-size="12" fill="#475569">apex</text>
+  <text x="14" y="112" font-size="13" fill="${NAVY}" font-weight="bold">25 m/s</text>
+  <text x="104" y="186" font-size="12" fill="#64748b">v<tspan font-size="9" dy="2">x</tspan></text>
+  <text x="166" y="86" font-size="12" fill="#64748b">v<tspan font-size="9" dy="2">y</tspan></text>
+</svg>`;
+
+/* C1: 30 and 60 degree launch arcs from a common origin. Both angles are
+   marked at the origin. No landing ticks, so the equal ranges are not drawn
+   before Check. */
+FIG.c1 = `<svg viewBox="0 0 400 200" role="img" aria-label="Two launch directions from a common origin, one at 30 degrees and one at 60 degrees, each with its own arc; no landing points are drawn">
+  <rect width="400" height="200" fill="#ffffff" rx="4"/>
+  <line x1="30" y1="174" x2="370" y2="174" stroke="#94a3b8" stroke-width="1.6"/>
+  <path d="M 50 174 Q 178 100 300 174" fill="none" stroke="#1f5f8b" stroke-width="2.4" stroke-dasharray="9 6"/>
+  <path d="M 50 174 Q 110 70 190 174" fill="none" stroke="#8f4f14" stroke-width="2.4"/>
+  <line x1="50" y1="174" x2="114.1" y2="137" stroke="#1f5f8b" stroke-width="3"/>
+  <polygon points="114.1,137 99.5,138.5 104,150" fill="#1f5f8b"/>
+  <line x1="50" y1="174" x2="87" y2="109.9" stroke="#8f4f14" stroke-width="3"/>
+  <polygon points="87,109.9 72.5,117 83,124.5" fill="#8f4f14"/>
+  <path d="M 128 174 A 78 78 0 0 0 117.5 135" fill="none" stroke="#8a6d1f" stroke-width="1.8"/>
+  <path d="M 95 174 A 45 45 0 0 0 72.5 135" fill="none" stroke="#8a6d1f" stroke-width="1.8"/>
+  <text x="146" y="170" font-size="13" fill="#8a6d1f" font-weight="bold">30&#176;</text>
+  <text x="44" y="122" font-size="13" fill="#8a6d1f" font-weight="bold">60&#176;</text>
+  <text x="52" y="192" font-size="12" fill="#64748b">both leave at the same speed</text>
+</svg>`;
+
+/* C5: horizontal launch from a height with the drop height marked. */
+FIG.c5 = `<svg viewBox="0 0 400 190" role="img" aria-label="A projectile launched horizontally from a height of 20 metres, with a dashed curved path steepening to the ground">
+  <rect width="400" height="190" fill="#ffffff" rx="4"/>
+  <line x1="24" y1="166" x2="376" y2="166" stroke="#94a3b8" stroke-width="1.6"/>
+  <line x1="78" y1="44" x2="128" y2="44" stroke="${NAVY}" stroke-width="2.6"/>
+  <polygon points="138,44 122,38 122,50" fill="${NAVY}"/>
+  <circle cx="70" cy="44" r="5.5" fill="${NAVY}"/>
+  <path d="M 140 44 Q 246 54 286 166" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="6 5"/>
+  <line x1="46" y1="44" x2="46" y2="166" stroke="#8a6d1f" stroke-width="1.4"/>
+  <line x1="40" y1="44" x2="52" y2="44" stroke="#8a6d1f" stroke-width="1.4"/>
+  <line x1="40" y1="166" x2="52" y2="166" stroke="#8a6d1f" stroke-width="1.4"/>
+  <text x="54" y="110" font-size="13" fill="#8a6d1f" font-weight="bold">20 m</text>
+  <text x="150" y="34" font-size="12" fill="${NAVY}" font-weight="bold">launched horizontally</text>
+  <text x="286" y="182" font-size="12" fill="#64748b">ground</text>
+</svg>`;
+
+/* D3: a plane with a released package, the ground-frame parabola, and a dashed
+   vertical line showing how the drop looks from the plane. */
+FIG.d3 = `<svg viewBox="0 0 400 210" role="img" aria-label="A plane flying horizontally, a released package, the curved path it follows as seen from the ground, and a dashed vertical line showing the straight drop seen from that same moving plane">
+  <rect width="400" height="210" fill="#ffffff" rx="4"/>
+  <line x1="20" y1="186" x2="380" y2="186" stroke="#94a3b8" stroke-width="1.6"/>
+  <path d="M 16 18 L 64 18 L 74 6 L 82 6 L 78 18 L 82 18 L 92 18 L 92 24 L 16 24 Z" fill="#475569"/>
+  <path d="M 34 24 L 46 34 L 54 34 L 46 24 Z" fill="#475569"/>
+  <line x1="146" y1="58" x2="196" y2="58" stroke="${NAVY}" stroke-width="2.4"/>
+  <polygon points="204,58 188,52 188,64" fill="${NAVY}"/>
+  <text x="150" y="46" font-size="13" fill="${NAVY}" font-weight="bold">60 m/s</text>
+  <line x1="146" y1="64" x2="146" y2="186" stroke="#64748b" stroke-width="1.6" stroke-dasharray="6 5"/>
+  <path d="M 152 64 Q 250 78 296 186" fill="none" stroke="#8f4f14" stroke-width="2.2"/>
+  <circle cx="296" cy="186" r="4" fill="#8f4f14"/>
+  <text x="16" y="112" font-size="12" fill="#64748b">from the plane:</text>
+  <text x="16" y="126" font-size="12" fill="#64748b">straight down</text>
+  <text x="24" y="204" font-size="12" fill="#8f4f14" font-weight="bold">from the ground: a curve</text>
+  <text x="330" y="204" font-size="12" fill="#64748b">ground</text>
+</svg>`;
+/* ---------------- engine ---------------- */
+const LETTERS = ["A", "B", "C", "D"];
+const STORE = "ap1-2dKinPractice.v1";
+const ALL_ITEMS = [];
+STATIONS.forEach((st, si) => {
+  st.items.forEach((it, ii) => {
+    it.stationIndex = si;
+    it.stationKey = st.key;
+    it.indexInStation = ii;
+    it.key = si + "." + ii;
+    ALL_ITEMS.push(it);
+  });
+  st.count = st.items.length;
+});
+const N = ALL_ITEMS.length;
+const STATION_OF = {};
+STATIONS.forEach(st => { st.items.forEach(it => { STATION_OF[it.key] = st.key; }); });
+
+let S = null;
+
+/* ORDER: a seeded shuffle over the four options of every item, fixed for this
+   load and identical for every student. Seeded so the option a student clicks
+   on reload is the same option it was before, while the correct answer does not
+   sit at a fixed position across the set. position[i] is the index of the
+   option that displays in slot i. */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shufflePositions(seed, n) {
+  const rand = mulberry32(seed);
+  const pos = [];
+  for (let i = 0; i < n; i++) pos.push(i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = pos[i]; pos[i] = pos[j]; pos[j] = tmp;
+  }
+  return pos;
+}
+/* Fixed for every student and verified to spread the correct option over all
+   four slots with no run longer than two in a row. It is stored in the saved
+   state as well, so a future seed change cannot silently remap a student's
+   already-checked answers onto different options. */
+const SHUFFLE_SEED = 0x259;
+ALL_ITEMS.forEach((it, idx) => {
+  it.position = shufflePositions(SHUFFLE_SEED + idx * 97 + it.id.charCodeAt(1), 4);
+  it.slotOfCorrect = it.position.indexOf(it.correct);
+});
+function correctSlot(it) { return it.slotOfCorrect; }
+
+function fresh() {
+  /* picks: item key -> chosen option index (committed by clicking an option).
+     locked: item key -> the option index that was checked, so the item stays
+     locked and keeps its full explanation. Keys are STRINGS on disk, and they
+     never encode whether the pick was right. */
+  return { v: 1, shuffleSeed: SHUFFLE_SEED, picks: {}, locked: {} };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || s.v !== 1 || typeof s.picks !== "object" || typeof s.locked !== "object") return null;
+    /* A saved state from a different option order cannot be trusted: the stored
+       option indices would point at different text. Drop it rather than show a
+       student a check that no longer matches what they picked. */
+    if (s.shuffleSeed !== SHUFFLE_SEED) return null;
+    const clean = fresh();
+    Object.keys(s.picks).forEach(k => {
+      const i = parseInt(s.picks[k], 10);
+      if (STATION_OF[k] && i >= 0 && i < 4) clean.picks[k] = i;
+    });
+    Object.keys(s.locked).forEach(k => {
+      const i = parseInt(s.locked[k], 10);
+      if (STATION_OF[k] && i >= 0 && i < 4) clean.locked[k] = i;
+    });
+    return clean;
+  } catch (e) {
+    return null;
+  }
+}
+
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {}
+}
+
+function isLocked(it) { return Object.prototype.hasOwnProperty.call(S.locked, it.key); }
+function pickOf(it) {
+  if (Object.prototype.hasOwnProperty.call(S.picks, it.key)) return S.picks[it.key];
+  return null;
+}
+function checkedKeys() { return Object.keys(S.locked).filter(k => STATION_OF[k]); }
+
+function countState() {
+  let right = 0, wrong = 0;
+  ALL_ITEMS.forEach(it => {
+    if (isLocked(it)) {
+      if (S.locked[it.key] === it.correct) right++; else wrong++;
+    }
+  });
+  return { done: right + wrong, right: right, wrong: wrong, total: N };
+}
+
+function stationCount(st) {
+  let right = 0, wrong = 0;
+  st.items.forEach(it => {
+    if (isLocked(it)) {
+      if (S.locked[it.key] === it.correct) right++; else wrong++;
+    }
+  });
+  return { done: right + wrong, right: right, wrong: wrong, total: st.count };
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ---------------- item rendering ----------------
+   The explanation for an option is rendered ONLY when that item is locked, and
+   only for the option the student committed and the correct one. Before Check
+   the DOM contains the stem, the figure, and the four option buttons, nothing
+   else. Never render expCorrect into an unchecked card. */
+function renderItem(it) {
+  const locked = isLocked(it);
+  const pick = pickOf(it);          /* index in it.options */
+  const cSlot = correctSlot(it);    /* display slot of the correct option */
+  let opts = "";
+
+  it.position.forEach((optIdx, slot) => {
+    const text = it.options[optIdx];
+    let cls = "opt";
+    let tag = "";
+    if (locked) {
+      cls += " disabled locked";
+      if (optIdx === it.correct) { cls += " good"; tag = '<span class="tagline">Correct answer</span>'; }
+      else if (optIdx === pick) { cls += " bad"; tag = '<span class="tagline">Your answer</span>'; }
+    } else if (optIdx === pick) {
+      cls += " sel";
+    }
+    const dis = locked ? " disabled" : "";
+    const pressed = (optIdx === pick) ? "true" : "false";
+    opts += '<button type="button" class="' + cls + '" data-item="' + it.key + '" data-opt="' + optIdx + '"'
+         + ' aria-pressed="' + pressed + '"' + dis + '>'
+         + '<span class="radio" aria-hidden="true"></span>'
+         + '<span class="ltr" aria-hidden="true">' + LETTERS[slot] + '</span>'
+         + '<span class="txt">' + esc(text) + tag + '</span>'
+         + '</button>';
+  });
+
+  let feedback = "";
+  if (locked) {
+    let chosenBlock = "";
+    if (pick !== null && pick !== it.correct) {
+      chosenBlock = '<div class="block"><span class="glabel w">Why the option you picked does not work</span>'
+                  + esc(it.expChosen[pick]) + '</div>';
+    }
+    feedback = '<div class="expl" id="expl-' + it.key + '">'
+      + chosenBlock
+      + '<div class="block"><span class="glabel c">Correct reasoning</span>' + esc(it.expCorrect) + '</div>'
+      + '</div>';
+  }
+
+  const fig = it.fig ? '<div class="fig">' + FIG[it.fig] + '</div>' : "";
+  const status = locked
+    ? (pick === it.correct
+        ? '<span class="istate good">Checked, correct</span>'
+        : '<span class="istate bad">Checked, not this one</span>')
+    : (pick === null
+        ? '<span class="istate pending">Not checked yet</span>'
+        : '<span class="istate pending">Selected, not checked</span>');
+
+  let hint = "";
+  if (!locked) {
+    hint = (pick === null)
+      ? 'Choose one option, then check it.'
+      : 'Option ' + LETTERS[it.position.indexOf(pick)] + ' selected. Checking locks this answer.';
+  }
+
+  const checkBtn = locked
+    ? '<span class="iplain">Locked. The reasoning stays open below.</span>'
+    : '<button type="button" class="btn primary" data-check="' + it.key + '">Check answer</button>';
+
+  return '<div class="card ich" id="card-' + it.key + '" data-card="' + it.key + '">'
+    + '<div class="ihead"><span class="iid">' + esc(it.id) + '</span>'
+    + '<span class="topic">' + esc(it.topic) + '</span>'
+    + '<span class="ibadge">' + status + '</span></div>'
+    + '<div class="stem">' + esc(it.stem) + '</div>'
+    + fig
+    + '<div class="opts" role="group" aria-label="Answer options for item ' + esc(it.id) + '">' + opts + '</div>'
+    + '<div class="qfoot"><span class="iplain">' + esc(hint) + '</span>' + checkBtn + '</div>'
+    + feedback
+    + '</div>';
+}
+function renderStation(st) {
+  let items = "";
+  st.items.forEach(it => { items += renderItem(it); });
+  const c = stationCount(st);
+  return '<section class="stn" id="stn-' + st.key + '">'
+    + '<div class="stn-head">'
+    + '<div class="sn">Station ' + st.key + ' of 4 &middot; ' + c.done + ' of ' + c.total + ' checked</div>'
+    + '<h2>' + esc(st.name) + '</h2>'
+    + '<p>' + esc(st.frame) + '</p>'
+    + '</div>'
+    + items
+    + '</section>';
+}
+
+function renderSummary() {
+  const c = countState();
+  let rows = "";
+  STATIONS.forEach(st => {
+    const sc = stationCount(st);
+    const pct = Math.round(100 * sc.done / sc.total);
+    rows += '<div class="trowroom"><div class="tl">Station ' + st.key + ': ' + esc(st.name) + '</div>'
+         + '<div class="bar" style="flex:1"><i style="display:block;height:100%;background:var(--navy);border-radius:5px;width:' + pct + '%"></i></div>'
+         + '<div class="tv">' + sc.done + ' / ' + sc.total + '</div></div>';
+  });
+  const pctAll = Math.round(100 * c.done / c.total);
+  let closing = "Nothing here counts toward a grade. Work through the stations in any order, and leave any item you want to come back to.";
+  if (c.done === c.total) {
+    closing = "You have checked all 20 items. Use the explanations on any item that did not land the first time and follow up with Mr. Porter if one still feels slippery.";
+  } else if (c.done > 0) {
+    closing = "Keep going in any order. Each checked item keeps its explanation open, so you can re-read the reasoning whenever you need it.";
+  }
+  return '<div class="card sumcard" id="summary">'
+    + '<h2>Your progress so far</h2>'
+    + '<div class="big">' + c.done + ' of ' + c.total + ' checked</div>'
+    + '<div class="sub">Optional practice. No grade is attached to any of this.</div>'
+    + '<div class="pbar" style="margin-top:14px"><i style="width:' + pctAll + '%"></i></div>'
+    + '<div style="margin-top:14px">' + rows + '</div>'
+    + '<div class="callout" style="margin-top:16px"><b>How to use this:</b> ' + esc(closing) + '</div>'
+    + '</div>';
+}
+
+function renderSidebar() {
+  const c = countState();
+  const pct = Math.round(100 * c.done / c.total);
+  let grid = "";
+  STATIONS.forEach(st => {
+    const sc = stationCount(st);
+    grid += '<div class="stnlabel">Station ' + st.key + '<span class="stncount">' + sc.done + '/' + sc.total + '</span></div>'
+         + '<div class="sgrid">';
+    st.items.forEach(it => {
+      const locked = isLocked(it);
+      const ok = locked && S.locked[it.key] === it.correct;
+      let cls = "nbtn st";
+      if (locked) cls += ok ? " checked right" : " checked wrong";
+      grid += '<button type="button" class="' + cls + '" data-goto="' + it.key + '"'
+            + ' aria-label="Go to item ' + esc(it.id) + (locked ? (ok ? ", checked" : ", checked, not correct") : ", not checked") + '">'
+            + esc(it.id) + '</button>';
+    });
+    grid += '</div>';
+  });
+  return '<aside class="side"><div class="card" id="navcard">'
+    + '<h3>Progress</h3>'
+    + '<div class="count">' + c.done + ' of ' + c.total + ' checked</div>'
+    + '<div class="pbar"><i style="width:' + pct + '%"></i></div>'
+    + grid
+    + '<div class="legend">'
+    + '<div class="row"><span class="sw done"></span> Checked</div>'
+    + '<div class="row"><span class="sw"></span> Not checked yet</div>'
+    + '</div>'
+    + '</div></aside>';
+}
+
+function renderIntro() {
+  return '<div class="card welcome" style="margin:20px auto 0">'
+    + '<div class="brand">AP&reg; Physics 1: Algebra-Based &middot; Optional Practice</div>'
+    + '<h1>Two-Dimensional Kinematics: Projectile Practice</h1>'
+    + '<div class="meta">20 items &middot; four stations &middot; self-checking &middot; not graded</div>'
+    + '<div class="box">'
+    + '<p class="body">This is optional practice for two-dimensional motion. Nothing here goes in the gradebook, so you can work slowly, get things wrong, and read the reasoning afterwards.</p>'
+    + '<p class="body" style="margin-top:10px">The set covers vector components, projectile motion, launch angle, range, and maximum height. Each item asks you to commit to one answer before you check it. After you check, the item locks and the full reasoning stays open on screen.</p>'
+    + '</div>'
+    + '<div class="box"><h4>How it works</h4><ul class="plain">'
+    + '<li>Click an option to select it. Nothing is graded yet at that point.</li>'
+    + '<li>Click <b>Check answer</b> to commit. That is when the reasoning appears.</li>'
+    + '<li>Use g = 9.8 m/s&sup2; unless an item says otherwise. Two items use g = 10 m/s&sup2; and say so.</li>'
+    + '<li>Progress saves on this device. <b>Reset progress</b> in the header clears everything.</li>'
+    + '</ul></div>'
+    + '<div class="actions"><button class="btn primary" id="b-start" style="font-size:16px;padding:12px 26px">Start practicing</button>'
+    + '<button class="btn ghost" id="b-reset0" style="font-size:16px;padding:12px 20px">Reset saved progress</button></div>'
+    + '</div>';
+}
+/* ---------------- view state ---------------- */
+let view = "intro";
+
+function renderHeader() {
+  const c = countState();
+  const a = document.getElementById("progawk");
+  if (a) a.textContent = String(c.done);
+  const live = document.getElementById("progresslive");
+  if (live) live.textContent = c.done + " of " + c.total + " checked";
+}
+
+function render(keepScroll) {
+  const y = keepScroll ? window.scrollY : null;
+  renderHeader();
+  const app = document.getElementById("app");
+  if (view === "intro") {
+    app.innerHTML = '<div style="padding:0 20px">' + renderIntro() + '</div>';
+    const b = document.getElementById("b-start");
+    if (b) b.onclick = () => {
+      view = "work";
+      render();
+      window.scrollTo({ top: 0 });
+    };
+    const r0 = document.getElementById("b-reset0");
+    if (r0) r0.onclick = askReset;
+    return;
+  }
+  let body = '<div class="main">' + renderSummary();
+  STATIONS.forEach(st => { body += renderStation(st); });
+  body += '</div>';
+  app.innerHTML = '<div class="wrap">' + body + renderSidebar() + '</div>';
+  if (y !== null) window.scrollTo({ top: y });
+  const c = countState();
+  if (c.done === c.total && !document.getElementById("done-banner")) {
+    app.insertAdjacentHTML("afterbegin", '<div class="done-banner" id="done-banner">All 20 items checked. Scroll through and re-read any reasoning you skipped past.</div>');
+  }
+}
+
+/* ---------------- interaction ----------------
+   One delegated listener on #app. Clicking an option selects it. Clicking
+   Check commits: the item locks, the chosen wrong option's explanation and the
+   correct reasoning both render, and the card stops accepting changes. */
+function onClick(e) {
+  const t = e.target;
+  if (!t || !t.closest) return;
+
+  const opt = t.closest(".opt");
+  if (opt && opt.dataset && opt.dataset.item) {
+    const key = opt.dataset.item;
+    const it = ALL_ITEMS.find(x => x.key === key);
+    if (!it) return;
+    if (isLocked(it)) return;
+    const i = parseInt(opt.dataset.opt, 10);
+    S.picks[key] = i;
+    save();
+    render(true);
+    const nb = document.querySelector('.opt[data-item="' + key + '"][data-opt="' + i + '"]');
+    if (nb) nb.focus({ preventScroll: true });
+    return;
+  }
+
+  const chk = t.closest("[data-check]");
+  if (chk) {
+    const key = chk.dataset.check;
+    const it = ALL_ITEMS.find(x => x.key === key);
+    if (!it) return;
+    if (isLocked(it)) return;
+    const pick = pickOf(it);
+    if (pick === null) return;
+    S.locked[key] = pick;
+    save();
+    render(true);
+    const card = document.getElementById("card-" + key);
+    if (card) card.scrollIntoView({ block: "nearest" });
+    const nb = document.querySelector('.opt[data-item="' + key + '"]');
+    if (nb) nb.focus({ preventScroll: true });
+    return;
+  }
+
+  const go = t.closest("[data-goto]");
+  if (go) {
+    const card = document.getElementById("card-" + go.dataset.goto);
+    if (card) card.scrollIntoView({ block: "start" });
+    return;
+  }
+}
+
+/* Keyboard: 1 to 4 pick an option inside the focused card, and Enter on the
+   card body checks. The option buttons and the Check button are real buttons,
+   so Tab and Space already work; these are extra shortcuts only. */
+function onKey(e) {
+  if (view !== "work") return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const active = document.activeElement;
+  if (!active || !active.closest) return;
+  if (active.tagName === "INPUT" || active.tagName === "TEXTAREA") return;
+  const card = active.closest("[data-card]");
+  if (!card) return;
+  const key = card.dataset.card;
+  const it = ALL_ITEMS.find(x => x.key === key);
+  if (!it || isLocked(it)) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 4) {
+    e.preventDefault();
+    const optIdx = it.position[n - 1];
+    S.picks[key] = optIdx;
+    save();
+    render(true);
+    const nb = document.querySelector('.opt[data-item="' + key + '"][data-opt="' + optIdx + '"]');
+    if (nb) nb.focus();
+  }
+}
+
+/* ---------------- reset ---------------- */
+function askReset() {
+  const root = document.getElementById("modal-root");
+  root.innerHTML = '<div class="modal-bg"><div class="modal">'
+    + '<h3>Reset your progress?</h3>'
+    + '<p>This clears every checked item and every selection saved on this device. Your answers cannot be recovered afterwards. This practice is not graded, so resetting costs you nothing in the gradebook.</p>'
+    + '<div class="actions">'
+    + '<button type="button" class="btn ghost" id="m-cancel">Keep my progress</button>'
+    + '<button type="button" class="btn warn" id="m-ok">Reset everything</button>'
+    + '</div></div></div>';
+  document.getElementById("m-cancel").onclick = () => { root.innerHTML = ""; };
+  document.getElementById("m-ok").onclick = () => {
+    S = fresh();
+    try { localStorage.removeItem(STORE); } catch (er) {}
+    save();
+    root.innerHTML = "";
+    view = "intro";
+    render();
+    window.scrollTo({ top: 0 });
+  };
+  document.getElementById("m-cancel").focus();
+}
+
+/* ---------------- boot ----------------
+   Assign S BEFORE anything reads it. loadState() is defensive but checkedKeys()
+   dereferences S, so the order here matters on reload. */
+const saved = loadState();
+S = saved || fresh();
+view = (saved && checkedKeys().length > 0) ? "work" : "intro";
+
+document.addEventListener("click", onClick);
+document.addEventListener("keydown", onKey);
+document.getElementById("b-reset2").onclick = askReset;
+render();
+
+/* ---------------- Portal bridge ----------------
+   Talks to the Portal iframe host when present, and does nothing when the page
+   is opened directly. Same message names as the other Portal activities. */
+let portalBlockId = null;
+
+function getCurrentState() {
+  return JSON.parse(JSON.stringify(S));
+}
+
+function sendToParent(msg) {
+  if (window.parent !== window) {
+    try {
+      window.parent.postMessage(Object.assign({}, msg, { blockId: portalBlockId }), "*");
+    } catch (e) {}
+  }
+}
+
+function applyState(data) {
+  if (!data || typeof data !== "object") return;
+  const clean = fresh();
+  const picks = data.picks || {};
+  const locked = data.locked || {};
+  Object.keys(picks).forEach(k => {
+    const i = parseInt(picks[k], 10);
+    if (STATION_OF[k] && i >= 0 && i < 4) clean.picks[k] = i;
+  });
+  Object.keys(locked).forEach(k => {
+    const i = parseInt(locked[k], 10);
+    if (STATION_OF[k] && i >= 0 && i < 4) clean.locked[k] = i;
+  });
+  S = clean;
+  save();
+  view = checkedKeys().length > 0 ? "work" : "intro";
+  render();
+}
+
+window.addEventListener("message", function (e) {
+  const data = e.data;
+  if (!data || typeof data !== "object") return;
+  switch (data.type) {
+    case "portal-init":
+      portalBlockId = data.blockId || null;
+      if (data.state) applyState(data.state);
+      break;
+    case "portal-get-state":
+      sendToParent({ type: "html-activity-state", state: getCurrentState() });
+      break;
+    case "portal-set-state":
+      if (data.state) applyState(data.state);
+      break;
+  }
+});
+
+sendToParent({ type: "html-activity-ready", blockId: portalBlockId });
+</script>
+</body>
+</html>

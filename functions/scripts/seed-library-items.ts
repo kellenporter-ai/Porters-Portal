@@ -29,6 +29,70 @@ interface SeedItem {
 
 const SEED_ITEMS: SeedItem[] = [
   {
+    title: 'Hair Analysis Lab: Measuring the Medullary Index',
+    description:
+      'A virtual microscope bench for telling human hair from animal hair. Students open a cross-section of an unknown ' +
+      'specimen, drag two calipers to measure the width of the central medulla and the full width of the hair, convert ' +
+      'each span to micrometers using the specimen scale bar, then do the division themselves and type the medullary index. ' +
+      'The lab teaches the reference comparison first (index, medulla shape, cuticle scale pattern, pigment) so the ' +
+      'classification task is answerable rather than a guess, and the closing skill check makes students measure and ' +
+      'divide before they are allowed to classify. Built for a class with no working microscopes, so every measurement ' +
+      'is procedural and honest. Bilingual English and Spanish, and it pairs with the Fiber Identification Lab in the ' +
+      'same Hair and Fiber unit.',
+    url: '/hair-analysis-lab',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'hair',
+      'medullary-index',
+      'trace-evidence',
+      'bilingual',
+      'interactive',
+      'activity',
+      'microscopy',
+      'measurement',
+      'classification',
+      'observation',
+      'chromebook-friendly',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/hair-analysis-lab.html',
+  },
+  {
+    title: 'Fiber Identification Lab: Burn, Solubility, Microscopy, Polarized Light',
+    description:
+      'Students identify unknown fibers the way a real trace-evidence analyst does, by running tests and reading the ' +
+      'results rather than by matching pictures. A bench holds one fiber sample at a time with four stations: a burn ' +
+      'test that reports flame behavior, odor, and ash character; three solubility tests with acetone, bleach, and ' +
+      'dilute acid; a longitudinal microscopy view; and a polarized-light stage that shows whether the fiber birefringes. ' +
+      'Observations accumulate into a results table, and every sample genuinely tests differently, so the data is ' +
+      'decisive. Students then assign each fiber to its family and to plant, animal, regenerated, or synthetic origin, ' +
+      'with specific test results cited to rule out wrong answers. Bilingual English and Spanish, and it pairs with ' +
+      'the Hair Analysis Lab.',
+    url: '/fiber-identification-lab',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'fibers',
+      'trace-evidence',
+      'fiber-analysis',
+      'burn-test',
+      'polarized-light',
+      'bilingual',
+      'interactive',
+      'activity',
+      'classification',
+      'evidence-types',
+      'chromebook-friendly',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/fiber-identification-lab.html',
+  },
+  {
     title: 'Minutiae Hunt',
     description:
       'A fingerprint word search: instead of hunting for hidden words, students hunt for hidden minutiae. ' +
@@ -302,6 +366,38 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/rubbing-balloons.html',
   },
   {
+    title: 'Polarization: Why a Neutral Conductor Is Pulled Harder Than an Insulator',
+    description:
+      'Side-by-side particle simulator for polarization. A neutral insulator and a neutral conductor sit in two lanes with a charged object above each, ' +
+      'and students drag the object closer, flip its sign, or freeze the frame to count what moved. ' +
+      'The moment that carries the lesson is the sign flip: free electrons cross to the opposite side while every positive ion stays exactly where it was, ' +
+      'so the near side turns positive without a single positive particle arriving. Bound electrons in the insulator shift within their own atoms and never leave. ' +
+      'A cloud/orbit toggle redraws only the bound electrons and provably preserves the physical state, so the two representations cannot disagree. ' +
+      'Nothing on screen states the conclusion: the particles explain themselves, which is what makes this work as the mechanism half of an observe-then-explain sequence. ' +
+      'All on-screen labels toggle English and Spanish, though the sim is deliberately nearly word-free so the particles carry the meaning. ' +
+      'Pairs with a bare-tube versus foil-wrapped-tube onset-distance lab beforehand and a charge-diagram competition afterward.',
+    url: '/polarization-sim',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Physics',
+    tags: [
+      'physics',
+      'electrostatics',
+      'charge',
+      'polarization',
+      'conductors',
+      'insulators',
+      'atomic-model',
+      'microscopic-model',
+      'simulation',
+      'induction',
+      'bilingual',
+      'activity',
+    ],
+    suggestedCategory: 'Simulation',
+    sourceFingerprint: '/polarization-sim.html',
+  },
+  {
     title: 'Electrostatic Rubbing: What Actually Moves Between the Materials',
     description:
       'Atomic-scale simulator for what rubbing does to a material. Two neutral atoms sit side by side and students choose a pair to rub, ' +
@@ -328,6 +424,36 @@ const SEED_ITEMS: SeedItem[] = [
     ],
     suggestedCategory: 'Simulation',
     sourceFingerprint: '/electrostatic-rubbing.html',
+  },
+  {
+    title: 'Two-Dimensional Kinematics: Projectile Practice',
+    description:
+      'Optional, self-checking practice for two-dimensional motion and projectile motion, written for students who are not retaking a unit exam. ' +
+      'Twenty items run in four stations: vector components, projectile basics, launch angle with range and maximum height, and two-dimensional reasoning problems. ' +
+      'Every item demands a committed answer before it can be checked, and checking locks it and opens two explanations: one for the specific option the student picked, and one for the correct reasoning. ' +
+      'Distractors are written from real misconceptions, so the swapped sine and cosine, the added-rather-than-component velocities, and the assumption that the horizontal speed changes the fall time each get named and corrected rather than just marked wrong. ' +
+      'Eight inline diagrams show the vector split, a horizontal launch off a cliff, complementary launch angles, and a package dropped from a moving plane. ' +
+      'Nothing is scored and nothing reaches the gradebook; progress saves on the device so students can leave and return. Pairs with the Chapter 2 through 4 review and the free-fall and projectile work in the course recap.',
+    url: '/ap1-2d-kinematics-practice',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'AP Physics 1',
+    tags: [
+      'ap-physics-1',
+      'kinematics',
+      'projectile-motion',
+      'two-dimensional-motion',
+      'vectors',
+      'vector-components',
+      'launch-angle',
+      'range',
+      'free-fall',
+      'independent-components',
+      'practice',
+      'algebra-based',
+    ],
+    suggestedCategory: 'Practice',
+    sourceFingerprint: '/ap1-2d-kinematics-practice.html',
   },
   {
     title: 'AP Physics 1 Q1 Review',

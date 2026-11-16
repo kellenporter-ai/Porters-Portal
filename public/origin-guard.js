@@ -48,6 +48,7 @@
    * See the header note: language keys are intentionally absent.
    */
   var WORK_KEYS = [
+    'ap1-2dKinPractice.v1',                 // ap1-2d-kinematics-practice.html
     'ap1KinPractice.v1',                    // ap1-kinematics-practice.html
     'ap1-recitation-recall-v1',             // ap1-recitation-recall.html (legacy)
     'ap1-recitation-recall-v2',             // ap1-recitation-recall.html

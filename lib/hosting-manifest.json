@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T18:57:30.937Z",
+  "generatedAt": "2026-11-16T16:11:11.537Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -15,6 +15,7 @@
     "/l4-blackout-detective": "/l4-blackout-detective.html",
     "/l4-decisions-matrix": "/l4-decisions-matrix.html",
     "/ap1-kinematics-practice": "/ap1-kinematics-practice.html",
+    "/ap1-2d-kinematics-practice": "/ap1-2d-kinematics-practice.html",
     "/ap1-forces-practice": "/ap1-forces-practice.html",
     "/ap1-newtons-second-law-practice": "/ap1-newtons-second-law-practice.html",
     "/linearization-practice": "/linearization-practice.html",
@@ -45,7 +46,10 @@
     "/domes-trip": "/domes-trip/index.html",
     "/schedule": "/schedule.html",
     "/electrostatic-rubbing": "/electrostatic-rubbing.html",
-    "/forensic-lens-critique": "/forensic-lens-critique.html"
+    "/polarization-sim": "/polarization-sim.html",
+    "/forensic-lens-critique": "/forensic-lens-critique.html",
+    "/hair-analysis-lab": "/hair-analysis-lab.html",
+    "/fiber-identification-lab": "/fiber-identification-lab.html"
   },
   "dirs": [
     "/ap1-q1-review",

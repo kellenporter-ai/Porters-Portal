@@ -60,6 +60,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/forensic-branches",
   "/texas-grid-blackout",
   "/ap1-kinematics-practice",
+  "/ap1-2d-kinematics-practice",
   "/ap1-forces-practice",
   "/ap1-newtons-second-law-practice",
   "/linearization-practice",
@@ -85,6 +86,9 @@ const CLEAN_URL_REWRITES = new Set([
   "/physics-course-recap",
   "/forensic-science-course-recap",
   "/electrostatic-rubbing",
+  "/polarization-sim",
+  "/hair-analysis-lab",
+  "/fiber-identification-lab",
 ]);
 
 /**

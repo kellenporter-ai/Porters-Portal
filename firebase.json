@@ -152,6 +152,10 @@
         "destination": "/ap1-kinematics-practice.html"
       },
       {
+        "source": "/ap1-2d-kinematics-practice",
+        "destination": "/ap1-2d-kinematics-practice.html"
+      },
+      {
         "source": "/ap1-forces-practice",
         "destination": "/ap1-forces-practice.html"
       },
@@ -272,8 +276,20 @@
         "destination": "/electrostatic-rubbing.html"
       },
       {
+        "source": "/polarization-sim",
+        "destination": "/polarization-sim.html"
+      },
+      {
         "source": "/forensic-lens-critique",
         "destination": "/forensic-lens-critique.html"
+      },
+      {
+        "source": "/hair-analysis-lab",
+        "destination": "/hair-analysis-lab.html"
+      },
+      {
+        "source": "/fiber-identification-lab",
+        "destination": "/fiber-identification-lab.html"
       },
       {
         "source": "**",

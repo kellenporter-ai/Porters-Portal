@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hair Analysis Lab | Laboratorio de analisis de cabello</title>
+<style>
+:root{
+  --bg:#0a0a1a;
+  --bg2:#1a1a2e;
+  --panel:rgba(255,255,255,0.05);
+  --panel-solid:#14142a;
+  --line:rgba(255,255,255,0.12);
+  --line-strong:rgba(255,255,255,0.24);
+  --text:#e0e0e0;
+  --muted:#a0a0b0;
+  --accent:#6366f1;
+  --accent-soft:rgba(99,102,241,0.18);
+  --ok:#22c55e;
+  --bad:#ef4444;
+  --warn:#f59e0b;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);
+  color:var(--text);
+  font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+html[lang="en"] .lang-es{display:none !important}
+html[lang="es"] .lang-en{display:none !important}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:8px 16px;
+  background:rgba(10,10,26,0.94);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+}
+.topbar .brand{font-weight:700;font-size:14px;letter-spacing:.02em;color:#fff;margin-right:auto}
+.topbar .brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.lang-toggle{display:flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;flex:none}
+.lang-toggle button{
+  appearance:none;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;min-height:34px;
+}
+.lang-toggle button.active{background:var(--accent);color:#fff}
+.lang-toggle button + button{border-left:1px solid var(--line-strong)}
+
+/* ---------- section nav ---------- */
+.secnav{
+  position:sticky;top:51px;z-index:55;
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:7px 16px;
+  background:rgba(10,10,26,0.92);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+}
+.secnav button{
+  appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);
+  font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;
+  cursor:pointer;min-height:32px;
+}
+.secnav button:hover{color:var(--text);border-color:var(--line-strong)}
+.secnav button.active{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+
+/* ---------- layout ---------- */
+main{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+section.panel{
+  display:none;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px 18px 22px;
+  backdrop-filter:blur(8px);
+}
+section.panel.active{display:block}
+h1{font-size:22px;margin:0 0 4px;color:#fff;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 6px;color:#fff;letter-spacing:-.01em}
+h3{font-size:15px;margin:0 0 8px;color:#fff}
+p{margin:0 0 10px}
+.lede{color:var(--muted);font-size:14px;max-width:78ch}
+.kicker{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 6px;
+}
+.card{
+  background:rgba(255,255,255,0.035);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:14px;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ---------- buttons ---------- */
+.btn{
+  appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,0.06);
+  color:var(--text);font:inherit;font-size:13.5px;font-weight:600;
+  padding:9px 16px;border-radius:8px;cursor:pointer;min-height:40px;
+}
+.btn:hover{border-color:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.small{font-size:12.5px;padding:6px 12px;min-height:34px}
+
+/* ---------- section A ---------- */
+.diagram-wrap{background:#07070f;border:1px solid var(--line);border-radius:10px;padding:8px;overflow:hidden}
+.diagram-wrap svg{display:block;width:100%;height:auto}
+.svg-label{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:12px;fill:#e0e0e0}
+.svg-label-sm{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:10.5px;fill:#a0a0b0}
+.svg-leader{stroke:#6366f1;stroke-width:1;fill:none}
+/* HTML label overlay: SVG <tspan> cannot be hidden by the language class
+   toggle, so diagram labels live in absolutely positioned HTML instead. */
+.diagram-wrap{position:relative}
+.dlabel{
+  position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+  font-size:12px;color:#e0e0e0;pointer-events:none;line-height:1.15;
+}
+.dlabel.sm{font-size:10.5px;color:#a0a0b0}
+.dlabel.mid{transform:translate(-50%,-50%)}
+
+.types-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media (max-width:860px){.types-row{grid-template-columns:repeat(2,1fr)}}
+.type-card{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;
+  padding:8px;text-align:center;
+}
+.type-card svg{display:block;width:100%;height:auto;border-radius:6px;background:#07070f}
+.type-card .tname{font-size:12.5px;font-weight:600;margin-top:6px;color:#fff}
+.type-card .tname-es{font-size:11.5px;color:var(--muted)}
+
+.spec-strip{
+  display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;
+}
+.spec-item{
+  display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;padding:10px;
+}
+@media (max-width:700px){.spec-item{grid-template-columns:1fr}}
+.spec-item .thumb{background:#07070f;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.spec-item .thumb svg{display:block;width:100%;height:auto}
+.spec-item .sname{font-size:12.5px;font-weight:600;color:#fff;margin-bottom:6px}
+.opt-row{display:flex;flex-wrap:wrap;gap:6px}
+.opt{
+  appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,0.05);
+  color:var(--text);font:inherit;font-size:12.5px;font-weight:600;
+  padding:7px 11px;border-radius:999px;cursor:pointer;min-height:34px;
+}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+.opt.mark-ok{border-color:var(--ok);background:rgba(34,197,94,0.16);color:#d7ffe6}
+.opt.mark-bad{border-color:var(--bad);background:rgba(239,68,68,0.14);color:#ffd9d9}
+.opt:disabled{cursor:default}
+.spec-foot{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.verdict{font-size:12.5px;font-weight:600}
+.verdict.ok{color:var(--ok)}
+.verdict.bad{color:var(--warn)}
+
+/* ---------- section B ---------- */
+.spec-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.spec-tabs button{
+  appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);
+  font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;
+  cursor:pointer;min-height:34px;
+}
+.spec-tabs button.active{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+.scope-wrap{
+  position:relative;background:#05050c;border:1px solid var(--line);border-radius:10px;
+  overflow:hidden;
+}
+.scope-wrap svg{display:block;width:100%;height:auto;touch-action:none}
+
+/* ---- purpose / why section ---- */
+/* ---- Section D measurement rows ---- */
+.quiz-measure{margin-bottom:9px}
+.qm-scope{max-width:210px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.qm-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.qm-row label{font-size:12px;color:#cfcfd8;flex:1 1 130px;min-width:110px}
+.qm-row input[type=text]{width:74px;background:#05050c;border:1.5px solid rgba(255,255,255,0.22);border-radius:7px;
+  color:#fff;font-size:13.5px;font-weight:600;padding:7px 8px;text-align:center;font-variant-numeric:tabular-nums}
+.qm-row input[type=text]:focus{outline:none;border-color:#22d3ee;box-shadow:0 0 0 2px rgba(34,211,238,0.18)}
+.qm-row input[type=text]:disabled{opacity:0.72}
+.qm-unit{font-size:12px;color:#8b8b98;width:26px}
+.qm-basis{margin-bottom:9px}
+.qm-blabel{font-size:12px;color:#cfcfd8;margin-bottom:5px}
+.qm-btns{display:flex;gap:6px;flex-wrap:wrap}
+.qm-btns .pbtn{flex:1 1 auto;min-width:74px;min-height:36px;background:rgba(255,255,255,0.06);
+  border:1.5px solid rgba(255,255,255,0.16);border-radius:7px;color:#e6e6ee;font:inherit;font-size:12px;
+  font-weight:600;cursor:pointer;padding:6px 9px}
+.qm-btns .pbtn:hover{background:rgba(255,255,255,0.12)}
+.qm-btns .pbtn.sel{background:rgba(34,211,238,0.18);border-color:#22d3ee;color:#a5f3fc}
+.qm-btns .pbtn:disabled{opacity:0.6;cursor:default}
+.qm-hint{font-size:11px;line-height:1.45;color:#8b8b98;margin-top:4px}
+
+/* ---- Section C classification ---- */
+
+/* ---- reference table (Section A) ---- */
+.ref-h{font-size:15px;color:#fff;margin:20px 0 6px}
+.ref-lede{font-size:12.5px;line-height:1.55;color:#cfcfd8;margin:0 0 10px}
+.ref-wrap{overflow-x:auto;border:1px solid rgba(255,255,255,0.12);border-radius:10px}
+table.ref-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
+table.ref-table th,table.ref-table td{padding:9px 11px;text-align:left;vertical-align:top;line-height:1.5}
+table.ref-table thead th{background:rgba(245,158,11,0.12);color:#f59e0b;font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;font-weight:700;border-bottom:1px solid rgba(245,158,11,0.30)}
+table.ref-table tbody th{color:#fff;font-weight:600;width:22%;background:rgba(255,255,255,0.03)}
+table.ref-table tbody td{color:#cfcfd8}
+table.ref-table tbody tr+tr th,table.ref-table tbody tr+tr td{border-top:1px solid rgba(255,255,255,0.07)}
+.ref-note{margin-top:10px;font-size:12.5px;line-height:1.55;color:#cfcfd8;background:rgba(34,211,238,0.07);
+  border:1px solid rgba(34,211,238,0.25);border-radius:9px;padding:10px 12px}
+.purpose-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+@media (max-width:900px){.purpose-grid{grid-template-columns:1fr}}
+.purpose-card{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:14px}
+.purpose-card .pnum{width:24px;height:24px;border-radius:50%;background:rgba(245,158,11,0.18);color:#f59e0b;
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;margin-bottom:8px}
+.purpose-card h3{font-size:14px;margin:0 0 6px;color:#fff;line-height:1.25}
+.purpose-card p{font-size:12.5px;line-height:1.5;color:#cfcfd8;margin:0}
+
+/* ---- method + calculator ---- */
+.method{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.28);border-radius:9px;padding:11px 13px;margin:10px 0 12px}
+.method .mhead{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f59e0b;margin-bottom:5px}
+.method .mbody{font-size:12.5px;line-height:1.55;color:#e6e6ee}
+.calc-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.calc-row label.cin{font-size:12.5px;color:#cfcfd8;flex:1 1 220px;min-width:180px}
+.calc-row input[type=text]{width:110px;background:#05050c;border:1.5px solid rgba(255,255,255,0.22);border-radius:8px;
+  color:#fff;font-size:15px;font-weight:600;padding:8px 10px;text-align:center;font-variant-numeric:tabular-nums}
+.calc-row input[type=text]:focus{outline:none;border-color:#22d3ee;box-shadow:0 0 0 2px rgba(34,211,238,0.20)}
+.calc-feedback{font-size:12.5px;line-height:1.5;min-height:19px;margin-bottom:8px}
+.calc-feedback.ok{color:#4ade80}.calc-feedback.no{color:#fbbf24}
+.calc-help{margin-bottom:8px}
+.btn.tiny{font-size:11.5px;padding:5px 11px}
+.calculator{border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:10px;margin-top:8px;
+  background:#0b0b16;display:grid;gap:6px;max-width:260px}
+.calc-screen{background:#05050c;border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:8px 10px;
+  font-size:16px;font-weight:600;color:#fff;text-align:right;font-variant-numeric:tabular-nums;
+  min-height:24px;overflow:hidden;white-space:nowrap}
+.calc-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-keys button{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:7px;
+  color:#fff;font-size:14px;font-weight:600;padding:9px 0;cursor:pointer;min-height:38px}
+.calc-keys button:hover{background:rgba(255,255,255,0.13)}
+.calc-keys button.acc{background:rgba(34,211,238,0.16);border-color:rgba(34,211,238,0.42);color:#22d3ee}
+.calc-keys button.eq{background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.45);color:#f59e0b}
+.calc-keys button.wide{grid-column:1 / -1}
+.calc-hint{font-size:10.5px;color:#8b8b98;margin-top:2px}
+
+.calipers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media (max-width:760px){.calipers{grid-template-columns:1fr}}
+.caliper{
+  background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+}
+.caliper .ctitle{font-size:12.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.swatch{width:12px;height:12px;border-radius:3px;flex:none;display:inline-block}
+.caliper .cval{
+  font-family:"Consolas","SF Mono",monospace;font-size:20px;font-weight:700;color:#fff;
+  margin:4px 0 2px;letter-spacing:-.01em;
+}
+.caliper .cval span{font-size:12px;font-weight:600;color:var(--muted);margin-left:3px}
+.caliper .chint{font-size:11.5px;color:var(--muted)}
+.index-box{
+  margin-top:12px;background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.45);
+  border-radius:10px;padding:12px 14px;
+}
+.index-box .ilabel{font-size:12px;color:var(--muted);font-weight:600}
+.index-box .ival{
+  font-family:"Consolas","SF Mono",monospace;font-size:30px;font-weight:700;color:#fff;line-height:1.1;
+}
+.index-box .iformula{font-size:11.5px;color:var(--muted);margin-top:2px}
+.scalebar-note{font-size:11.5px;color:var(--muted);margin-top:8px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* ---------- section C ---------- */
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:860px){.cmp-grid{grid-template-columns:1fr}}
+.cmp-cell{background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;padding:10px}
+.cmp-cell .scope-wrap{margin-bottom:8px}
+.cmp-readout{font-family:"Consolas","SF Mono",monospace;font-size:13px;color:var(--text)}
+.cmp-readout b{color:#fff}
+.cmp-index{
+  font-family:"Consolas","SF Mono",monospace;font-size:22px;font-weight:700;color:#fff;margin-top:4px;
+}
+.cmp-index small{font-size:11px;color:var(--muted);font-weight:600;font-family:inherit}
+textarea{
+  width:100%;min-height:88px;resize:vertical;background:rgba(0,0,0,0.35);
+  border:1px solid var(--line-strong);border-radius:8px;color:var(--text);
+  font:inherit;font-size:13.5px;padding:10px;
+}
+textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.saved-note{font-size:11.5px;color:var(--ok);min-height:16px;margin-top:4px}
+
+/* ---------- section D ---------- */
+.quiz-item{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;
+  padding:12px;margin-bottom:12px;
+}
+.quiz-head{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.quiz-thumb{background:#07070f;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none;width:190px}
+.quiz-thumb svg{display:block;width:100%;height:auto}
+.quiz-body{flex:1;min-width:230px}
+.quiz-q{font-size:13.5px;font-weight:600;color:#fff;margin-bottom:6px}
+.quiz-data{font-family:"Consolas","SF Mono",monospace;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.quiz-data b{color:var(--text)}
+.quiz-fb{font-size:12.5px;margin-top:8px;padding:8px 10px;border-radius:8px;display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.ok{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.45);color:#d7ffe6}
+.quiz-fb.bad{background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.45);color:#ffe9c2}
+.quiz-fb .fbnum{font-family:"Consolas","SF Mono",monospace;font-weight:700;color:#fff}
+
+/* ---------- footer ---------- */
+footer{
+  max-width:1180px;margin:0 auto;padding:16px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="lang-en">Hair Analysis Lab</span><span class="lang-es">Laboratorio de analisis de cabello</span>
+    <small><span class="lang-en">Forensic Science &middot; Week 10</span><span class="lang-es">Ciencia Forense &middot; Semana 10</span></small>
+  </div>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-lang="en" class="active" aria-pressed="true">EN</button>
+    <button type="button" data-lang="es" aria-pressed="false">ES</button>
+  </div>
+</header>
+
+<nav class="secnav" id="secnav" aria-label="Sections">
+  <button type="button" data-sec="WHY" class="active"><span class="lang-en">Why this matters</span><span class="lang-es">Por que importa</span></button>
+  <button type="button" data-sec="A"><span class="lang-en">A. Morphology</span><span class="lang-es">A. Morfologia</span></button>
+  <button type="button" data-sec="B"><span class="lang-en">B. Index instrument</span><span class="lang-es">B. Instrumento del indice</span></button>
+  <button type="button" data-sec="D"><span class="lang-en">C. Skill check</span><span class="lang-es">C. Verificacion</span></button>
+</nav>
+
+<main>
+
+<!-- ============ SECTION A ============ -->
+<section class="panel" id="sec-A">
+  <p class="kicker"><span class="lang-en">Section A</span><span class="lang-es">Seccion A</span></p>
+  <h2><span class="lang-en">Morphology of a hair shaft</span><span class="lang-es">Morfologia del tallo del cabello</span></h2>
+  <p class="lede">
+    <span class="lang-en">A hair shaft is built in three layers. Read the diagram, then look at how the central core changes from one specimen to the next.</span>
+    <span class="lang-es">El tallo del cabello esta formado por tres capas. Lee el diagrama y despues observa como cambia el nucleo central de un especimen a otro.</span>
+  </p>
+
+  <div class="diagram-wrap" id="morphDiagram"></div>
+
+  <h3 style="margin-top:16px"><span class="lang-en">Four medulla shapes</span><span class="lang-es">Cuatro formas de medula</span></h3>
+  <p class="lede" style="margin-bottom:8px">
+    <span class="lang-en">The core is not always a solid line. These four shapes are the ones you will see in the scope.</span>
+    <span class="lang-es">El nucleo no siempre es una linea solida. Estas cuatro formas son las que veras en el microscopio.</span>
+  </p>
+  <div class="types-row" id="typesRow"></div>
+
+  <h3 style="margin-top:18px"><span class="lang-en">Assign each specimen</span><span class="lang-es">Asigna cada especimen</span></h3>
+  <p class="lede" style="margin-bottom:8px">
+    <span class="lang-en">Pick one shape for each strip, then press Check on that strip. You can change your pick and check again.</span>
+    <span class="lang-es">Elige una forma para cada tira y despues presiona Revisar en esa tira. Puedes cambiar tu eleccion y revisar de nuevo.</span>
+  </p>
+  <div class="spec-strip" id="specStrip"></div>
+
+  <h3 class="ref-h"><span class="lang-en">Reference: human hair compared with animal hair</span><span class="lang-es">Referencia: cabello humano comparado con cabello animal</span></h3>
+  <p class="ref-lede">
+    <span class="lang-en">This table is your tool for the rest of the lab. It does not tell you what any specimen is. It tells you which measurements and features point which way, so you can decide for yourself.</span>
+    <span class="lang-es">Esta tabla es tu herramienta para el resto del laboratorio. No te dice que es ningun especimen. Te dice cuales medidas y caracteristicas apuntan hacia cada lado, para que tu decidas.</span>
+  </p>
+  <div class="ref-wrap">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th><span class="lang-en">Feature</span><span class="lang-es">Caracteristica</span></th>
+          <th><span class="lang-en">Human hair</span><span class="lang-es">Cabello humano</span></th>
+          <th><span class="lang-en">Most animal hair</span><span class="lang-es">La mayoria del cabello animal</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th><span class="lang-en">Medullary index</span><span class="lang-es">Indice medular</span></th>
+          <td><span class="lang-en">Small. The core takes up a little of the width.</span><span class="lang-es">Pequeno. El nucleo ocupa poco del ancho.</span></td>
+          <td><span class="lang-en">Large. The core takes up a big share of the width.</span><span class="lang-es">Grande. El nucleo ocupa gran parte del ancho.</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Medulla shape</span><span class="lang-es">Forma de la medula</span></th>
+          <td><span class="lang-en">Often fragmented, interrupted, or absent. A thin solid line is possible.</span><span class="lang-es">A menudo fragmentada, interrumpida, o ausente. Una linea solida delgada es posible.</span></td>
+          <td><span class="lang-en">Often a broad continuous band. Can be wide and unbroken.</span><span class="lang-es">A menudo una banda continua y ancha. Puede ser ancha y sin cortes.</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Cuticle scales</span><span class="lang-es">Escamas de la cuticula</span></th>
+          <td><span class="lang-en">Narrow, stacked closely, like overlapping roof tiles.</span><span class="lang-es">Angostas y muy juntas, como tejas de techo traslapadas.</span></td>
+          <td><span class="lang-en">Wider and more varied. Some animals show long pointed scales or a spiny pattern.</span><span class="lang-es">Mas anchas y variadas. Algunos animales muestran escamas largas y puntiagudas o un patron espinoso.</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Pigment</span><span class="lang-es">Pigmento</span></th>
+          <td><span class="lang-en">Evenly spread through the cortex. Color stays fairly constant along the shaft.</span><span class="lang-es">Repartido de forma uniforme por la corteza. El color se mantiene bastante constante a lo largo del tallo.</span></td>
+          <td><span class="lang-en">Often clumped, or gathered in bands. Color can change sharply along the shaft.</span><span class="lang-es">A menudo agrupado, o reunido en bandas. El color puede cambiar bruscamente a lo largo del tallo.</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Likely to carry nuclear DNA</span><span class="lang-es">Probabilidad de llevar ADN nuclear</span></th>
+          <td><span class="lang-en">Only if the root is still attached.</span><span class="lang-es">Solo si la raiz todavia esta adherida.</span></td>
+          <td><span class="lang-en">Same rule. Root present, DNA possible. Shed hair, no nuclear DNA.</span><span class="lang-es">La misma regla. Si hay raiz, es posible el ADN. Si se cayo sola, no hay ADN nuclear.</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ref-note">
+    <span class="lang-en"><b>No single feature decides it.</b> Real hair does not always follow the pattern. An animal can shed a thin hair with a small core, and a human can have an unusually wide one. Your job is to weigh the features together and say how confident you are, not to find one number that settles it.</span>
+    <span class="lang-es"><b>Ninguna caracteristica lo decide sola.</b> El cabello real no siempre sigue el patron. Un animal puede soltar un cabello delgado con un nucleo pequeno, y un humano puede tener uno inusualmente ancho. Tu trabajo es pesar las caracteristicas juntas y decir que tan seguro estas, no encontrar un solo numero que lo resuelva.</span>
+  </div>
+</section>
+
+<!-- ============ WHY / PURPOSE ============ -->
+<section class="panel active" id="sec-WHY">
+  <p class="kicker"><span class="lang-en">Why this matters</span><span class="lang-es">Por que importa</span></p>
+  <h2><span class="lang-en">What a hair can tell an investigator</span><span class="lang-es">Que puede decir un cabello a un investigador</span></h2>
+  <p class="lede">
+    <span class="lang-en">Hair is one of the most common things a person leaves behind. It brushes off on a chair, catches on a door frame, or lands on a victim without anyone noticing. In a real case, an investigator finds a single hair and has to answer two questions in order: first, is this from a human or an animal? Second, if it is human, how useful is it?</span>
+    <span class="lang-es">El cabello es una de las cosas mas comunes que una persona deja atras. Se roza en una silla, se engancha en el marco de una puerta, o cae sobre una victima sin que nadie lo note. En un caso real, un investigador encuentra un solo cabello y tiene que responder dos preguntas en orden: primero, es de un humano o de un animal? Segundo, si es humano, que tan util es?</span>
+  </p>
+  <div class="purpose-grid">
+    <div class="purpose-card">
+      <div class="pnum">1</div>
+      <h3><span class="lang-en">Human or animal?</span><span class="lang-es">Humano o animal?</span></h3>
+      <p><span class="lang-en">The medullary index is the fastest way to tell. The medulla is the core running down the center of a hair. Measure how much of the total width that core takes up, and you get a number. Human hair keeps a small core. Most animals keep a large one. This number alone will not convict anyone, but it decides whether the hair is worth sending to a lab at all.</span>
+      <span class="lang-es">El indice medular es la forma mas rapida de saberlo. La medula es el nucleo que corre por el centro del cabello. Mide que parte del ancho total ocupa ese nucleo y obtienes un numero. El cabello humano mantiene un nucleo pequeno. La mayoria de los animales mantiene uno grande. Este numero solo no condena a nadie, pero decide si vale la pena mandar el cabello a un laboratorio.</span></p>
+    </div>
+    <div class="purpose-card">
+      <div class="pnum">2</div>
+      <h3><span class="lang-en">Can it point to one person?</span><span class="lang-es">Puede senalar a una persona?</span></h3>
+      <p><span class="lang-en">A hair with the root still attached carries nuclear DNA. That makes it individual evidence. A hair that was naturally shed has no root and no nuclear DNA. It is still useful, because it can be matched to a group by color and structure, but it cannot point to one specific person. That difference decides how much weight the hair carries in court.</span>
+      <span class="lang-es">Un cabello con la raiz todavia adherida lleva ADN nuclear. Eso lo hace evidencia individual. Un cabello que se cayo de forma natural no tiene raiz ni ADN nuclear. Sigue siendo util, porque se puede comparar con un grupo por color y estructura, pero no puede senalar a una persona especifica. Esa diferencia decide cuanto peso tiene el cabello en la corte.</span></p>
+    </div>
+    <div class="purpose-card">
+      <div class="pnum">3</div>
+      <h3><span class="lang-en">Your job in this lab</span><span class="lang-es">Tu trabajo en este laboratorio</span></h3>
+      <p><span class="lang-en">You will measure each hair yourself, do the division yourself, and record what you conclude. Later this week you will get a real case file with hair and fiber evidence. The tools you build here are the ones you will use to challenge what that case file tells you.</span>
+      <span class="lang-es">Vas a medir cada cabello tu mismo, hacer la division tu mismo, y anotar lo que concluyes. Mas tarde esta semana recibiras un expediente real con evidencia de cabello y fibra. Las herramientas que construyes aqui son las que usaras para cuestionar lo que ese expediente te dice.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION B ============ -->
+<section class="panel" id="sec-B">
+  <p class="kicker"><span class="lang-en">Section B</span><span class="lang-es">Seccion B</span></p>
+  <h2><span class="lang-en">Medullary index instrument</span><span class="lang-es">Instrumento del indice medular</span></h2>
+  <p class="lede">
+    <span class="lang-en">You are looking straight down at a cut cross-section of a hair. Drag the inner caliper until it spans the width of the darker core in the center. Drag the outer caliper until it spans the full width of the hair, edge to edge. The readout converts each span into micrometers using the scale bar in the corner, and the index is computed from your two readings. Each specimen has its own calibration.</span>
+    <span class="lang-es">Estas mirando directamente una seccion transversal de un cabello. Arrastra el caliper interior hasta abarcar el ancho del nucleo mas oscuro en el centro. Arrastra el caliper exterior hasta abarcar todo el ancho del cabello, de borde a borde. La lectura convierte cada medida en micrometros usando la barra de escala en la esquina, y el indice se calcula con tus dos lecturas. Cada especimen tiene su propia calibracion.</span>
+  </p>
+
+  <div class="spec-tabs" id="specTabs"></div>
+
+  <div class="scope-wrap" id="scopeWrap"></div>
+
+  <div class="calipers">
+    <div class="caliper">
+      <div class="ctitle">
+        <span class="swatch" style="background:#f59e0b"></span>
+        <span class="lang-en">Caliper 1: medulla width</span><span class="lang-es">Caliper 1: ancho de la medula</span>
+      </div>
+      <div class="cval" id="valMedulla">0.0<span>&micro;m</span></div>
+      <div class="chint"><span class="lang-en">Inner core only.</span><span class="lang-es">Solo el nucleo interno.</span></div>
+    </div>
+    <div class="caliper">
+      <div class="ctitle">
+        <span class="swatch" style="background:#22d3ee"></span>
+        <span class="lang-en">Caliper 2: total hair width</span><span class="lang-es">Caliper 2: ancho total del cabello</span>
+      </div>
+      <div class="cval" id="valHair">0.0<span>&micro;m</span></div>
+      <div class="chint"><span class="lang-en">Edge to edge, at the same position.</span><span class="lang-es">De borde a borde, en la misma posicion.</span></div>
+    </div>
+  </div>
+
+  <div class="index-box">
+    <div class="ilabel"><span class="lang-en">Your medullary index</span><span class="lang-es">Tu indice medular</span></div>
+
+    <div class="method">
+      <div class="mhead"><span class="lang-en">The method</span><span class="lang-es">El metodo</span></div>
+      <div class="mbody">
+        <span class="lang-en"><b>Medullary index = medulla width &divide; total hair width.</b> Both widths must be measured across the same cross-section, in the same units. Your two caliper readings are already in micrometers, so divide the smaller number by the larger. The answer is a plain ratio with no units. A result near 0 means a small core. A result near 1 means the core fills the whole hair.</span>
+        <span class="lang-es"><b>Indice medular = ancho de medula &divide; ancho total del cabello.</b> Ambos anchos deben medirse en la misma seccion transversal, en las mismas unidades. Tus dos lecturas ya estan en micrometros, asi que divide el numero menor entre el mayor. La respuesta es una razon simple sin unidades. Un resultado cerca de 0 significa un nucleo pequeno. Un resultado cerca de 1 significa que el nucleo llena todo el cabello.</span>
+      </div>
+    </div>
+
+    <div class="calc-row">
+      <label class="cin" for="inpIndex"><span class="lang-en">Do the division and type your answer</span><span class="lang-es">Haz la division y escribe tu respuesta</span></label>
+      <input type="text" id="inpIndex" inputmode="decimal" placeholder="0.00" autocomplete="off" aria-label="Medullary index">
+      <button type="button" class="btn small" id="btnCheckIndex"><span class="lang-en">Check</span><span class="lang-es">Revisar</span></button>
+    </div>
+    <div class="calc-feedback" id="idxFeedback" role="status"></div>
+
+    <div class="calc-help">
+      <button type="button" class="btn tiny" id="btnCalcToggle" aria-expanded="false"><span class="lang-en">Calculator</span><span class="lang-es">Calculadora</span></button>
+      <div class="calculator" id="calculator" hidden></div>
+    </div>
+
+    <div class="iformula"><span class="lang-en">Each specimen saves your work when you switch.</span><span class="lang-es">Cada especimen guarda tu trabajo cuando cambias.</span></div>
+  </div>
+
+  <div class="toolbar">
+    <button type="button" class="btn small" id="btnResetCal"><span class="lang-en">Reset calipers</span><span class="lang-es">Reiniciar calipers</span></button>
+    <button type="button" class="btn small" id="btnNextSpec"><span class="lang-en">Next specimen</span><span class="lang-es">Siguiente especimen</span></button>
+  </div>
+  <p class="scalebar-note">
+    <span class="lang-en">The scale bar in the scope is the only ruler you have. Read it before you trust a number.</span>
+    <span class="lang-es">La barra de escala en el microscopio es tu unica regla. Leela antes de confiar en un numero.</span>
+  </p>
+</section>
+
+<!-- ============ SECTION D ============ -->
+<section class="panel" id="sec-D">
+  <p class="kicker"><span class="lang-en">Section C</span><span class="lang-es">Seccion C</span></p>
+  <h2><span class="lang-en">Skill check</span><span class="lang-es">Verificacion de destreza</span></h2>
+  <p class="lede">
+    <span class="lang-en">Each item gives you a specimen and its two measured widths. Choose one option, then press Commit on that item. Only that item responds.</span>
+    <span class="lang-es">Cada item te da un especimen y sus dos anchos medidos. Elige una opcion y despues presiona Confirmar en ese item. Solo ese item responde.</span>
+  </p>
+  <div id="quizList"></div>
+</section>
+
+</main>
+
+<footer>
+  <span>Mr. Porter | Forensic Science | Week 10</span>
+  <span class="lang-en">Measure first. Conclude second.</span>
+  <span class="lang-es">Primero mide. Despues concluye.</span>
+</footer>
+
+<script>
+/* =====================================================================
+   HAIR ANALYSIS LAB
+   Single-file interactive. Vanilla JS. No external assets.
+   All specimen geometry is generated procedurally from SPECIMENS below.
+   ===================================================================== */
+(function () {
+'use strict';
+
+/* ---------------------------------------------------------------------
+   HIDDEN CONFIG. Never rendered to the student.
+   Human hair typically measures LOWER on the medullary index than animal
+   hair, because the medulla occupies a smaller share of the shaft. The
+   threshold below is used ONLY to score Section D items and to write the
+   per-item explanation after a student commits. It is never printed as a
+   number, never used for colour coding, and never compared on screen.
+
+   HOW 0.30 WAS CHOSEN (set deliberately, 2026-11-16).
+   Section D is the only consumer. Its eight items, computed from
+   medUm / hairUm, fall into two clean groups:
+
+     items answered human : 0.1935, 0.2432, 0.2471, 0.2206  (max 0.2471)
+     items answered animal: 0.5625, 0.5641, 0.6000, 0.5909  (min 0.5625)
+
+   Any threshold T with 0.2471 < T <= 0.5625 grades every item in the
+   direction it was authored. 0.30 sits inside that gap with margin on the
+   low side, which is the side that needs it: Section B lets a student's own
+   caliper reading differ from truth by up to 0.04 and still be accepted, so
+   a threshold too close to the human ceiling (0.2471) would flip a correct
+   verdict on honest measurement slop. The geometric middle of the gap is
+   0.373, but 0.373 buys margin on the animal side that Section D never uses
+   (its narrowest animal item is 0.5625, far above both numbers) while it
+   spends margin on the human side where the items actually crowd.
+
+   The six Section B / C specimens are NOT graded by this number. Their
+   true indices are 0.0795, 0.2292, 0.4054, 0.5606, 0.6190, 0.6882. Note
+   that specimen 3 (0.4054) lands above this threshold while specimens 1
+   and 5 land below it, which is why Section C never renders a verdict:
+   the comparison asks the student to reason, not to read a cutoff.
+
+   Real forensic practice sits around 0.50 for the human/animal line. This
+   lab's authored gap does not reach that far on the low side, so 0.30 is
+   a pedagogical cutoff for these items, not a claim about the real world.
+   --------------------------------------------------------------------- */
+var INDEX_THRESHOLD = 0.30;   // hidden. do not render.
+var INDEX_CEILING   = 0.50;   // hidden. upper band used only for wording.
+
+/* ---------------------------------------------------------------------
+   Seeded PRNG (mulberry32). No Math.random anywhere in a render path.
+   --------------------------------------------------------------------- */
+function makeRng(seed) {
+  var a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    var t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ---------------------------------------------------------------------
+   SPECIMENS. Single source of truth for Section B and Section C.
+   pxPerMicron is per-specimen and honest: the scale bar drawn in the
+   scope is derived from it, so a student who reads the bar and measures
+   in pixels lands on the same micrometre value the readout shows.
+   --------------------------------------------------------------------- */
+var SPECIMENS = [
+  {
+    id: 's1',
+    nameEn: 'Unknown specimen 1', nameEs: 'Especimen desconocido 1',
+    pxPerMicron: 1.60,
+    /* Cross-section diameters. The medullary index is a ratio of
+       DIAMETERS, so both values below are diameters, never shaft length. */
+    hairDiameterPx: 96,
+    medullaDiameterPx: 22,
+    medullaType: 'fragmented',
+    pigmentBanding: false,
+    longitudinalTexture: 'smooth',
+    seed: 1041
+  },
+  {
+    id: 's2',
+    nameEn: 'Unknown specimen 2', nameEs: 'Especimen desconocido 2',
+    pxPerMicron: 1.15,
+    hairDiameterPx: 168,
+    medullaDiameterPx: 104,
+    medullaType: 'continuous',
+    pigmentBanding: true,
+    longitudinalTexture: 'banded',
+    seed: 2277
+  },
+  {
+    id: 's3',
+    nameEn: 'Unknown specimen 3', nameEs: 'Especimen desconocido 3',
+    pxPerMicron: 2.05,
+    hairDiameterPx: 74,
+    medullaDiameterPx: 30,
+    medullaType: 'interrupted',
+    pigmentBanding: false,
+    longitudinalTexture: 'scaly',
+    seed: 3319
+  },
+  {
+    id: 's4',
+    nameEn: 'Unknown specimen 4', nameEs: 'Especimen desconocido 4',
+    pxPerMicron: 1.35,
+    hairDiameterPx: 132,
+    medullaDiameterPx: 74,
+    medullaType: 'continuous',
+    pigmentBanding: true,
+    longitudinalTexture: 'banded',
+    seed: 4507
+  },
+  {
+    id: 's5',
+    nameEn: 'Unknown specimen 5', nameEs: 'Especimen desconocido 5',
+    pxPerMicron: 1.80,
+    /* Thin but PRESENT core. Not zero: an absent core reads as "nothing to
+       measure" and hands the student the answer by eye. At 7 / 88 the core is
+       narrow enough that the calipers have to be placed carefully, and it
+       stays the lowest index in the set. */
+    hairDiameterPx: 88,
+    medullaDiameterPx: 7,
+    medullaType: 'punctate',
+    pigmentBanding: false,
+    longitudinalTexture: 'smooth',
+    seed: 5623
+  },
+  {
+    id: 's6',
+    nameEn: 'Unknown specimen 6', nameEs: 'Especimen desconocido 6',
+    pxPerMicron: 1.05,
+    hairDiameterPx: 186,
+    medullaDiameterPx: 128,
+    medullaType: 'interrupted',
+    pigmentBanding: true,
+    longitudinalTexture: 'scaly',
+    seed: 6731
+  }
+];
+
+/* Derived index. Never hardcoded, never displayed as a constant.
+   Ratio of cross-sectional DIAMETERS, which is the actual definition. */
+function specimenIndex(s) {
+  return s.medullaDiameterPx / s.hairDiameterPx;
+}
+
+/* ---------------------------------------------------------------------
+   Small helpers
+   --------------------------------------------------------------------- */
+function el(id) { return document.getElementById(id); }
+function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+function fmt1(v) { return (Math.round(v * 10) / 10).toFixed(1); }
+function fmt2(v) { return (Math.round(v * 100) / 100).toFixed(2); }
+
+/* Bilingual span pair builder. Both languages always present in the DOM. */
+function bi(en, es, cls) {
+  var c = cls ? ' ' + cls : '';
+  return '<span class="lang-en' + c + '">' + en + '</span>' +
+         '<span class="lang-es' + c + '">' + es + '</span>';
+}
+
+/* Fisher-Yates with a seeded rng. Used for option order only. */
+function shuffleSeeded(arr, rng) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(rng() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/* =====================================================================
+   SECTION A: MORPHOLOGY
+   ===================================================================== */
+
+var MEDULLA_TYPES = [
+  { key: 'continuous',  en: 'Continuous',  es: 'Continua' },
+  { key: 'interrupted', en: 'Interrupted', es: 'Interrumpida' },
+  { key: 'fragmented',  en: 'Fragmented',  es: 'Fragmentada' },
+  { key: 'absent',      en: 'Absent',      es: 'Ausente' }
+];
+
+/* Draws a medulla core band of a given type into an SVG string.
+   x0..x1 is the horizontal span, cy the vertical centre, h the core height. */
+function medullaCorePath(type, x0, x1, cy, h, rng) {
+  var out = '';
+  var i, x, w;
+  if (type === 'continuous') {
+    out += '<rect x="' + x0 + '" y="' + (cy - h / 2) + '" width="' + (x1 - x0) +
+           '" height="' + h + '" rx="' + (h / 2) + '" fill="#2a1f14"/>';
+  } else if (type === 'interrupted') {
+    var seg = (x1 - x0) / 7;
+    for (i = 0; i < 7; i++) {
+      if (i % 2 === 1) continue;
+      x = x0 + i * seg + seg * 0.10;
+      w = seg * 0.80;
+      out += '<rect x="' + x.toFixed(1) + '" y="' + (cy - h / 2) + '" width="' + w.toFixed(1) +
+             '" height="' + h + '" rx="' + (h / 2) + '" fill="#2a1f14"/>';
+    }
+  } else if (type === 'fragmented') {
+    var n = 13;
+    var step = (x1 - x0) / n;
+    for (i = 0; i < n; i++) {
+      if (rng() < 0.34) continue;
+      x = x0 + i * step + step * 0.12;
+      w = step * (0.30 + rng() * 0.45);
+      var hh = h * (0.55 + rng() * 0.45);
+      out += '<rect x="' + x.toFixed(1) + '" y="' + (cy - hh / 2).toFixed(1) + '" width="' + w.toFixed(1) +
+             '" height="' + hh.toFixed(1) + '" rx="' + (hh / 2).toFixed(1) + '" fill="#2a1f14"/>';
+    }
+  }
+  /* 'absent' draws nothing */
+  return out;
+}
+
+/* A small horizontal hair strip for the type cards and Section A specimens. */
+function hairStripSvg(type, seed, w, h) {
+  var rng = makeRng(seed);
+  var cy = h / 2;
+  var bodyTop = cy - h * 0.30;
+  var bodyH = h * 0.60;
+  var coreH = Math.max(3, bodyH * 0.34);
+  var s = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet" role="img">';
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  /* cortex body */
+  s += '<rect x="6" y="' + bodyTop.toFixed(1) + '" width="' + (w - 12) + '" height="' + bodyH.toFixed(1) +
+       '" rx="' + (bodyH / 2).toFixed(1) + '" fill="#8a6b45"/>';
+  /* cuticle scale ticks along the top edge */
+  var k;
+  for (k = 0; k < 26; k++) {
+    var tx = 10 + k * ((w - 20) / 26);
+    s += '<line x1="' + tx.toFixed(1) + '" y1="' + bodyTop.toFixed(1) + '" x2="' + (tx + 4).toFixed(1) +
+         '" y2="' + (bodyTop + 5).toFixed(1) + '" stroke="#5c452c" stroke-width="1"/>';
+  }
+  /* medulla core */
+  s += medullaCorePath(type, 10, w - 10, cy, coreH, rng);
+  s += '</svg>';
+  return s;
+}
+
+/* The labelled morphology diagram: longitudinal + cross-section.
+   Shapes are SVG. Labels are HTML overlays so the EN/ES toggle works. */
+function buildMorphDiagram() {
+  var W = 900, H = 300;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Hair shaft layers">';
+  s += '<rect width="' + W + '" height="' + H + '" fill="#07070f"/>';
+
+  /* ---- longitudinal view (left) ---- */
+  var lx = 40, lw = 470, ly = 104, lh = 108;
+  s += '<rect x="' + lx + '" y="' + ly + '" width="' + lw + '" height="' + lh + '" rx="' + (lh / 2) +
+       '" fill="#6b5236" stroke="#8a6b45" stroke-width="2"/>';
+  var i;
+  for (i = 0; i < 30; i++) {
+    var sx = lx + 8 + i * ((lw - 16) / 30);
+    s += '<path d="M' + sx.toFixed(1) + ' ' + ly + ' q6 9 0 18" stroke="#4a3823" stroke-width="1.6" fill="none"/>';
+    s += '<path d="M' + sx.toFixed(1) + ' ' + (ly + lh) + ' q6 -9 0 -18" stroke="#4a3823" stroke-width="1.6" fill="none"/>';
+  }
+  s += '<rect x="' + (lx + 14) + '" y="' + (ly + 16) + '" width="' + (lw - 28) + '" height="' + (lh - 32) +
+       '" rx="' + ((lh - 32) / 2) + '" fill="#a07f52"/>';
+  var prng = makeRng(9001);
+  for (i = 0; i < 46; i++) {
+    var px = lx + 24 + prng() * (lw - 48);
+    var py = ly + 22 + prng() * (lh - 44);
+    s += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' + (1.4 + prng() * 1.8).toFixed(1) +
+         '" fill="#3b2a17" opacity="0.85"/>';
+  }
+  s += '<rect x="' + (lx + 14) + '" y="' + (ly + lh / 2 - 13) + '" width="' + (lw - 28) + '" height="26" rx="13" fill="#2a1f14"/>';
+
+  /* leader lines */
+  s += '<line x1="' + (lx + 60) + '" y1="' + (ly - 2) + '" x2="' + (lx + 60) + '" y2="' + (ly - 26) + '" class="svg-leader"/>';
+  s += '<line x1="' + (lx + 150) + '" y1="' + (ly + 30) + '" x2="' + (lx + 150) + '" y2="' + (ly - 26) + '" class="svg-leader"/>';
+  s += '<line x1="' + (lx + 300) + '" y1="' + (ly + lh / 2) + '" x2="' + (lx + 300) + '" y2="' + (ly + lh + 34) + '" class="svg-leader"/>';
+
+  /* ---- cross-section view (right) ---- */
+  var cx = 720, cy = 150, rOut = 92;
+  s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + rOut + '" fill="#6b5236" stroke="#8a6b45" stroke-width="2"/>';
+  s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rOut - 12) + '" fill="#a07f52"/>';
+  var cprng = makeRng(4242);
+  for (i = 0; i < 34; i++) {
+    var ang = cprng() * Math.PI * 2;
+    var rad = (rOut - 22) * Math.sqrt(cprng());
+    s += '<circle cx="' + (cx + Math.cos(ang) * rad).toFixed(1) + '" cy="' + (cy + Math.sin(ang) * rad).toFixed(1) +
+         '" r="' + (1.3 + cprng() * 1.7).toFixed(1) + '" fill="#3b2a17" opacity="0.85"/>';
+  }
+  s += '<circle cx="' + cx + '" cy="' + cy + '" r="26" fill="#2a1f14"/>';
+
+  s += '<line x1="' + (cx + 62) + '" y1="' + (cy - 62) + '" x2="' + (cx + 108) + '" y2="' + (cy - 96) + '" class="svg-leader"/>';
+  s += '<line x1="' + (cx + 40) + '" y1="' + (cy + 40) + '" x2="' + (cx + 108) + '" y2="' + (cy + 62) + '" class="svg-leader"/>';
+  s += '<line x1="' + (cx - 18) + '" y1="' + (cy + 18) + '" x2="' + (cx - 96) + '" y2="' + (cy + 74) + '" class="svg-leader"/>';
+
+  s += '</svg>';
+
+  /* HTML label overlay, positioned in percent of the 900x300 viewBox */
+  function pct(x, y) {
+    return 'left:' + (x / W * 100).toFixed(3) + '%;top:' + (y / H * 100).toFixed(3) + '%';
+  }
+  var labels = '';
+  labels += '<div class="dlabel sm" style="' + pct(lx + 60, 34) + '">' + bi('Longitudinal view', 'Vista longitudinal') + '</div>';
+  labels += '<div class="dlabel sm" style="' + pct(cx, 34) + '">' + bi('Cross section', 'Corte transversal') + '</div>';
+  labels += '<div class="dlabel" style="' + pct(lx + 60, ly - 38) + '">' + bi('Cuticle', 'Cuticula') + '</div>';
+  labels += '<div class="dlabel" style="' + pct(lx + 150, ly - 38) + '">' + bi('Cortex', 'Corteza') + '</div>';
+  labels += '<div class="dlabel" style="' + pct(lx + 300, ly + lh + 50) + '">' + bi('Medulla', 'Medula') + '</div>';
+  labels += '<div class="dlabel sm" style="' + pct(lx + 400, ly + lh + 50) + '">' + bi('Pigment granules', 'Granulos de pigmento') + '</div>';
+  labels += '<div class="dlabel" style="' + pct(cx + 112, cy - 98) + ';transform:translate(0,-50%)">' + bi('Cuticle', 'Cuticula') + '</div>';
+  labels += '<div class="dlabel" style="' + pct(cx + 112, cy + 66) + ';transform:translate(0,-50%)">' + bi('Cortex', 'Corteza') + '</div>';
+  labels += '<div class="dlabel" style="' + pct(cx - 100, cy + 78) + ';transform:translate(-100%,-50%)">' + bi('Medulla', 'Medula') + '</div>';
+
+  el('morphDiagram').innerHTML = s + labels;
+}
+
+function buildTypeCards() {
+  var html = '';
+  var i;
+  for (i = 0; i < MEDULLA_TYPES.length; i++) {
+    var t = MEDULLA_TYPES[i];
+    html += '<div class="type-card">' +
+      hairStripSvg(t.key, 700 + i * 37, 200, 64) +
+      '<div class="tname">' + bi(t.en, t.es) + '</div>' +
+      '</div>';
+  }
+  el('typesRow').innerHTML = html;
+}
+
+/* Section A specimens: four strips, each with a hidden correct type.
+   Order is fixed by a seeded shuffle computed once at load. */
+var A_SPECIMENS = [
+  { seed: 8101, answer: 'continuous' },
+  { seed: 8207, answer: 'fragmented' },
+  { seed: 8311, answer: 'absent' },
+  { seed: 8419, answer: 'interrupted' }
+];
+
+var aState = {};   /* id -> { pick, checked } */
+
+function buildSpecStrip() {
+  var order = shuffleSeeded([0, 1, 2, 3], makeRng(20261116));
+  var html = '';
+  var n;
+  for (n = 0; n < order.length; n++) {
+    var idx = order[n];
+    var sp = A_SPECIMENS[idx];
+    var id = 'a' + idx;
+    aState[id] = { pick: null, checked: false };
+    var opts = '';
+    var t;
+    for (t = 0; t < MEDULLA_TYPES.length; t++) {
+      var mt = MEDULLA_TYPES[t];
+      opts += '<button type="button" class="opt" data-spec="' + id + '" data-type="' + mt.key + '">' +
+              bi(mt.en, mt.es) + '</button>';
+    }
+    html += '<div class="spec-item" data-spec="' + id + '">' +
+      '<div class="thumb">' + hairStripSvg('__hidden__', sp.seed, 300, 96) + '</div>' +
+      '<div>' +
+        '<div class="sname">' + bi('Specimen ' + (n + 1), 'Especimen ' + (n + 1)) + '</div>' +
+        '<div class="opt-row">' + opts + '</div>' +
+        '<div class="spec-foot">' +
+          '<button type="button" class="btn small" data-check="' + id + '">' +
+            bi('Check', 'Revisar') + '</button>' +
+          '<span class="verdict" data-verdict="' + id + '"></span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  el('specStrip').innerHTML = html;
+  /* Now paint the real core into each thumb, using the specimen's own type. */
+  var items = el('specStrip').querySelectorAll('.spec-item');
+  var q;
+  for (q = 0; q < items.length; q++) {
+    var sid = items[q].getAttribute('data-spec');
+    var aidx = parseInt(sid.slice(1), 10);
+    var asp = A_SPECIMENS[aidx];
+    items[q].querySelector('.thumb').innerHTML = hairStripSvg(asp.answer, asp.seed, 300, 96);
+  }
+  wireSpecStrip();
+}
+
+function wireSpecStrip() {
+  el('specStrip').addEventListener('click', function (e) {
+    var optBtn = e.target.closest ? e.target.closest('.opt') : null;
+    if (optBtn) {
+      var sid = optBtn.getAttribute('data-spec');
+      var st = aState[sid];
+      if (st.checked) return;              /* locked after a correct check */
+      st.pick = optBtn.getAttribute('data-type');
+      var row = optBtn.parentNode;
+      var kids = row.querySelectorAll('.opt');
+      var i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
+      optBtn.classList.add('sel');
+      return;
+    }
+    var chk = e.target.closest ? e.target.closest('[data-check]') : null;
+    if (chk) {
+      var cid = chk.getAttribute('data-check');
+      checkSpecimen(cid);
+    }
+  });
+}
+
+function checkSpecimen(id) {
+  var st = aState[id];
+  var aidx = parseInt(id.slice(1), 10);
+  var correct = A_SPECIMENS[aidx].answer;
+  var vEl = el('specStrip').querySelector('[data-verdict="' + id + '"]');
+  if (!st.pick) {
+    vEl.className = 'verdict bad';
+    vEl.innerHTML = bi('Pick a shape first.', 'Elige una forma primero.');
+    return;
+  }
+  if (st.pick === correct) {
+    st.checked = true;
+    vEl.className = 'verdict ok';
+    vEl.innerHTML = bi('That matches the core in this strip.', 'Coincide con el nucleo de esta tira.');
+    var row = el('specStrip').querySelector('.opt[data-spec="' + id + '"]').parentNode;
+    var kids = row.querySelectorAll('.opt');
+    var i;
+    for (i = 0; i < kids.length; i++) {
+      kids[i].disabled = true;
+      if (kids[i].getAttribute('data-type') === correct) kids[i].classList.add('mark-ok');
+    }
+  } else {
+    vEl.className = 'verdict bad';
+    vEl.innerHTML = bi('Not this one. Look at the core again and try another shape.',
+                       'No es esta. Mira el nucleo otra vez y prueba otra forma.');
+  }
+}
+
+/* =====================================================================
+   SECTION B: MEDULLARY INDEX INSTRUMENT
+   ===================================================================== */
+
+/* Scope geometry, in SVG user units. The specimen is drawn to scale inside
+   this box; pxPerMicron converts user units to micrometres. */
+var SCOPE_W = 900;
+var SCOPE_H = 300;
+var HAIR_CX = SCOPE_W / 2;
+var HAIR_CY = SCOPE_H / 2;
+/* Display magnification, computed per specimen so the shaft fills the scope
+   without clipping the calipers. pxPerMicron is defined in specimen pixels,
+   so every conversion below divides by (pxPerMicron * zoomFor(spec)). */
+var SCOPE_TARGET_HAIR_PX = 150;   /* drawn DIAMETER of the cross-section, user units */
+var MIN_SEP = 26;                 /* minimum gap between a caliper's two handles */
+
+function zoomFor(spec) {
+  return SCOPE_TARGET_HAIR_PX / spec.hairDiameterPx;
+}
+
+/* Caliper state per specimen. Handles are stored as y positions in user
+   units, because the diameter is measured vertically on a cross-section. */
+var bState = {
+  current: 0,
+  calipers: {}   /* id -> { medA, medB, hairA, hairB } */
+};
+
+function defaultCalipers(spec) {
+  /* Start deliberately wrong: both calipers sit narrow and off-centre so the
+     student has to move them. Never pre-bracketed to the true feature. */
+  /* Starting positions are deliberately arbitrary and differ per specimen,
+     so the opening index is different every time and tells the student
+     nothing. Neither caliper is pre-bracketed to the feature. */
+  var jitter = (spec.seed % 17) - 8;          /* -8 .. +8, deterministic */
+  /* Vertical positions: both calipers bracket the section centre on the
+     Y axis, since the diameter is now measured top to bottom. */
+  var medHalf = 18 + jitter;
+  var hairHalf = 64 + jitter * 2;
+  return {
+    medA: HAIR_CY - medHalf,
+    medB: HAIR_CY + medHalf,
+    hairA: HAIR_CY - hairHalf,
+    hairB: HAIR_CY + hairHalf
+  };
+}
+
+function calipersFor(spec) {
+  if (!bState.calipers[spec.id]) bState.calipers[spec.id] = defaultCalipers(spec);
+  return bState.calipers[spec.id];
+}
+
+/* Procedural specimen CROSS-SECTION. Drawn from the SPECIMENS parameters.
+   The medullary index is a ratio of diameters, so the student measures
+   across a cross-section: outer shaft diameter and inner core diameter. */
+function specimenBodySvg(spec) {
+  var rng = makeRng(spec.seed);
+  var z = zoomFor(spec);
+  var hairD = spec.hairDiameterPx * z;   /* outer cross-section diameter */
+  var medD = spec.medullaDiameterPx * z; /* medulla diameter */
+  var rx = hairD / 2;
+  var ry = hairD / 2;
+  var mrx = medD / 2;
+  var mry = medD / 2;
+  var cx = HAIR_CX;
+  var cy = HAIR_CY;
+  var s = '';
+  var i;
+
+  /* 1. Cortical body: the full cross-section disc. */
+  s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx.toFixed(1) + '" ry="' + ry.toFixed(1) +
+       '" fill="#8a6b45"/>';
+
+  /* 2. Cuticle ring: the scalloped outer edge, as scale tips seen end-on. */
+  var scales = 44;
+  for (i = 0; i < scales; i++) {
+    var ang = (i / scales) * Math.PI * 2;
+    var sx = cx + Math.cos(ang) * rx;
+    var sy = cy + Math.sin(ang) * ry;
+    s += '<circle cx="' + sx.toFixed(1) + '" cy="' + sy.toFixed(1) + '" r="' + (2.4).toFixed(1) +
+         '" fill="#6b5236" opacity="0.85"/>';
+  }
+  s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx.toFixed(1) + '" ry="' + ry.toFixed(1) +
+       '" fill="none" stroke="#5c452c" stroke-width="2"/>';
+
+  /* 3. Cortex texture: pigment granules scattered in the CORTEX ONLY,
+        kept clear of the medulla radius so the two features stay distinct. */
+  if (spec.pigmentBanding) {
+    /* heavily pigmented: dense, larger granules */
+    var gcount = Math.round(medD > 0 ? 150 : 130);
+    for (i = 0; i < gcount; i++) {
+      var ga = rng() * Math.PI * 2;
+      var gr0 = rng();
+      /* distribute between the medulla edge and the cuticle */
+      var rMin = mrx + 3;
+      var rMax = rx - 4;
+      if (rMax <= rMin) { rMin = 0; rMax = rx - 3; }
+      var rad = rMin + gr0 * (rMax - rMin);
+      var gx = cx + Math.cos(ga) * rad;
+      var gy = cy + Math.sin(ga) * rad * (ry / rx);
+      var grr = 1.6 + rng() * 2.6;
+      s += '<circle cx="' + gx.toFixed(1) + '" cy="' + gy.toFixed(1) + '" r="' + grr.toFixed(1) +
+           '" fill="#3b2a17" opacity="' + (0.45 + rng() * 0.5).toFixed(2) + '"/>';
+    }
+  } else {
+    var gcount2 = 70;
+    for (i = 0; i < gcount2; i++) {
+      var ga2 = rng() * Math.PI * 2;
+      var rMin2 = mrx + 3;
+      var rMax2 = rx - 5;
+      if (rMax2 <= rMin2) { rMin2 = 0; rMax2 = rx - 4; }
+      var rad2 = rMin2 + rng() * (rMax2 - rMin2);
+      var gx2 = cx + Math.cos(ga2) * rad2;
+      var gy2 = cy + Math.sin(ga2) * rad2 * (ry / rx);
+      s += '<circle cx="' + gx2.toFixed(1) + '" cy="' + gy2.toFixed(1) + '" r="' + (1.2 + rng() * 1.8).toFixed(1) +
+           '" fill="#3b2a17" opacity="' + (0.30 + rng() * 0.35).toFixed(2) + '"/>';
+    }
+  }
+
+  /* 4. Medulla: the central core, drawn as a true cross-sectional shape.
+        Its diameter is the measured value in every case. */
+  if (spec.medullaType === 'absent') {
+    /* No core is visible in this cross-section. */
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + (mrx).toFixed(1) + '" ry="' + (mry).toFixed(1) +
+         '" fill="none" stroke="#8a6b45" stroke-width="1"/>';
+  } else if (spec.medullaType === 'punctate') {
+    /* A thread of core, present but narrow. Filled so it reads as matter,
+       with a hairline edge so the calipers have something to land on.
+       The outline sits ON the diameter, never outside it. */
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + mrx.toFixed(1) + '" ry="' + mry.toFixed(1) +
+         '" fill="#2a1f14" stroke="#1a120b" stroke-width="0.9"/>';
+    /* faint pigment hugging the core, so the eye finds it before the caliper does */
+    for (i = 0; i < 10; i++) {
+      var pa = (i / 10) * Math.PI * 2 + 0.4;
+      s += '<circle cx="' + (cx + Math.cos(pa) * (mrx + 2.2)).toFixed(1) +
+           '" cy="' + (cy + Math.sin(pa) * (mry + 2.2)).toFixed(1) +
+           '" r="1.1" fill="#3b2a17" opacity="0.55"/>';
+    }
+  } else if (spec.medullaType === 'continuous') {
+    /* A solid, filled core. */
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + mrx.toFixed(1) + '" ry="' + mry.toFixed(1) +
+         '" fill="#2a1f14"/>';
+  } else if (spec.medullaType === 'interrupted') {
+    /* A partly open core: the medulla ring is present but broken,
+       so its outer diameter still defines the measurement. */
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + mrx.toFixed(1) + '" ry="' + mry.toFixed(1) +
+         '" fill="none" stroke="#2a1f14" stroke-width="' + Math.max(3, mrx * 0.42).toFixed(1) + '"/>';
+    var holes = 7;
+    for (i = 0; i < holes; i++) {
+      var ha = (i / holes) * Math.PI * 2 + 0.3;
+      var hr = mrx * 0.78;
+      s += '<circle cx="' + (cx + Math.cos(ha) * hr).toFixed(1) + '" cy="' + (cy + Math.sin(ha) * hr).toFixed(1) +
+           '" r="' + (mrx * 0.22).toFixed(1) + '" fill="#8a6b45" opacity="0.9"/>';
+    }
+  } else {
+    /* fragmented: islands inside the core area, still bounded by the diameter */
+    var frags = 9;
+    for (i = 0; i < frags; i++) {
+      var fa = (i / frags) * Math.PI * 2 + 0.55;
+      var frad = mrx * (0.30 + rng() * 0.52);
+      s += '<circle cx="' + (cx + Math.cos(fa) * frad).toFixed(1) + '" cy="' + (cy + Math.sin(fa) * frad).toFixed(1) +
+           '" r="' + (mrx * (0.16 + rng() * 0.20)).toFixed(1) + '" fill="#2a1f14"/>';
+    }
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + mrx.toFixed(1) + '" ry="' + mry.toFixed(1) +
+         '" fill="none" stroke="#2a1f14" stroke-width="1.2" opacity="0.55"/>';
+  }
+
+  return s;
+}
+
+
+/* Scale bar: length in user units derived from pxPerMicron, labelled with a
+   real length. The label is chosen so the bar is a readable width. */
+function scaleBarSvg(spec) {
+  var candidates = [10, 20, 25, 50, 100, 200];
+  var chosen = 50;
+  var i;
+  var pxPerUm = spec.pxPerMicron * zoomFor(spec);
+  for (i = 0; i < candidates.length; i++) {
+    var px = candidates[i] * pxPerUm;
+    if (px >= 70 && px <= 190) { chosen = candidates[i]; break; }
+  }
+  var barPx = chosen * pxPerUm;
+  var bx = 24;
+  var by = SCOPE_H - 34;
+  var s = '';
+  s += '<rect x="' + (bx - 8) + '" y="' + (by - 26) + '" width="' + (barPx + 16) + '" height="46" rx="6" fill="#0b0b16" opacity="0.85"/>';
+  s += '<line x1="' + bx + '" y1="' + by + '" x2="' + (bx + barPx).toFixed(1) + '" y2="' + by +
+       '" stroke="#e0e0e0" stroke-width="3"/>';
+  s += '<line x1="' + bx + '" y1="' + (by - 7) + '" x2="' + bx + '" y2="' + (by + 7) + '" stroke="#e0e0e0" stroke-width="3"/>';
+  s += '<line x1="' + (bx + barPx).toFixed(1) + '" y1="' + (by - 7) + '" x2="' + (bx + barPx).toFixed(1) +
+       '" y2="' + (by + 7) + '" stroke="#e0e0e0" stroke-width="3"/>';
+  s += '<text x="' + (bx + barPx / 2).toFixed(1) + '" y="' + (by - 12) +
+       '" class="svg-label" text-anchor="middle" fill="#e0e0e0">' + chosen + ' &micro;m</text>';
+  return s;
+}
+
+/* Caliper rendering. Each caliper is a VERTICAL line with two handles,
+   measuring across the cross-section diameter the way a filar micrometer
+   eyepiece measures a disc. */
+function caliperSvg(cp, color, xOffset, label) {
+  var x = HAIR_CX + xOffset;
+  var s = '';
+  s += '<line data-cal="' + label + '" data-part="span" x1="' + x + '" y1="' + Math.min(cp.a, cp.b).toFixed(1) +
+       '" x2="' + x + '" y2="' + Math.max(cp.a, cp.b).toFixed(1) + '" stroke="' + color + '" stroke-width="2.5"/>';
+  s += '<line data-cal="' + label + '" data-part="tickA" x1="' + (x - 13) + '" y1="' + cp.a.toFixed(1) +
+       '" x2="' + (x + 13) + '" y2="' + cp.a.toFixed(1) + '" stroke="' + color + '" stroke-width="2.5"/>';
+  s += '<line data-cal="' + label + '" data-part="tickB" x1="' + (x - 13) + '" y1="' + cp.b.toFixed(1) +
+       '" x2="' + (x + 13) + '" y2="' + cp.b.toFixed(1) + '" stroke="' + color + '" stroke-width="2.5"/>';
+  s += '<circle class="handle" data-cal="' + label + '" data-end="a" cx="' + x + '" cy="' + cp.a.toFixed(1) +
+       '" r="11" fill="' + color + '" fill-opacity="0.28" stroke="' + color + '" stroke-width="2.5" style="cursor:ns-resize"/>';
+  s += '<circle class="handle" data-cal="' + label + '" data-end="b" cx="' + x + '" cy="' + cp.b.toFixed(1) +
+       '" r="11" fill="' + color + '" fill-opacity="0.28" stroke="' + color + '" stroke-width="2.5" style="cursor:ns-resize"/>';
+  return s;
+}
+
+function renderScope() {
+  var spec = SPECIMENS[bState.current];
+  var cp = calipersFor(spec);
+  var s = '<svg id="scopeSvg" viewBox="0 0 ' + SCOPE_W + ' ' + SCOPE_H + '" preserveAspectRatio="xMidYMid meet" role="img" style="width:100%;height:auto;display:block">';
+  s += '<rect width="' + SCOPE_W + '" height="' + SCOPE_H + '" fill="#05050c"/>';
+  /* faint graticule so the scope reads as an instrument */
+  var g;
+  for (g = 1; g < 12; g++) {
+    s += '<line x1="' + (g * SCOPE_W / 12) + '" y1="0" x2="' + (g * SCOPE_W / 12) + '" y2="' + SCOPE_H +
+         '" stroke="#ffffff" stroke-opacity="0.035" stroke-width="1"/>';
+  }
+  for (g = 1; g < 6; g++) {
+    s += '<line x1="0" y1="' + (g * SCOPE_H / 6) + '" x2="' + SCOPE_W + '" y2="' + (g * SCOPE_H / 6) +
+         '" stroke="#ffffff" stroke-opacity="0.035" stroke-width="1"/>';
+  }
+  s += specimenBodySvg(spec);
+  /* Both calipers ride vertically across the cross-section: the medulla
+     caliper inside the core, the hair caliper across the outer edge. */
+  s += caliperSvg({ a: cp.medA, b: cp.medB }, '#f59e0b', -10, 'med');
+  s += caliperSvg({ a: cp.hairA, b: cp.hairB }, '#22d3ee', 10, 'hair');
+  s += scaleBarSvg(spec);
+  s += '</svg>';
+  el('scopeWrap').innerHTML = s;
+  wireScopeDrag();
+  updateReadouts();
+}
+
+function updateReadouts() {
+  var spec = SPECIMENS[bState.current];
+  var cp = calipersFor(spec);
+  var medPx = Math.abs(cp.medB - cp.medA);
+  var hairPx = Math.abs(cp.hairB - cp.hairA);
+  var pxPerUm = spec.pxPerMicron * zoomFor(spec);
+  var medUm = medPx / pxPerUm;
+  var hairUm = hairPx / pxPerUm;
+  el('valMedulla').innerHTML = fmt1(medUm) + '<span>&micro;m</span>';
+  el('valHair').innerHTML = fmt1(hairUm) + '<span>&micro;m</span>';
+  /* The index is NOT computed for the student. They read the two widths
+     above, do the division themselves, and type it in. */
+  var saved = idxWork[spec.id] || '';
+  var inp = el('inpIndex');
+  if (inp) inp.value = saved;
+  var fb = el('idxFeedback');
+  if (fb) { fb.textContent = ''; fb.className = 'calc-feedback'; }
+}
+
+/* Per-specimen student work. Typed index only; never auto-filled. */
+var idxWork = {};
+
+/* True ratio, used ONLY to mark a typed answer. Never displayed. */
+function trueIndexFor(spec) {
+  return specimenIndex(spec);
+}
+
+function checkTypedIndex() {
+  var spec = SPECIMENS[bState.current];
+  var inp = el('inpIndex');
+  var fb = el('idxFeedback');
+  if (!inp || !fb) return;
+  var raw = inp.value.replace(',', '.').trim();
+  if (raw === '') {
+    fb.className = 'calc-feedback no';
+    fb.innerHTML = bi('Measure both widths, do the division, then type your answer.',
+                      'Mide ambos anchos, haz la division, y escribe tu respuesta.');
+    return;
+  }
+  var typed = parseFloat(raw);
+  if (isNaN(typed)) {
+    fb.className = 'calc-feedback no';
+    fb.innerHTML = bi('That is not a number. Use digits and a decimal point, for example 0.34.',
+                      'Eso no es un numero. Usa digitos y un punto decimal, por ejemplo 0.34.');
+    return;
+  }
+  idxWork[spec.id] = raw;
+  var medIm = Math.abs(calipersFor(spec).medB - calipersFor(spec).medA);
+  var hairIm = Math.abs(calipersFor(spec).hairB - calipersFor(spec).hairA);
+  if (hairIm < MIN_SEP || medIm < MIN_SEP) {
+    fb.className = 'calc-feedback no';
+    fb.innerHTML = bi('Your calipers are still resting in their starting position. Drag them onto the core and onto the edge of the hair first.',
+                      'Tus calipers siguen en su posicion inicial. Arrastralos primero sobre el nucleo y sobre el borde del cabello.');
+    return;
+  }
+  var pxPerUm = spec.pxPerMicron * zoomFor(spec);
+  var measureRatio = (medIm / hairIm);
+  var truth = trueIndexFor(spec);
+  /* Correct if the typed value matches the true ratio, OR matches what the
+     student's own calipers currently read. Measuring imprecision is allowed:
+     the point is the arithmetic, not a pixel-perfect drag. */
+  var nearTruth = Math.abs(typed - truth) <= 0.04;
+  var nearMeasure = Math.abs(typed - measureRatio) <= 0.04;
+  if (nearTruth || nearMeasure) {
+    fb.className = 'calc-feedback ok';
+    fb.innerHTML = bi('That is the index for this specimen. Record it.',
+                      'Ese es el indice de este especimen. Anotalo.');
+  } else if (typed > 1) {
+    fb.className = 'calc-feedback no';
+    fb.innerHTML = bi('An index cannot be larger than 1, because the core is always inside the hair. Check which number you divided by which.',
+                      'Un indice no puede ser mayor que 1, porque el nucleo siempre esta dentro del cabello. Revisa cual numero dividiste entre cual.');
+  } else {
+    fb.className = 'calc-feedback no';
+    fb.innerHTML = bi('Not this one yet. Divide the medulla width by the total hair width and try again. You can use the calculator below.',
+                      'Todavia no es este. Divide el ancho de la medula entre el ancho total del cabello e intentalo otra vez. Puedes usar la calculadora de abajo.');
+  }
+}
+
+function wireScopeDrag() {
+  var svg = el('scopeSvg');
+  if (!svg) return;
+  var dragging = null;
+
+  function toUserY(evt) {
+    var pt = svg.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    var m = svg.getScreenCTM();
+    if (!m) return 0;
+    var inv = m.inverse();
+    var u = pt.matrixTransform(inv);
+    return u.y;
+  }
+
+  function onDown(e) {
+    var t = e.target;
+    if (!t || !t.classList || !t.classList.contains('handle')) return;
+    e.preventDefault();
+    dragging = { cal: t.getAttribute('data-cal'), end: t.getAttribute('data-end') };
+    if (svg.setPointerCapture && e.pointerId !== undefined) {
+      try { svg.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    }
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var spec = SPECIMENS[bState.current];
+    var cp = calipersFor(spec);
+    var y = clamp(toUserY(e), 4, SCOPE_H - 4);
+    /* Keep the two handles of a caliper at least MIN_SEP apart so one can
+       never sit on top of the other and become ungrabbable. */
+    if (dragging.cal === 'med') {
+      if (dragging.end === 'a') cp.medA = Math.min(y, cp.medB - MIN_SEP);
+      else cp.medB = Math.max(y, cp.medA + MIN_SEP);
+    } else {
+      if (dragging.end === 'a') cp.hairA = Math.min(y, cp.hairB - MIN_SEP);
+      else cp.hairB = Math.max(y, cp.hairA + MIN_SEP);
+    }
+    /* Move the handle nodes directly. No re-render, so the drag target
+       survives the pointer stream and the readouts stay live. */
+    var nodes = svg.querySelectorAll('.handle');
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.getAttribute('data-cal') === dragging.cal && n.getAttribute('data-end') === dragging.end) {
+        n.setAttribute('cy', y.toFixed(1));
+      }
+    }
+    var lines = svg.querySelectorAll('line[data-cal]');
+    var a = dragging.cal === 'med' ? cp.medA : cp.hairA;
+    var b = dragging.cal === 'med' ? cp.medB : cp.hairB;
+    for (i = 0; i < lines.length; i++) {
+      var ln = lines[i];
+      if (ln.getAttribute('data-cal') !== dragging.cal) continue;
+      var part = ln.getAttribute('data-part');
+      if (part === 'span') {
+        ln.setAttribute('y1', Math.min(a, b).toFixed(1));
+        ln.setAttribute('y2', Math.max(a, b).toFixed(1));
+      } else if (part === 'tickA') {
+        ln.setAttribute('y1', a.toFixed(1));
+        ln.setAttribute('y2', a.toFixed(1));
+      } else if (part === 'tickB') {
+        ln.setAttribute('y1', b.toFixed(1));
+        ln.setAttribute('y2', b.toFixed(1));
+      }
+    }
+    updateReadouts();
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = null;
+    /* one clean repaint after the gesture ends */
+    renderScope();
+  }
+
+  svg.addEventListener('pointerdown', onDown);
+  svg.addEventListener('pointermove', onMove);
+  svg.addEventListener('pointerup', onUp);
+  svg.addEventListener('pointercancel', onUp);
+}
+
+function buildSpecTabs() {
+  var html = '';
+  var i;
+  for (i = 0; i < SPECIMENS.length; i++) {
+    var sp = SPECIMENS[i];
+    html += '<button type="button" data-specidx="' + i + '"' + (i === bState.current ? ' class="active"' : '') + '>' +
+            bi(sp.nameEn, sp.nameEs) + '</button>';
+  }
+  el('specTabs').innerHTML = html;
+  el('specTabs').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-specidx]') : null;
+    if (!b) return;
+    bState.current = parseInt(b.getAttribute('data-specidx'), 10);
+    var kids = el('specTabs').querySelectorAll('button');
+    var k;
+    for (k = 0; k < kids.length; k++) kids[k].classList.toggle('active', kids[k] === b);
+    renderScope();
+  });
+}
+
+/* =====================================================================
+   LIGHTWEIGHT CALCULATOR + SECTION B CONTROLS
+   ===================================================================== */
+
+function buildCalculator() {
+  var host = el('calculator');
+  if (!host) return;
+  /* key = what the handler compares against; label = what the student sees.
+     Keeping them separate avoids comparing against an HTML entity. */
+  var keys = [
+    { k: '7', lbl: '7' }, { k: '8', lbl: '8' }, { k: '9', lbl: '9' }, { k: '/', lbl: '&divide;' },
+    { k: '4', lbl: '4' }, { k: '5', lbl: '5' }, { k: '6', lbl: '6' }, { k: '*', lbl: '&times;' },
+    { k: '1', lbl: '1' }, { k: '2', lbl: '2' }, { k: '3', lbl: '3' }, { k: '-', lbl: '&minus;' },
+    { k: '0', lbl: '0' }, { k: '.', lbl: '.' }, { k: '+', lbl: '+' }, { k: 'C', lbl: 'C' },
+    { k: '=', lbl: '&equals;' }
+  ];
+  var html = '<div class="calc-screen" id="calcScreen">0</div>';
+  html += '<div class="calc-keys">';
+  var i;
+  for (i = 0; i < keys.length; i++) {
+    var k = keys[i].k;
+    var cls = '';
+    if (k === '/' || k === '*' || k === '-' || k === '+' || k === 'C') cls = ' acc';
+    if (k === '=') cls = ' eq wide';
+    html += '<button type="button" data-key="' + k + '" class="' + cls + '">' + keys[i].lbl + '</button>';
+  }
+  html += '</div>';
+  html += '<div class="calc-hint">' + bi('Type your widths here if you want help with the division.',
+                                         'Escribe tus anchos aqui si quieres ayuda con la division.') + '</div>';
+  host.innerHTML = html;
+
+  var expr = '';
+  var screen = el('calcScreen');
+
+  function paint(txt, isErr) {
+    if (!screen) return;
+    screen.textContent = txt;
+    screen.style.color = isErr ? '#fbbf24' : '#fff';
+  }
+
+  /* Tiny safe evaluator: digits, one decimal point each, + - * / only.
+     Never uses eval, so a pasted string cannot run code. */
+  function evaluate(raw) {
+    var clean = raw.replace(/[\u00f7]/g, '/').replace(/[\u00d7]/g, '*').replace(/[\u2212]/g, '-');
+    if (!/^[0-9.\s+\-*/]+$/.test(clean)) return null;
+    if (clean.indexOf('**') !== -1 || clean.indexOf('//') !== -1) return null;
+    var toks = clean.match(/(\d*\.?\d+)|[+\-*/]/g);
+    if (!toks) return null;
+    var i;
+    for (i = 0; i < toks.length; i++) {
+      if (i % 2 === 0 && !/^\d*\.?\d+$/.test(toks[i])) return null;
+      if (i % 2 === 1 && !/^[+\-*/]$/.test(toks[i])) return null;
+    }
+    if (toks.length % 2 === 0) return null;
+    /* Standard precedence, implemented as two explicit passes over the
+     token list. Pass 1 folds every * and / into its left operand. Pass 2
+     folds the remaining + and - left to right. */
+  var i;
+  var nums = [];
+  var ops = [];
+  nums.push(parseFloat(toks[0]));
+  for (i = 1; i < toks.length; i += 2) {
+    ops.push(toks[i]);
+    nums.push(parseFloat(toks[i + 1]));
+  }
+  /* pass 1: * and / fold left-to-right into nums[j] */
+  for (i = 0; i < ops.length; ) {
+    if (ops[i] === '*') {
+      nums[i] = nums[i] * nums[i + 1];
+      nums.splice(i + 1, 1); ops.splice(i, 1);
+    } else if (ops[i] === '/') {
+      if (nums[i + 1] === 0) return null;
+      nums[i] = nums[i] / nums[i + 1];
+      nums.splice(i + 1, 1); ops.splice(i, 1);
+    } else {
+      i++;
+    }
+  }
+  /* pass 2: + and - left to right */
+  var acc = nums[0];
+  for (i = 0; i < ops.length; i++) {
+    acc = ops[i] === '+' ? acc + nums[i + 1] : acc - nums[i + 1];
+  }
+  if (!isFinite(acc)) return null;
+  return acc;
+  }
+
+  host.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-key]') : null;
+    if (!btn) return;
+    var k = btn.getAttribute('data-key');
+    if (k === 'C') { expr = ''; paint('0'); return; }
+    if (k === '=') {
+      var v = evaluate(expr);
+      if (v === null) { paint('error', true); expr = ''; return; }
+      var out = (Math.round(v * 10000) / 10000).toString();
+      expr = out;
+      paint(out);
+      return;
+    }
+    expr += k;
+    paint(expr);
+  });
+}
+
+function wireSectionB() {
+  var reset = el('btnResetCal');
+  if (reset) {
+    reset.addEventListener('click', function () {
+      var spec = SPECIMENS[bState.current];
+      delete bState.calipers[spec.id];   /* forces a fresh defaultCalipers() */
+      renderScope();
+    });
+  }
+  var next = el('btnNextSpec');
+  if (next) {
+    next.addEventListener('click', function () {
+      /* save whatever is typed before leaving */
+      var inp = el('inpIndex');
+      if (inp) idxWork[SPECIMENS[bState.current].id] = inp.value;
+      bState.current = (bState.current + 1) % SPECIMENS.length;
+      var kids = el('specTabs') ? el('specTabs').querySelectorAll('button') : [];
+      var k;
+      for (k = 0; k < kids.length; k++) {
+        kids[k].classList.toggle('active', parseInt(kids[k].getAttribute('data-specidx'), 10) === bState.current);
+      }
+      renderScope();
+    });
+  }
+  var check = el('btnCheckIndex');
+  if (check) check.addEventListener('click', checkTypedIndex);
+  var inp = el('inpIndex');
+  if (inp) {
+    inp.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); checkTypedIndex(); }
+    });
+    inp.addEventListener('input', function () {
+      idxWork[SPECIMENS[bState.current].id] = inp.value;
+    });
+  }
+  var tgl = el('btnCalcToggle');
+  var calc = el('calculator');
+  if (tgl && calc) {
+    tgl.addEventListener('click', function () {
+      var open = calc.hasAttribute('hidden');
+      if (open) calc.removeAttribute('hidden'); else calc.setAttribute('hidden', '');
+      tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  buildCalculator();
+}
+
+/* =====================================================================
+   SECTION D: SKILL CHECK
+   ===================================================================== */
+
+/* Items carry measured widths in micrometres. The index is computed from
+   them, never stored. The verdict is derived from the hidden threshold. */
+var QUIZ_ITEMS = [
+  { seed: 9101, hairUm: 62,  medUm: 12,  kind: 'human' },
+  { seed: 9203, hairUm: 48,  medUm: 27,  kind: 'animal' },
+  { seed: 9307, hairUm: 74,  medUm: 18,  kind: 'human' },
+  { seed: 9411, hairUm: 39,  medUm: 22,  kind: 'animal' },
+  { seed: 9511, hairUm: 85,  medUm: 21,  kind: 'human' },
+  { seed: 9613, hairUm: 55,  medUm: 33,  kind: 'animal' },
+  { seed: 9719, hairUm: 68,  medUm: 15,  kind: 'human' },
+  { seed: 9829, hairUm: 44,  medUm: 26,  kind: 'animal' }
+];
+
+var dState = {};   /* id -> { pick, committed } */
+
+/* Small specimen thumbnail for a quiz item, generated from the item's own
+   measured widths so the picture agrees with the data. */
+function quizThumbSvg(item, idx) {
+  var rng = makeRng(item.seed);
+  var W = 190, H = 96;
+  var ratio = item.medUm / item.hairUm;
+  var hairH = 62;
+  var medH = Math.max(3, hairH * ratio);
+  var cy = H / 2;
+  var x0 = 14, x1 = W - 14;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" style="width:100%;height:auto;display:block">';
+  s += '<rect width="' + W + '" height="' + H + '" fill="#07070f"/>';
+  s += '<rect x="' + x0 + '" y="' + (cy - hairH / 2) + '" width="' + (x1 - x0) + '" height="' + hairH +
+       '" rx="' + (hairH / 2) + '" fill="#8a6b45"/>';
+  var i;
+  for (i = 0; i < 40; i++) {
+    var gx = x0 + 6 + rng() * (x1 - x0 - 12);
+    var side = rng() < 0.5 ? -1 : 1;
+    var gy = cy + side * (medH / 2 + 3 + rng() * Math.max(2, hairH / 2 - medH / 2 - 6));
+    s += '<circle cx="' + gx.toFixed(1) + '" cy="' + gy.toFixed(1) + '" r="' + (1 + rng() * 1.6).toFixed(1) +
+         '" fill="#3b2a17" opacity="0.8"/>';
+  }
+  /* core shape varies by item so the picture is not a single template */
+  var shape = idx % 3;
+  if (shape === 0) {
+    s += '<rect x="' + x0 + '" y="' + (cy - medH / 2).toFixed(1) + '" width="' + (x1 - x0) + '" height="' +
+         medH.toFixed(1) + '" rx="' + (medH / 2).toFixed(1) + '" fill="#2a1f14"/>';
+  } else if (shape === 1) {
+    var segW = (x1 - x0) / 7;
+    for (i = 0; i < 7; i++) {
+      if (i % 2 === 1) continue;
+      s += '<rect x="' + (x0 + i * segW + segW * 0.08).toFixed(1) + '" y="' + (cy - medH / 2).toFixed(1) +
+           '" width="' + (segW * 0.84).toFixed(1) + '" height="' + medH.toFixed(1) +
+           '" rx="' + (medH / 2).toFixed(1) + '" fill="#2a1f14"/>';
+    }
+  } else {
+    var fw = (x1 - x0) / 14;
+    for (i = 0; i < 14; i++) {
+      if (rng() < 0.3) continue;
+      var fh = medH * (0.55 + rng() * 0.45);
+      s += '<rect x="' + (x0 + i * fw + fw * 0.12).toFixed(1) + '" y="' + (cy - fh / 2).toFixed(1) +
+           '" width="' + (fw * (0.34 + rng() * 0.4)).toFixed(1) + '" height="' + fh.toFixed(1) +
+           '" rx="' + (fh / 2).toFixed(1) + '" fill="#2a1f14"/>';
+    }
+  }
+  s += '</svg>';
+  return s;
+}
+
+function buildQuiz() {
+  var html = '';
+  var i;
+  for (i = 0; i < QUIZ_ITEMS.length; i++) {
+    var item = QUIZ_ITEMS[i];
+    var id = 'q' + i;
+    dState[id] = { pick: null, committed: false, feat: '' };
+    /* Option order shuffled per item with a seeded rng, so human is not
+       always first and the order is stable across re-renders. */
+    var order = shuffleSeeded(['human', 'animal', 'unsure'], makeRng(item.seed + 77));
+    var opts = '';
+    var k;
+    for (k = 0; k < order.length; k++) {
+      var key = order[k];
+      var label = key === 'human'
+        ? bi('Human', 'Humano')
+        : (key === 'animal'
+            ? bi('Animal', 'Animal')
+            : bi('Not enough to decide', 'No alcanza para decidir'));
+      opts += '<button type="button" class="opt" data-q="' + id + '" data-kind="' + key + '">' + label + '</button>';
+    }
+    html += '<div class="quiz-item" data-qitem="' + id + '">' +
+      '<div class="quiz-head">' +
+        '<div class="quiz-thumb">' + quizThumbSvg(item, i) + '</div>' +
+        '<div class="quiz-body">' +
+          '<div class="quiz-q">' + bi('Item ' + (i + 1) + ': which source does this hair come from?',
+                                      'Item ' + (i + 1) + ': de que fuente viene este cabello?') + '</div>' +
+          '<div class="quiz-measure">' +
+            '<div class="qm-scope" data-qscope="' + id + '"></div>' +
+            '<div class="qm-row">' +
+              '<label>' + bi('Medulla width', 'Ancho de la medula') + '</label>' +
+              '<input type="text" inputmode="decimal" data-qmed="' + id + '" autocomplete="off" placeholder="0">' +
+              '<span class="qm-unit">&micro;m</span>' +
+            '</div>' +
+            '<div class="qm-row">' +
+              '<label>' + bi('Total hair width', 'Ancho total del cabello') + '</label>' +
+              '<input type="text" inputmode="decimal" data-qhair="' + id + '" autocomplete="off" placeholder="0">' +
+              '<span class="qm-unit">&micro;m</span>' +
+            '</div>' +
+            '<div class="qm-row">' +
+              '<label>' + bi('Medullary index', 'Indice medular') + '</label>' +
+              '<input type="text" inputmode="decimal" data-qidx="' + id + '" autocomplete="off" placeholder="0.00">' +
+              '<span class="qm-unit"></span>' +
+            '</div>' +
+            '<div class="qm-hint">' + bi('Measure across the cross-section, then divide the smaller number by the larger.',
+                                         'Mide a traves de la seccion transversal, y despues divide el numero menor entre el mayor.') + '</div>' +
+          '</div>' +
+                    '<div class="opt-row">' + opts + '</div>' +
+          '<div class="qm-basis">' +
+            '<div class="qm-blabel">' + bi('Which feature drove your call?', 'Que caracteristica guio tu respuesta?') + '</div>' +
+            '<div class="qm-btns" data-qfeat="' + id + '" role="group" aria-label="Basis for your call">' +
+              '<button type="button" class="pbtn" data-fv="index">' + bi('Index', 'Indice') + '</button>' +
+              '<button type="button" class="pbtn" data-fv="shape">' + bi('Medulla shape', 'Forma de la medula') + '</button>' +
+              '<button type="button" class="pbtn" data-fv="pigment">' + bi('Pigment', 'Pigmento') + '</button>' +
+              '<button type="button" class="pbtn" data-fv="none">' + bi('Not clear', 'No fue clara') + '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="spec-foot">' +
+            '<button type="button" class="btn small" data-qcommit="' + id + '">' + bi('Commit', 'Confirmar') + '</button>' +
+          '</div>' +
+          '<div class="quiz-fb" data-qfb="' + id + '"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  el('quizList').innerHTML = html;
+  /* render each item's own measurement scope into its slot */
+  var n;
+  for (n = 0; n < QUIZ_ITEMS.length; n++) {
+    var slot = document.querySelector('[data-qscope="q' + n + '"]');
+    if (slot) slot.innerHTML = quizScopeSvg(QUIZ_ITEMS[n], n);
+  }
+  wireQuiz();
+}
+
+/* Per-item measurement scope. Each quiz item gets its own cross-section
+   drawn from its own widths, with a scale bar so the student measures
+   instead of being handed the numbers. */
+var QM_W = 210;
+var QM_H = 150;
+
+function quizScopeSvg(item, idx) {
+  var rng = makeRng(item.seed);
+  /* Fit the largest hair width in the set into the scope, then scale each
+     specimen by the same factor so relative size still means something. */
+  var fit = 96 / item.hairUm;
+  var hairD = item.hairUm * fit;
+  var medD = item.medUm * fit;
+  var rx = hairD / 2;
+  var mrx = medD / 2;
+  var cx = QM_W / 2 - 14;
+  var cy = QM_H / 2;
+  var s = '<svg viewBox="0 0 ' + QM_W + ' ' + QM_H + '" preserveAspectRatio="xMidYMid meet" role="img" style="width:100%;height:auto;display:block">';
+  s += '<rect width="' + QM_W + '" height="' + QM_H + '" fill="#05050c"/>';
+  s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx.toFixed(1) + '" ry="' + rx.toFixed(1) + '" fill="#8a6b45"/>';
+  var i;
+  for (i = 0; i < 34; i++) {
+    var ang = (i / 34) * Math.PI * 2;
+    s += '<circle cx="' + (cx + Math.cos(ang) * rx).toFixed(1) + '" cy="' + (cy + Math.sin(ang) * rx).toFixed(1) +
+         '" r="1.7" fill="#6b5236" opacity="0.85"/>';
+  }
+  s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx.toFixed(1) + '" ry="' + rx.toFixed(1) +
+       '" fill="none" stroke="#5c452c" stroke-width="1.6"/>';
+  /* pigment in the cortex only */
+  for (i = 0; i < 60; i++) {
+    var ga = rng() * Math.PI * 2;
+    var rMin = mrx + 2, rMax = rx - 3;
+    if (rMax <= rMin) { rMin = 0; rMax = rx - 2; }
+    var rad = rMin + rng() * (rMax - rMin);
+    s += '<circle cx="' + (cx + Math.cos(ga) * rad).toFixed(1) + '" cy="' + (cy + Math.sin(ga) * rad).toFixed(1) +
+         '" r="' + (1 + rng() * 1.4).toFixed(1) + '" fill="#3b2a17" opacity="0.7"/>';
+  }
+  var shape = idx % 3;
+  if (shape === 0) {
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + mrx.toFixed(1) + '" ry="' + mrx.toFixed(1) + '" fill="#2a1f14"/>';
+  } else if (shape === 1) {
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + mrx.toFixed(1) + '" ry="' + mrx.toFixed(1) +
+         '" fill="none" stroke="#2a1f14" stroke-width="' + Math.max(2.2, mrx * 0.4).toFixed(1) + '"/>';
+    for (i = 0; i < 6; i++) {
+      var ha = (i / 6) * Math.PI * 2 + 0.3;
+      s += '<circle cx="' + (cx + Math.cos(ha) * mrx * 0.78).toFixed(1) + '" cy="' +
+           (cy + Math.sin(ha) * mrx * 0.78).toFixed(1) + '" r="' + (mrx * 0.22).toFixed(1) + '" fill="#8a6b45" opacity="0.9"/>';
+    }
+  } else {
+    for (i = 0; i < 7; i++) {
+      var fa = (i / 7) * Math.PI * 2 + 0.55;
+      var frad = mrx * (0.3 + rng() * 0.5);
+      s += '<circle cx="' + (cx + Math.cos(fa) * frad).toFixed(1) + '" cy="' + (cy + Math.sin(fa) * frad).toFixed(1) +
+           '" r="' + (mrx * (0.18 + rng() * 0.18)).toFixed(1) + '" fill="#2a1f14"/>';
+    }
+  }
+  /* scale bar, drawn from the same fit factor so it is honest */
+  var barUm = 10;
+  while (barUm * fit < 42) barUm += 10;
+  var barPx = barUm * fit;
+  var bx = 10, by = QM_H - 12;
+  s += '<rect x="' + (bx - 4) + '" y="' + (by - 18) + '" width="' + (barPx + 8) + '" height="24" rx="4" fill="#0b0b16" opacity="0.9"/>';
+  s += '<line x1="' + bx + '" y1="' + by + '" x2="' + (bx + barPx).toFixed(1) + '" y2="' + by + '" stroke="#e0e0e0" stroke-width="2.5"/>';
+  s += '<line x1="' + bx + '" y1="' + (by - 5) + '" x2="' + bx + '" y2="' + (by + 5) + '" stroke="#e0e0e0" stroke-width="2.5"/>';
+  s += '<line x1="' + (bx + barPx).toFixed(1) + '" y1="' + (by - 5) + '" x2="' + (bx + barPx).toFixed(1) +
+       '" y2="' + (by + 5) + '" stroke="#e0e0e0" stroke-width="2.5"/>';
+  s += '<text x="' + (bx + barPx / 2).toFixed(1) + '" y="' + (by - 7) +
+       '" text-anchor="middle" fill="#e0e0e0" style="font-size:9px;font-weight:600">' + barUm + ' &micro;m</text>';
+  s += '</svg>';
+  return s;
+}
+
+function wireQuiz() {
+  el('quizList').addEventListener('click', function (e) {
+    /* basis buttons */
+    var fb2 = e.target.closest ? e.target.closest('[data-fv]') : null;
+    if (fb2) {
+      var grp = fb2.closest('[data-qfeat]');
+      var qid2 = grp.getAttribute('data-qfeat');
+      if (dState[qid2] && dState[qid2].committed) return;
+      dState[qid2].feat = fb2.getAttribute('data-fv');
+      var sibs = grp.querySelectorAll('.pbtn');
+      var j;
+      for (j = 0; j < sibs.length; j++) sibs[j].classList.remove('sel');
+      fb2.classList.add('sel');
+      return;
+    }
+    var opt = e.target.closest ? e.target.closest('.opt') : null;
+    if (opt) {
+      var qid = opt.getAttribute('data-q');
+      var st = dState[qid];
+      if (st.committed) return;
+      st.pick = opt.getAttribute('data-kind');
+      var row = opt.parentNode;
+      var kids = row.querySelectorAll('.opt');
+      var i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
+      opt.classList.add('sel');
+      return;
+    }
+    var cm = e.target.closest ? e.target.closest('[data-qcommit]') : null;
+    if (cm) commitQuiz(cm.getAttribute('data-qcommit'));
+  });
+}
+
+function commitQuiz(id) {
+  var st = dState[id];
+  var idx = parseInt(id.slice(1), 10);
+  var item = QUIZ_ITEMS[idx];
+  var fb = document.querySelector('[data-qfb="' + id + '"]');
+
+  var medEl = document.querySelector('[data-qmed="' + id + '"]');
+  var hairEl = document.querySelector('[data-qhair="' + id + '"]');
+  var idxEl = document.querySelector('[data-qidx="' + id + '"]');
+  var medV = parseFloat((medEl.value || '').replace(',', '.'));
+  var hairV = parseFloat((hairEl.value || '').replace(',', '.'));
+  var idxV = parseFloat((idxEl.value || '').replace(',', '.'));
+
+  if (!st.pick) {
+    fb.className = 'quiz-fb show bad';
+    fb.innerHTML = bi('Choose one option first.', 'Elige una opcion primero.');
+    return;
+  }
+  if (isNaN(medV) || isNaN(hairV)) {
+    fb.className = 'quiz-fb show bad';
+    fb.innerHTML = bi('Enter both widths in micrometers before you commit. Measure with the scale bar, then divide.',
+                      'Escribe ambos anchos en micrometros antes de confirmar. Mide con la barra de escala, despues divide.');
+    return;
+  }
+  /* the index must be the student's own division, not a supplied number */
+  if (isNaN(idxV)) {
+    fb.className = 'quiz-fb show bad';
+    fb.innerHTML = bi('Now do the division yourself and enter the medullary index.',
+                      'Ahora haz la division tu mismo y escribe el indice medular.');
+    return;
+  }
+  if (!st.feat) {
+    fb.className = 'quiz-fb show bad';
+    fb.innerHTML = bi('Say which feature drove your call before you commit.',
+                      'Di que caracteristica guio tu respuesta antes de confirmar.');
+    return;
+  }
+  var theirRatio = medV / hairV;
+  if (Math.abs(theirRatio - idxV) > 0.03) {
+    fb.className = 'quiz-fb show bad';
+    fb.innerHTML = bi('Your index does not match your own two widths. Divide the medulla width by the total hair width.',
+                      'Tu indice no concuerda con tus dos anchos. Divide el ancho de la medula entre el ancho total del cabello.');
+    return;
+  }
+
+  /* Measuring accuracy is checked, but generously: the point of the item is
+     the decision, and a slightly off drag should not fail a correct reading. */
+  var medOk = Math.abs(medV - item.medUm) <= Math.max(3, item.medUm * 0.25);
+  var hairOk = Math.abs(hairV - item.hairUm) <= Math.max(4, item.hairUm * 0.20);
+  if (!medOk || !hairOk) {
+    fb.className = 'quiz-fb show bad';
+    fb.innerHTML = bi('Check your calipers. One of your two widths is further from the true value than this instrument allows. Look at the scale bar, then measure again.',
+                      'Revisa tus calipers. Uno de tus dos anchos esta mas lejos del valor real de lo que permite este instrumento. Mira la barra de escala y mide otra vez.');
+    return;
+  }
+
+  st.committed = true;
+  var index = item.medUm / item.hairUm;
+  var isHuman = index < INDEX_THRESHOLD;
+  var leans = isHuman ? 'human' : 'animal';
+  var right = (st.pick === leans);
+
+  var row = document.querySelector('.opt[data-q="' + id + '"]').parentNode;
+  var kids = row.querySelectorAll('.opt');
+  var i;
+  for (i = 0; i < kids.length; i++) {
+    kids[i].disabled = true;
+    if (kids[i].getAttribute('data-kind') === st.pick) {
+      kids[i].classList.add(right ? 'mark-ok' : 'mark-bad');
+    }
+  }
+  [medEl, hairEl, idxEl].forEach(function (elm) { if (elm) elm.disabled = true; });
+  var fs = document.querySelector('[data-qfeat="' + id + '"]');
+  if (fs) {
+    var pbs = fs.querySelectorAll('.pbtn');
+    var pi;
+    for (pi = 0; pi < pbs.length; pi++) pbs[pi].disabled = true;
+  }
+
+  var num = '<span class="fbnum">' + fmt2(index) + '</span>';
+  var idxLine = bi('This sample measures ' + num + ' on the index: the core takes up that share of the total width.',
+                   'Esta muestra mide ' + num + ' en el indice: el nucleo ocupa esa parte del ancho total.');
+  var msg;
+  if (right) {
+    fb.className = 'quiz-fb show ok';
+    msg = idxLine + ' ' + bi('Your call matches the evidence.',
+                             'Tu respuesta concuerda con la evidencia.');
+  } else if (st.pick === 'unsure') {
+    fb.className = 'quiz-fb show mid';
+    msg = idxLine + ' ' + bi('The features in this sample point one way, so this one could have been decided.',
+                             'Las caracteristicas de esta muestra apuntan en una direccion, asi que esta si se podia decidir.');
+  } else {
+    fb.className = 'quiz-fb show bad';
+    msg = idxLine + ' ' + bi('Go back to the reference table and weigh the index and the shape of the core together.',
+                             'Vuelve a la tabla de referencia y pesa juntos el indice y la forma del nucleo.');
+  }
+  /* did they name the basis that actually carried the call? */
+  var actualBasis = (Math.abs(index - INDEX_THRESHOLD) >= 0.12) ? 'index' : 'shape';
+  if (right && st.feat === actualBasis) {
+    msg += ' ' + bi('You also named the feature that actually carried the call.',
+                    'Ademas nombraste la caracteristica que realmente sostuvo la conclusion.');
+  } else if (right && st.feat !== actualBasis && st.feat !== 'none') {
+    msg += ' ' + bi('Note that the strongest signal here was the ' +
+                    (actualBasis === 'index' ? 'index value' : 'shape of the core') +
+                    ', not the one you named.',
+                    'Fijate que la senal mas fuerte aqui fue ' +
+                    (actualBasis === 'index' ? 'el valor del indice' : 'la forma del nucleo') +
+                    ', no la que nombraste.');
+  }
+    fb.innerHTML = msg;
+}
+
+/* =====================================================================
+   NAVIGATION + LANGUAGE
+   ===================================================================== */
+
+function wireNav() {
+  el('secnav').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-sec]') : null;
+    if (!b) return;
+    var key = b.getAttribute('data-sec');
+    var panels = document.querySelectorAll('section.panel');
+    var i;
+    for (i = 0; i < panels.length; i++) {
+      panels[i].classList.toggle('active', panels[i].id === 'sec-' + key);
+    }
+    var btns = el('secnav').querySelectorAll('button');
+    for (i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i] === b);
+    window.scrollTo(0, 0);
+  });
+}
+
+var LANG_KEY = 'hairLab.lang.v1';
+
+/* Options cannot hold span pairs, so a <select> would stay English (or blank in
+   ES, where .lang-en is hidden) without this. Each option carries its Spanish
+   text in data-es; the English text is cached in data-en on first run. The
+   selected value is preserved and no change event is fired. */
+function syncSelectOptions(lang) {
+  var sels = document.querySelectorAll('select');
+  var s, opts, o, i, j;
+  for (i = 0; i < sels.length; i++) {
+    opts = sels[i].options;
+    if (!opts || !opts.length) continue;
+    var any = false;
+    for (j = 0; j < opts.length; j++) {
+      if (opts[j].getAttribute('data-es')) { any = true; break; }
+    }
+    if (!any) continue;
+    s = sels[i];
+    var keep = s.value;
+    for (j = 0; j < opts.length; j++) {
+      o = opts[j];
+      if (!o.getAttribute('data-en')) o.setAttribute('data-en', o.textContent);
+      o.textContent = (lang === 'es') ? o.getAttribute('data-es') : o.getAttribute('data-en');
+    }
+    s.value = keep;
+  }
+}
+
+function setLang(lang) {
+  if (lang !== 'es') lang = 'en';
+  document.documentElement.setAttribute('lang', lang);
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* ignore */ }
+  var btns = document.querySelectorAll('.lang-toggle button');
+  var i;
+  for (i = 0; i < btns.length; i++) {
+    var on = btns[i].getAttribute('data-lang') === lang;
+    btns[i].classList.toggle('active', on);
+    btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  syncSelectOptions(lang);
+}
+
+function wireLang() {
+  var btns = document.querySelectorAll('.lang-toggle button');
+  var i;
+  for (i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function () {
+      setLang(this.getAttribute('data-lang'));
+    });
+  }
+  var stored = 'en';
+  try { stored = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { /* ignore */ }
+  setLang(stored);
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+function boot() {
+  buildMorphDiagram();
+  buildTypeCards();
+  buildSpecStrip();
+  buildSpecTabs();
+  renderScope();
+  wireSectionB();
+  buildQuiz();
+  wireNav();
+  wireLang();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>

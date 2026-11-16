@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiber Identification Lab | Laboratorio de identificacion de fibras</title>
+<style>
+:root{
+  --bg:#0a0a1a;
+  --bg2:#1a1a2e;
+  --panel:rgba(255,255,255,0.05);
+  --panel-solid:#14142a;
+  --line:rgba(255,255,255,0.12);
+  --line-strong:rgba(255,255,255,0.24);
+  --text:#e0e0e0;
+  --muted:#a0a0b0;
+  --accent:#6366f1;
+  --accent-soft:rgba(99,102,241,0.18);
+  --ok:#22c55e;
+  --bad:#ef4444;
+  --warn:#f59e0b;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);
+  color:var(--text);
+  font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+html[lang="en"] .lang-es{display:none !important}
+html[lang="es"] .lang-en{display:none !important}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:8px 16px;
+  background:rgba(10,10,26,0.94);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+}
+.topbar .brand{font-weight:700;font-size:14px;letter-spacing:.02em;color:#fff;margin-right:auto}
+.topbar .brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.lang-toggle{display:flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;flex:none}
+.lang-toggle button{
+  appearance:none;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;min-height:34px;
+}
+.lang-toggle button.active{background:var(--accent);color:#fff}
+.lang-toggle button + button{border-left:1px solid var(--line-strong)}
+
+/* ---------- section nav ---------- */
+.secnav{
+  position:sticky;top:51px;z-index:55;
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:7px 16px;
+  background:rgba(10,10,26,0.92);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+}
+.secnav button{
+  appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);
+  font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;
+  cursor:pointer;min-height:32px;
+}
+.secnav button:hover{color:var(--text);border-color:var(--line-strong)}
+.secnav button.active{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+
+/* ---------- layout ---------- */
+main{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+section.panel{
+  display:none;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px 18px 22px;
+  backdrop-filter:blur(8px);
+}
+section.panel.active{display:block}
+h1{font-size:22px;margin:0 0 4px;color:#fff;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 6px;color:#fff;letter-spacing:-.01em}
+h3{font-size:15px;margin:0 0 8px;color:#fff}
+p{margin:0 0 10px}
+.lede{color:var(--muted);font-size:14px;max-width:78ch}
+.kicker{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 6px;
+}
+.card{
+  background:rgba(255,255,255,0.035);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:14px;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ---------- buttons ---------- */
+.btn{
+  appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,0.06);
+  color:var(--text);font:inherit;font-size:13.5px;font-weight:600;
+  padding:9px 16px;border-radius:8px;cursor:pointer;min-height:40px;
+}
+.btn:hover{border-color:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.small{font-size:12.5px;padding:6px 12px;min-height:34px}
+
+/* ---------- diagrams ---------- */
+.diagram-wrap{background:#07070f;border:1px solid var(--line);border-radius:10px;padding:8px;overflow:hidden;position:relative}
+.diagram-wrap svg{display:block;width:100%;height:auto}
+.svg-leader{stroke:#6366f1;stroke-width:1;fill:none}
+/* HTML label overlay: SVG <tspan> cannot be hidden by the language class
+   toggle, so diagram labels live in absolutely positioned HTML instead. */
+.dlabel{
+  position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+  font-size:12px;color:#e0e0e0;pointer-events:none;line-height:1.15;
+}
+.dlabel.sm{font-size:10.5px;color:#a0a0b0}
+
+/* ---------- section A ---------- */
+.fam-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media (max-width:900px){.fam-grid{grid-template-columns:repeat(2,1fr)}}
+.fam-card{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;
+  padding:8px;
+}
+.fam-card .fam-head{font-size:12px;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:.01em}
+.fam-card .fam-sub{font-size:11px;color:var(--muted);margin-bottom:6px}
+.fam-card svg{display:block;width:100%;height:auto;border-radius:6px;background:#07070f}
+.fam-card .fam-members{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35}
+
+.strip-list{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+.strip-item{
+  display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center;
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;padding:10px;
+}
+@media (max-width:700px){.strip-item{grid-template-columns:1fr}}
+.strip-item .thumb{background:#07070f;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.strip-item .thumb svg{display:block;width:100%;height:auto}
+.strip-item .sname{font-size:12.5px;font-weight:600;color:#fff;margin-bottom:6px}
+.opt-row{display:flex;flex-wrap:wrap;gap:6px}
+.opt{
+  appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,0.05);
+  color:var(--text);font:inherit;font-size:12.5px;font-weight:600;
+  padding:7px 11px;border-radius:999px;cursor:pointer;min-height:34px;
+}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+.opt.mark-ok{border-color:var(--ok);background:rgba(34,197,94,0.16);color:#d7ffe6}
+.opt.mark-bad{border-color:var(--bad);background:rgba(239,68,68,0.14);color:#ffd9d9}
+.opt:disabled{cursor:default}
+.strip-foot{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.verdict{font-size:12.5px;font-weight:600}
+.verdict.ok{color:var(--ok)}
+.verdict.bad{color:var(--warn)}
+
+/* ---------- section B ---------- */
+.sample-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.sample-tabs button{
+  appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);
+  font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;
+  cursor:pointer;min-height:34px;
+}
+.sample-tabs button.active{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+.bench-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:900px){.bench-grid{grid-template-columns:1fr}}
+.station{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;
+  padding:12px;display:flex;flex-direction:column;
+}
+.station .st-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.station .st-num{
+  font-family:"Consolas","SF Mono",monospace;font-size:11px;font-weight:700;
+  color:var(--accent);border:1px solid rgba(99,102,241,0.5);border-radius:5px;
+  padding:1px 6px;flex:none;
+}
+.station .st-title{font-size:13.5px;font-weight:700;color:#fff}
+.station .st-desc{font-size:11.5px;color:var(--muted);margin-bottom:8px;min-height:32px}
+.stage{
+  background:#05050c;border:1px solid var(--line);border-radius:8px;
+  overflow:hidden;margin-bottom:8px;position:relative;
+}
+.stage svg{display:block;width:100%;height:auto}
+.stage .stage-cap{
+  position:absolute;left:8px;bottom:6px;font-size:10.5px;color:#a0a0b0;
+  font-family:"Consolas","SF Mono",monospace;pointer-events:none;
+}
+.obs-list{list-style:none;margin:0 0 8px;padding:0;font-size:12.5px}
+.obs-list li{
+  display:grid;grid-template-columns:96px 1fr;gap:8px;
+  padding:5px 0;border-bottom:1px dashed rgba(255,255,255,0.08);
+}
+.obs-list li:last-child{border-bottom:0}
+.obs-list .okey{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+.obs-list .oval{color:#fff}
+.obs-list .oval.pending{color:#5a5a70;font-style:italic}
+.station .st-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.subtest-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.subtest-row .btn.small{font-size:11.5px;padding:5px 10px;min-height:30px}
+
+/* results table */
+.table-wrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:10px}
+table.results{border-collapse:collapse;width:100%;font-size:12px;min-width:640px}
+table.results th,table.results td{
+  border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;
+}
+table.results th{
+  background:rgba(99,102,241,0.12);color:#fff;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;
+}
+table.results td{color:var(--text)}
+table.results td.empty{color:#5a5a70;font-style:italic}
+table.results tr:last-child td{border-bottom:0}
+table.results td.tname{font-weight:700;color:#fff;white-space:nowrap}
+
+/* ---------- section C ---------- */
+.id-item{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;
+  padding:12px;margin-bottom:12px;
+}
+.id-head{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
+.id-thumb{background:#07070f;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none;width:200px}
+.id-thumb svg{display:block;width:100%;height:auto}
+.id-body{flex:1;min-width:250px}
+.id-q{font-size:13.5px;font-weight:600;color:#fff;margin-bottom:6px}
+.id-table{border-collapse:collapse;width:100%;font-size:11.5px;margin-bottom:8px}
+.id-table th,.id-table td{border-bottom:1px solid rgba(255,255,255,0.08);padding:4px 7px;text-align:left;vertical-align:top}
+.id-table th{color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;width:88px}
+.id-table td{color:#fff}
+.id-table tr:last-child th,.id-table tr:last-child td{border-bottom:0}
+.fb{font-size:12.5px;margin-top:8px;padding:8px 10px;border-radius:8px;display:none;line-height:1.45}
+.fb.show{display:block}
+.fb.ok{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.45);color:#d7ffe6}
+.fb.bad{background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.45);color:#ffe9c2}
+.fb b{color:#fff}
+
+/* ---------- section D ---------- */
+.skill-item{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);border-radius:10px;
+  padding:12px;margin-bottom:12px;
+}
+.skill-q{font-size:13px;font-weight:600;color:#fff;margin:0 0 6px}
+.skill-q .qnum{color:var(--accent);font-family:"Consolas","SF Mono",monospace;margin-right:5px}
+.skill-block{margin-bottom:10px}
+.skill-block:last-child{margin-bottom:0}
+
+/* ---------- footer ---------- */
+footer{
+  max-width:1180px;margin:0 auto;padding:16px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="lang-en">Fiber Identification Lab</span><span class="lang-es">Laboratorio de identificacion de fibras</span>
+    <small><span class="lang-en">Forensic Science &middot; Week 10</span><span class="lang-es">Ciencia Forense &middot; Semana 10</span></small>
+  </div>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-lang="en" class="active" aria-pressed="true">EN</button>
+    <button type="button" data-lang="es" aria-pressed="false">ES</button>
+  </div>
+</header>
+
+<nav class="secnav" id="secnav" aria-label="Sections">
+  <button type="button" data-sec="A" class="active"><span class="lang-en">A. Fiber families</span><span class="lang-es">A. Familias de fibras</span></button>
+  <button type="button" data-sec="B"><span class="lang-en">B. Four tests</span><span class="lang-es">B. Las cuatro pruebas</span></button>
+  <button type="button" data-sec="C"><span class="lang-en">C. Identification</span><span class="lang-es">C. Identificacion</span></button>
+  <button type="button" data-sec="D"><span class="lang-en">D. Skill check</span><span class="lang-es">D. Verificacion</span></button>
+</nav>
+
+<main>
+
+<!-- ============ SECTION A ============ -->
+<section class="panel active" id="sec-A">
+  <p class="kicker"><span class="lang-en">Section A</span><span class="lang-es">Seccion A</span></p>
+  <h2><span class="lang-en">Fiber families</span><span class="lang-es">Familias de fibras</span></h2>
+  <p class="lede">
+    <span class="lang-en">Every fiber in this lab belongs to one of four families. The family is decided by where the fiber came from and how it was made, not by how it looks on a shelf. Read the four family cards, then look at the shape each family shows under a microscope.</span>
+    <span class="lang-es">Cada fibra de este laboratorio pertenece a una de cuatro familias. La familia se decide por el origen de la fibra y por como fue fabricada, no por como se ve en una tienda. Lee las cuatro tarjetas de familia y despues observa la forma que cada familia muestra bajo el microscopio.</span>
+  </p>
+
+  <div class="fam-grid" id="famGrid"></div>
+
+  <h3 style="margin-top:20px"><span class="lang-en">Assign each strip to a family</span><span class="lang-es">Asigna cada tira a una familia</span></h3>
+  <p class="lede" style="margin-bottom:8px">
+    <span class="lang-en">Six strips, no labels. Pick one family for each strip, then press Check on that strip. You can change your pick and check again. The strips are drawn at high magnification, so read the surface, not the color.</span>
+    <span class="lang-es">Seis tiras, sin etiquetas. Elige una familia para cada tira y despues presiona Revisar en esa tira. Puedes cambiar tu eleccion y revisar de nuevo. Las tiras estan dibujadas con mucho aumento, asi que lee la superficie, no el color.</span>
+  </p>
+  <div class="strip-list" id="stripList"></div>
+</section>
+
+<!-- ============ SECTION B ============ -->
+<section class="panel" id="sec-B">
+  <p class="kicker"><span class="lang-en">Section B</span><span class="lang-es">Seccion B</span></p>
+  <h2><span class="lang-en">The four tests</span><span class="lang-es">Las cuatro pruebas</span></h2>
+  <p class="lede">
+    <span class="lang-en">One sample is loaded on the bench. Run each of the four tests and record what the instrument reports. The same sample always behaves the same way, so you can re-run a test as often as you like. Your observations collect in the table at the bottom of this section.</span>
+    <span class="lang-es">Hay una muestra cargada en la mesa. Corre cada una de las cuatro pruebas y registra lo que reporta el instrumento. La misma muestra siempre se comporta igual, asi que puedes repetir una prueba cuantas veces quieras. Tus observaciones se acumulan en la tabla al final de esta seccion.</span>
+  </p>
+
+  <div class="sample-tabs" id="sampleTabs"></div>
+
+  <div class="bench-grid">
+    <!-- Test 1 -->
+    <div class="station" id="st1">
+      <div class="st-head">
+        <span class="st-num">01</span>
+        <span class="st-title"><span class="lang-en">Burn test</span><span class="lang-es">Prueba de combustion</span></span>
+      </div>
+      <div class="st-desc">
+        <span class="lang-en">A single strand is held in the flame. The station reports three separate observations: how the flame behaves, what the smoke smells like, and what is left behind.</span>
+        <span class="lang-es">Se sostiene una sola hebra en la flama. La estacion reporta tres observaciones separadas: como se comporta la flama, a que huele el humo y que queda al final.</span>
+      </div>
+      <div class="stage" id="burnStage"></div>
+      <ul class="obs-list" id="burnObs">
+        <li><span class="okey"><span class="lang-en">Flame</span><span class="lang-es">Flama</span></span><span class="oval pending" data-obs="flame"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+        <li><span class="okey"><span class="lang-en">Odor</span><span class="lang-es">Olor</span></span><span class="oval pending" data-obs="odor"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+        <li><span class="okey"><span class="lang-en">Residue</span><span class="lang-es">Residuo</span></span><span class="oval pending" data-obs="ash"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+      </ul>
+      <div class="st-foot">
+        <button type="button" class="btn small primary" id="burnRun"><span class="lang-en">Ignite</span><span class="lang-es">Encender</span></button>
+      </div>
+    </div>
+
+    <!-- Test 2 -->
+    <div class="station" id="st2">
+      <div class="st-head">
+        <span class="st-num">02</span>
+        <span class="st-title"><span class="lang-en">Solubility</span><span class="lang-es">Solubilidad</span></span>
+      </div>
+      <div class="st-desc">
+        <span class="lang-en">Three separate solvents. Drop a strand into each one and watch. Each solvent gets its own result, so run all three.</span>
+        <span class="lang-es">Tres solventes separados. Coloca una hebra en cada uno y observa. Cada solvente tiene su propio resultado, asi que corre los tres.</span>
+      </div>
+      <div class="stage" id="solvStage"></div>
+      <div class="subtest-row">
+        <button type="button" class="btn small" data-solv="acetone"><span class="lang-en">Acetone</span><span class="lang-es">Acetona</span></button>
+        <button type="button" class="btn small" data-solv="bleach"><span class="lang-en">Bleach</span><span class="lang-es">Cloro</span></button>
+        <button type="button" class="btn small" data-solv="acid"><span class="lang-en">Dilute acid</span><span class="lang-es">Acido diluido</span></button>
+      </div>
+      <ul class="obs-list" id="solvObs">
+        <li><span class="okey"><span class="lang-en">Acetone</span><span class="lang-es">Acetona</span></span><span class="oval pending" data-obs="acetone"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+        <li><span class="okey"><span class="lang-en">Bleach</span><span class="lang-es">Cloro</span></span><span class="oval pending" data-obs="bleach"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+        <li><span class="okey"><span class="lang-en">Acid</span><span class="lang-es">Acido</span></span><span class="oval pending" data-obs="acid"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+      </ul>
+    </div>
+
+    <!-- Test 3 -->
+    <div class="station" id="st3">
+      <div class="st-head">
+        <span class="st-num">03</span>
+        <span class="st-title"><span class="lang-en">Microscopy, longitudinal</span><span class="lang-es">Microscopia, longitudinal</span></span>
+      </div>
+      <div class="st-desc">
+        <span class="lang-en">The strand is laid flat under the scope. Read the surface along its length and use the scale bar to judge width.</span>
+        <span class="lang-es">La hebra se coloca plana bajo el microscopio. Lee la superficie a lo largo y usa la barra de escala para estimar el ancho.</span>
+      </div>
+      <div class="stage" id="microStage"></div>
+      <ul class="obs-list" id="microObs">
+        <li><span class="okey"><span class="lang-en">Surface</span><span class="lang-es">Superficie</span></span><span class="oval pending" data-obs="surface"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+        <li><span class="okey"><span class="lang-en">Width</span><span class="lang-es">Ancho</span></span><span class="oval pending" data-obs="width"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+      </ul>
+      <div class="st-foot">
+        <button type="button" class="btn small primary" id="microRun"><span class="lang-en">Focus scope</span><span class="lang-es">Enfocar</span></button>
+      </div>
+    </div>
+
+    <!-- Test 4 -->
+    <div class="station" id="st4">
+      <div class="st-head">
+        <span class="st-num">04</span>
+        <span class="st-title"><span class="lang-en">Polarized light</span><span class="lang-es">Luz polarizada</span></span>
+      </div>
+      <div class="st-desc">
+        <span class="lang-en">The strand sits between crossed polarizers. Some fibers light up with color as the stage turns. Others stay dark the whole way around.</span>
+        <span class="lang-es">La hebra esta entre polarizadores cruzados. Algunas fibras se iluminan con color cuando gira la platina. Otras se quedan oscuras durante todo el giro.</span>
+      </div>
+      <div class="stage" id="polarStage"></div>
+      <ul class="obs-list" id="polarObs">
+        <li><span class="okey"><span class="lang-en">Response</span><span class="lang-es">Respuesta</span></span><span class="oval pending" data-obs="polar"><span class="lang-en">not run yet</span><span class="lang-es">sin correr</span></span></li>
+      </ul>
+      <div class="st-foot">
+        <button type="button" class="btn small primary" id="polarRun"><span class="lang-en">Rotate stage</span><span class="lang-es">Girar platina</span></button>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:20px"><span class="lang-en">Your results table</span><span class="lang-es">Tu tabla de resultados</span></h3>
+  <p class="lede" style="margin-bottom:6px">
+    <span class="lang-en">Every test you run writes its observation here. This table is the evidence you will use in Section C.</span>
+    <span class="lang-es">Cada prueba que corras escribe su observacion aqui. Esta tabla es la evidencia que usaras en la Seccion C.</span>
+  </p>
+  <div class="table-wrap">
+    <table class="results" id="resultsTable">
+      <thead>
+        <tr>
+          <th><span class="lang-en">Sample</span><span class="lang-es">Muestra</span></th>
+          <th><span class="lang-en">Flame</span><span class="lang-es">Flama</span></th>
+          <th><span class="lang-en">Odor</span><span class="lang-es">Olor</span></th>
+          <th><span class="lang-en">Residue</span><span class="lang-es">Residuo</span></th>
+          <th><span class="lang-en">Acetone</span><span class="lang-es">Acetona</span></th>
+          <th><span class="lang-en">Bleach</span><span class="lang-es">Cloro</span></th>
+          <th><span class="lang-en">Acid</span><span class="lang-es">Acido</span></th>
+          <th><span class="lang-en">Surface</span><span class="lang-es">Superficie</span></th>
+          <th><span class="lang-en">Polarized</span><span class="lang-es">Polarizada</span></th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+  <div class="toolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    <button type="button" class="btn small" id="resetBench"><span class="lang-en">Reset table</span><span class="lang-es">Borrar tabla</span></button>
+  </div>
+</section>
+
+<!-- ============ SECTION C ============ -->
+<section class="panel" id="sec-C">
+  <p class="kicker"><span class="lang-en">Section C</span><span class="lang-es">Seccion C</span></p>
+  <h2><span class="lang-en">Identification from your data</span><span class="lang-es">Identificacion a partir de tus datos</span></h2>
+  <p class="lede">
+    <span class="lang-en">Each item below shows a full set of test results and nothing else. Read the results, pick the fiber, then commit. If your pick does not fit, the feedback names the one result that rules it out. You can commit again after reading it.</span>
+    <span class="lang-es">Cada item muestra un juego completo de resultados de pruebas y nada mas. Lee los resultados, elige la fibra y confirma. Si tu eleccion no encaja, la retroalimentacion nombra el resultado que la descarta. Puedes confirmar de nuevo despues de leerla.</span>
+  </p>
+  <div id="idList"></div>
+</section>
+
+<!-- ============ SECTION D ============ -->
+<section class="panel" id="sec-D">
+  <p class="kicker"><span class="lang-en">Section D</span><span class="lang-es">Seccion D</span></p>
+  <h2><span class="lang-en">Skill check: class and origin</span><span class="lang-es">Verificacion: clase y origen</span></h2>
+  <p class="lede">
+    <span class="lang-en">Six items. Each one gives you a results row and asks two questions about it. Answer the first question, commit, read the feedback, then answer the second. There is no timer and no total at the end.</span>
+    <span class="lang-es">Seis items. Cada uno te da una fila de resultados y hace dos preguntas sobre ella. Contesta la primera pregunta, confirma, lee la retroalimentacion y despues contesta la segunda. No hay cronometro ni total al final.</span>
+  </p>
+  <div id="skillList"></div>
+</section>
+
+</main>
+
+<footer>
+  <span>Mr. Porter | Forensic Science | Week 10</span>
+  <span class="lang-en">Run the test. Read the result. Then decide.</span>
+  <span class="lang-es">Corre la prueba. Lee el resultado. Despues decide.</span>
+</footer>
+
+<script>
+(function () {
+'use strict';
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+function el(id) { return document.getElementById(id); }
+
+/* Bilingual span pair. Both languages are always in the DOM; the
+   html[lang] rule in the stylesheet decides which one paints. */
+function bi(en, es, cls) {
+  var c = cls ? ' ' + cls : '';
+  return '<span class="lang-en' + c + '">' + en + '</span>' +
+         '<span class="lang-es' + c + '">' + es + '</span>';
+}
+
+/* Seeded PRNG (mulberry32). No Math.random anywhere in a render path. */
+function makeRng(seed) {
+  var a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    var t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* Fisher-Yates with a seeded rng. Used for option order only. */
+function shuffleSeeded(arr, rng) {
+  var a = arr.slice();
+  var i, j, tmp;
+  for (i = a.length - 1; i > 0; i--) {
+    j = Math.floor(rng() * (i + 1));
+    tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+/* =====================================================================
+   FIBER LIBRARY
+   Single source of truth. Every observation below is a plain-language
+   description of what the instrument reports. No entry names a fiber
+   inside its own observation text, and no observation states what it
+   implies. The student does the inferring.
+   ===================================================================== */
+var FIBERS = [
+  {
+    key: 'cotton',
+    en: 'Cotton', es: 'Algodon',
+    family: 'plant',
+    morph: 'twisted-ribbon',
+    burn: {
+      flame: 'burns quickly with a steady flame',
+      odor: 'burning paper',
+      ash: 'soft grey ash'
+    },
+    solv: { acetone: 'no visible change', bleach: 'no visible change', acid: 'dissolves' },
+    surface: 'flattened ribbon with twists along its length',
+    width: '12 to 20 micrometers',
+    polar: 'bright colors that shift as the stage turns',
+    polarKind: 'birefringent'
+  },
+  {
+    key: 'linen',
+    en: 'Linen', es: 'Lino',
+    family: 'plant',
+    morph: 'noded-stalk',
+    burn: {
+      flame: 'burns slowly with a sputtering flame',
+      odor: 'burning paper',
+      ash: 'soft grey ash'
+    },
+    solv: { acetone: 'no visible change', bleach: 'no visible change', acid: 'dissolves' },
+    surface: 'straight stalk with thick joints at intervals',
+    width: '15 to 25 micrometers',
+    polar: 'bright colors that shift as the stage turns',
+    polarKind: 'birefringent'
+  },
+  {
+    key: 'wool',
+    en: 'Wool', es: 'Lana',
+    family: 'animal',
+    morph: 'scaled',
+    burn: {
+      flame: 'self-extinguishes',
+      odor: 'burning hair',
+      ash: 'crushable black bead'
+    },
+    solv: { acetone: 'no visible change', bleach: 'swells and softens', acid: 'no visible change' },
+    surface: 'overlapping scales pointing along the strand',
+    width: '20 to 40 micrometers',
+    polar: 'faint colors, weaker than the plant fibers',
+    polarKind: 'weak'
+  },
+  {
+    key: 'silk',
+    en: 'Silk', es: 'Seda',
+    family: 'animal',
+    morph: 'smooth-filament',
+    burn: {
+      flame: 'self-extinguishes',
+      odor: 'burning hair',
+      ash: 'crushable black bead'
+    },
+    solv: { acetone: 'no visible change', bleach: 'swells and softens', acid: 'no visible change' },
+    surface: 'smooth, glassy, no surface texture at all',
+    width: '10 to 14 micrometers',
+    polar: 'bright colors that shift as the stage turns',
+    polarKind: 'birefringent'
+  },
+  {
+    key: 'rayon',
+    en: 'Rayon', es: 'Rayon',
+    family: 'regenerated',
+    morph: 'lobed',
+    burn: {
+      flame: 'burns quickly with a steady flame',
+      odor: 'burning paper',
+      ash: 'soft grey ash'
+    },
+    solv: { acetone: 'no visible change', bleach: 'dissolves', acid: 'swells and softens' },
+    surface: 'smooth with lengthwise grooves and a lobed edge',
+    width: '10 to 18 micrometers',
+    polar: 'bright colors that shift as the stage turns',
+    polarKind: 'birefringent'
+  },
+  {
+    key: 'polyester',
+    en: 'Polyester', es: 'Poliester',
+    family: 'synthetic',
+    morph: 'uniform',
+    burn: {
+      flame: 'melts and shrinks away',
+      odor: 'sweet chemical',
+      ash: 'hard black bead'
+    },
+    solv: { acetone: 'no visible change', bleach: 'no visible change', acid: 'no visible change' },
+    surface: 'perfectly uniform, no texture, no twists',
+    width: '14 to 22 micrometers',
+    polar: 'bright colors that shift as the stage turns',
+    polarKind: 'birefringent'
+  },
+  {
+    key: 'nylon',
+    en: 'Nylon', es: 'Nailon',
+    family: 'synthetic',
+    morph: 'uniform',
+    burn: {
+      flame: 'melts and shrinks away',
+      odor: 'acrid chemical',
+      ash: 'hard black bead'
+    },
+    solv: { acetone: 'no visible change', bleach: 'no visible change', acid: 'dissolves' },
+    surface: 'perfectly uniform, no texture, no twists',
+    width: '15 to 25 micrometers',
+    polar: 'bright colors that shift as the stage turns',
+    polarKind: 'birefringent'
+  },
+  {
+    key: 'acrylic',
+    en: 'Acrylic', es: 'Acrilico',
+    family: 'synthetic',
+    morph: 'uniform',
+    burn: {
+      flame: 'melts and shrinks away',
+      odor: 'acrid chemical',
+      ash: 'hard black bead'
+    },
+    solv: { acetone: 'dissolves', bleach: 'no visible change', acid: 'no visible change' },
+    surface: 'uniform, slightly irregular along the edge',
+    width: '12 to 20 micrometers',
+    polar: 'stays dark through the full turn',
+    polarKind: 'isotropic'
+  }
+];
+
+function fiberByKey(k) {
+  var i;
+  for (i = 0; i < FIBERS.length; i++) if (FIBERS[i].key === k) return FIBERS[i];
+  return null;
+}
+
+var FAMILIES = [
+  { key: 'plant', en: 'Natural, plant origin', es: 'Natural, origen vegetal',
+    subEn: 'Grown. The fiber is mostly cellulose.',
+    subEs: 'Cultivada. La fibra es casi toda celulosa.',
+    membersEn: 'Cotton, linen', membersEs: 'Algodon, lino' },
+  { key: 'animal', en: 'Natural, animal origin', es: 'Natural, origen animal',
+    subEn: 'Grown. The fiber is a protein.',
+    subEs: 'Cultivada. La fibra es una proteina.',
+    membersEn: 'Wool, silk', membersEs: 'Lana, seda' },
+  { key: 'regenerated', en: 'Regenerated', es: 'Regenerada',
+    subEn: 'Plant material dissolved and pushed back out as a filament.',
+    subEs: 'Material vegetal disuelto y extruido de nuevo como filamento.',
+    membersEn: 'Rayon (viscose)', membersEs: 'Rayon (viscosa)' },
+  { key: 'synthetic', en: 'Synthetic', es: 'Sintetica',
+    subEn: 'Built from petrochemicals in a reactor.',
+    subEs: 'Fabricada a partir de petroquimicos en un reactor.',
+    membersEn: 'Polyester, nylon, acrylic', membersEs: 'Poliester, nailon, acrilico' }
+];
+
+/* =====================================================================
+   PROCEDURAL SVG: longitudinal morphology
+   Each renderer draws only shape. No fiber name appears inside any SVG.
+   ===================================================================== */
+var MORPH_W = 260;
+var MORPH_H = 96;
+
+function svgOpen(w, h, extra) {
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" ' +
+         'preserveAspectRatio="xMidYMid meet" role="img"' + (extra || '') + '>';
+}
+
+/* Cotton: flattened ribbon that twists. The twist is drawn as a
+   narrowing of the band plus a highlight flip, which is what the
+   microscope actually shows. */
+function drawTwistedRibbon(w, h, seed, color) {
+  var rng = makeRng(seed);
+  var cy = h / 2;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  var x0 = 8, x1 = w - 8;
+  var period = 46;
+  var top = [], bot = [];
+  var x;
+  for (x = x0; x <= x1; x += 2) {
+    var ph = ((x - x0) / period) * Math.PI * 2;
+    var half = 13 + 5 * Math.cos(ph);
+    var wob = Math.sin(ph * 0.5) * 1.6;
+    top.push([x, cy - half + wob]);
+    bot.push([x, cy + half + wob]);
+  }
+  var d = 'M' + top[0][0] + ',' + top[0][1].toFixed(2);
+  var i;
+  for (i = 1; i < top.length; i++) d += ' L' + top[i][0] + ',' + top[i][1].toFixed(2);
+  for (i = bot.length - 1; i >= 0; i--) d += ' L' + bot[i][0] + ',' + bot[i][1].toFixed(2);
+  d += ' Z';
+  s += '<path d="' + d + '" fill="' + color + '" opacity="0.92"/>';
+  /* twist creases */
+  for (x = x0 + period / 2; x < x1; x += period) {
+    s += '<line x1="' + x.toFixed(1) + '" y1="' + (cy - 16) + '" x2="' + (x + 5).toFixed(1) +
+         '" y2="' + (cy + 16) + '" stroke="#07070f" stroke-width="1.6" opacity="0.55"/>';
+  }
+  /* lengthwise convolution lines */
+  for (i = 0; i < 3; i++) {
+    var yy = cy - 7 + i * 7;
+    s += '<path d="M' + x0 + ',' + yy + ' Q' + (w / 2) + ',' + (yy + 3) + ' ' + x1 + ',' + yy +
+         '" stroke="#ffffff" stroke-width="0.7" fill="none" opacity="0.16"/>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* Linen: straight stalk with thick bamboo-like nodes. */
+function drawNodedStalk(w, h, seed, color) {
+  var rng = makeRng(seed);
+  var cy = h / 2;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  var x0 = 8, x1 = w - 8;
+  s += '<rect x="' + x0 + '" y="' + (cy - 9) + '" width="' + (x1 - x0) + '" height="18" rx="3" fill="' + color + '" opacity="0.9"/>';
+  /* nodes: crossbands that pinch the stalk */
+  var nx = x0 + 26;
+  while (nx < x1 - 10) {
+    s += '<rect x="' + (nx - 3) + '" y="' + (cy - 12) + '" width="6" height="24" rx="2" fill="' + color + '" opacity="0.55"/>';
+    s += '<line x1="' + nx + '" y1="' + (cy - 12) + '" x2="' + nx + '" y2="' + (cy + 12) + '" stroke="#07070f" stroke-width="1.4" opacity="0.7"/>';
+    nx += 34 + Math.floor(rng() * 14);
+  }
+  /* lengthwise striations */
+  var i;
+  for (i = 0; i < 4; i++) {
+    var yy = cy - 6 + i * 4;
+    s += '<line x1="' + x0 + '" y1="' + yy + '" x2="' + x1 + '" y2="' + yy + '" stroke="#ffffff" stroke-width="0.6" opacity="0.13"/>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* Wool: overlapping scales. Drawn as a stack of crescents that point
+   in one direction along the strand. */
+function drawScaled(w, h, seed, color) {
+  var rng = makeRng(seed);
+  var cy = h / 2;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  var x0 = 8, x1 = w - 8;
+  s += '<rect x="' + x0 + '" y="' + (cy - 15) + '" width="' + (x1 - x0) + '" height="30" rx="14" fill="' + color + '" opacity="0.55"/>';
+  var x = x0 + 4;
+  var k = 0;
+  while (x < x1 - 6) {
+    var sw = 13 + rng() * 5;
+    var lift = 1.5 + rng() * 1.5;
+    s += '<path d="M' + x.toFixed(1) + ',' + (cy - 15) +
+         ' q' + (sw * 0.55).toFixed(1) + ',' + (-lift).toFixed(1) + ' ' + sw.toFixed(1) + ',0' +
+         ' l0,30 q' + (-sw * 0.55).toFixed(1) + ',' + lift.toFixed(1) + ' ' + (-sw).toFixed(1) + ',0 Z"' +
+         ' fill="' + color + '" opacity="' + (0.30 + (k % 3) * 0.12).toFixed(2) + '"/>';
+    s += '<path d="M' + x.toFixed(1) + ',' + (cy - 15) +
+         ' q' + (sw * 0.55).toFixed(1) + ',' + (-lift).toFixed(1) + ' ' + sw.toFixed(1) + ',0"' +
+         ' stroke="#ffffff" stroke-width="0.8" fill="none" opacity="0.30"/>';
+    x += sw * 0.72;
+    k++;
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* Silk: smooth glassy filament, no surface texture. */
+function drawSmoothFilament(w, h, seed, color) {
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  var cy = h / 2;
+  var x0 = 8, x1 = w - 8;
+  s += '<rect x="' + x0 + '" y="' + (cy - 7) + '" width="' + (x1 - x0) + '" height="14" rx="7" fill="' + color + '" opacity="0.9"/>';
+  s += '<rect x="' + x0 + '" y="' + (cy - 5) + '" width="' + (x1 - x0) + '" height="4" rx="2" fill="#ffffff" opacity="0.28"/>';
+  s += '<rect x="' + x0 + '" y="' + (cy + 2) + '" width="' + (x1 - x0) + '" height="2" rx="1" fill="#000000" opacity="0.35"/>';
+  s += '</svg>';
+  return s;
+}
+
+/* Rayon: smooth with lengthwise grooves and a lobed edge. */
+function drawLobed(w, h, seed, color) {
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  var cy = h / 2;
+  var x0 = 8, x1 = w - 8;
+  var d = 'M' + x0 + ',' + (cy - 11);
+  var x;
+  for (x = x0; x <= x1; x += 4) {
+    var ph = ((x - x0) / 40) * Math.PI * 2;
+    d += ' L' + x + ',' + (cy - 11 - Math.sin(ph) * 2.2).toFixed(2);
+  }
+  for (x = x1; x >= x0; x -= 4) {
+    var ph2 = ((x - x0) / 40) * Math.PI * 2;
+    d += ' L' + x + ',' + (cy + 11 + Math.sin(ph2) * 2.2).toFixed(2);
+  }
+  d += ' Z';
+  s += '<path d="' + d + '" fill="' + color + '" opacity="0.9"/>';
+  var i;
+  for (i = 0; i < 5; i++) {
+    var yy = cy - 8 + i * 4;
+    s += '<line x1="' + x0 + '" y1="' + yy + '" x2="' + x1 + '" y2="' + yy + '" stroke="#07070f" stroke-width="1.1" opacity="0.45"/>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* Synthetics: perfectly uniform extruded filament. */
+function drawUniform(w, h, seed, color) {
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#07070f"/>';
+  var cy = h / 2;
+  var x0 = 8, x1 = w - 8;
+  s += '<rect x="' + x0 + '" y="' + (cy - 9) + '" width="' + (x1 - x0) + '" height="18" rx="2" fill="' + color + '" opacity="0.92"/>';
+  s += '<rect x="' + x0 + '" y="' + (cy - 7) + '" width="' + (x1 - x0) + '" height="3" fill="#ffffff" opacity="0.22"/>';
+  s += '<rect x="' + x0 + '" y="' + (cy + 4) + '" width="' + (x1 - x0) + '" height="2" fill="#000000" opacity="0.30"/>';
+  s += '</svg>';
+  return s;
+}
+
+var MORPH_COLORS = {
+  'twisted-ribbon': '#d8c9a8',
+  'noded-stalk': '#c9b98f',
+  'scaled': '#b9a98c',
+  'smooth-filament': '#cfd8e6',
+  'lobed': '#c6d2c0',
+  'uniform': '#a9b6cc'
+};
+
+function morphSvg(kind, seed, w, h) {
+  var c = MORPH_COLORS[kind] || '#c0c0c0';
+  switch (kind) {
+    case 'twisted-ribbon': return drawTwistedRibbon(w, h, seed, c);
+    case 'noded-stalk': return drawNodedStalk(w, h, seed, c);
+    case 'scaled': return drawScaled(w, h, seed, c);
+    case 'smooth-filament': return drawSmoothFilament(w, h, seed, c);
+    case 'lobed': return drawLobed(w, h, seed, c);
+    default: return drawUniform(w, h, seed, c);
+  }
+}
+
+
+/* =====================================================================
+   INSTRUMENT STAGES
+   Each stage draws the apparatus at rest. Running a test animates it and
+   then the observation list fills in. Nothing on a stage names a fiber.
+   ===================================================================== */
+
+/* --- Burn stage: a burner flame and a strand held above it --- */
+function burnStageSvg(state) {
+  var w = 300, h = 130;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#05050c"/>';
+  /* bench line */
+  s += '<line x1="0" y1="112" x2="' + w + '" y2="112" stroke="#1c1c30" stroke-width="1"/>';
+  /* burner body */
+  s += '<rect x="132" y="86" width="36" height="26" rx="3" fill="#2a2a3e"/>';
+  s += '<rect x="140" y="76" width="20" height="12" rx="2" fill="#3a3a52"/>';
+  /* flame */
+  if (state === 'idle') {
+    s += '<path d="M150,76 q-9,-16 0,-30 q9,14 0,30 Z" fill="#3a3a52" opacity="0.7"/>';
+  } else {
+    s += '<path d="M150,76 q-11,-20 0,-38 q11,18 0,38 Z" fill="#f59e0b" opacity="0.85"/>';
+    s += '<path d="M150,76 q-6,-13 0,-24 q6,11 0,24 Z" fill="#fde68a" opacity="0.95"/>';
+  }
+  /* strand held in tweezers, angled down toward the flame */
+  s += '<line x1="196" y1="26" x2="158" y2="52" stroke="#8a8aa0" stroke-width="3" stroke-linecap="round"/>';
+  s += '<line x1="196" y1="34" x2="158" y2="58" stroke="#8a8aa0" stroke-width="3" stroke-linecap="round"/>';
+  var tipY = state === 'idle' ? 52 : 46;
+  s += '<line x1="158" y1="' + (tipY + 4) + '" x2="150" y2="' + (tipY + 16) + '" stroke="#d8c9a8" stroke-width="2.4" stroke-linecap="round"/>';
+  if (state === 'burning') {
+    s += '<circle cx="150" cy="' + (tipY + 18) + '" r="4" fill="#f59e0b" opacity="0.9"/>';
+    s += '<circle cx="150" cy="' + (tipY + 18) + '" r="8" fill="#f59e0b" opacity="0.25"/>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* --- Solubility stage: three wells, each with a strand --- */
+function solvStageSvg(ran) {
+  var w = 300, h = 130;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#05050c"/>';
+  var labels = ['A', 'B', 'C'];
+  var i;
+  for (i = 0; i < 3; i++) {
+    var cx = 58 + i * 92;
+    s += '<path d="M' + (cx - 30) + ',44 l6,58 a24,10 0 0 0 48,0 l6,-58 Z" fill="#0d0d1c" stroke="#2a2a3e" stroke-width="1.2"/>';
+    s += '<path d="M' + (cx - 27) + ',62 l5,40 a21,8 0 0 0 44,0 l5,-40 Z" fill="#1b2a3a" opacity="0.85"/>';
+    /* strand */
+    var dissolved = ran && ran[i] === 'dissolves';
+    var swelled = ran && ran[i] === 'swells and softens';
+    if (!dissolved) {
+      var op = swelled ? 0.45 : 0.95;
+      var sw = swelled ? 4.5 : 2.2;
+      s += '<line x1="' + cx + '" y1="66" x2="' + cx + '" y2="' + (swelled ? 96 : 104) + '" stroke="#d8c9a8" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
+    } else {
+      /* faint cloud where the strand used to be */
+      s += '<ellipse cx="' + cx + '" cy="86" rx="16" ry="12" fill="#d8c9a8" opacity="0.10"/>';
+    }
+    s += '<text x="' + cx + '" y="126" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#5a5a70">' + labels[i] + '</text>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* --- Microscopy stage: high magnification strip with a scale bar --- */
+function microStageSvg(kind, seed) {
+  var w = 300, h = 130;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#05050c"/>';
+  /* scope vignette */
+  s += '<circle cx="150" cy="62" r="58" fill="#0a0a14" stroke="#1c1c30" stroke-width="1"/>';
+  s += '<clipPath id="microClip"><circle cx="150" cy="62" r="56"/></clipPath>';
+  s += '<g clip-path="url(#microClip)">';
+  /* the strip is drawn at 260x96 then scaled to span the full field of view */
+  s += '<g transform="translate(94,14) scale(0.44)">' + morphSvg(kind, seed, 260, 96) + '</g>';
+  s += '</g>';
+  /* scale bar: 40 px = 20 micrometers at this magnification */
+  s += '<line x1="216" y1="112" x2="256" y2="112" stroke="#e0e0e0" stroke-width="2"/>';
+  s += '<line x1="216" y1="108" x2="216" y2="116" stroke="#e0e0e0" stroke-width="2"/>';
+  s += '<line x1="256" y1="108" x2="256" y2="116" stroke="#e0e0e0" stroke-width="2"/>';
+  s += '<text x="236" y="106" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#a0a0b0">20 um</text>';
+  s += '</svg>';
+  return s;
+}
+
+/* --- Polarized light stage: crossed polars, interference colors --- */
+function polarStageSvg(kind, angleDeg) {
+  var w = 300, h = 130;
+  var s = svgOpen(w, h);
+  s += '<rect width="' + w + '" height="' + h + '" fill="#020206"/>';
+  s += '<circle cx="150" cy="62" r="56" fill="#000000" stroke="#1c1c30" stroke-width="1"/>';
+  s += '<clipPath id="polarClip"><circle cx="150" cy="62" r="54"/></clipPath>';
+  s += '<g clip-path="url(#polarClip)">';
+  var cy = 62;
+  if (kind === 'isotropic') {
+    /* stays dark: only a faint grey outline is visible */
+    s += '<rect x="40" y="' + (cy - 9) + '" width="220" height="18" rx="2" fill="#141420"/>';
+    s += '<rect x="40" y="' + (cy - 9) + '" width="220" height="18" rx="2" fill="none" stroke="#2a2a3e" stroke-width="1"/>';
+  } else {
+    /* birefringent: a continuous interference band that slides with the
+       stage angle. The band is built from many narrow slices so the color
+       sweeps across the whole strand instead of sitting in blocks. */
+    var strength = kind === 'weak' ? 0.30 : 1;
+    var palette = ['#ff2d95', '#ff6d00', '#ffe600', '#00ff9d', '#00e5ff', '#7c4dff'];
+    var slices = 44;
+    var i;
+    for (i = 0; i < slices; i++) {
+      var frac = i / slices;
+      var phase = frac * 6 + (angleDeg / 360) * 2;
+      var ci = Math.floor(phase) % palette.length;
+      var mix = phase - Math.floor(phase);
+      var col = palette[ci];
+      var op = (0.30 + 0.55 * Math.abs(Math.sin(phase * Math.PI))) * strength;
+      s += '<rect x="' + (40 + frac * 220).toFixed(1) + '" y="' + (cy - 9) + '" width="' +
+           (220 / slices + 0.6).toFixed(1) + '" height="18" fill="' + col +
+           '" opacity="' + op.toFixed(2) + '"/>';
+    }
+    /* extinction fringes: dark bands where the fiber goes dark */
+    for (i = 0; i < 3; i++) {
+      var fx = 40 + ((i * 73 + (angleDeg / 360) * 220) % 220);
+      s += '<rect x="' + fx.toFixed(1) + '" y="' + (cy - 9) + '" width="7" height="18" fill="#020206" opacity="0.55"/>';
+    }
+    s += '<rect x="40" y="' + (cy - 9) + '" width="220" height="18" fill="url(#polarFade)" opacity="0.45"/>';
+  }
+  s += '</g>';
+  s += '<defs><linearGradient id="polarFade" x1="0" y1="0" x2="1" y2="0">' +
+       '<stop offset="0" stop-color="#020206"/><stop offset="0.5" stop-color="#020206" stop-opacity="0"/>' +
+       '<stop offset="1" stop-color="#020206"/></linearGradient></defs>';
+  /* polarizer axes */
+  s += '<line x1="150" y1="4" x2="150" y2="14" stroke="#3a3a52" stroke-width="2"/>';
+  s += '<line x1="150" y1="110" x2="150" y2="120" stroke="#3a3a52" stroke-width="2"/>';
+  s += '<line x1="92" y1="62" x2="102" y2="62" stroke="#3a3a52" stroke-width="2"/>';
+  s += '<line x1="198" y1="62" x2="208" y2="62" stroke="#3a3a52" stroke-width="2"/>';
+  s += '</svg>';
+  return s;
+}
+
+
+/* =====================================================================
+   SECTION A: family cards + six unlabelled strips
+   ===================================================================== */
+var FAMILY_MORPH = {
+  plant: 'twisted-ribbon',
+  animal: 'scaled',
+  regenerated: 'lobed',
+  synthetic: 'uniform'
+};
+
+function buildFamilyCards() {
+  var html = '';
+  var i;
+  for (i = 0; i < FAMILIES.length; i++) {
+    var f = FAMILIES[i];
+    html += '<div class="fam-card">' +
+      '<div class="fam-head">' + bi(f.en, f.es) + '</div>' +
+      '<div class="fam-sub">' + bi(f.subEn, f.subEs) + '</div>' +
+      morphSvg(FAMILY_MORPH[f.key], 3100 + i * 53, MORPH_W, MORPH_H) +
+      '<div class="fam-members">' + bi(f.membersEn, f.membersEs) + '</div>' +
+    '</div>';
+  }
+  el('famGrid').innerHTML = html;
+}
+
+/* Six strips. Each carries a hidden family. Order is fixed by a seeded
+   shuffle computed once at load, and re-shuffled on reset. */
+var A_STRIPS = [
+  { fiber: 'cotton', seed: 5101 },
+  { fiber: 'wool', seed: 5209 },
+  { fiber: 'polyester', seed: 5317 },
+  { fiber: 'rayon', seed: 5423 },
+  { fiber: 'silk', seed: 5531 },
+  { fiber: 'linen', seed: 5647 }
+];
+
+var aState = {};
+
+function buildStrips() {
+  var order = shuffleSeeded([0, 1, 2, 3, 4, 5], makeRng(20261116));
+  var html = '';
+  var n;
+  for (n = 0; n < order.length; n++) {
+    var idx = order[n];
+    var st = A_STRIPS[idx];
+    var fib = fiberByKey(st.fiber);
+    var id = 'a' + idx;
+    aState[id] = { pick: null, checked: false, ok: false };
+    var opts = '';
+    var t;
+    for (t = 0; t < FAMILIES.length; t++) {
+      var f = FAMILIES[t];
+      opts += '<button type="button" class="opt" data-strip="' + id + '" data-fam="' + f.key + '">' +
+              bi(f.en, f.es) + '</button>';
+    }
+    html += '<div class="strip-item" data-stripitem="' + id + '">' +
+      '<div class="thumb">' + morphSvg(fib.morph, st.seed, MORPH_W, MORPH_H) + '</div>' +
+      '<div>' +
+        '<div class="sname">' + bi('Strip ' + (n + 1), 'Tira ' + (n + 1)) + '</div>' +
+        '<div class="opt-row">' + opts + '</div>' +
+        '<div class="strip-foot">' +
+          '<button type="button" class="btn small" data-stripcheck="' + id + '">' +
+            bi('Check', 'Revisar') + '</button>' +
+          '<span class="verdict" data-stripverdict="' + id + '"></span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  el('stripList').innerHTML = html;
+  wireStrips();
+}
+
+function wireStrips() {
+  el('stripList').addEventListener('click', function (e) {
+    var t = e.target;
+    var optBtn = t.closest ? t.closest('.opt') : null;
+    if (optBtn) {
+      var sid = optBtn.getAttribute('data-strip');
+      var st = aState[sid];
+      if (st.ok) return;                 /* locked only after a correct check */
+      st.pick = optBtn.getAttribute('data-fam');
+      st.checked = false;
+      var row = optBtn.parentNode;
+      var kids = row.querySelectorAll('.opt');
+      var i;
+      for (i = 0; i < kids.length; i++) {
+        kids[i].classList.remove('sel', 'mark-ok', 'mark-bad');
+      }
+      optBtn.classList.add('sel');
+      var v = el('stripList').querySelector('[data-stripverdict="' + sid + '"]');
+      if (v) { v.className = 'verdict'; v.innerHTML = ''; }
+      return;
+    }
+    var chk = t.closest ? t.closest('[data-stripcheck]') : null;
+    if (chk) {
+      var id = chk.getAttribute('data-stripcheck');
+      checkStrip(id);
+    }
+  });
+}
+
+function checkStrip(id) {
+  var st = aState[id];
+  if (!st.pick) {
+    var v0 = el('stripList').querySelector('[data-stripverdict="' + id + '"]');
+    v0.className = 'verdict bad';
+    v0.innerHTML = bi('Pick a family first.', 'Primero elige una familia.');
+    return;
+  }
+  var idx = parseInt(id.slice(1), 10);
+  var fib = fiberByKey(A_STRIPS[idx].fiber);
+  var item = el('stripList').querySelector('[data-stripitem="' + id + '"]');
+  var opts = item.querySelectorAll('.opt');
+  var i;
+  for (i = 0; i < opts.length; i++) {
+    var k = opts[i].getAttribute('data-fam');
+    opts[i].classList.remove('mark-ok', 'mark-bad');
+    if (k === st.pick) opts[i].classList.add(k === fib.family ? 'mark-ok' : 'mark-bad');
+  }
+  var v = el('stripList').querySelector('[data-stripverdict="' + id + '"]');
+  if (st.pick === fib.family) {
+    st.ok = true;
+    st.checked = true;
+    v.className = 'verdict ok';
+    v.innerHTML = bi('That family fits this strip.', 'Esa familia corresponde a esta tira.');
+  } else {
+    st.checked = true;
+    v.className = 'verdict bad';
+    v.innerHTML = bi('Not this family. Look at the surface again and try another.',
+                     'No es esta familia. Mira la superficie otra vez y prueba otra.');
+  }
+}
+
+/* =====================================================================
+   SECTION B: the four tests instrument
+   ===================================================================== */
+var BENCH_SAMPLES = ['cotton', 'wool', 'polyester', 'rayon', 'silk', 'nylon'];
+
+var bench = {
+  sample: 'cotton',
+  ran: {}          /* fiberKey -> { flame, odor, ash, acetone, bleach, acid, surface, width, polar } */
+};
+
+function benchData(key) {
+  if (!bench.ran[key]) bench.ran[key] = {};
+  return bench.ran[key];
+}
+
+function buildSampleTabs() {
+  var html = '';
+  var i;
+  for (i = 0; i < BENCH_SAMPLES.length; i++) {
+    var k = BENCH_SAMPLES[i];
+    html += '<button type="button" data-sample="' + k + '"' + (k === bench.sample ? ' class="active"' : '') + '>' +
+            bi('Sample ' + (i + 1), 'Muestra ' + (i + 1)) + '</button>';
+  }
+  el('sampleTabs').innerHTML = html;
+  el('sampleTabs').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-sample]') : null;
+    if (!b) return;
+    bench.sample = b.getAttribute('data-sample');
+    var btns = el('sampleTabs').querySelectorAll('button');
+    var j;
+    for (j = 0; j < btns.length; j++) btns[j].classList.toggle('active', btns[j] === b);
+    renderBench();
+  });
+}
+
+function setObs(containerId, key, textEn, textEs, pending) {
+  var node = el(containerId).querySelector('[data-obs="' + key + '"]');
+  if (!node) return;
+  if (pending) {
+    node.className = 'oval pending';
+    node.innerHTML = bi(textEn, textEs);
+  } else {
+    node.className = 'oval';
+    node.innerHTML = bi(textEn, textEs);
+  }
+}
+
+function renderBench() {
+  var fib = fiberByKey(bench.sample);
+  var d = benchData(bench.sample);
+
+  /* burn */
+  el('burnStage').innerHTML = burnStageSvg(d.flame ? 'burning' : 'idle');
+  setObs('burnObs', 'flame', d.flame || 'not run yet', d.flame || 'sin correr', !d.flame);
+  setObs('burnObs', 'odor', d.odor || 'not run yet', d.odor || 'sin correr', !d.odor);
+  setObs('burnObs', 'ash', d.ash || 'not run yet', d.ash || 'sin correr', !d.ash);
+
+  /* solubility */
+  var solvRan = [d.acetone, d.bleach, d.acid];
+  el('solvStage').innerHTML = solvStageSvg(solvRan);
+  setObs('solvObs', 'acetone', d.acetone || 'not run yet', d.acetone || 'sin correr', !d.acetone);
+  setObs('solvObs', 'bleach', d.bleach || 'not run yet', d.bleach || 'sin correr', !d.bleach);
+  setObs('solvObs', 'acid', d.acid || 'not run yet', d.acid || 'sin correr', !d.acid);
+
+  /* microscopy */
+  el('microStage').innerHTML = microStageSvg(fib.morph, 7000 + bench.sample.length * 31);
+  setObs('microObs', 'surface', d.surface || 'not run yet', d.surface || 'sin correr', !d.surface);
+  setObs('microObs', 'width', d.width || 'not run yet', d.width || 'sin correr', !d.width);
+
+  /* polarized */
+  el('polarStage').innerHTML = polarStageSvg(fib.polarKind, d.polar ? 40 : 0);
+  setObs('polarObs', 'polar', d.polar || 'not run yet', d.polar || 'sin correr', !d.polar);
+
+  renderResultsTable();
+}
+
+function renderResultsTable() {
+  var html = '';
+  var i;
+  for (i = 0; i < BENCH_SAMPLES.length; i++) {
+    var k = BENCH_SAMPLES[i];
+    var d = bench.ran[k] || {};
+    var cells = ['flame', 'odor', 'ash', 'acetone', 'bleach', 'acid', 'surface', 'polar'];
+    html += '<tr><td class="tname">' + bi('Sample ' + (i + 1), 'Muestra ' + (i + 1)) + '</td>';
+    var j;
+    for (j = 0; j < cells.length; j++) {
+      var v = d[cells[j]];
+      html += v ? '<td>' + v + '</td>' : '<td class="empty">' + bi('not run', 'sin correr') + '</td>';
+    }
+    html += '</tr>';
+  }
+  el('resultsBody').innerHTML = html;
+}
+
+function wireBench() {
+  el('burnRun').addEventListener('click', function () {
+    var fib = fiberByKey(bench.sample);
+    var d = benchData(bench.sample);
+    d.flame = fib.burn.flame;
+    d.odor = fib.burn.odor;
+    d.ash = fib.burn.ash;
+    renderBench();
+  });
+
+  el('solvStage').parentNode.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-solv]') : null;
+    if (!b) return;
+    var which = b.getAttribute('data-solv');
+    var fib = fiberByKey(bench.sample);
+    var d = benchData(bench.sample);
+    d[which] = fib.solv[which];
+    renderBench();
+  });
+
+  el('microRun').addEventListener('click', function () {
+    var fib = fiberByKey(bench.sample);
+    var d = benchData(bench.sample);
+    d.surface = fib.surface;
+    d.width = fib.width;
+    renderBench();
+  });
+
+  el('polarRun').addEventListener('click', function () {
+    var fib = fiberByKey(bench.sample);
+    var d = benchData(bench.sample);
+    d.polar = fib.polar;
+    renderBench();
+  });
+
+  el('resetBench').addEventListener('click', function () {
+    bench.ran = {};
+    renderBench();
+  });
+}
+
+
+/* =====================================================================
+   SECTION C: identification from a results table only
+   ===================================================================== */
+/* Six items, each a different fiber. Options include plausible
+   near-misses drawn from the same family or the same burn signature. */
+var ID_ITEMS = [
+  { fiber: 'cotton', seed: 9101,
+    options: ['cotton', 'linen', 'rayon', 'polyester'] },
+  { fiber: 'wool', seed: 9209,
+    options: ['wool', 'silk', 'acrylic', 'cotton'] },
+  { fiber: 'polyester', seed: 9317,
+    options: ['polyester', 'nylon', 'acrylic', 'silk'] },
+  { fiber: 'rayon', seed: 9423,
+    options: ['rayon', 'cotton', 'linen', 'acetate'] },
+  { fiber: 'silk', seed: 9531,
+    options: ['silk', 'wool', 'nylon', 'rayon'] },
+  { fiber: 'nylon', seed: 9647,
+    options: ['nylon', 'polyester', 'acrylic', 'wool'] }
+];
+
+/* 'acetate' is a near-miss option only. It is not in the FIBERS library,
+   so it can never be the answer and its label is supplied here. */
+var EXTRA_LABELS = {
+  acetate: { en: 'Acetate', es: 'Acetato' }
+};
+
+function labelFor(key) {
+  var f = fiberByKey(key);
+  if (f) return bi(f.en, f.es);
+  var x = EXTRA_LABELS[key];
+  return x ? bi(x.en, x.es) : key;
+}
+
+var cState = {};
+
+function idTableHtml(fib) {
+  var rows = [
+    [bi('Flame', 'Flama'), fib.burn.flame],
+    [bi('Odor', 'Olor'), fib.burn.odor],
+    [bi('Residue', 'Residuo'), fib.burn.ash],
+    [bi('Acetone', 'Acetona'), fib.solv.acetone],
+    [bi('Bleach', 'Cloro'), fib.solv.bleach],
+    [bi('Acid', 'Acido'), fib.solv.acid],
+    [bi('Surface', 'Superficie'), fib.surface],
+    [bi('Polarized', 'Polarizada'), fib.polar]
+  ];
+  var html = '<table class="id-table">';
+  var i;
+  for (i = 0; i < rows.length; i++) {
+    html += '<tr><th>' + rows[i][0] + '</th><td>' + rows[i][1] + '</td></tr>';
+  }
+  html += '</table>';
+  return html;
+}
+
+/* Which single test result rules out a wrong pick. Returns a bilingual
+   sentence naming the test and the two conflicting observations. */
+function ruleOutText(pickKey, answerFib) {
+  var pick = fiberByKey(pickKey);
+  if (!pick) {
+    return bi('That fiber is not one of the eight families covered in this lab, so the results cannot match it.',
+              'Esa fibra no es una de las ocho familias cubiertas en este laboratorio, asi que los resultados no pueden corresponderle.');
+  }
+  var tests = [
+    { k: 'flame', en: 'flame behavior', es: 'comportamiento de la flama' },
+    { k: 'odor', en: 'odor', es: 'olor' },
+    { k: 'ash', en: 'residue', es: 'residuo' },
+    { k: 'acetone', en: 'acetone result', es: 'resultado en acetona' },
+    { k: 'bleach', en: 'bleach result', es: 'resultado en cloro' },
+    { k: 'acid', en: 'acid result', es: 'resultado en acido' },
+    { k: 'surface', en: 'surface under the scope', es: 'superficie bajo el microscopio' },
+    { k: 'polar', en: 'polarized light response', es: 'respuesta en luz polarizada' }
+  ];
+  var i;
+  for (i = 0; i < tests.length; i++) {
+    var t = tests[i];
+    var a, b;
+    if (t.k === 'flame' || t.k === 'odor' || t.k === 'ash') {
+      a = pick.burn[t.k]; b = answerFib.burn[t.k];
+    } else if (t.k === 'surface' || t.k === 'polar') {
+      a = pick[t.k]; b = answerFib[t.k];
+    } else {
+      a = pick.solv[t.k]; b = answerFib.solv[t.k];
+    }
+    if (a !== b) {
+      return bi('The ' + t.en + ' you recorded is "' + b + '". ' + labelFor(pickKey) +
+                ' would give "' + a + '", so that test rules it out.',
+                'El ' + t.es + ' que registraste es "' + b + '". ' + labelFor(pickKey) +
+                ' daria "' + a + '", asi que esa prueba lo descarta.');
+    }
+  }
+  return bi('The results do not fit that fiber.', 'Los resultados no corresponden a esa fibra.');
+}
+
+function buildIdItems() {
+  var html = '';
+  var i;
+  for (i = 0; i < ID_ITEMS.length; i++) {
+    var item = ID_ITEMS[i];
+    var fib = fiberByKey(item.fiber);
+    var id = 'c' + i;
+    cState[id] = { pick: null, committed: false, ok: false };
+    var order = shuffleSeeded(item.options, makeRng(item.seed));
+    var opts = '';
+    var k;
+    for (k = 0; k < order.length; k++) {
+      opts += '<button type="button" class="opt" data-id="' + id + '" data-pick="' + order[k] + '">' +
+              labelFor(order[k]) + '</button>';
+    }
+    html += '<div class="id-item" data-iditem="' + id + '">' +
+      '<div class="id-head">' +
+        '<div class="id-thumb">' + morphSvg(fib.morph, item.seed + 11, MORPH_W, MORPH_H) + '</div>' +
+        '<div class="id-body">' +
+          '<div class="id-q">' + bi('Item ' + (i + 1) + ': which fiber produced these results?',
+                                    'Item ' + (i + 1) + ': que fibra produjo estos resultados?') + '</div>' +
+          idTableHtml(fib) +
+          '<div class="opt-row">' + opts + '</div>' +
+          '<div class="strip-foot">' +
+            '<button type="button" class="btn small" data-idcommit="' + id + '">' +
+              bi('Commit', 'Confirmar') + '</button>' +
+          '</div>' +
+          '<div class="fb" data-idfb="' + id + '"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  el('idList').innerHTML = html;
+  wireIdItems();
+}
+
+function wireIdItems() {
+  el('idList').addEventListener('click', function (e) {
+    var t = e.target;
+    var optBtn = t.closest ? t.closest('.opt') : null;
+    if (optBtn) {
+      var iid = optBtn.getAttribute('data-id');
+      var st = cState[iid];
+      if (st.ok) return;
+      st.pick = optBtn.getAttribute('data-pick');
+      var row = optBtn.parentNode;
+      var kids = row.querySelectorAll('.opt');
+      var i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel', 'mark-ok', 'mark-bad');
+      optBtn.classList.add('sel');
+      return;
+    }
+    var chk = t.closest ? t.closest('[data-idcommit]') : null;
+    if (chk) commitId(chk.getAttribute('data-idcommit'));
+  });
+}
+
+function commitId(id) {
+  var st = cState[id];
+  var idx = parseInt(id.slice(1), 10);
+  var item = ID_ITEMS[idx];
+  var fb = el('idList').querySelector('[data-idfb="' + id + '"]');
+  if (!st.pick) {
+    fb.className = 'fb bad show';
+    fb.innerHTML = bi('Pick a fiber first.', 'Primero elige una fibra.');
+    return;
+  }
+  var itemEl = el('idList').querySelector('[data-iditem="' + id + '"]');
+  var opts = itemEl.querySelectorAll('.opt');
+  var i;
+  for (i = 0; i < opts.length; i++) {
+    var k = opts[i].getAttribute('data-pick');
+    opts[i].classList.remove('mark-ok', 'mark-bad');
+    if (k === st.pick) opts[i].classList.add(k === item.fiber ? 'mark-ok' : 'mark-bad');
+  }
+  if (st.pick === item.fiber) {
+    st.ok = true;
+    st.committed = true;
+    fb.className = 'fb ok show';
+    fb.innerHTML = bi('Every result in the row fits this fiber.', 'Cada resultado de la fila corresponde a esta fibra.');
+  } else {
+    st.committed = true;
+    fb.className = 'fb bad show';
+    fb.innerHTML = ruleOutText(st.pick, fiberByKey(item.fiber));
+  }
+}
+
+/* =====================================================================
+   SECTION D: skill check, class then origin
+   ===================================================================== */
+var SKILL_ITEMS = [
+  { fiber: 'linen', seed: 4101 },
+  { fiber: 'acrylic', seed: 4209 },
+  { fiber: 'silk', seed: 4317 },
+  { fiber: 'rayon', seed: 4423 },
+  { fiber: 'polyester', seed: 4531 },
+  { fiber: 'wool', seed: 4647 }
+];
+
+var dState = {};
+
+function classOf(fib) {
+  return (fib.family === 'plant' || fib.family === 'animal') ? 'natural' : 'synthetic';
+}
+
+function buildSkillItems() {
+  var html = '';
+  var i;
+  for (i = 0; i < SKILL_ITEMS.length; i++) {
+    var item = SKILL_ITEMS[i];
+    var fib = fiberByKey(item.fiber);
+    var id = 'd' + i;
+    dState[id] = { pick1: null, ok1: false, pick2: null, ok2: false };
+
+    var order1 = shuffleSeeded(['natural', 'synthetic'], makeRng(item.seed + 13));
+    var opts1 = '';
+    var k;
+    for (k = 0; k < order1.length; k++) {
+      var key1 = order1[k];
+      opts1 += '<button type="button" class="opt" data-skill="' + id + '" data-q="1" data-pick="' + key1 + '">' +
+               (key1 === 'natural' ? bi('Natural', 'Natural') : bi('Synthetic', 'Sintetica')) + '</button>';
+    }
+
+    var order2 = shuffleSeeded(['plant', 'animal', 'mineral'], makeRng(item.seed + 29));
+    var opts2 = '';
+    for (k = 0; k < order2.length; k++) {
+      var key2 = order2[k];
+      var lbl = key2 === 'plant' ? bi('Plant', 'Vegetal')
+              : key2 === 'animal' ? bi('Animal', 'Animal')
+              : bi('Mineral', 'Mineral');
+      opts2 += '<button type="button" class="opt" data-skill="' + id + '" data-q="2" data-pick="' + key2 + '">' +
+               lbl + '</button>';
+    }
+
+    html += '<div class="skill-item" data-skillitem="' + id + '">' +
+      '<div class="skill-q"><span class="qnum">' + (i + 1) + '</span>' +
+        bi('Read this results row.', 'Lee esta fila de resultados.') + '</div>' +
+      idTableHtml(fib) +
+      '<div class="skill-block">' +
+        '<div class="skill-q">' + bi('Is this fiber natural or synthetic?', 'Esta fibra es natural o sintetica?') + '</div>' +
+        '<div class="opt-row">' + opts1 + '</div>' +
+        '<div class="strip-foot">' +
+          '<button type="button" class="btn small" data-skillcommit="' + id + '" data-q="1">' +
+            bi('Commit', 'Confirmar') + '</button>' +
+        '</div>' +
+        '<div class="fb" data-skillfb="' + id + '-1"></div>' +
+      '</div>' +
+      '<div class="skill-block">' +
+        '<div class="skill-q">' + bi('What is the origin of this fiber?', 'Cual es el origen de esta fibra?') + '</div>' +
+        '<div class="opt-row">' + opts2 + '</div>' +
+        '<div class="strip-foot">' +
+          '<button type="button" class="btn small" data-skillcommit="' + id + '" data-q="2">' +
+            bi('Commit', 'Confirmar') + '</button>' +
+        '</div>' +
+        '<div class="fb" data-skillfb="' + id + '-2"></div>' +
+      '</div>' +
+    '</div>';
+  }
+  el('skillList').innerHTML = html;
+  wireSkillItems();
+}
+
+function wireSkillItems() {
+  el('skillList').addEventListener('click', function (e) {
+    var t = e.target;
+    var optBtn = t.closest ? t.closest('.opt') : null;
+    if (optBtn) {
+      var sid = optBtn.getAttribute('data-skill');
+      var q = optBtn.getAttribute('data-q');
+      var st = dState[sid];
+      if (q === '1') {
+        if (st.ok1) return;
+        st.pick1 = optBtn.getAttribute('data-pick');
+      } else {
+        if (st.ok2) return;
+        st.pick2 = optBtn.getAttribute('data-pick');
+      }
+      var row = optBtn.parentNode;
+      var kids = row.querySelectorAll('.opt');
+      var i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel', 'mark-ok', 'mark-bad');
+      optBtn.classList.add('sel');
+      return;
+    }
+    var chk = t.closest ? t.closest('[data-skillcommit]') : null;
+    if (chk) commitSkill(chk.getAttribute('data-skillcommit'), chk.getAttribute('data-q'));
+  });
+}
+
+function commitSkill(id, q) {
+  var st = dState[id];
+  var idx = parseInt(id.slice(1), 10);
+  var fib = fiberByKey(SKILL_ITEMS[idx].fiber);
+  var fb = el('skillList').querySelector('[data-skillfb="' + id + '-' + q + '"]');
+  var itemEl = el('skillList').querySelector('[data-skillitem="' + id + '"]');
+  var blocks = itemEl.querySelectorAll('.skill-block');
+  var block = blocks[parseInt(q, 10) - 1];
+  var opts = block.querySelectorAll('.opt');
+
+  if (q === '1') {
+    if (!st.pick1) {
+      fb.className = 'fb bad show';
+      fb.innerHTML = bi('Pick one first.', 'Primero elige una.');
+      return;
+    }
+    var truth1 = classOf(fib);
+    var i;
+    for (i = 0; i < opts.length; i++) {
+      var k = opts[i].getAttribute('data-pick');
+      opts[i].classList.remove('mark-ok', 'mark-bad');
+      if (k === st.pick1) opts[i].classList.add(k === truth1 ? 'mark-ok' : 'mark-bad');
+    }
+    if (st.pick1 === truth1) {
+      st.ok1 = true;
+      fb.className = 'fb ok show';
+      fb.innerHTML = bi('That class fits this row.', 'Esa clase corresponde a esta fila.');
+    } else {
+      fb.className = 'fb bad show';
+      fb.innerHTML = bi('Not that class. Check the burn residue and the polarized light response again.',
+                        'No es esa clase. Revisa otra vez el residuo de combustion y la respuesta en luz polarizada.');
+    }
+  } else {
+    if (!st.pick2) {
+      fb.className = 'fb bad show';
+      fb.innerHTML = bi('Pick one first.', 'Primero elige uno.');
+      return;
+    }
+    var truth2 = fib.family === 'plant' ? 'plant'
+               : fib.family === 'animal' ? 'animal'
+               : 'neither';
+    var j;
+    for (j = 0; j < opts.length; j++) {
+      var k2 = opts[j].getAttribute('data-pick');
+      opts[j].classList.remove('mark-ok', 'mark-bad');
+      if (k2 === st.pick2) opts[j].classList.add(k2 === truth2 ? 'mark-ok' : 'mark-bad');
+    }
+    if (st.pick2 === truth2) {
+      st.ok2 = true;
+      fb.className = 'fb ok show';
+      fb.innerHTML = bi('That origin fits this row.', 'Ese origen corresponde a esta fila.');
+    } else if (truth2 === 'neither') {
+      fb.className = 'fb bad show';
+      fb.innerHTML = bi('This fiber was not grown and was not mined. It was manufactured, so plant and animal both miss.',
+                        'Esta fibra no fue cultivada ni extraida de una mina. Fue fabricada, asi que vegetal y animal no encajan.');
+    } else {
+      fb.className = 'fb bad show';
+      fb.innerHTML = bi('Not that origin. Look at the surface under the scope and the odor again.',
+                        'No es ese origen. Mira otra vez la superficie bajo el microscopio y el olor.');
+    }
+  }
+}
+
+/* =====================================================================
+   NAV + LANGUAGE
+   ===================================================================== */
+function wireNav() {
+  el('secnav').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-sec]') : null;
+    if (!b) return;
+    var key = b.getAttribute('data-sec');
+    var panels = document.querySelectorAll('section.panel');
+    var i;
+    for (i = 0; i < panels.length; i++) {
+      panels[i].classList.toggle('active', panels[i].id === 'sec-' + key);
+    }
+    var btns = el('secnav').querySelectorAll('button');
+    for (i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i] === b);
+    window.scrollTo(0, 0);
+  });
+}
+
+var LANG_KEY = 'fiberLab.lang.v1';
+
+function setLang(lang) {
+  if (lang !== 'es') lang = 'en';
+  document.documentElement.setAttribute('lang', lang);
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* ignore */ }
+  var btns = document.querySelectorAll('.lang-toggle button');
+  var i;
+  for (i = 0; i < btns.length; i++) {
+    var on = btns[i].getAttribute('data-lang') === lang;
+    btns[i].classList.toggle('active', on);
+    btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+}
+
+function wireLang() {
+  var btns = document.querySelectorAll('.lang-toggle button');
+  var i;
+  for (i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function () {
+      setLang(this.getAttribute('data-lang'));
+    });
+  }
+  var stored = 'en';
+  try { stored = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { /* ignore */ }
+  setLang(stored);
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+function boot() {
+  buildFamilyCards();
+  buildStrips();
+  buildSampleTabs();
+  renderBench();
+  wireBench();
+  buildIdItems();
+  buildSkillItems();
+  wireNav();
+  wireLang();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+
+</body>
+</html>

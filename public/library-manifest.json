@@ -1,6 +1,11 @@
 {
-  "generatedAt": "2026-11-13T18:57:30.906Z",
+  "generatedAt": "2026-11-16T16:11:11.503Z",
   "items": [
+    {
+      "path": "/ap1-2d-kinematics-practice.html",
+      "fingerprint": "/ap1-2d-kinematics-practice.html",
+      "sizeBytes": 71292
+    },
     {
       "path": "/ap1-course-recap.html",
       "fingerprint": "/ap1-course-recap.html",
@@ -87,6 +92,11 @@
       "sizeBytes": 1427394
     },
     {
+      "path": "/fiber-identification-lab.html",
+      "fingerprint": "/fiber-identification-lab.html",
+      "sizeBytes": 71925
+    },
+    {
       "path": "/forensic-branches/",
       "fingerprint": "/forensic-branches/",
       "sizeBytes": 23205
@@ -162,6 +172,11 @@
       "sizeBytes": 293928
     },
     {
+      "path": "/hair-analysis-lab.html",
+      "fingerprint": "/hair-analysis-lab.html",
+      "sizeBytes": 98127
+    },
+    {
       "path": "/infrastructure-tagging/",
       "fingerprint": "/infrastructure-tagging/",
       "sizeBytes": 5057778
@@ -194,7 +209,7 @@
     {
       "path": "/openscied-hub.html",
       "fingerprint": "/openscied-hub.html",
-      "sizeBytes": 18099
+      "sizeBytes": 19256
     },
     {
       "path": "/outage-waterfront.html",
@@ -205,6 +220,11 @@
       "path": "/physics-course-recap.html",
       "fingerprint": "/physics-course-recap.html",
       "sizeBytes": 46672
+    },
+    {
+      "path": "/polarization-sim.html",
+      "fingerprint": "/polarization-sim.html",
+      "sizeBytes": 26010
     },
     {
       "path": "/power-line-lab.html",
