@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T16:11:11.537Z",
+  "generatedAt": "2026-11-18T12:28:00.925Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -49,7 +49,8 @@
     "/polarization-sim": "/polarization-sim.html",
     "/forensic-lens-critique": "/forensic-lens-critique.html",
     "/hair-analysis-lab": "/hair-analysis-lab.html",
-    "/fiber-identification-lab": "/fiber-identification-lab.html"
+    "/fiber-identification-lab": "/fiber-identification-lab.html",
+    "/cuticle-ovality-lab": "/cuticle-ovality-lab/cuticle-ovality-lab.html"
   },
   "dirs": [
     "/ap1-q1-review",

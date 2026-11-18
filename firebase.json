@@ -292,6 +292,10 @@
         "destination": "/fiber-identification-lab.html"
       },
       {
+        "source": "/cuticle-ovality-lab",
+        "destination": "/cuticle-ovality-lab/cuticle-ovality-lab.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

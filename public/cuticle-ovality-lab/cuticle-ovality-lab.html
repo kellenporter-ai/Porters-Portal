@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuticle and Ovality Lab | Laboratorio de cuticula y ovalidad</title>
+<style>
+:root{
+  --bg:#0a0a1a; --bg2:#1a1a2e;
+  --panel:rgba(255,255,255,0.05); --panel-solid:#14142a;
+  --line:rgba(255,255,255,0.12); --line-strong:rgba(255,255,255,0.24);
+  --text:#e0e0e0; --muted:#a0a0b0;
+  --accent:#6366f1; --accent-soft:rgba(99,102,241,0.18);
+  --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);
+  color:var(--text); font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.5; min-height:100vh; -webkit-font-smoothing:antialiased;
+}
+html[lang="en"] .lang-es{display:none !important}
+html[lang="es"] .lang-en{display:none !important}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:8px 16px;background:rgba(10,10,26,0.94);
+  border-bottom:1px solid var(--line);backdrop-filter:blur(10px);
+}
+.topbar .brand{font-weight:700;font-size:14px;letter-spacing:.02em;color:#fff;margin-right:auto}
+.topbar .brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.lang-toggle{display:flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;flex:none}
+.lang-toggle button{
+  appearance:none;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;min-height:34px;
+}
+.lang-toggle button.active{background:var(--accent);color:#fff}
+.lang-toggle button + button{border-left:1px solid var(--line-strong)}
+
+/* ---------- nav ---------- */
+.secnav{
+  position:sticky;top:51px;z-index:55;display:flex;gap:6px;flex-wrap:wrap;
+  padding:7px 16px;background:rgba(10,10,26,0.92);
+  border-bottom:1px solid var(--line);backdrop-filter:blur(10px);
+}
+.secnav button{
+  appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);
+  font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;
+  cursor:pointer;min-height:32px;
+}
+.secnav button:hover{color:var(--text);border-color:var(--line-strong)}
+.secnav button.active{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+
+/* ---------- layout ---------- */
+main{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+section.panel{
+  display:none;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:18px 18px 22px;backdrop-filter:blur(8px);
+}
+section.panel.active{display:block}
+h1{font-size:22px;margin:0 0 4px;color:#fff;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 6px;color:#fff;letter-spacing:-.01em}
+h3{font-size:15px;margin:0 0 8px;color:#fff}
+p{margin:0 0 10px}
+.kicker{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);font-weight:700;margin:0 0 4px}
+.lede{color:var(--muted);font-size:14px}
+.btn{
+  appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,0.06);
+  color:var(--text);font:inherit;font-size:13px;font-weight:600;padding:8px 14px;
+  border-radius:8px;cursor:pointer;min-height:38px;
+}
+.btn:hover{background:rgba(255,255,255,0.12);border-color:var(--accent)}
+.btn.small{padding:6px 12px;font-size:12.5px;min-height:32px}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--accent);padding-left:10px;margin-top:14px}
+
+/* ---------- cards ---------- */
+.cardrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+@media (max-width:900px){.cardrow{grid-template-columns:1fr}}
+.card{
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);
+  border-radius:10px;padding:12px;
+}
+.card img{display:block;width:100%;height:auto;border-radius:6px;background:#07070f}
+.card .cname{font-size:13.5px;font-weight:700;color:#fff;margin-top:9px}
+.card .cdesc{font-size:12.5px;color:var(--text);margin-top:5px;line-height:1.45}
+
+/* ---------- spec strip ---------- */
+.spec-strip{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+.spec-item{
+  display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;
+  background:rgba(255,255,255,0.035);border:1px solid var(--line);
+  border-radius:10px;padding:12px;
+}
+@media (max-width:760px){.spec-item{grid-template-columns:1fr}}
+.spec-item .thumb img{display:block;width:100%;height:auto;border-radius:6px;background:#07070f}
+.sname{font-size:13.5px;font-weight:700;color:#fff;margin-bottom:8px}
+.opt-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.opt-row .opt{flex:0 0 auto;white-space:nowrap}
+#readStrip .opt-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:900px){#readStrip .opt-row{grid-template-columns:repeat(2,1fr)}}
+#readStrip .opt{white-space:normal;line-height:1.25;padding:9px 10px}
+#readStrip .spec-item{grid-template-columns:1fr;padding:12px 14px}
+.opt{
+  appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,0.05);
+  color:var(--text);font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;
+  border-radius:999px;cursor:pointer;min-height:34px;
+}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+.opt:disabled{opacity:.55;cursor:not-allowed}
+.spec-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.verdict{font-size:12.5px}
+.verdict.ok{color:var(--ok)}
+.verdict.bad{color:var(--warn)}
+
+/* ---------- ovality instrument ---------- */
+.instr{
+  display:grid;grid-template-columns:1fr 340px;gap:18px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--line);
+  border-radius:10px;padding:14px;margin-top:14px;
+}
+@media (max-width:980px){.instr{grid-template-columns:1fr}}
+.scope{position:relative;background:#07070f;border-radius:8px;overflow:hidden}
+.scope svg{display:block;width:100%;height:auto}
+.side h3{margin-bottom:6px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.field input{
+  width:100%;background:#0d0d20;border:1px solid var(--line-strong);color:#fff;
+  font:inherit;font-size:14px;padding:8px 10px;border-radius:8px;min-height:38px;
+}
+.field input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.readout{
+  display:flex;justify-content:space-between;font-size:13px;
+  padding:7px 0;border-bottom:1px solid var(--line);
+}
+.readout span:last-child{font-variant-numeric:tabular-nums;color:#fff;font-weight:600}
+.method{
+  font-size:12px;color:var(--muted);background:rgba(255,255,255,0.04);
+  border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:12px;line-height:1.45;
+}
+.specnav{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- table ---------- */
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:14px}
+table.dt{width:100%;border-collapse:collapse;font-size:13px}
+table.dt th,table.dt td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line)}
+table.dt thead th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+table.dt tbody th{color:#fff;font-weight:600}
+table.dt td{color:var(--text);font-variant-numeric:tabular-nums}
+
+/* ---------- calculator ---------- */
+.calc{margin-top:6px}
+.calc .disp{
+  background:#0d0d20;border:1px solid var(--line-strong);border-radius:8px;
+  padding:10px;text-align:right;font-size:19px;font-variant-numeric:tabular-nums;
+  color:#fff;min-height:44px;overflow:hidden;text-overflow:ellipsis;
+}
+.calc .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.calc .keys button{
+  appearance:none;border:1px solid var(--line);background:rgba(255,255,255,0.06);
+  color:#fff;font:inherit;font-size:15px;font-weight:600;padding:10px 0;
+  border-radius:8px;cursor:pointer;min-height:42px;
+}
+.calc .keys button:hover{background:rgba(255,255,255,0.14)}
+.calc .keys button.op{color:var(--accent)}
+.calc .keys button.eq{background:var(--accent);border-color:var(--accent);color:#fff}
+.calc .hint{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+footer{padding:0 16px 28px;max-width:1180px;margin:0 auto;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="lang-en">Cuticle and Ovality Lab</span><span class="lang-es">Laboratorio de cuticula y ovalidad</span>
+    <small><span class="lang-en">Forensic Science &middot; Week 10</span><span class="lang-es">Ciencia Forense &middot; Semana 10</span></small>
+  </div>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-lang="en" class="active" aria-pressed="true">EN</button>
+    <button type="button" data-lang="es" aria-pressed="false">ES</button>
+  </div>
+</header>
+
+<nav class="secnav" id="secnav" aria-label="Sections">
+  <button type="button" data-sec="WHY" class="active"><span class="lang-en">Why</span><span class="lang-es">Por que</span></button>
+  <button type="button" data-sec="CU"><span class="lang-en">A. Cuticle patterns</span><span class="lang-es">A. Patrones de cuticula</span></button>
+  <button type="button" data-sec="OV"><span class="lang-en">B. Ovality instrument</span><span class="lang-es">B. Instrumento de ovalidad</span></button>
+  <button type="button" data-sec="RD"><span class="lang-en">C. Reading a hair</span><span class="lang-es">C. Leer un cabello</span></button>
+  <button type="button" data-sec="SK"><span class="lang-en">D. Skill check</span><span class="lang-es">D. Verificacion</span></button>
+</nav>
+
+<main>
+
+<!-- ===================== WHY ===================== -->
+<section class="panel active" id="sec-WHY">
+  <p class="kicker"><span class="lang-en">Before you start</span><span class="lang-es">Antes de empezar</span></p>
+  <h2><span class="lang-en">Two questions a single hair can answer</span><span class="lang-es">Dos preguntas que un solo cabello puede responder</span></h2>
+  <p class="lede">
+    <span class="lang-en">A hair is one of the most common things a person leaves behind. In this lab you learn the two features an examiner reads first, because they are the two that survive a fragment with no root attached.</span>
+    <span class="lang-es">El cabello es una de las cosas mas comunes que una persona deja atras. En este laboratorio aprendes las dos caracteristicas que un examinador lee primero, porque son las dos que sobreviven en un fragmento sin raiz.</span>
+  </p>
+
+  <div class="cardrow">
+    <div class="card">
+      <div class="cname"><span class="lang-en">1. Whose surface is this?</span><span class="lang-es">1. De quien es esta superficie?</span></div>
+      <div class="cdesc"><span class="lang-en">The outside of a hair is covered in scales. The shape those scales make is one of the strongest ways to separate human hair from animal hair, and it is a different question from the core.</span><span class="lang-es">El exterior del cabello esta cubierto de escamas. La forma de esas escamas es una de las mejores maneras de separar cabello humano de animal, y es una pregunta distinta a la del nucleo.</span></div>
+    </div>
+    <div class="card">
+      <div class="cname"><span class="lang-en">2. How round is it?</span><span class="lang-es">2. Que tan redondo es?</span></div>
+      <div class="cdesc"><span class="lang-en">Cut a hair across and you get a shape. The two axes are not equal. Measuring the short axis against the long axis gives you a number that describes how flat the hair really is.</span><span class="lang-es">Corta un cabello transversalmente y obtienes una forma. Los dos ejes no son iguales. Medir el eje corto contra el largo te da un numero que describe que tan plano es realmente el cabello.</span></div>
+    </div>
+    <div class="card">
+      <div class="cname"><span class="lang-en">Your job</span><span class="lang-es">Tu tarea</span></div>
+      <div class="cdesc"><span class="lang-en">You name the cuticle pattern from the surface, and you measure both axes of the cross section yourself. Nothing in this lab tells you an answer.</span><span class="lang-es">Tu nombras el patron de cuticula a partir de la superficie, y tu mides los dos ejes del corte transversal. Nada en este laboratorio te da una respuesta.</span></div>
+    </div>
+  </div>
+
+  <p class="note">
+    <span class="lang-en"><b>A limit you should know now.</b> Cross-sectional shape describes a hair. It does not identify a person. The old habit of using this measurement to sort people into groups has been shown to be unreliable for narrowing suspects, because the range within any group overlaps the range in every other group. In this class you describe the shape you measure, and you stop there.</span>
+    <span class="lang-es"><b>Un limite que debes saber ahora.</b> La forma del corte transversal describe un cabello. No identifica a una persona. La vieja costumbre de usar esta medida para clasificar personas en grupos ha demostrado no ser confiable para reducir sospechosos, porque el rango dentro de cualquier grupo se superpone con el rango de todos los demas. En esta clase describes la forma que mides, y te detienes ahi.</span>
+  </p>
+</section>
+
+<!-- ===================== A. CUTICLE ===================== -->
+<section class="panel" id="sec-CU">
+  <p class="kicker"><span class="lang-en">Section A</span><span class="lang-es">Seccion A</span></p>
+  <h2><span class="lang-en">Cuticle scale patterns</span><span class="lang-es">Patrones de escamas en la cuticula</span></h2>
+  <p class="lede">
+    <span class="lang-en">The outside of a hair is covered in overlapping scales, the way shingles cover a roof. Three patterns are worth knowing. Read the edges, not the color.</span>
+    <span class="lang-es">El exterior del cabello esta cubierto de escamas traslapadas, como las tejas de un techo. Vale la pena conocer tres patrones. Lee los bordes, no el color.</span>
+  </p>
+
+  <div class="cardrow" id="patRow"></div>
+
+  <h3 style="margin-top:22px"><span class="lang-en">Assign each strip by its cuticle</span><span class="lang-es">Asigna cada tira por su cuticula</span></h3>
+  <p class="lede" style="margin-bottom:6px">
+    <span class="lang-en">Each strip below is a different specimen from the three above. Pick the pattern you see, then press Check on that strip. You are looking at the scales, not the core.</span>
+    <span class="lang-es">Cada tira de abajo es un especimen distinto a los tres de arriba. Elige el patron que ves y despues presiona Revisar en esa tira. Estas mirando las escamas, no el nucleo.</span>
+  </p>
+  <div class="spec-strip" id="cutStrip"></div>
+  <p class="note">
+    <span class="lang-en"><b>Why these do not match the pictures above.</b> If a strip reused the same photograph as its example, you could match it by recognising the picture instead of reading the scales. These are different specimens of the same patterns, so the surface is the only way through.</span>
+    <span class="lang-es"><b>Por que no coinciden con las imagenes de arriba.</b> Si una tira usara la misma fotografia que su ejemplo, podrias acertar reconociendo la imagen en lugar de leer las escamas. Estos son especimenes distintos con los mismos patrones, asi que la superficie es la unica manera.</span>
+  </p>
+</section>
+
+<!-- ===================== B. OVALITY ===================== -->
+<section class="panel" id="sec-OV">
+  <p class="kicker"><span class="lang-en">Section B</span><span class="lang-es">Seccion B</span></p>
+  <h2><span class="lang-en">Measuring how oval a hair is</span><span class="lang-es">Medir que tan ovalado es un cabello</span></h2>
+  <p class="lede">
+    <span class="lang-en">A cross section has two axes: a long axis and a short axis. Measure both, then divide the short by the long. Round hair gives a value near one. A flat ribbon gives a small value. You do the division.</span>
+    <span class="lang-es">Un corte transversal tiene dos ejes: uno largo y uno corto. Mide los dos y despues divide el corto entre el largo. El cabello redondo da un valor cercano a uno. Una cinta plana da un valor pequeno. Tu haces la division.</span>
+  </p>
+
+  <div class="instr">
+    <div>
+      <div class="scope" id="scope"></div>
+      <div class="specnav" id="specNav"></div>
+    </div>
+    <div class="side">
+      <h3 id="curName">Specimen</h3>
+      <div class="method">
+        <span class="lang-en"><b>Method.</b> Drag the long-axis caliper across the widest part of the outline. Drag the short-axis caliper across the narrowest part, at the same centre. Read both in micrometres, then divide the smaller number by the larger.</span>
+        <span class="lang-es"><b>Metodo.</b> Arrastra el calibrador del eje largo por la parte mas ancha del contorno. Arrastra el del eje corto por la parte mas angosta, en el mismo centro. Lee los dos en micrometros y despues divide el numero menor entre el mayor.</span>
+      </div>
+
+      <div class="readout"><span><span class="lang-en">Long axis</span><span class="lang-es">Eje largo</span></span><span id="roLong">0 &micro;m</span></div>
+      <div class="readout"><span><span class="lang-en">Short axis</span><span class="lang-es">Eje corto</span></span><span id="roShort">0 &micro;m</span></div>
+
+      <div class="field" style="margin-top:14px">
+        <label for="inpOval"><span class="lang-en">Your ovality (short divided by long)</span><span class="lang-es">Tu ovalidad (corto entre largo)</span></label>
+        <input id="inpOval" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      </div>
+      <div class="spec-foot">
+        <button type="button" class="btn" id="btnCheck"><span class="lang-en">Check</span><span class="lang-es">Revisar</span></button>
+        <button type="button" class="btn small" id="btnReset"><span class="lang-en">Reset calipers</span><span class="lang-es">Reiniciar calibradores</span></button>
+      </div>
+      <div class="verdict" id="ovalVerdict" role="status" style="margin-top:8px;min-height:34px"></div>
+
+      <div class="calc">
+        <div class="disp" id="calcDisp">0</div>
+        <div class="keys" id="calcKeys"></div>
+        <div class="hint"><span class="lang-en">Type your two measurements here if you want help with the division.</span><span class="lang-es">Escribe tus dos medidas aqui si quieres ayuda con la division.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th><span class="lang-en">Specimen</span><span class="lang-es">Especimen</span></th>
+          <th><span class="lang-en">Long axis</span><span class="lang-es">Eje largo</span></th>
+          <th><span class="lang-en">Short axis</span><span class="lang-es">Eje corto</span></th>
+          <th><span class="lang-en">Your ovality</span><span class="lang-es">Tu ovalidad</span></th>
+        </tr>
+      </thead>
+      <tbody id="measBody"></tbody>
+    </table>
+  </div>
+  <p class="note">
+    <span class="lang-en"><b>Compare across the set.</b> Once you have measured more than one, put them in order from roundest to flattest. Do not assume the specimens are numbered that way.</span>
+    <span class="lang-es"><b>Compara todo el conjunto.</b> Cuando hayas medido mas de uno, ordenalos del mas redondo al mas plano. No supongas que los especimenes estan numerados en ese orden.</span>
+  </p>
+</section>
+
+<!-- ===================== C. READING A HAIR ===================== -->
+<section class="panel" id="sec-RD">
+  <p class="kicker"><span class="lang-en">Section C</span><span class="lang-es">Seccion C</span></p>
+  <h2><span class="lang-en">Reading a hair: what morphology can and cannot say</span><span class="lang-es">Leer un cabello: lo que la morfologia puede y no puede decir</span></h2>
+  <p class="lede">
+    <span class="lang-en">A hair cross section carries more than two numbers. The shape, the medulla, and the cuticle thickness all point toward a kind of hair, and a kind of hair points toward how it would look and feel on a person. This is a real skill, and it has a hard limit you will meet at the bottom of this page.</span>
+    <span class="lang-es">Un corte transversal lleva mas que dos numeros. La forma, la medula y el grosor de la cuticula apuntan hacia un tipo de cabello, y un tipo de cabello apunta hacia como se veria y se sentiria en una persona. Esta es una destreza real, y tiene un limite duro que vas a encontrar al final de esta pagina.</span>
+  </p>
+
+  <h3 style="margin-top:20px"><span class="lang-en">The four features you read</span><span class="lang-es">Las cuatro caracteristicas que lees</span></h3>
+  <div class="cardrow">
+    <div class="card">
+      <div class="cname"><span class="lang-en">Cross-section shape</span><span class="lang-es">Forma del corte</span></div>
+      <div class="cdesc"><span class="lang-en">Round sections tend to come from hair that grows straight and lies flat. The flatter the section, the more the hair tends to curve and twist as it grows.</span><span class="lang-es">Los cortes redondos tienden a venir de cabello que crece liso y cae plano. Cuanto mas plano el corte, mas tiende el cabello a curvarse y enredarse al crecer.</span></div>
+    </div>
+    <div class="card">
+      <div class="cname"><span class="lang-en">Medulla</span><span class="lang-es">Medula</span></div>
+      <div class="cdesc"><span class="lang-en">A thick, filled, continuous medulla runs through coarse hair. A thin, broken, or absent medulla runs through fine hair. Compare the core width against the whole width.</span><span class="lang-es">Una medula gruesa, llena y continua atraviesa el cabello grueso. Una medula delgada, rota o ausente atraviesa el cabello fino. Compara el ancho del nucleo contra el ancho total.</span></div>
+    </div>
+    <div class="card">
+      <div class="cname"><span class="lang-en">Cuticle thickness</span><span class="lang-es">Grosor de la cuticula</span></div>
+      <div class="cdesc"><span class="lang-en">A thick cuticle ring reads as coarse and heavy. A thin ring reads as fine and light. Look at the pale band just inside the outer edge.</span><span class="lang-es">Un anillo de cuticula grueso se lee como grueso y pesado. Un anillo delgado se lee como fino y ligero. Mira la banda palida justo dentro del borde exterior.</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:22px"><span class="lang-en">What the features point toward</span><span class="lang-es">Hacia donde apuntan las caracteristicas</span></h3>
+  <p class="lede" style="margin-bottom:6px">
+    <span class="lang-en">These are typical combinations, not rules. Real hair sits between them, and one person can have more than one kind on their head.</span>
+    <span class="lang-es">Estas son combinaciones tipicas, no reglas. El cabello real queda entre ellas, y una persona puede tener mas de un tipo en la cabeza.</span>
+  </p>
+  <div class="tblwrap">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th><span class="lang-en">Reading</span><span class="lang-es">Lectura</span></th>
+          <th><span class="lang-en">Cross section</span><span class="lang-es">Corte</span></th>
+          <th><span class="lang-en">Medulla</span><span class="lang-es">Medula</span></th>
+          <th><span class="lang-en">Cuticle</span><span class="lang-es">Cuticula</span></th>
+          <th><span class="lang-en">How it behaves</span><span class="lang-es">Como se comporta</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th><span class="lang-en">Straight and heavy</span><span class="lang-es">Liso y pesado</span></th>
+          <td><span class="lang-en">Nearly round</span><span class="lang-es">Casi redondo</span></td>
+          <td><span class="lang-en">Thin or absent</span><span class="lang-es">Delgada o ausente</span></td>
+          <td><span class="lang-en">Thick</span><span class="lang-es">Gruesa</span></td>
+          <td><span class="lang-en">Lies flat, feels smooth and substantial, resists tangling</span><span class="lang-es">Cae plano, se siente liso y con cuerpo, resiste enredarse</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Wavy, mixed</span><span class="lang-es">Ondulado, mixto</span></th>
+          <td><span class="lang-en">Oval</span><span class="lang-es">Ovalado</span></td>
+          <td><span class="lang-en">Narrow or interrupted</span><span class="lang-es">Estrecha o interrumpida</span></td>
+          <td><span class="lang-en">Medium</span><span class="lang-es">Media</span></td>
+          <td><span class="lang-en">Falls in loose waves, feels lighter than straight hair, some tangling at the ends</span><span class="lang-es">Cae en ondas sueltas, se siente mas ligero que el liso, algo de enredo en las puntas</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Curly</span><span class="lang-es">Rizado</span></th>
+          <td><span class="lang-en">Flattened oval</span><span class="lang-es">Ovalado aplanado</span></td>
+          <td><span class="lang-en">Variable, often filled</span><span class="lang-es">Variable, a menudo llena</span></td>
+          <td><span class="lang-en">Medium to thick</span><span class="lang-es">Media a gruesa</span></td>
+          <td><span class="lang-en">Forms loops and spirals, holds shape, more friction between strands</span><span class="lang-es">Forma bucles y espirales, mantiene la forma, mas friccion entre hebras</span></td>
+        </tr>
+        <tr>
+          <th><span class="lang-en">Tightly coiled</span><span class="lang-es">Muy rizado</span></th>
+          <td><span class="lang-en">Ribbon, strongly flattened</span><span class="lang-es">Cinta, muy aplanado</span></td>
+          <td><span class="lang-en">Often filled and continuous</span><span class="lang-es">A menudo llena y continua</span></td>
+          <td><span class="lang-en">Thin to medium</span><span class="lang-es">Delgada a media</span></td>
+          <td><span class="lang-en">Coils tightly, feels dense, tangles most, strands twist around each other</span><span class="lang-es">Se enrolla fuerte, se siente denso, mas enredo, las hebras se tuercen entre si</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:24px"><span class="lang-en">Practice: read the specimen yourself</span><span class="lang-es">Practica: lee el especimen tu mismo</span></h3>
+  <p class="lede" style="margin-bottom:6px">
+    <span class="lang-en">Each specimen below shows only the cross section. Nothing is labelled for you. Look at the outline, decide how round or how flat it is, then choose the kind of hair that shape points toward. Record what you actually see before you commit.</span>
+    <span class="lang-es">Cada especimen de abajo muestra solo el corte transversal. Nada esta etiquetado por ti. Mira el contorno, decide que tan redondo o que tan plano es, y despues elige el tipo de cabello hacia el que apunta esa forma. Anota lo que realmente ves antes de confirmar.</span>
+  </p>
+  <div class="spec-strip" id="readStrip"></div>
+
+  <p class="note" style="border-left-color:var(--accent)">
+    <span class="lang-en"><b>You are seeing shape only.</b> A cross section tells you the outline. It does not show you the medulla clearly or the cuticle thickness, so a real examiner would need a longitudinal view as well before writing a full description. Base your choice here on shape, and say so.</span>
+    <span class="lang-es"><b>Solo estas viendo la forma.</b> Un corte transversal te dice el contorno. No te muestra la medula con claridad ni el grosor de la cuticula, asi que un examinador real necesitaria tambien una vista longitudinal antes de escribir una descripcion completa. Basa tu eleccion aqui en la forma, y dilo asi.</span>
+  </p>
+
+  <p class="note" style="border-left-color:var(--warn)">
+    <span class="lang-en"><b>The limit, and it matters.</b> These three readings describe how a hair would behave. They do not name a person, and they are not a reliable way to sort people into groups. The ranges overlap heavily between people, one person can have several kinds of hair on one head, and the same outward appearance can come from very different cross sections. Use this to describe a hair and, at most, to say what it looks like. Stopping there is the correct forensic answer, not a shortcut. Testimony that overreached on this point has been used to convict the wrong person, which is why the field narrowed what it claims.</span>
+    <span class="lang-es"><b>El limite, y es importante.</b> Estas tres lecturas describen como se comportaria un cabello. No nombran a una persona, y no son una forma confiable de clasificar personas en grupos. Los rangos se superponen mucho entre personas, una persona puede tener varios tipos de cabello en una cabeza, y la misma apariencia exterior puede venir de cortes transversales muy distintos. Usa esto para describir un cabello y, como mucho, para decir como se ve. Detenerse ahi es la respuesta forense correcta, no un atajo. Testimonios que fueron mas alla en este punto se usaron para condenar a personas inocentes, y por eso la disciplina limito lo que afirma.</span>
+  </p>
+</section>
+
+<!-- ===================== D. SKILL CHECK ===================== -->
+<section class="panel" id="sec-SK">
+  <p class="kicker"><span class="lang-en">Section D</span><span class="lang-es">Seccion D</span></p>
+  <h2><span class="lang-en">Skill check</span><span class="lang-es">Verificacion de destreza</span></h2>
+  <p class="lede">
+    <span class="lang-en">Each item gives you a specimen and its measured axes. Decide, then commit. Each item answers only for itself, and you can change a pick before you commit it.</span>
+    <span class="lang-es">Cada item te da un especimen y sus ejes medidos. Decide y despues confirma. Cada item responde solo por si mismo, y puedes cambiar tu eleccion antes de confirmarla.</span>
+  </p>
+  <div class="spec-strip" id="skillStrip"></div>
+  <p class="note">
+    <span class="lang-en"><b>Method, once more.</b> Short axis divided by long axis. Near one means round. A small number means flat.</span>
+    <span class="lang-es"><b>El metodo, otra vez.</b> Eje corto entre eje largo. Cerca de uno significa redondo. Un numero pequeno significa plano.</span>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  <span class="lang-en">Mr. Porter &middot; Forensic Science &middot; Week 10</span>
+  <span class="lang-es">Sr. Porter &middot; Ciencia Forense &middot; Semana 10</span>
+</footer>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------------------------------------------------------------
+   Helpers
+   --------------------------------------------------------------- */
+function el(id){ return document.getElementById(id); }
+function bi(en, es){ return '<span class="lang-en">'+en+'</span><span class="lang-es">'+es+'</span>'; }
+function rng(seed){
+  var a = seed >>> 0;
+  return function(){
+    a = (a + 0x6D2B79F5) >>> 0;
+    var t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, r){
+  var a = arr.slice(), i, j, t;
+  for (i = a.length - 1; i > 0; i--) {
+    j = Math.floor(r() * (i + 1));
+    t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function fmt1(v){ return (Math.round(v*10)/10).toFixed(1); }
+function fmt2(v){ return (Math.round(v*100)/100).toFixed(2); }
+
+/* ---------------------------------------------------------------
+   Section A: cuticle patterns
+   --------------------------------------------------------------- */
+var PATTERNS = [
+  { key:'imbricate', img:'/cuticle-ovality-lab/images/cut-01.jpg',
+    en:'Imbricate', es:'Imbricada',
+    descEn:'Flat, narrow scales stacked closely and lying nearly flush, like overlapping roof tiles. Typical of human hair.',
+    descEs:'Escamas planas y angostas muy juntas, casi al ras, como tejas de techo traslapadas. Tipico del cabello humano.' },
+  { key:'spinous', img:'/cuticle-ovality-lab/images/cut-02.jpg',
+    en:'Spinous', es:'Espinosa',
+    descEn:'Petal or triangular scales that stand out from the shaft, often in a row along the middle. Common in many animals.',
+    descEs:'Escamas en petalo o triangulo que sobresalen del tallo, a menudo en fila por el centro. Comun en muchos animales.' },
+  { key:'coronal', img:'/cuticle-ovality-lab/images/cut-03.jpg',
+    en:'Coronal', es:'Coronal',
+    descEn:'Crown-like scales arranged in a ring around the shaft, symmetrical, like stacked cups. Typical of rodents and bats.',
+    descEs:'Escamas en corona dispuestas en anillo alrededor del tallo, simetricas, como vasos apilados. Tipico de roedores y murcielagos.' }
+];
+
+/* Unknown strips. Each uses a DIFFERENT photograph from the examples,
+   so the pattern must be read from the surface. */
+var STRIPS = [
+  { seed: 5111, answer:'spinous',   img:'/cuticle-ovality-lab/images/cut-04.jpg' },
+  { seed: 5227, answer:'imbricate', img:'/cuticle-ovality-lab/images/cut-05.jpg' },
+  { seed: 5333, answer:'coronal',   img:'/cuticle-ovality-lab/images/cut-06.jpg' }
+];
+var stripState = {};
+
+function buildPatterns(){
+  var h = '', i;
+  for (i = 0; i < PATTERNS.length; i++) {
+    var p = PATTERNS[i];
+    h += '<div class="card">' +
+           '<img src="'+p.img+'" alt="'+p.en+' cuticle pattern photomicrograph">' +
+           '<div class="cname">'+p.en+' / '+p.es+'</div>' +
+           '<div class="cdesc">'+bi(p.descEn, p.descEs)+'</div>' +
+         '</div>';
+  }
+  el('patRow').innerHTML = h;
+}
+
+function buildStrips(){
+  var order = shuffle([0,1,2], rng(20261117));
+  var h = '', n, t;
+  for (n = 0; n < order.length; n++) {
+    var idx = order[n], sp = STRIPS[idx], id = 's'+idx;
+    stripState[id] = { pick:null, checked:false };
+    var opts = '';
+    for (t = 0; t < PATTERNS.length; t++) {
+      opts += '<button type="button" class="opt" data-strip="'+id+'" data-pattern="'+PATTERNS[t].key+'">'+
+              bi(PATTERNS[t].en, PATTERNS[t].es)+'</button>';
+    }
+    h += '<div class="spec-item" data-strip="'+id+'">' +
+           '<div class="thumb"><img src="'+sp.img+'" alt="Unknown hair strip photomicrograph"></div>' +
+           '<div>' +
+             '<div class="sname">'+bi('Strip '+(n+1), 'Tira '+(n+1))+'</div>' +
+             '<div class="opt-row">'+opts+'</div>' +
+             '<div class="spec-foot">' +
+               '<button type="button" class="btn small" data-stripcheck="'+id+'">'+bi('Check','Revisar')+'</button>' +
+               '<span class="verdict" data-stripverdict="'+id+'"></span>' +
+             '</div>' +
+           '</div>' +
+         '</div>';
+  }
+  el('cutStrip').innerHTML = h;
+}
+
+function wireStrips(){
+  el('cutStrip').addEventListener('click', function (e) {
+    var o = e.target.closest ? e.target.closest('.opt') : null;
+    if (o) {
+      var sid = o.getAttribute('data-strip'), st = stripState[sid];
+      if (!st || st.checked) return;
+      st.pick = o.getAttribute('data-pattern');
+      var kids = o.parentNode.querySelectorAll('.opt'), i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
+      o.classList.add('sel');
+      return;
+    }
+    var c = e.target.closest ? e.target.closest('[data-stripcheck]') : null;
+    if (c) checkStrip(c.getAttribute('data-stripcheck'));
+  });
+}
+
+function checkStrip(id){
+  var st = stripState[id];
+  var idx = parseInt(id.slice(1), 10);
+  var correct = STRIPS[idx].answer;
+  var v = el('cutStrip').querySelector('[data-stripverdict="'+id+'"]');
+  if (!st || !st.pick) {
+    v.className = 'verdict bad';
+    v.innerHTML = bi('Pick a pattern first.', 'Elige un patron primero.');
+    return;
+  }
+  if (st.pick === correct) {
+    st.checked = true;
+    v.className = 'verdict ok';
+    v.innerHTML = bi('That matches the scale edges in this strip.', 'Coincide con los bordes de las escamas de esta tira.');
+    var kids = el('cutStrip').querySelectorAll('.opt[data-strip="'+id+'"]'), i;
+    for (i = 0; i < kids.length; i++) {
+      kids[i].disabled = true;
+      if (kids[i].getAttribute('data-pattern') === correct) kids[i].classList.add('sel');
+    }
+  } else {
+    v.className = 'verdict bad';
+    v.innerHTML = bi('Not this one. Read the scale edges again and try a different pattern.',
+                     'No es este. Lee otra vez los bordes de las escamas y prueba otro patron.');
+  }
+}
+
+/* ---------------------------------------------------------------
+   Section B: ovality instrument
+   The SVG is procedurally generated from the SPECIMENS geometry, and
+   it deliberately does NOT match the photograph. The photograph is the
+   real specimen; the drawing is a measuring aid that strutures the
+   caliper interaction. Truth values come from SPECIMENS, never shown.
+   --------------------------------------------------------------- */
+var SPECIMENS = [
+  { id:1, img:'/cuticle-ovality-lab/images/cs-01.jpg', longUm:96, shortUm:95 },  /* round, ratio 0.99 */
+  { id:2, img:'/cuticle-ovality-lab/images/cs-02.jpg', longUm:109, shortUm:97 },  /* slight oval, ratio 0.89 */
+  { id:3, img:'/cuticle-ovality-lab/images/cs-03.jpg', longUm:122, shortUm:89 },  /* oval, ratio 0.73 */
+  { id:4, img:'/cuticle-ovality-lab/images/cs-04.jpg', longUm:135, shortUm:89 },  /* flattened oval, ratio 0.66 */
+  { id:5, img:'/cuticle-ovality-lab/images/cs-05.jpg', longUm:148, shortUm:78 },  /* strongly flattened, ratio 0.53 */
+  { id:6, img:'/cuticle-ovality-lab/images/cs-06.jpg', longUm:161, shortUm:56 },  /* ribbon, ratio 0.35 */
+];
+
+/* The instrument measures the PHOTOGRAPH. The photograph has no printed
+   scale, so the honest thing is a declared calibration: one scale bar of
+   known length sits in the corner of every image, set by CAL_BAR_UM.
+   The student places both calipers against the disc and reads the result.
+   Nothing is pre-filled and no dimension is displayed before placement. */
+var CAL_BAR_UM = 50;          /* the bar drawn in the corner represents this many micrometres */
+var CAL_BAR_FRAC = 0.16;      /* bar length as a fraction of image width */
+
+var bState = {
+  cur: 0,
+  placedLong: false, placedShort: false,
+  longPx: 0, shortPx: 0,       /* student-placed spans, in image pixels */
+  saved: {}, savedLong: {}, savedShort: {}
+};
+var SVG_W = 800, SVG_H = 460;
+
+function specTrue(sp){ return sp.shortUm / sp.longUm; }
+
+/* image pixels -> micrometres, using the declared scale bar */
+function pxToUm(px){
+  return (px / (SVG_W * CAL_BAR_FRAC)) * CAL_BAR_UM;
+}
+
+function drawScope(){
+  var sp = SPECIMENS[bState.cur];
+  bState.placedLong = false;
+  bState.placedShort = false;
+  bState.longPx = 0;
+  bState.shortPx = 0;
+
+  var s = '<svg id="scopeSvg" viewBox="0 0 '+SVG_W+' '+SVG_H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Hair cross section to measure">';
+  s += '<image href="'+sp.img+'" x="0" y="0" width="'+SVG_W+'" height="'+SVG_H+'" preserveAspectRatio="xMidYMid slice"/>';
+
+  /* declared scale bar, bottom-left */
+  var barLen = SVG_W * CAL_BAR_FRAC, bx = 22, by = SVG_H - 30;
+  s += '<rect x="'+(bx-4)+'" y="'+(by-16)+'" width="'+(barLen+8)+'" height="24" fill="rgba(0,0,0,0.55)" rx="4"/>';
+  s += '<line x1="'+bx+'" y1="'+by+'" x2="'+(bx+barLen)+'" y2="'+by+'" stroke="#fff" stroke-width="3"/>';
+  s += '<line x1="'+bx+'" y1="'+(by-5)+'" x2="'+bx+'" y2="'+(by+5)+'" stroke="#fff" stroke-width="3"/>';
+  s += '<line x1="'+(bx+barLen)+'" y1="'+(by-5)+'" x2="'+(bx+barLen)+'" y2="'+(by+5)+'" stroke="#fff" stroke-width="3"/>';
+  s += '<text x="'+(bx+barLen+10)+'" y="'+(by+5)+'" fill="#fff" font-size="13" font-family="Segoe UI,Arial">'+CAL_BAR_UM+' \u00b5m</text>';
+
+  /* caliper arms, drawn after placement */
+  s += '<g id="calLong"></g>';
+  s += '<g id="calShort"></g>';
+  s += '</svg>';
+  el('scope').innerHTML = s;
+
+  el('curName').innerHTML = bi('Specimen ' + (bState.cur+1), 'Especimen ' + (bState.cur+1));
+  el('roLong').textContent = '\u2014';
+  el('roShort').textContent = '\u2014';
+  wireScopeDrag();
+}
+
+/* Drag handling: press on the image, drag horizontally for the long axis or
+   vertically for the short axis. The first drag sets the long axis, the
+   second sets the short axis. Reset clears both. */
+function wireScopeDrag(){
+  var svg = el('scopeSvg');
+  if (!svg) return;
+  svg.style.touchAction = 'none';
+  svg.style.cursor = 'crosshair';
+
+  function pt(ev){
+    var r = svg.getBoundingClientRect();
+    var x = ((ev.clientX - r.left) / r.width) * SVG_W;
+    var y = ((ev.clientY - r.top) / r.height) * SVG_H;
+    return { x: Math.max(0,Math.min(SVG_W,x)), y: Math.max(0,Math.min(SVG_H,y)) };
+  }
+  var startPt = null;
+
+  function down(ev){
+    ev.preventDefault();
+    startPt = pt(ev);
+  }
+  function move(ev){
+    if (!startPt) return;
+    ev.preventDefault();
+    var q = pt(ev);
+    var span = Math.abs(bState.placedLong ? (q.x - startPt.x) : (q.x - startPt.x));
+    var spanV = Math.abs(q.y - startPt.y);
+    /* choose orientation by which delta is larger */
+    if (!bState.placedLong) {
+      if (Math.abs(q.x - startPt.x) >= Math.abs(q.y - startPt.y)) {
+        bState.longPx = Math.abs(q.x - startPt.x);
+        bState.longFrom = startPt; bState.longTo = q;
+      } else {
+        bState.longPx = Math.abs(q.y - startPt.y);
+        bState.longFrom = startPt; bState.longTo = q;
+      }
+      paintCaliper('calLong', bState.longFrom, bState.longTo, '#6366f1');
+      el('roLong').textContent = fmt1(pxToUm(bState.longPx)) + ' \u00b5m';
+    } else {
+      if (Math.abs(q.y - startPt.y) >= Math.abs(q.x - startPt.x)) {
+        bState.shortPx = Math.abs(q.y - startPt.y);
+        bState.shortFrom = startPt; bState.shortTo = q;
+      } else {
+        bState.shortPx = Math.abs(q.x - startPt.x);
+        bState.shortFrom = startPt; bState.shortTo = q;
+      }
+      paintCaliper('calShort', bState.shortFrom, bState.shortTo, '#22c55e');
+      el('roShort').textContent = fmt1(pxToUm(bState.shortPx)) + ' \u00b5m';
+    }
+  }
+  function up(ev){
+    if (!startPt) return;
+    if (!bState.placedLong && bState.longPx > 8) bState.placedLong = true;
+    else if (bState.placedLong && !bState.placedShort && bState.shortPx > 8) bState.placedShort = true;
+    startPt = null;
+  }
+  svg.addEventListener('pointerdown', down);
+  svg.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  svg.addEventListener('pointercancel', function(){ startPt = null; });
+  svg.addEventListener('pointerleave', function(){});
+}
+
+function paintCaliper(gid, a, b, colour){
+  var g = el(gid);
+  if (!g) return;
+  var h = '';
+  h += '<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+'" stroke="'+colour+'" stroke-width="2.5"/>';
+  h += '<circle cx="'+a.x.toFixed(1)+'" cy="'+a.y.toFixed(1)+'" r="5" fill="'+colour+'"/>';
+  h += '<circle cx="'+b.x.toFixed(1)+'" cy="'+b.y.toFixed(1)+'" r="5" fill="'+colour+'"/>';
+  g.innerHTML = h;
+}
+
+function buildSpecNav(){
+  var h = '', i;
+  for (i = 0; i < SPECIMENS.length; i++) {
+    h += '<button type="button" class="btn small" data-go="'+i+'">'+bi('Specimen '+(i+1),'Especimen '+(i+1))+'</button>';
+  }
+  el('specNav').innerHTML = h;
+  el('specNav').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-go]') : null;
+    if (!b) return;
+    saveCurrent();
+    bState.cur = parseInt(b.getAttribute('data-go'), 10);
+    el('inpOval').value = bState.saved[bState.cur] || '';
+    el('ovalVerdict').textContent = '';
+    el('ovalVerdict').className = 'verdict';
+    drawScope();
+  });
+}
+
+function saveCurrent(){
+  var v = el('inpOval').value.trim();
+  if (v) bState.saved[bState.cur] = v;
+}
+
+function wireOval(){
+  el('btnReset').addEventListener('click', function () {
+    el('inpOval').value = '';
+    delete bState.saved[bState.cur];
+    delete bState.savedLong[bState.cur];
+    delete bState.savedShort[bState.cur];
+    el('ovalVerdict').textContent = '';
+    el('ovalVerdict').className = 'verdict';
+    drawScope();
+    renderTable();
+  });
+
+  el('btnCheck').addEventListener('click', function () {
+    var sp = SPECIMENS[bState.cur];
+    var raw = el('inpOval').value.trim();
+    var v = el('ovalVerdict');
+    if (!bState.placedLong || !bState.placedShort) {
+      v.className = 'verdict bad';
+      v.innerHTML = bi('Place both calipers on the image first. Drag once for the long axis, then again for the short axis.',
+                       'Coloca los dos calibradores en la imagen primero. Arrastra una vez para el eje largo y otra para el corto.');
+      return;
+    }
+    if (!raw) {
+      v.className = 'verdict bad';
+      v.innerHTML = bi('Measure both axes first, then divide.', 'Mide los dos ejes primero y despues divide.');
+      return;
+    }
+    var n = Number(raw);
+    if (!isFinite(n)) {
+      v.className = 'verdict bad';
+      v.innerHTML = bi('That is not a number. Type the result as a decimal, like 0.72.', 'Eso no es un numero. Escribe el resultado como decimal, como 0.72.');
+      return;
+    }
+    if (n > 1) {
+      v.className = 'verdict bad';
+      v.innerHTML = bi('An ovality over one means the short axis came out larger than the long axis. Swap the two numbers.', 'Una ovalidad mayor que uno significa que el eje corto salio mayor que el largo. Cambia los dos numeros.');
+      return;
+    }
+    /* Recompute the ratio from the student's OWN caliper spans, so the
+       verdict follows their measurement rather than a stored constant. */
+    var myLong = pxToUm(bState.longPx);
+    var myShort = pxToUm(bState.shortPx);
+    var mine = (myLong > 0 && myShort > 0) ? (Math.min(myLong,myShort) / Math.max(myLong,myShort)) : null;
+    if (mine !== null && Math.abs(n - mine) <= 0.03) {
+      bState.saved[bState.cur] = raw;
+      bState.savedLong[bState.cur] = myLong;
+      bState.savedShort[bState.cur] = myShort;
+      v.className = 'verdict ok';
+      v.innerHTML = bi('That matches your two caliper readings.', 'Eso coincide con tus dos lecturas de calibrador.');
+    } else {
+      v.className = 'verdict bad';
+      v.innerHTML = bi('Your caliper readings are '+fmt1(myLong)+' and '+fmt1(myShort)+'. Divide the smaller by the larger.',
+                       'Tus lecturas son '+fmt1(myLong)+' y '+fmt1(myShort)+'. Divide la menor entre la mayor.');
+    }
+    renderTable();
+  });
+}
+
+function renderTable(){
+  var h = '', i;
+  for (i = 0; i < SPECIMENS.length; i++) {
+    var sp = SPECIMENS[i];
+    var val = bState.saved[i] || '';
+    var rLong = bState.savedLong[i], rShort = bState.savedShort[i];
+    h += '<tr>' +
+           '<th>'+bi('Specimen '+(i+1), 'Especimen '+(i+1))+'</th>' +
+           '<td>'+(rLong ? fmt1(rLong)+' &micro;m' : '\u2014')+'</td>' +
+           '<td>'+(rShort ? fmt1(rShort)+' &micro;m' : '\u2014')+'</td>' +
+           '<td>'+(val || '\u2014')+'</td>' +
+         '</tr>';
+  }
+  el('measBody').innerHTML = h;
+}
+
+/* ---------------------------------------------------------------
+   Calculator: two-pass fold, no eval.
+   --------------------------------------------------------------- */
+var calcExpr = '';
+function calcRender(){ el('calcDisp').textContent = calcExpr || '0'; }
+function calcEval(src){
+  /* split into numbers and operators, then fold * and / first */
+  var toks = src.match(/(\d+\.?\d*|[+\-*/])/g);
+  if (!toks || !toks.length) return null;
+  var nums = [], ops = [], i;
+  for (i = 0; i < toks.length; i++) {
+    if (i % 2 === 0) {
+      var n = parseFloat(toks[i]);
+      if (!isFinite(n)) return null;
+      nums.push(n);
+    } else {
+      if (!/^[+\-*/]$/.test(toks[i])) return null;
+      ops.push(toks[i]);
+    }
+  }
+  if (nums.length !== ops.length + 1) return null;
+  /* pass 1: * and / */
+  var n2 = [nums[0]], o2 = [], j;
+  for (j = 0; j < ops.length; j++) {
+    if (ops[j] === '*' || ops[j] === '/') {
+      var a = n2.pop();
+      var b = nums[j+1];
+      if (ops[j] === '/' && b === 0) return null;
+      n2.push(ops[j] === '*' ? a*b : a/b);
+    } else {
+      n2.push(nums[j+1]);
+      o2.push(ops[j]);
+    }
+  }
+  /* pass 2: + and - */
+  var acc = n2[0];
+  for (j = 0; j < o2.length; j++) {
+    acc = o2[j] === '+' ? acc + n2[j+1] : acc - n2[j+1];
+  }
+  return acc;
+}
+function buildCalc(){
+  var keys = ['7','8','9','/','4','5','6','*','1','2','3','-','0','.','+','='];
+  var h = '', i;
+  for (i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var cls = (k === '=') ? 'eq' : (/^[+\-*/]$/.test(k) ? 'op' : '');
+    var label = (k === '/') ? '\u00f7' : (k === '*') ? '\u00d7' : k;
+    h += '<button type="button" class="'+cls+'" data-k="'+k+'">'+label+'</button>';
+  }
+  h += '<button type="button" class="op" data-k="C" style="grid-column:span 4">C</button>';
+  el('calcKeys').innerHTML = h;
+  el('calcKeys').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-k]') : null;
+    if (!b) return;
+    var k = b.getAttribute('data-k');
+    if (k === 'C') { calcExpr = ''; calcRender(); return; }
+    if (k === '=') {
+      var r = calcEval(calcExpr);
+      calcExpr = (r === null) ? '' : String(Math.round(r*10000)/10000);
+      calcRender();
+      return;
+    }
+    if (/^[+\-*/]$/.test(k)) {
+      if (!calcExpr) return;
+      if (/[+\-*/]$/.test(calcExpr)) calcExpr = calcExpr.slice(0, -1);
+    }
+    calcExpr += k;
+    calcRender();
+  });
+}
+
+/* ---------------------------------------------------------------
+   Section C: skill check. Item answers are derived from SPECIMENS,
+   never printed as a constant.
+   --------------------------------------------------------------- */
+var SKILL = [
+  { long:118, short:110, ask:'roundOrFlat' },
+  { long:164, short:62,  ask:'roundOrFlat' },
+  { long:140, short:98,  ask:'roundOrFlat' },
+  { long:150, short:84,  ask:'roundOrFlat' }
+];
+var skillState = {};
+
+function buildSkill(){
+  var h = '', i, t;
+  for (i = 0; i < SKILL.length; i++) {
+    var it = SKILL[i], id = 'k'+i;
+    skillState[id] = { pick:null, done:false };
+    var opts = '';
+    var choices = [
+      { k:'round', en:'Closer to round', es:'Mas bien redondo' },
+      { k:'flat',  en:'Closer to flat',  es:'Mas bien plano'   }
+    ];
+    for (t = 0; t < choices.length; t++) {
+      opts += '<button type="button" class="opt" data-skill="'+id+'" data-choice="'+choices[t].k+'">'+
+              bi(choices[t].en, choices[t].es)+'</button>';
+    }
+    h += '<div class="spec-item" data-skill="'+id+'">' +
+           '<div>' +
+             '<div class="sname">'+bi('Item '+(i+1), 'Item '+(i+1))+'</div>' +
+             '<div style="font-size:13px;margin-bottom:10px">'+
+               bi('Long axis '+it.long+' \u00b5m, short axis '+it.short+' \u00b5m.',
+                  'Eje largo '+it.long+' \u00b5m, eje corto '+it.short+' \u00b5m.')+'</div>' +
+             '<div class="opt-row">'+opts+'</div>' +
+             '<div class="spec-foot">' +
+               '<button type="button" class="btn small" data-skillcheck="'+id+'">'+bi('Commit','Confirmar')+'</button>' +
+               '<span class="verdict" data-skillverdict="'+id+'"></span>' +
+             '</div>' +
+           '</div>' +
+         '</div>';
+  }
+  el('skillStrip').innerHTML = h;
+}
+
+function wireSkill(){
+  el('skillStrip').addEventListener('click', function (e) {
+    var o = e.target.closest ? e.target.closest('.opt') : null;
+    if (o) {
+      var sid = o.getAttribute('data-skill'), st = skillState[sid];
+      if (!st || st.done) return;
+      st.pick = o.getAttribute('data-choice');
+      var kids = o.parentNode.querySelectorAll('.opt'), i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
+      o.classList.add('sel');
+      return;
+    }
+    var c = e.target.closest ? e.target.closest('[data-skillcheck]') : null;
+    if (c) commitSkill(c.getAttribute('data-skillcheck'));
+  });
+}
+
+function commitSkill(id){
+  var st = skillState[id];
+  var idx = parseInt(id.slice(1), 10);
+  var it = SKILL[idx];
+  var v = el('skillStrip').querySelector('[data-skillverdict="'+id+'"]');
+  if (!st || !st.pick) {
+    v.className = 'verdict bad';
+    v.innerHTML = bi('Choose one first.', 'Elige uno primero.');
+    return;
+  }
+  st.done = true;
+  var ratio = it.short / it.long;
+  var truth = ratio > 0.72 ? 'round' : 'flat';
+  v.className = st.pick === truth ? 'verdict ok' : 'verdict bad';
+  var msg = (st.pick === truth)
+    ? bi('That is consistent with the two measurements.', 'Eso es consistente con las dos medidas.')
+    : bi('Look again at which axis is longer. Divide the smaller by the larger.',
+         'Mira otra vez cual eje es mas largo. Divide el menor entre el mayor.');
+  v.innerHTML = msg;
+  var kids = el('skillStrip').querySelectorAll('.opt[data-skill="'+id+'"]'), i;
+  for (i = 0; i < kids.length; i++) kids[i].disabled = true;
+}
+
+
+/* ---------------------------------------------------------------
+   Section C: read the specimen. Three readings -> a kind of hair.
+   The KIND is the answer, never the person.
+   --------------------------------------------------------------- */
+var READ_SPECS = [
+  { img:'/cuticle-ovality-lab/images/cs-01.jpg', answer:'straight' },
+  { img:'/cuticle-ovality-lab/images/cs-06.jpg', answer:'coiled'   },
+  { img:'/cuticle-ovality-lab/images/cs-03.jpg', answer:'wavy'     },
+  { img:'/cuticle-ovality-lab/images/cs-05.jpg', answer:'curly'    }
+];
+var KINDS = [
+  { k:'straight', en:'Straight and heavy', es:'Liso y pesado' },
+  { k:'wavy',     en:'Wavy, mixed',        es:'Ondulado, mixto' },
+  { k:'curly',    en:'Curly',              es:'Rizado' },
+  { k:'coiled',   en:'Tightly coiled',     es:'Muy rizado' }
+];
+var readState = {};
+
+function buildReading(){
+  var order = shuffle([0,1,2,3], rng(88117));
+  var h = '', n, t;
+  for (n = 0; n < order.length; n++) {
+    var idx = order[n], it = READ_SPECS[idx], id = 'r'+idx;
+    readState[id] = { pick:null, done:false };
+    var opts = '';
+    for (t = 0; t < KINDS.length; t++) {
+      opts += '<button type="button" class="opt" data-read="'+id+'" data-kind="'+KINDS[t].k+'">'+
+              bi(KINDS[t].en, KINDS[t].es)+'</button>';
+    }
+    h += '<div class="spec-item" data-read="'+id+'">' +
+           '<div class="thumb"><img src="'+it.img+'" alt="Unknown hair cross section photomicrograph"></div>' +
+           '<div>' +
+             '<div class="sname">'+bi('Specimen '+(n+1), 'Especimen '+(n+1))+'</div>' +
+             '<div class="opt-row">'+opts+'</div>' +
+             '<div class="spec-foot">' +
+               '<button type="button" class="btn small" data-readcheck="'+id+'">'+bi('Commit','Confirmar')+'</button>' +
+               '<span class="verdict" data-readverdict="'+id+'"></span>' +
+             '</div>' +
+           '</div>' +
+         '</div>';
+  }
+  el('readStrip').innerHTML = h;
+}
+
+function wireReading(){
+  el('readStrip').addEventListener('click', function (e) {
+    var o = e.target.closest ? e.target.closest('.opt') : null;
+    if (o) {
+      var sid = o.getAttribute('data-read'), st = readState[sid];
+      if (!st || st.done) return;
+      st.pick = o.getAttribute('data-kind');
+      var kids = o.parentNode.querySelectorAll('.opt'), i;
+      for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
+      o.classList.add('sel');
+      return;
+    }
+    var c = e.target.closest ? e.target.closest('[data-readcheck]') : null;
+    if (c) commitReading(c.getAttribute('data-readcheck'));
+  });
+}
+
+function commitReading(id){
+  var st = readState[id];
+  var idx = parseInt(id.slice(1), 10);
+  var correct = READ_SPECS[idx].answer;
+  var v = el('readStrip').querySelector('[data-readverdict="'+id+'"]');
+  if (!st || !st.pick) {
+    v.className = 'verdict bad';
+    v.innerHTML = bi('Choose a kind first.', 'Elige un tipo primero.');
+    return;
+  }
+  st.done = true;
+  var ok = st.pick === correct;
+  v.className = ok ? 'verdict ok' : 'verdict bad';
+  v.innerHTML = ok
+    ? bi('That is the reading this outline supports.', 'Esa es la lectura que apoya este contorno.')
+    : bi('Look at the outline again. Is it closer to a circle, or closer to a flat ribbon?',
+         'Mira el contorno otra vez. Esta mas cerca de un circulo, o mas cerca de una cinta plana?');
+  var kids = el('readStrip').querySelectorAll('.opt[data-read="'+id+'"]'), i;
+  for (i = 0; i < kids.length; i++) kids[i].disabled = true;
+}
+
+/* ---------------------------------------------------------------
+   Nav + language
+   --------------------------------------------------------------- */
+function wireNav(){
+  var btns = document.querySelectorAll('#secnav button'), i;
+  for (i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function () {
+      var sec = this.getAttribute('data-sec'), j;
+      for (j = 0; j < btns.length; j++) btns[j].classList.toggle('active', btns[j] === this);
+      var panels = document.querySelectorAll('section.panel');
+      for (j = 0; j < panels.length; j++) {
+        panels[j].classList.toggle('active', panels[j].id === 'sec-'+sec);
+      }
+    });
+  }
+}
+
+var LANG_KEY = 'cutOval.lang.v1';
+function syncSelectOptions(lang){
+  var sels = document.querySelectorAll('select'), i, j;
+  for (i = 0; i < sels.length; i++) {
+    var opts = sels[i].options, any = false;
+    for (j = 0; j < opts.length; j++) if (opts[j].getAttribute('data-es')) { any = true; break; }
+    if (!any) continue;
+    var keep = sels[i].value;
+    for (j = 0; j < opts.length; j++) {
+      var o = opts[j];
+      if (!o.getAttribute('data-en')) o.setAttribute('data-en', o.textContent);
+      o.textContent = (lang === 'es') ? o.getAttribute('data-es') : o.getAttribute('data-en');
+    }
+    sels[i].value = keep;
+  }
+}
+function setLang(lang){
+  if (lang !== 'es') lang = 'en';
+  document.documentElement.setAttribute('lang', lang);
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  var btns = document.querySelectorAll('.lang-toggle button'), i;
+  for (i = 0; i < btns.length; i++) {
+    var on = btns[i].getAttribute('data-lang') === lang;
+    btns[i].classList.toggle('active', on);
+    btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  syncSelectOptions(lang);
+}
+function wireLang(){
+  var btns = document.querySelectorAll('.lang-toggle button'), i;
+  for (i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function () { setLang(this.getAttribute('data-lang')); });
+  }
+  var stored = 'en';
+  try { stored = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) {}
+  setLang(stored);
+}
+
+/* ---------------------------------------------------------------
+   Boot
+   --------------------------------------------------------------- */
+function boot(){
+  buildPatterns();
+  buildStrips();
+  wireStrips();
+  buildSpecNav();
+  drawScope();
+  wireOval();
+  renderTable();
+  buildCalc();
+  calcRender();
+  buildReading();
+  wireReading();
+  buildSkill();
+  wireSkill();
+  wireNav();
+  wireLang();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>

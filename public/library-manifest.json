@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T16:11:11.503Z",
+  "generatedAt": "2026-11-18T12:28:00.881Z",
   "items": [
     {
       "path": "/ap1-2d-kinematics-practice.html",
@@ -60,6 +60,11 @@
       "path": "/crime-scene-sketch-rubric.html",
       "fingerprint": "/crime-scene-sketch-rubric.html",
       "sizeBytes": 49434
+    },
+    {
+      "path": "/cuticle-ovality-lab/cuticle-ovality-lab.html",
+      "fingerprint": "/cuticle-ovality-lab/cuticle-ovality-lab.html",
+      "sizeBytes": 58758
     },
     {
       "path": "/domes-trip/",

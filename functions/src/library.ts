@@ -89,6 +89,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/polarization-sim",
   "/hair-analysis-lab",
   "/fiber-identification-lab",
+  "/cuticle-ovality-lab",
 ]);
 
 /**
