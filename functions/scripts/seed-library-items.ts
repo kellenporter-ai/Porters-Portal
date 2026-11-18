@@ -93,6 +93,40 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/fiber-identification-lab.html',
   },
   {
+    title: 'Cuticle and Ovality Lab: Reading the Outside of a Hair',
+    description:
+      'The second hair lab in the Hair and Fiber unit, built to answer what the medullary index cannot. Students first ' +
+      'learn the three cuticle scale patterns (imbricate, spinous, coronal) and then assign six unlabeled strips by ' +
+      'reading the scale edges, using different specimens from the examples so a strip cannot be matched by ' +
+      'recognizing a picture. They then drag two calipers across a cross-section to measure the long axis and the short ' +
+      'axis, convert both with the declared scale bar, and compute the ovality themselves, since a round section and a ' +
+      'flattened ribbon look alike until the numbers are in. A reading section combines four features per specimen ' +
+      '(cuticle, medulla, shape, pigment) into one description, and states plainly the limit the measurement carries: ' +
+      'cross-sectional shape describes a hair and cannot identify a person. The closing skill check reveals each new ' +
+      'specimen only when a student commits, with no score screen. Bilingual English and Spanish, and it pairs with the ' +
+      'Hair Analysis Lab and the Fiber Identification Lab.',
+    url: '/cuticle-ovality-lab',
+    hostingType: 'bundled',
+    contentKind: 'activity',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'hair',
+      'cuticle',
+      'trace-evidence',
+      'bilingual',
+      'interactive',
+      'activity',
+      'microscopy',
+      'measurement',
+      'classification',
+      'observation',
+      'chromebook-friendly',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/cuticle-ovality-lab/cuticle-ovality-lab.html',
+  },
+  {
     title: 'Minutiae Hunt',
     description:
       'A fingerprint word search: instead of hunting for hidden words, students hunt for hidden minutiae. ' +
