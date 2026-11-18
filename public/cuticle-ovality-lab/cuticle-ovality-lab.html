@@ -171,6 +171,64 @@ table.dt td{color:var(--text);font-variant-numeric:tabular-nums}
 .calc .hint{font-size:11.5px;color:var(--muted);margin-top:6px}
 
 footer{padding:0 16px 28px;max-width:1180px;margin:0 auto;font-size:12px;color:var(--muted)}
+
+/* ---------- Section C: evidence and reasoning ---------- */
+.defend{margin-top:10px}
+.defend label{
+  display:block;font-size:12px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+}
+.defend textarea{
+  width:100%;min-height:96px;resize:vertical;
+  background:rgba(255,255,255,0.05);border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;color:var(--text);
+  font:inherit;font-size:14px;line-height:1.45;
+}
+.defend textarea:focus{outline:none;border-color:var(--accent);background:rgba(255,255,255,0.08)}
+.defend textarea::placeholder{color:var(--muted)}
+.defend .wcount{font-size:11px;color:var(--muted);margin-top:4px;text-align:right}
+.defend-req{color:var(--accent);font-weight:700}
+
+/* ---------- save status + export ---------- */
+.workbar{
+  max-width:1180px;margin:0 auto;padding:0 16px 6px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.savechip{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:999px;
+  padding:7px 14px;font-size:12.5px;color:var(--muted);
+  background:rgba(255,255,255,0.04);
+}
+.savechip .dot{
+  width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto;
+}
+.savechip[data-s="saved"]{border-color:#3f9c6b;color:#8fe0b4}
+.savechip[data-s="saved"] .dot{background:#3f9c6b}
+.savechip[data-s="saving"]{border-color:#c9a227;color:#e8d48a}
+.savechip[data-s="saving"] .dot{background:#c9a227}
+.savechip[data-s="pending"]{border-color:#c9a227;color:#e8d48a}
+.savechip[data-s="pending"] .dot{background:#c9a227}
+.savechip[data-s="blocked"]{border-color:#c05a4a;color:#f0a99e}
+.savechip[data-s="blocked"] .dot{background:#c05a4a}
+
+/* PDF fallback panel: doc.save() is blocked in some sandboxes */
+.pdfpanel{
+  max-width:1180px;margin:12px auto 0;padding:0 16px;
+}
+.pdfpanel .inner{
+  border:1px dashed var(--accent);border-radius:10px;
+  padding:14px 18px;background:rgba(255,255,255,0.04);
+}
+.pdfpanel .inner b{display:block;font-size:13px;margin-bottom:8px}
+.pdfpanel a{
+  color:#fff;background:var(--accent);border-radius:8px;
+  padding:9px 16px;text-decoration:none;font-weight:600;font-size:13.5px;
+  display:inline-block;margin:4px 10px 4px 0;
+}
+.pdfpanel a.alt{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.pdfpanel .note{font-size:12px;color:var(--muted);margin-top:8px}
+
 </style>
 </head>
 <body>
@@ -185,6 +243,33 @@ footer{padding:0 16px 28px;max-width:1180px;margin:0 auto;font-size:12px;color:v
     <button type="button" data-lang="es" aria-pressed="false">ES</button>
   </div>
 </header>
+
+<div class="workbar">
+  <span class="savechip" id="saveChip" data-s="idle" role="status" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <span id="saveText"><span class="lang-en">Not saved yet</span><span class="lang-es">Aun no se ha guardado</span></span>
+  </span>
+  <button type="button" class="btn" id="btnExport">
+    <span class="lang-en">Export my report (PDF)</span><span class="lang-es">Exportar mi informe (PDF)</span>
+  </button>
+</div>
+
+<div class="pdfpanel" id="pdfPanel" hidden>
+  <div class="inner">
+    <b><span class="lang-en">Your PDF is ready.</span><span class="lang-es">Tu PDF esta listo.</span></b>
+    <a id="pdfDownload" href="#" download>
+      <span class="lang-en">Download the file</span><span class="lang-es">Descargar el archivo</span>
+    </a>
+    <a id="pdfOpen" href="#" target="_blank" rel="noopener" class="alt">
+      <span class="lang-en">Open in a new tab</span><span class="lang-es">Abrir en una pesta&ntilde;a nueva</span>
+    </a>
+    <p class="note">
+      <span class="lang-en">If nothing downloaded, use one of the two links above. Turn this report in through Google Classroom.</span>
+      <span class="lang-es">Si no se descargo nada, usa uno de los dos enlaces de arriba. Entrega este informe por Google Classroom.</span>
+    </p>
+  </div>
+</div>
+
 
 <nav class="secnav" id="secnav" aria-label="Sections">
   <button type="button" data-sec="WHY" class="active"><span class="lang-en">Why</span><span class="lang-es">Por que</span></button>
@@ -389,6 +474,10 @@ footer{padding:0 16px 28px;max-width:1180px;margin:0 auto;font-size:12px;color:v
     <span class="lang-en">Each specimen below shows only the cross section. Nothing is labelled for you. Look at the outline, decide how round or how flat it is, then choose the kind of hair that shape points toward. Record what you actually see before you commit.</span>
     <span class="lang-es">Cada especimen de abajo muestra solo el corte transversal. Nada esta etiquetado por ti. Mira el contorno, decide que tan redondo o que tan plano es, y despues elige el tipo de cabello hacia el que apunta esa forma. Anota lo que realmente ves antes de confirmar.</span>
   </p>
+  <div class="note" style="border-left-color:var(--accent);margin-bottom:14px">
+    <span class="lang-en"><b>You have to defend your call.</b> For each specimen, write the evidence that supports the kind you picked, and write what would count against it. The check button only tells you whether your choice matches the reading this outline supports. It gives no reason, no hint, and no correction. The defense is yours to build, and it is what your teacher reads.</span>
+    <span class="lang-es"><b>Tienes que defender tu eleccion.</b> Para cada especimen, escribe la evidencia que apoya el tipo que elegiste, y escribe que contaria en contra. El boton de revisar solo te dice si tu eleccion coincide con la lectura que apoya este contorno. No da razon, ni pista, ni correccion. La defensa la construyes tu, y es lo que lee tu maestro.</span>
+  </div>
   <div class="spec-strip" id="readStrip"></div>
 
   <p class="note" style="border-left-color:var(--accent)">
@@ -424,6 +513,10 @@ footer{padding:0 16px 28px;max-width:1180px;margin:0 auto;font-size:12px;color:v
   <span class="lang-es">Sr. Porter &middot; Ciencia Forense &middot; Semana 10</span>
 </footer>
 
+<!-- Portal identity + durable save layer. Paths are absolute: a relative
+     include plus a clean URL would resolve against the wrong base. -->
+<script src="/portal-auth.js"></script>
+<script src="/portal-save.js"></script>
 <script>
 (function () {
 'use strict';
@@ -530,6 +623,7 @@ function wireStrips(){
       var kids = o.parentNode.querySelectorAll('.opt'), i;
       for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
       o.classList.add('sel');
+      saveWork();
       return;
     }
     var c = e.target.closest ? e.target.closest('[data-stripcheck]') : null;
@@ -556,6 +650,7 @@ function checkStrip(id){
       kids[i].disabled = true;
       if (kids[i].getAttribute('data-pattern') === correct) kids[i].classList.add('sel');
     }
+    saveWork();
   } else {
     v.className = 'verdict bad';
     v.innerHTML = bi('Not this one. Read the scale edges again and try a different pattern.',
@@ -687,6 +782,14 @@ function wireScopeDrag(){
     if (!bState.placedLong && bState.longPx > 8) bState.placedLong = true;
     else if (bState.placedLong && !bState.placedShort && bState.shortPx > 8) bState.placedShort = true;
     startPt = null;
+    // The measurement is a student artifact in its own right. Record it the
+    // moment both calipers are placed, so the exported report never shows a
+    // blank measurement just because Check was not pressed.
+    if (bState.placedLong && bState.placedShort) {
+      bState.savedLong[bState.cur] = pxToUm(bState.longPx);
+      bState.savedShort[bState.cur] = pxToUm(bState.shortPx);
+      saveWork();
+    }
   }
   svg.addEventListener('pointerdown', down);
   svg.addEventListener('pointermove', move);
@@ -738,6 +841,7 @@ function wireOval(){
     el('ovalVerdict').className = 'verdict';
     drawScope();
     renderTable();
+    saveWork();
   });
 
   el('btnCheck').addEventListener('click', function () {
@@ -783,6 +887,7 @@ function wireOval(){
                        'Tus lecturas son '+fmt1(myLong)+' y '+fmt1(myShort)+'. Divide la menor entre la mayor.');
     }
     renderTable();
+    saveWork();
   });
 }
 
@@ -927,6 +1032,7 @@ function wireSkill(){
       var kids = o.parentNode.querySelectorAll('.opt'), i;
       for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
       o.classList.add('sel');
+      saveWork();
       return;
     }
     var c = e.target.closest ? e.target.closest('[data-skillcheck]') : null;
@@ -955,6 +1061,7 @@ function commitSkill(id){
   v.innerHTML = msg;
   var kids = el('skillStrip').querySelectorAll('.opt[data-skill="'+id+'"]'), i;
   for (i = 0; i < kids.length; i++) kids[i].disabled = true;
+  saveWork();
 }
 
 
@@ -981,7 +1088,7 @@ function buildReading(){
   var h = '', n, t;
   for (n = 0; n < order.length; n++) {
     var idx = order[n], it = READ_SPECS[idx], id = 'r'+idx;
-    readState[id] = { pick:null, done:false };
+    readState[id] = { pick:null, done:false, support:'', against:'' };
     var opts = '';
     for (t = 0; t < KINDS.length; t++) {
       opts += '<button type="button" class="opt" data-read="'+id+'" data-kind="'+KINDS[t].k+'">'+
@@ -992,14 +1099,31 @@ function buildReading(){
            '<div>' +
              '<div class="sname">'+bi('Specimen '+(n+1), 'Especimen '+(n+1))+'</div>' +
              '<div class="opt-row">'+opts+'</div>' +
+             '<div class="defend">' +
+               '<label for="sup-'+id+'"><span class="lang-en"><span class="defend-req">*</span> Evidence that supports your call</span><span class="lang-es"><span class="defend-req">*</span> Evidencia que apoya tu eleccion</span></label>' +
+               '<textarea id="sup-'+id+'" data-sup="'+id+'" data-ph-en="What in this outline points to that kind of hair? Name the axes, the ratio, or the shape itself." data-ph-es="Que en este contorno apunta a ese tipo de cabello? Nombra los ejes, la razon, o la forma misma?"></textarea>' +
+             '</div>' +
+             '<div class="defend">' +
+               '<label for="aga-'+id+'"><span class="lang-en">What would count against your call</span><span class="lang-es">Que contaria en contra de tu eleccion</span></label>' +
+               '<textarea id="aga-'+id+'" data-aga="'+id+'" data-ph-en="What would you want to see before you trusted this reading? What could be misleading?" data-ph-es="Que querrias ver antes de confiar en esta lectura? Que podria ser enganoso?"></textarea>' +
+             '</div>' +
              '<div class="spec-foot">' +
-               '<button type="button" class="btn small" data-readcheck="'+id+'">'+bi('Commit','Confirmar')+'</button>' +
+               '<button type="button" class="btn small" data-readcheck="'+id+'">'+bi('Check','Revisar')+'</button>' +
                '<span class="verdict" data-readverdict="'+id+'"></span>' +
              '</div>' +
            '</div>' +
          '</div>';
   }
   el('readStrip').innerHTML = h;
+}
+
+/** Placeholders are plain attributes: they cannot hold span pairs, so they are
+    set from the active language instead. */
+function syncPlaceholders(lang){
+  var bump = document.querySelectorAll('[data-ph-en]'), i;
+  for (i = 0; i < bump.length; i++) {
+    bump[i].setAttribute('placeholder', bump[i].getAttribute(lang === 'es' ? 'data-ph-es' : 'data-ph-en') || '');
+  }
 }
 
 function wireReading(){
@@ -1012,32 +1136,52 @@ function wireReading(){
       var kids = o.parentNode.querySelectorAll('.opt'), i;
       for (i = 0; i < kids.length; i++) kids[i].classList.remove('sel');
       o.classList.add('sel');
+      saveWork();
       return;
     }
     var c = e.target.closest ? e.target.closest('[data-readcheck]') : null;
     if (c) commitReading(c.getAttribute('data-readcheck'));
   });
+  el('readStrip').addEventListener('input', function (e) {
+    var t = e.target, sid = t.getAttribute('data-sup') || t.getAttribute('data-aga');
+    if (!sid || !readState[sid]) return;
+    if (t.getAttribute('data-sup')) readState[sid].support = t.value;
+    else readState[sid].against = t.value;
+    saveWork();
+  });
 }
 
+/* Section C check is NEUTRAL BY DESIGN.
+   It confirms agreement or disagreement with the reading this outline
+   supports, and says nothing more. No reason, no hint, no redirect to the
+   feature that was missed. The student is required to write a defense first,
+   and the defense is the graded artifact. */
 function commitReading(id){
   var st = readState[id];
   var idx = parseInt(id.slice(1), 10);
   var correct = READ_SPECS[idx].answer;
   var v = el('readStrip').querySelector('[data-readverdict="'+id+'"]');
-  if (!st || !st.pick) {
+  if (!st) return;
+  if (!st.pick) {
     v.className = 'verdict bad';
     v.innerHTML = bi('Choose a kind first.', 'Elige un tipo primero.');
     return;
   }
+  if (!(st.support || '').trim()) {
+    v.className = 'verdict bad';
+    v.innerHTML = bi('Write your evidence first. The check will not mark a call you have not defended.',
+                     'Escribe tu evidencia primero. El revisar no marca una eleccion que no has defendido.');
+    return;
+  }
   st.done = true;
   var ok = st.pick === correct;
-  v.className = ok ? 'verdict ok' : 'verdict bad';
+  v.className = 'verdict ok';
   v.innerHTML = ok
-    ? bi('That is the reading this outline supports.', 'Esa es la lectura que apoya este contorno.')
-    : bi('Look at the outline again. Is it closer to a circle, or closer to a flat ribbon?',
-         'Mira el contorno otra vez. Esta mas cerca de un circulo, o mas cerca de una cinta plana?');
+    ? bi('I agree with this reading.', 'Estoy de acuerdo con esta lectura.')
+    : bi('I disagree with this reading.', 'No estoy de acuerdo con esta lectura.');
   var kids = el('readStrip').querySelectorAll('.opt[data-read="'+id+'"]'), i;
   for (i = 0; i < kids.length; i++) kids[i].disabled = true;
+  saveWork();
 }
 
 /* ---------------------------------------------------------------
@@ -1084,6 +1228,7 @@ function setLang(lang){
     btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
   }
   syncSelectOptions(lang);
+  syncPlaceholders(lang);
 }
 function wireLang(){
   var btns = document.querySelectorAll('.lang-toggle button'), i;
@@ -1093,6 +1238,425 @@ function wireLang(){
   var stored = 'en';
   try { stored = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) {}
   setLang(stored);
+}
+
+/* ---------------------------------------------------------------
+   Durable work: local draft + Portal server save
+
+   What this fixes: the lab used to hold all student work in memory, so a
+   Chromebook storage wipe, a reload, or a crash lost everything silently.
+   A student reported losing work without noticing, which is the worst
+   version of this failure.
+
+   Contract, inherited from portal-save.js:
+     - the local draft is written FIRST and unconditionally, so a failed
+       sign-in can never become data loss
+     - the chip reads "Saved to Portal" ONLY after the server acknowledges
+       the exact on-screen payload
+     - a rejected or failed save says so out loud rather than showing green
+   --------------------------------------------------------------- */
+var ACTIVITY_ID = 'cuticle-ovality-lab';
+var WORK_KEY = 'cutOval.work.v1';
+var NAME_KEY = 'cutOval.name.v1';
+var saveController = null;
+var studentName = '';
+
+function rememberName(n){
+  if (!n) return;
+  studentName = String(n);
+  try { localStorage.setItem(NAME_KEY, studentName); } catch (e) {}
+}
+
+function collectWork(){
+  saveCurrent();
+  var work = {
+    v: 1,
+    savedAt: new Date().toISOString(),
+    strips: {},
+    oval: {},
+    reading: {},
+    skill: {}
+  };
+  var k;
+  for (k in stripState) {
+    if (!Object.prototype.hasOwnProperty.call(stripState, k)) continue;
+    work.strips[k] = { pick: stripState[k].pick, checked: stripState[k].checked };
+  }
+  var i;
+  for (i = 0; i < SPECIMENS.length; i++) {
+    if (bState.saved[i] == null && bState.savedLong[i] == null) continue;
+    work.oval[i] = {
+      oval: bState.saved[i] || '',
+      long: bState.savedLong[i] == null ? null : bState.savedLong[i],
+      short: bState.savedShort[i] == null ? null : bState.savedShort[i]
+    };
+  }
+  for (k in readState) {
+    if (!Object.prototype.hasOwnProperty.call(readState, k)) continue;
+    var r = readState[k];
+    work.reading[k] = { pick: r.pick, done: r.done, support: r.support || '', against: r.against || '' };
+  }
+  for (k in skillState) {
+    if (!Object.prototype.hasOwnProperty.call(skillState, k)) continue;
+    work.skill[k] = { pick: skillState[k].pick, done: skillState[k].done };
+  }
+  return work;
+}
+
+function hasAnyWork(w){
+  if (!w) return false;
+  var k;
+  for (k in w.strips) if (w.strips[k] && w.strips[k].pick) return true;
+  for (k in w.oval) if (w.oval[k]) return true;
+  for (k in w.reading) if (w.reading[k] && (w.reading[k].pick || w.reading[k].support)) return true;
+  for (k in w.skill) if (w.skill[k] && w.skill[k].pick) return true;
+  return false;
+}
+
+/** Write the draft locally and tell the save controller. Never gated on network. */
+function saveWork(){
+  var work;
+  try { work = collectWork(); } catch (e) { return; }
+  var payload = JSON.stringify(work);
+  try { localStorage.setItem(WORK_KEY, payload); } catch (e) { /* private mode */ }
+
+  if (saveController && saveController.hasIdentity()) {
+    saveController.markDirty(payload);
+    return;
+  }
+  setSaveChip('blocked', bi('Not saved to the Portal. Sign in on the Portal first.',
+                            'No se guarda en el Portal. Inicia sesion en el Portal primero.'));
+}
+
+/* The chip. 'saved' is reached ONLY from a server acknowledgement. */
+function setSaveChip(state, html){
+  var chip = el('saveChip'), txt = el('saveText');
+  if (!chip || !txt) return;
+  chip.setAttribute('data-s', state);
+  if (html) txt.innerHTML = html;
+}
+
+var SAVE_TEXT = {
+  idle:      ['Not saved yet',              'Aun no se ha guardado'],
+  pending:   ['Changes not sent yet',       'Cambios sin enviar'],
+  saving:    ['Saving...',                  'Guardando...'],
+  saved:     ['Saved to the Portal',        'Guardado en el Portal'],
+  localonly: ['Saved on this device only',  'Guardado solo en este dispositivo']
+};
+
+function saveChipText(key){
+  var p = SAVE_TEXT[key];
+  return bi(p[0], p[1]);
+}
+
+function onSaveStatus(status, detail){
+  if (status === 'saved')   { setSaveChip('saved',   saveChipText('saved')); return; }
+  if (status === 'saving')  { setSaveChip('saving',  saveChipText('saving')); return; }
+  if (status === 'pending') { setSaveChip('pending', saveChipText('pending')); return; }
+  if (status === 'blocked') {
+    if (detail === 'conflict' || detail === 'precondition') {
+      setSaveChip('blocked', bi('This lab was saved on another device. Reload before typing more.',
+                                'Este laboratorio se guardo en otro dispositivo. Recarga antes de seguir escribiendo.'));
+    } else if (detail === 'no-identity' || detail === 'no-token-source') {
+      setSaveChip('blocked', bi('Not saved to the Portal. Sign in on the Portal first.',
+                                'No se guarda en el Portal. Inicia sesion en el Portal primero.'));
+    } else if (detail && /too large/i.test(String(detail))) {
+      setSaveChip('blocked', bi('Your work is too large to save.', 'Tu trabajo es muy grande para guardar.'));
+    } else {
+      setSaveChip('blocked', bi('The Portal did not confirm a save.', 'El Portal no confirmo el guardado.'));
+    }
+  }
+}
+
+/** Restore from a work object. Used for both the local draft and the server copy. */
+function applyWork(w){
+  if (!w || typeof w !== 'object') return false;
+  var k;
+  for (k in w.strips || {}) {
+    if (stripState[k]) {
+      stripState[k].pick = w.strips[k].pick || null;
+      stripState[k].checked = !!w.strips[k].checked;
+    }
+  }
+  for (k in w.oval || {}) {
+    var o = w.oval[k];
+    if (o) {
+      bState.saved[k] = o.oval || '';
+      bState.savedLong[k] = o.long == null ? null : o.long;
+      bState.savedShort[k] = o.short == null ? null : o.short;
+    }
+  }
+  for (k in w.reading || {}) {
+    if (readState[k]) {
+      readState[k].pick = w.reading[k].pick || null;
+      readState[k].done = !!w.reading[k].done;
+      readState[k].support = w.reading[k].support || '';
+      readState[k].against = w.reading[k].against || '';
+    }
+  }
+  for (k in w.skill || {}) {
+    if (skillState[k]) {
+      skillState[k].pick = w.skill[k].pick || null;
+      skillState[k].done = !!w.skill[k].done;
+    }
+  }
+  return true;
+}
+
+/** Paint the restored state onto the controls. Called after applyWork. */
+function repaintFromState(){
+  var k, i;
+  // Section A strips
+  for (k in stripState) {
+    if (!Object.prototype.hasOwnProperty.call(stripState, k)) continue;
+    var st = stripState[k];
+    var root = el('cutStrip').querySelector('[data-strip="'+k+'"].spec-item');
+    if (!root) continue;
+    if (st.pick) {
+      var btns = root.querySelectorAll('.opt'), j;
+      for (j = 0; j < btns.length; j++) {
+        if (btns[j].getAttribute('data-pattern') === st.pick) btns[j].classList.add('sel');
+      }
+    }
+    if (st.checked) {
+      var v = root.querySelector('[data-stripverdict]');
+      if (v) { v.className = 'verdict ok'; v.innerHTML = bi('Checked.', 'Revisado.'); }
+      var ab = root.querySelectorAll('.opt'), m;
+      for (m = 0; m < ab.length; m++) ab[m].disabled = true;
+    }
+  }
+  // Section B current specimen input
+  el('inpOval').value = bState.saved[bState.cur] || '';
+  if (bState.savedLong[bState.cur] != null) el('roLong').textContent = fmt1(bState.savedLong[bState.cur]) + ' \u00b5m';
+  if (bState.savedShort[bState.cur] != null) el('roShort').textContent = fmt1(bState.savedShort[bState.cur]) + ' \u00b5m';
+  // Section C
+  for (k in readState) {
+    if (!Object.prototype.hasOwnProperty.call(readState, k)) continue;
+    var r = readState[k];
+    var croot = el('readStrip').querySelector('[data-read="'+k+'"].spec-item');
+    if (!croot) continue;
+    if (r.pick) {
+      var cb = croot.querySelectorAll('.opt'), n;
+      for (n = 0; n < cb.length; n++) {
+        if (cb[n].getAttribute('data-kind') === r.pick) cb[n].classList.add('sel');
+      }
+    }
+    var sup = croot.querySelector('[data-sup]'), aga = croot.querySelector('[data-aga]');
+    if (sup) sup.value = r.support || '';
+    if (aga) aga.value = r.against || '';
+    if (r.done) {
+      var cv = croot.querySelector('[data-readverdict]');
+      if (cv) { cv.className = 'verdict ok'; cv.innerHTML = bi('Checked.', 'Revisado.'); }
+      var db = croot.querySelectorAll('.opt'), q;
+      for (q = 0; q < db.length; q++) db[q].disabled = true;
+    }
+  }
+  // Section D
+  for (k in skillState) {
+    if (!Object.prototype.hasOwnProperty.call(skillState, k)) continue;
+    var s = skillState[k];
+    var sroot = el('skillStrip').querySelector('[data-skill="'+k+'"].spec-item');
+    if (!sroot) continue;
+    if (s.pick) {
+      var sb = sroot.querySelectorAll('.opt'), z;
+      for (z = 0; z < sb.length; z++) {
+        if (sb[z].getAttribute('data-choice') === s.pick) sb[z].classList.add('sel');
+      }
+    }
+    if (s.done) {
+      var sv = sroot.querySelector('[data-skillverdict]');
+      if (sv) { sv.className = 'verdict ok'; sv.innerHTML = bi('Checked.', 'Revisado.'); }
+      var sk = sroot.querySelectorAll('.opt'), y;
+      for (y = 0; y < sk.length; y++) sk[y].disabled = true;
+    }
+  }
+  renderTable();
+}
+
+function loadLocalDraft(){
+  var raw = null;
+  try { raw = localStorage.getItem(WORK_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  var w = null;
+  try { w = JSON.parse(raw); } catch (e) { return false; }
+  if (!hasAnyWork(w)) return false;
+  applyWork(w);
+  repaintFromState();
+  return true;
+}
+
+/** Pull the server copy. Runs only when a real identity exists. */
+function loadFromServer(){
+  if (!window.PortalAuth || !window.PortalSave) return;
+  window.PortalAuth.bind()
+    .then(function (identity) {
+      if (!identity.uid) {
+        setSaveChip('blocked', saveChipText('localonly'));
+        return;
+      }
+      rememberName(identity.displayName || identity.email || '');
+      var hadLocal = false;
+      try { hadLocal = !!localStorage.getItem(WORK_KEY); } catch (e) {}
+      saveController = window.PortalSave.createController({
+        activityId: ACTIVITY_ID,
+        uid: identity.uid,
+        getToken: identity.getToken,
+        onStatus: onSaveStatus,
+        onConflict: function () {
+          setSaveChip('blocked', bi('This lab was saved on another device. Reload before typing more.',
+                                    'Este laboratorio se guardo en otro dispositivo. Recarga antes de seguir escribiendo.'));
+        }
+      });
+      window.PortalAuth.onChange(function (next) {
+        if (saveController) saveController.setUid(next.uid);
+        if (!next.uid) setSaveChip('blocked', saveChipText('localonly'));
+      });
+      if (hadLocal) { onSaveStatus('pending'); saveWork(); }
+      else { onSaveStatus('idle'); }
+    })
+    .catch(function () {
+      setSaveChip('blocked', saveChipText('localonly'));
+    });
+}
+
+/* Flush on the way out. A tab closed mid-period must not lose the last edits. */
+window.addEventListener('pagehide', function () {
+  if (saveController) saveController.flush({ force: true });
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden' && saveController) {
+    saveController.flush({ force: true });
+  }
+});
+
+/* ---------------------------------------------------------------
+   Report export
+
+   jsPDF native text layout, loaded from the Portal's own copy of the
+   library. Never rasterize the page: html2canvas-style export slices
+   content across page breaks and silently drops the tail.
+   --------------------------------------------------------------- */
+var JSPDF_SRC = '/vendor/jspdf.umd.min.js';
+
+function loadJsPdf(){
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  return new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = JSPDF_SRC;
+    s.onload = function () {
+      if (window.jspdf && window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
+      else reject(new Error('jspdf missing'));
+    };
+    s.onerror = function () { reject(new Error('jspdf load failed')); };
+    document.head.appendChild(s);
+  });
+}
+
+function kindLabel(k){
+  for (var i = 0; i < KINDS.length; i++) if (KINDS[i].k === k) return KINDS[i].en + ' / ' + KINDS[i].es;
+  return k || '(no choice)';
+}
+
+function buildReportRows(){
+  var rows = [], i, k;
+  rows.push({ h: 'Section A: Cuticle scale patterns' });
+  for (i = 0; i < STRIPS.length; i++) {
+    var sid = 's' + i, st = stripState[sid] || {};
+    rows.push({ l: 'Strip ' + (i + 1), v: st.pick ? (st.pick + (st.checked ? '  (checked)' : '  (not checked)')) : 'no choice recorded' });
+  }
+  rows.push({ h: 'Section B: Ovality measurements' });
+  for (i = 0; i < SPECIMENS.length; i++) {
+    var o = bState.saved[i];
+    if (o == null && bState.savedLong[i] == null) continue;
+    var ln = bState.savedLong[i], sh = bState.savedShort[i];
+    rows.push({
+      l: 'Specimen ' + (i + 1),
+      v: 'long ' + (ln == null ? 'not measured' : ln.toFixed(1) + ' um') +
+         ', short ' + (sh == null ? 'not measured' : sh.toFixed(1) + ' um') +
+         ', ovality ' + (o || 'not entered')
+    });
+  }
+  rows.push({ h: 'Section C: Reading a hair, with evidence' });
+  for (k in readState) {
+    if (!Object.prototype.hasOwnProperty.call(readState, k)) continue;
+    var r = readState[k], idx = parseInt(k.slice(1), 10);
+    rows.push({ l: 'Specimen (image ' + (idx + 1) + ')', v: kindLabel(r.pick) + (r.done ? '  (checked)' : '  (not checked)') });
+    rows.push({ sub: 'Evidence that supports the call', p: r.support || '(no response yet)' });
+    rows.push({ sub: 'What would count against the call', p: r.against || '(no response yet)' });
+  }
+  rows.push({ h: 'Section D: Skill check' });
+  for (k in skillState) {
+    if (!Object.prototype.hasOwnProperty.call(skillState, k)) continue;
+    var s = skillState[k];
+    rows.push({ l: 'Item ' + (parseInt(k.slice(1), 10) + 1), v: (s.pick || 'no choice recorded') + (s.done ? '  (checked)' : '') });
+  }
+  return rows;
+}
+
+function exportReport(){
+  var btn = el('btnExport');
+  btn.disabled = true;
+  loadJsPdf().then(function (jsPDF) {
+    var doc = new jsPDF({ unit: 'pt', format: 'letter' });
+    var M = 48, W = 612, CW = W - M * 2, y = M;
+    function ensure(h){
+      if (y + h > 792 - M) { doc.addPage(); y = M; }
+    }
+    function text(str, size, style, colour){
+      doc.setFont('helvetica', style || 'normal');
+      doc.setFontSize(size || 10);
+      doc.setTextColor.apply(doc, colour || [26, 26, 26]);
+      var lines = doc.splitTextToSize(String(str), CW);
+      for (var i = 0; i < lines.length; i++) { ensure(size * 1.35); doc.text(lines[i], M, y); y += size * 1.35; }
+    }
+    text('Cuticle and Ovality Lab', 20, 'bold');
+    text('Laboratorio de cuticula y ovalidad', 12, 'normal', [110, 110, 110]);
+    y += 6;
+    text('Student: ' + (studentName || '________________________'), 12, 'bold');
+    y += 2;
+    text('Forensic Science, Week 10   |   Mr. Porter   |   Perth Amboy High School', 9.5, 'normal', [110, 110, 110]);
+    text('Student report generated ' + new Date().toLocaleString(), 9.5, 'normal', [110, 110, 110]);
+    y += 4;
+    doc.setDrawColor(255, 77, 38);
+    doc.setLineWidth(2);
+    ensure(6); doc.line(M, y, M + CW, y); y += 18;
+
+    var rows = buildReportRows();
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.h) {
+        y += 8; ensure(26);
+        text(r.h, 13, 'bold');
+        doc.setDrawColor(216, 214, 204); doc.setLineWidth(0.8);
+        ensure(4); doc.line(M, y - 6, M + CW, y - 6);
+      } else if (r.sub) {
+        y += 2; text(r.sub, 9, 'bold', [110, 110, 110]);
+        text(r.p, 10, 'normal');
+      } else {
+        text(r.l + ': ' + r.v, 10, 'normal');
+      }
+    }
+
+    y += 14; ensure(40);
+    text('A hair cross section describes a kind of hair. It does not identify a person.', 9, 'italic', [110, 110, 110]);
+    text('Report content is the student work as entered on this device.', 9, 'italic', [110, 110, 110]);
+
+    var blob = doc.output('blob');
+    var url = URL.createObjectURL(blob);
+    var panel = el('pdfPanel');
+    var a = el('pdfDownload'), o = el('pdfOpen');
+    if (a) { a.href = url; a.download = 'Cuticle-Ovality-Report-' + new Date().toISOString().slice(0, 10) + '.pdf'; }
+    if (o) { o.href = url; }
+    if (panel) panel.hidden = false;
+    // Attempt the direct download, but never claim success from it: some
+    // sandboxes no-op an anchor click without throwing.
+    try { doc.save('Cuticle-Ovality-Report-' + new Date().toISOString().slice(0, 10) + '.pdf'); } catch (e) { /* panel is the fallback */ }
+    btn.disabled = false;
+  }).catch(function () {
+    btn.disabled = false;
+    setSaveChip('blocked', bi('The PDF could not be built here. Ask your teacher for a printed copy.',
+                               'No se pudo crear el PDF aqui. Pidele a tu maestro una copia impresa.'));
+  });
 }
 
 /* ---------------------------------------------------------------
@@ -1114,6 +1678,13 @@ function boot(){
   wireSkill();
   wireNav();
   wireLang();
+
+  // Restore before binding identity so a student sees their work immediately,
+  // even if the network is slow or the sign-in has not resolved yet.
+  loadLocalDraft();
+  try { studentName = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
+  loadFromServer();
+  el('btnExport').addEventListener('click', exportReport);
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', boot);
