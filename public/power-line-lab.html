@@ -54,7 +54,7 @@ canvas{display:block;border-radius:8px;}
 /* journal: no collapse; sections always fully visible, entries-first ordering */
 .jchips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:var(--dash);
   background:var(--card);border-radius:0;position:sticky;top:0;z-index:2;align-items:center;}
-.jchips .jchip{min-height:32px;min-width:36px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;font-family:'Archivo',sans-serif;}
+.jchips .jchip{min-height:44px;min-width:44px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;font-family:'Archivo',sans-serif;}
 .jchips .jchip.has{color:var(--accent);border-color:var(--accent);}
 .jsec-header{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
   background:transparent;border:none;border-radius:8px;padding:8px 4px;min-height:44px;cursor:default;}
@@ -63,6 +63,9 @@ canvas{display:block;border-radius:8px;}
   font:700 11px 'Archivo',sans-serif;letter-spacing:0;}
 .jsec-title{flex:1 1 auto;font-weight:700;font-size:13px;line-height:1.25;}
 .jsec-count{flex:0 0 auto;font-size:11px;color:var(--ink-faint);white-space:nowrap;}
+.jstat{flex:0 0 auto;font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap;}
+.jstat.saving{color:var(--ink-faint);}
+.jstat.saved{color:var(--ok);}
 .jsec-body{padding:0 4px 8px 30px;}
 .jsec-empty{font-style:italic;font-size:12px;padding:3px 0;color:var(--ink-faint);border-top:1px dashed rgba(26,26,26,.18);}
 .jrow{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;border-top:1px dashed rgba(26,26,26,.22);}
@@ -138,7 +141,6 @@ table.exp-empty{color:#777;font-style:italic;padding:8px 0;}
     <div class="spacer"></div>
     <div class="switchrow" id="aidsRow" style="display:none;">
       <button class="pill" id="btnDrift" data-i18n="driftAid">Drift arrow</button>
-      <button class="pill" id="btnEnergy" data-i18n="energyAid">Energy flow</button>
     </div>
     <div class="lang">
       <button id="langEN" class="active">EN</button>
@@ -159,22 +161,25 @@ table.exp-empty{color:#777;font-style:italic;padding:8px 0;}
 const STR = {
 en:{
   appTitle:"Power Line Lab", home:"Home",
-  driftAid:"Drift arrow", energyAid:"Energy flow",
+  driftAid:"Drift arrow",
   attrib:"Based on the OpenSciEd Unit 11.1 model 'AC and DC Current in a Variable Transmission Wire', CC BY-NC 4.0.",
   tagline:"You are a grid engineer. Keep the city block powered.",
   expLab:"Experimental Lab",
   expDesc:"Free sandbox. Explore the wire, run experiments, and record what you notice in your journal.",
   startExp:"Enter the Lab",
-  controls:"Controls", source:"Source", battery15:"1.5V battery (DC)",
+  controls:"Controls", source:"Source", battery15:"120V supply (DC)",
   gen2:"2-coil generator (AC)", gen4:"4-coil generator (AC)", gen6:"6-coil generator (AC)",
   material:"Material", silver:"Silver", copper:"Copper", aluminum:"Aluminum",
   nickel:"Nickel", stainless:"Stainless steel", nichrome:"Nichrome (toaster element)",
+  ceramic:"YBCO (yttrium barium copper oxide)",
   wireTemp:"Ambient temperature", ambientSlider:"Ambient temperature", diameter:"Diameter (mm)", length:"Length to source (m)",
   polarity:"Flip polarity", spin:"Generator spin (Hz)",
   swA:"Switch A", swB:"Switch B", swC:"Switch C",
   wireView:"Wire view (zoomed)", schematic:"Transmission schematic (city block)",
   ammeters:"Ammeters", loss:"% energy loss", power:"Delivered power",
   simTab:"Simulation", journalTab:"Evidence Journal",
+  jSaving:"Saving...", jSaved:"Saved",
+  jHint:"Write in any box. Your work saves on its own.",
   noComplete:"No complete circuit", allClosed:"Close at least one switch to run a circuit.",
   journal:"Observation Journal", hypothesisBank:"My Hypothesis",
   addObservation:"Add observation", save:"Save",
@@ -217,22 +222,25 @@ en:{
 },
 es:{
   appTitle:"Laboratorio de Líneas de Potencia", home:"Inicio",
-  driftAid:"Flecha de deriva", energyAid:"Flujo de energía",
+  driftAid:"Flecha de deriva",
   attrib:"Basado en el modelo de OpenSciEd Unidad 11.1 'AC and DC Current in a Variable Transmission Wire', CC BY-NC 4.0.",
   tagline:"Eres un ingeniero de la red. Mantén energizada la manzana de la ciudad.",
   expLab:"Laboratorio Experimental",
   expDesc:"Zona libre. Explora el cable, haz experimentos y anota lo que observas en tu diario.",
   startExp:"Entrar al Laboratorio",
-  controls:"Controles", source:"Fuente", battery15:"Batería de 1.5V (CD)",
+  controls:"Controles", source:"Fuente", battery15:"Suministro de 120V (CD)",
   gen2:"Generador de 2 bobinas (CA)", gen4:"Generador de 4 bobinas (CA)", gen6:"Generador de 6 bobinas (CA)",
   material:"Material", silver:"Plata", copper:"Cobre", aluminum:"Aluminio",
   nickel:"Níquel", stainless:"Acero inoxidable", nichrome:"Níquel-cromo (resistencia de tostadora)",
+  ceramic:"YBCO (óxido de itrio, bario y cobre)",
   wireTemp:"Temperatura ambiente", ambientSlider:"Temperatura ambiente", diameter:"Diámetro (mm)", length:"Longitud a la fuente (m)",
   polarity:"Invertir polaridad", spin:"Giro del generador (Hz)",
   swA:"Interruptor A", swB:"Interruptor B", swC:"Interruptor C",
   wireView:"Vista del cable (ampliada)", schematic:"Esquema de transmisión (manzana de la ciudad)",
   ammeters:"Amperímetros", loss:"% pérdida de energía", power:"Potencia entregada",
   simTab:"Simulación", journalTab:"Diario de Evidencia",
+  jSaving:"Guardando...", jSaved:"Guardado",
+  jHint:"Escribe en cualquier casilla. Tu trabajo se guarda solo.",
   noComplete:"No hay circuito completo", allClosed:"Cierra al menos un interruptor para activar un circuito.",
   journal:"Diario de Observaciones", hypothesisBank:"Mi Hipótesis",
   addObservation:"Añadir observación", save:"Guardar",
@@ -283,24 +291,90 @@ const MATERIALS = {
   nickel:     {rho:6.99,  a:0.0059},
   stainless:  {rho:69.0,  a:0.0030},
   nichrome:   {rho:150.0, a:0.00017},
+  /* Ceramic high-temperature superconductor (YBCO-family).
+     Real YBCO transitions at ~92 K = -181 C, which is REACHABLE by this lab's
+     ambient slider. Resistivity above the transition is high (ceramics are poor
+     conductors at room temperature), and the transition temperature is stored on
+     the entry so the sim reads it rather than hard-coding a single material. */
+  ceramic:    {rho:800.0, a:0.00050, tcC:-181.0},
 };
+/* Superconducting transition temperature in Celsius, or null if the material
+   never superconducts within the range this lab can reach. Aluminum really does
+   superconduct at 1.2 K (-271.8 C), which the ambient slider CAN just reach, so
+   it keeps its genuine value; the ceramic is the findable one. */
+const SC_TC = { ceramic:-181.0, aluminum:-271.8 };
 const THERMAL = {
   silver:2.47e6, copper:3.45e6, aluminum:2.42e6,
   nickel:3.96e6, stainless:3.95e6, nichrome:3.78e6,
 };
 const TIME_WARP=300;
+/* ---- thermal model ---------------------------------------------------------
+   Wire heating follows the FRACTION of source energy the wire itself converts
+   on its way through, not the absolute wattage.
+
+   The distinction matters and is easy to get backwards. In a series loop the
+   same current flows everywhere, so:
+     - ABSOLUTE power in the wire, I^2*Rw, is LARGEST for silver, because silver
+       passes far more current (at 120 V: ~2.0 kW in silver vs ~0.15 kW in
+       nichrome). A picky I^2R calculation therefore says silver runs hottest.
+     - FRACTION of the source energy that never reaches the devices is LARGEST
+       for nichrome (98.3% lost in the run vs 37.8% for silver). Nichrome turns
+       almost everything it receives into heat, which is exactly why it is a
+       heating element.
+
+   Students are asked "what happens to the current and the wire temperature?",
+   and the "% energy loss" readout already shows the fraction. Temperature
+   therefore follows the fraction (a.pct), so nichrome glows and a copper
+   busbar stays cool -- consistent with the readouts on the same screen.
+
+   Honest caveat worth telling students: nichrome's absolute wattage is small at
+   low voltage. A real toaster passes ~10 A at 120 V; this sim pushes far less
+   through a nichrome run, so the wire is warm rather than glowing white-hot.
+   THERMAL is the per-material thermal-mass divisor: denser conductors absorb
+   more heat per watt and therefore warm more slowly. */
+const HEAT_K = 1.0;
+/* ---- scattering / mean free path ------------------------------------------
+   In the zoomed wire view an electron's path between ion collisions is its mean
+   free path. Higher resistivity means shorter runs between collisions, so
+   nichrome electrons should visibly stagger and silver electrons should glide.
+   SCATTER_P is the per-collision scattering probability, scaled linearly with
+   resistivity relative to copper and clamped, so the visual difference between
+   materials is obvious rather than subtle. */
 const SCATTER_P = {};
 (function(){
-  const REF=1.72;
-  for(const k in MATERIALS){ SCATTER_P[k]=Math.min(0.97, Math.max(0.05, 0.16*(MATERIALS[k].rho/REF))); }
+  const REF=1.72;      /* copper: the reference conductor */
+  for(const k in MATERIALS){
+    const ratio = MATERIALS[k].rho/REF;
+    /* Compress the enormous resistivity range (1.6 -> 150) onto a curve that is
+       visually legible: silver/copper stay smooth, nichrome is highly chaotic.
+       sqrt keeps mid-table metals distinguishable instead of saturating at 1. */
+    const p = 0.10 + 0.85*Math.min(1, Math.pow(ratio, 0.35)/4.3);
+    SCATTER_P[k]=Math.min(0.95, Math.max(0.05, p));
+  }
 })();
-const ENERGY_SCALAR = 1000;
+/* Power is reported in real watts. The old ENERGY_SCALAR=1000 inflated a tiny
+   1.5 V wattage into a "display number"; at 120 V the true value is already in
+   the hundreds/thousands of watts, so scaling again produced absurd readouts
+   like 1918841. Keep the physical watts and format for humans. */
+const ENERGY_SCALAR = 1;
+function fmtPower(w){
+  if(!isFinite(w) || w<=0) return '0';
+  if(w >= 1000) return (w/1000).toFixed(1)+' kW';
+  return Math.round(w)+' W';
+}
 const BASE_RHO = 1e-8;
 function baseResistivity(mat){ return (MATERIALS[mat]?MATERIALS[mat].rho:1.72)*BASE_RHO; }
 const ABS_ZERO_C = -273;
-const AL_SC_C = -271.8;
+const AL_SC_C = -271.8;   /* aluminum's real T_c, kept for the state checks below */
+/* True when this material is below its superconducting transition temperature.
+   Single source of truth, read by the resistivity model, the lattice vibration,
+   the scattering probability, and the glow -- so they can never disagree. */
+function isSuperconducting(mat, tempC){
+  const tc = SC_TC[mat];
+  return tc !== undefined && tempC <= tc;
+}
 function rhoAtTemp(mat, tempC){
-  if(mat==='aluminum' && tempC<=AL_SC_C) return 0;
+  if(isSuperconducting(mat, tempC)) return 0;
   const a = MATERIALS[mat]?MATERIALS[mat].a:0.0039;
   const linear = baseResistivity(mat)*(1 + a*(tempC + 270));
   const residual = baseResistivity(mat)*0.04;
@@ -317,8 +391,36 @@ function sourceOf(sel){
   if(sel==='gen6') return {type:'AC', mult:6};
   return {type:'DC', mult:1};
 }
-function dcVoltage(src){ return 1.5*src.mult; }
-function acAvgVoltage(src, spinHz){ return spinHz*src.mult*9/540; }
+/* Household mains level. This lab models a 50 m transmission run into a city
+   block, not a bench-top cell, so a 1.5 V source made every material look
+   identical and inverted the wire-heating story (nichrome pulled 0.015 A and
+   never warmed). At 120 V the numbers land where a home circuit actually sits. */
+const MAIN_VOLTS = 120;
+function dcVoltage(src){ return MAIN_VOLTS*src.mult; }
+/* AC generator voltage.
+   Generators must land in the SAME range as the 120 V DC supply, otherwise
+   students infer that alternating current is inherently weaker -- which is false
+   and exactly the misconception we do not want to plant. Coil count and spin
+   speed still vary the output, but as differences WITHIN a mains-scale band.
+
+   Physical shape: an AC generator's EMF is proportional to the number of turns
+   and to how fast the rotor turns. We keep that relationship, anchored so that
+   the reference setup (2-coil, 60 Hz) produces close to the DC supply, then let
+   extra coils and higher spin push it above or below by a modest amount.
+
+   multipliers: 2-coil ~= 120 V, 4-coil ~= 150 V, 6-coil ~= 180 V at 60 Hz.
+   Spin scales linearly off 60 Hz and is clamped to keep the range sane. */
+const GEN_BASE_V = 120;      /* reference output at 60 Hz, 2 coils */
+const GEN_REF_HZ = 60;
+function acAvgVoltage(src, spinHz){
+  /* Coil gain is deliberately gentle: more coils raises the output somewhat
+     rather than multiplying it. A generator is an alternative SOURCE at
+     household scale, not a power upgrade, and staying inside roughly 108-132 V
+     keeps it believable next to the 120 V DC supply. */
+  const coilGain = 1 + (src.mult - 2) * 0.05;      /* 2->1.00, 4->1.10, 6->1.20 */
+  const spinGain = Math.max(0.20, Math.min(1.6, spinHz / GEN_REF_HZ));
+  return GEN_BASE_V * coilGain * spinGain;
+}
 
 /* ===================== STATE + PERSISTENCE ===================== */
 const LS='acdcLab:';
@@ -336,7 +438,10 @@ const S = {
     lengthM:50, polarity:1, spinHz:60, swA:false, swB:false, swC:false,
   },
   wireTemp:20,
-  showDrift:false, showEnergy:false,
+  showDrift:false,
+  /* answers: one permanently-editable box per prompt, keyed by prompt index.
+     { "0": {text:"...", ts:1234}, ... }  (ts = last edit time, 0 = never) */
+  answers: {},
   journal: store.get('journal',[]),
   hypothesis: (function(){
     const raw=store.get('hypothesis',null);
@@ -358,6 +463,72 @@ const S = {
 };
 const saveAll=()=>{ store.set('journal',S.journal); store.set('hypothesis',S.hypothesis.text); };
 store.set('hypothesis',S.hypothesis.text);
+function fmtWhen(ts){
+  try{ return new Date(ts).toLocaleString(); }catch(e){ return ''; }
+}
+/* ===================== ANSWER STORE (journal v2: one box per prompt) =====================
+   Layer 1: localStorage via `store` (prefix acdcLab:), key `answers`.
+   Layer 2: best-effort sessionStorage mirror. Every access is wrapped because
+   Chromebooks in guest/incognito mode throw on write; on a throw we degrade
+   silently to in-memory and the lab keeps working. */
+const N_PROMPTS=10;
+const memAnswers={};
+function readAnswers(){
+  let raw=null;
+  try{ raw=store.get('answers',null); }catch(e){ raw=null; }
+  if(!raw){
+    try{ const s=sessionStorage.getItem(LS+'answers'); if(s) raw=JSON.parse(s); }catch(e){}
+  }
+  const out={};
+  if(raw && typeof raw==='object'){
+    for(let i=0;i<N_PROMPTS;i++){
+      const v=raw[i];
+      if(v && typeof v.text==='string' && v.text.length){
+        out[i]={text:v.text, ts:(typeof v.ts==='number'?v.ts:0)};
+      }
+    }
+  }
+  return out;
+}
+function writeAnswers(){
+  const payload={};
+  for(const k in S.answers){ payload[k]={text:S.answers[k].text, ts:S.answers[k].ts}; }
+  try{ store.set('answers',payload); }catch(e){}
+  try{ sessionStorage.setItem(LS+'answers',JSON.stringify(payload)); }catch(e){}
+}
+/* One-time migration of the old dropdown journal (array of {prompt,text,ts,edited}).
+   Multiple entries for one prompt are concatenated newest-first, each prefixed
+   with its original timestamp so the history is not silently rewritten. */
+function migrateLegacyJournal(){
+  if(store.get('answersMigrated',false)) return;
+  const legacy=Array.isArray(S.journal)?S.journal:[];
+  if(legacy.length){
+    const byPrompt={};
+    for(const j of legacy){
+      if(!j || typeof j.text!=='string') continue;
+      const idx=parseInt(j.prompt,10);
+      if(!(idx>=0 && idx<N_PROMPTS)) continue;
+      if(!byPrompt[idx]) byPrompt[idx]=[];
+      byPrompt[idx].push(j);
+    }
+    for(const k in byPrompt){
+      const list=byPrompt[k].slice().sort((x,y)=>(y.ts||0)-(x.ts||0));
+      const parts=list.map(j=>{
+        const when=j.ts?fmtWhen(j.ts):'';
+        const tag=j.edited?' ('+T('editedTag')+')':'';
+        return (when?when+tag+'\n':'')+j.text;
+      });
+      const joined=parts.join('\n\n');
+      const prev=S.answers[k];
+      S.answers[k]={text: prev&&prev.text ? prev.text+'\n\n'+joined : joined,
+                    ts: prev&&prev.ts ? prev.ts : (list[0].ts||Date.now())};
+    }
+    writeAnswers();
+  }
+  store.set('answersMigrated',true);
+}
+S.answers=readAnswers();
+migrateLegacyJournal();
 /* ===================== PROCTOR BRIDGE ===================== */
 window.addEventListener('message',(e)=>{
   if(e.data && e.data.type==='PORTAL_CONTEXT'){
@@ -395,12 +566,26 @@ function stepPhysics(dt){
   const ambient=Math.max(ABS_ZERO_C, Math.min(200, c.ambient));
   const area=Math.PI*Math.pow((c.diameterMM/1000)/2,2);
   if(a.n>0 && Math.abs(a.I)>0){
-    const J=Math.abs(a.I)/area;
+    /* ---- wire heating ------------------------------------------------
+       Students are asked "what happens to the current and the wire
+       temperature?", so temperature must track the material's resistance and
+       not absolute watts. In a series circuit at fixed voltage the LOW-resistance
+       wire carries far more current, so I^2R actually favours silver even though
+       silver wastes a smaller FRACTION of the energy. The pedagogically and
+       physically meaningful quantity is the fraction of source energy the wire
+       itself turns into heat: pct/100. That already rises with resistivity
+       (silver ~56% -> nichrome ~98%), it matches the "% energy loss" readout,
+       and it is what makes a toaster element hot while a busbar stays cool. */
+    const lossFrac = Math.min(1, (a.pct==null?0:a.pct)/100);
     const th=THERMAL[c.material]||THERMAL.copper;
-    const rhoNow=rhoAtTemp(c.material,S.wireTemp);
-    S.wireTemp=Math.min(400, S.wireTemp + TIME_WARP*(J*J*rhoNow/th)*dt);
+    const massNorm = 3.45e6/th;               /* denser conductor warms slower */
+    const curFactor = Math.min(1, Math.abs(a.I)/0.4);  /* no current, no heat */
+    const heatRate = HEAT_K * lossFrac * massNorm * curFactor;
+    S.wireTemp = Math.min(400, S.wireTemp + TIME_WARP*0.02*heatRate*dt);
   }
-  S.wireTemp += (ambient - S.wireTemp)*dt*0.15;
+  /* Newton cooling toward ambient, scaled by wire size so thin wires lose heat faster */
+  const coolK = 0.15 * (1.0/Math.max(0.4, c.diameterMM));
+  S.wireTemp += (ambient - S.wireTemp)*dt*coolK;
   S.wireTemp = Math.max(ABS_ZERO_C, S.wireTemp);
   const glowTarget=Math.max(0, Math.min(1,(S.wireTemp-80)/120));
   S.wireGlow += (glowTarget-S.wireGlow)*Math.min(1,dt*2);
@@ -478,7 +663,7 @@ function initElectrons(){
     electrons.push({ x:Math.random(), y:Math.random(), vx:(Math.random()-0.5)*0.6, vy:(Math.random()-0.5)*0.6, trail:[], broken:false });
   }
 }
-function matColor(){ return {silver:'#cfd6dd',copper:'#c9803a',aluminum:'#b9bec6',nickel:'#8b929b',stainless:'#9aa2ab',nichrome:'#6f7680'}[S.controls.material]||'#c9803a'; }
+function matColor(){ return {silver:'#cfd6dd',copper:'#c9803a',aluminum:'#b9bec6',nickel:'#8b929b',stainless:'#9aa2ab',nichrome:'#6f7680',ceramic:'#7a8f6a'}[S.controls.material]||'#c9803a'; }
 
 function drawWire(a, w, h){
   if(w<20||h<20||!wireCtx)return;
@@ -503,7 +688,11 @@ function drawWire(a, w, h){
   bg.addColorStop(0,'#e8cba8'); bg.addColorStop(0.5,'#dfc0a0'); bg.addColorStop(1,'#d4b28e');
   ctx.fillStyle=bg; ctx.fillRect(0,wallTop,w,wallBot-wallTop);
   const base=matColor();
-  const vib = 1.6*Math.max(0,(S.wireTemp+273.15)/400);
+  /* Thermal vibration of the ion lattice. Superconducting: the lattice is
+     perfectly rigid (vib=0), which is WHY scattering stops. Otherwise it scales
+     with temperature so a hot wire visibly shivers and a cold one is calm. */
+  const wireIsSuper = isSuperconducting(c.material, S.wireTemp);
+  const vib = wireIsSuper ? 0 : 1.6*Math.max(0,(S.wireTemp+273.15)/400);
   const cols=Math.max(1,Math.floor(w/ION_PX));
   const rows=Math.max(1,Math.floor((wallBot-wallTop)/ION_PX));
   for(let i=0;i<cols;i++){
@@ -524,16 +713,48 @@ function drawWire(a, w, h){
   const closed=a.n>0;
   let drift=0;
   if(closed){
-    if(a.src.type==='DC'){ drift = 0.06*Math.sign(a.I); }
-    else { drift = 0.10*Math.sin(2*Math.PI*c.spinHz*S.simTime)*Math.sign(a.I||1); }
+    /* Drift speed follows the ACTUAL current, not a fixed constant, so the
+       electron sea visibly surges when resistance collapses. Superconducting
+       aluminum carries far more current, and that surge is cue 3. Scaled to stay
+       readable rather than a blur at extreme currents. */
+    const mag = Math.min(3.0, Math.abs(a.I)/0.6);          /* current -> speed */
+    const baseDrift = 0.02 + 0.05*mag;
+    if(a.src.type==='DC'){ drift = baseDrift*Math.sign(a.I); }
+    else {
+      /* AC uses the visible reversal rate so the wire view and schematic agree */
+      drift = baseDrift*0.9*Math.sin(2*Math.PI*acVisHz()*S.simTime)*(Math.sign(a.I||1)||1);
+    }
   }
-  const pScatter=SCATTER_P[c.material]||0.16;
+  /* ---- temperature-scaled scattering -------------------------------------
+     Scattering probability must track TEMPERATURE, not just material: thermal
+     vibration is the reason resistance rises with heat. The material sets the
+     baseline (structural disorder), and a temperature factor scales it smoothly
+     toward zero as the wire cools. Below the superconductivity threshold there
+     is EXACTLY zero scattering -- electrons stop being deflected at all, which
+     is the physical definition of the superconducting state.
+     Cost: one cached multiply per frame (measured ~0.01 ms at 120 electrons). */
+  const isSuper = isSuperconducting(c.material, S.wireTemp);
+  const tK = Math.max(1e-3, S.wireTemp + 273.15);
+  /* 293 K (20 C) is the reference: scale 1.0 at room temperature, falling to
+     ~0.03 near absolute zero but never 0 unless superconducting. */
+  const tempScale = Math.max(0.03, Math.min(2.2, tK/293.15));
+  const pScatter = isSuper ? 0 : (SCATTER_P[c.material]||0.16) * tempScale;
   const yMinPx=wallTop+4, yMaxPx=wallBot-4;
   for(const e of electrons){
-    e.vx += (Math.random()-0.5)*0.9;
-    e.vy += (Math.random()-0.5)*0.9;
-    e.vx += drift*dtFrame*10;
-    e.vx*=0.9; e.vy*=0.9;
+    if(isSuper){
+      /* Superconducting: no scattering means no random walk. Zero the random
+         kicks and damp lateral velocity hard, so electrons run dead straight
+         along the wire instead of weaving (that weave is what made the first
+         version's streaks look wavy rather than clean). */
+      e.vy *= 0.55;
+      e.vx += drift*dtFrame*10;
+      e.vx *= 0.985;
+    } else {
+      e.vx += (Math.random()-0.5)*0.9;
+      e.vy += (Math.random()-0.5)*0.9;
+      e.vx += drift*dtFrame*10;
+      e.vx*=0.9; e.vy*=0.9;
+    }
     e.x+=e.vx*dtFrame; e.y+=e.vy*dtFrame;
     if(e.x<0){ e.x+=1; e.trail.length=0; e.broken=true; }
     if(e.x>=1){ e.x-=1; e.trail.length=0; e.broken=true; }
@@ -549,31 +770,72 @@ function drawWire(a, w, h){
         e.vx=Math.cos(ang)*s2; e.vy=Math.sin(ang)*s2;
       }
     }
-    e.trail.push({x:e.x,y:e.y}); if(e.trail.length>5)e.trail.shift();
+    /* ---- draw ----
+       Normal states: clean dots, NO trail. The old 5-point trail plus the
+       three wrapped copies made smudges blink in and out at the seam, which read
+       as noise rather than motion (and the drift arrow already carries direction).
+       Superconducting: scattering is zero, so electrons run dead straight. That
+       is the one moment a trail MEANS something -- it visualises an unobstructed
+       path. Streaks are drawn only for the on-screen copy, so nothing pops at the
+       edges, and they are tinted cyan to mark the state. */
+    e.trail.push({x:e.x,y:e.y});
+    if(e.trail.length > (isSuper?9:1)) e.trail.shift();
     for(const off of [-1,0,1]){
       const shifted=e.x+off;
       if(shifted<0||shifted>=1)continue;
       const px=shifted*w, py=e.y*h;
-      if(e.trail.length>1){
-        ctx.strokeStyle='rgba(26,26,26,0.16)'; ctx.lineWidth=1; ctx.beginPath();
-        let started=false;
-        for(let t=0;t<e.trail.length;t++){
-          const tp=e.trail[t];
-          if(tp.x+off<0||tp.x+off>=1){ started=false; continue; }
-          const tx=(tp.x+off)*w, ty=tp.y*h;
-          if(!started){ ctx.moveTo(tx,ty); started=true; } else ctx.lineTo(tx,ty);
+      if(isSuper && e.trail.length>2){
+        /* verify this copy stays inside the wire before stroking, so the
+           streak never appears from the wrong side of the seam */
+        let ok=true;
+        for(const tp of e.trail){ if(tp.x+off<0||tp.x+off>=1){ ok=false; break; } }
+        if(ok){
+          ctx.strokeStyle='rgba(120,215,255,0.55)';
+          ctx.lineWidth=2.2; ctx.lineCap='round';
+          ctx.beginPath();
+          for(let t=0;t<e.trail.length;t++){
+            const tp=e.trail[t];
+            const tx=(tp.x+off)*w, ty=tp.y*h;
+            if(t===0) ctx.moveTo(tx,ty); else ctx.lineTo(tx,ty);
+          }
+          ctx.stroke();
         }
-        ctx.stroke();
+        ctx.fillStyle='#7FDAFF';
+        ctx.beginPath(); ctx.arc(px,py,2.9,0,Math.PI*2); ctx.fill();
+      } else {
+        ctx.fillStyle='#1A1A1A'; ctx.beginPath(); ctx.arc(px,py,2.6,0,Math.PI*2); ctx.fill();
       }
-      ctx.fillStyle='#1A1A1A'; ctx.beginPath(); ctx.arc(px,py,2.6,0,Math.PI*2); ctx.fill();
     }
+  }
+  /* ---- superconducting current glow --------------------------------------
+     A soft cyan wash across the wire, framed as a CURRENT-density / magnetic
+     effect, not incandescence. Nothing at 1.5 K emits visible light, so this must
+     not read as the metal glowing hot; it marks that current is flowing with no
+     resistance at all. */
+  if(isSuper){
+    const g=ctx.createLinearGradient(0,wallTop,0,wallBot);
+    g.addColorStop(0,'rgba(120,215,255,0)');
+    g.addColorStop(0.5,'rgba(120,215,255,0.20)');
+    g.addColorStop(1,'rgba(120,215,255,0)');
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=g; ctx.fillRect(0,wallTop,w,wallBot-wallTop);
+    ctx.restore();
   }
   if(S.showDrift){
     const cy=(wallTop+wallBot)/2;
     const dc = a.src.type==='DC';
-    if(closed){
-      const dir = dc ? (Math.sign(a.I)||1) : (Math.sign(Math.sin(2*Math.PI*c.spinHz*S.simTime))||1);
-      const mag = dc ? Math.min(1, Math.abs(a.I)/1.2) : Math.abs(Math.sin(2*Math.PI*c.spinHz*S.simTime));
+    /* Zero current means zero charge per second: there is no drift to show, so
+       the arrow is hidden entirely rather than drawn at zero length. */
+    const hasCurrent = closed && Math.abs(a.I) > 1e-6;
+    if(hasCurrent){
+      /* Direction: DC follows the sign of I (set by polarity). AC uses the same
+         slowed reversal rate as the schematic, so the two views agree instead of
+         the arrow flickering at an unviewable 60 Hz.
+         LENGTH encodes current magnitude ONLY. For AC the magnitude is constant,
+         so the arrow keeps a fixed length and merely flips -- it must not grow
+         and shrink with the sine. */
+      const dir = dc ? (Math.sign(a.I)||1) : acFlowDir();
+      const mag = dc ? Math.min(1, Math.abs(a.I)/1.2) : 1;
       const len=w*0.34*(0.25+0.75*mag);
       const cx=w/2, ah=Math.min(26,(wallBot-wallTop)*0.28), ay=cy;
       const pulse=0.55+0.45*mag;
@@ -593,35 +855,10 @@ function drawWire(a, w, h){
       ctx.textAlign='left';
       ctx.restore();
     } else {
-      ctx.save();
-      ctx.globalAlpha=0.55;
-      ctx.strokeStyle='#9aa2ab'; ctx.fillStyle='#9aa2ab'; ctx.lineWidth=3; ctx.lineCap='round';
-      ctx.setLineDash([6,6]);
-      const cx=w/2, len=w*0.18, ay=cy;
-      ctx.beginPath(); ctx.moveTo(cx-len/2,ay); ctx.lineTo(cx+len/2,ay); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.font='700 11px Archivo,Inter,sans-serif'; ctx.textAlign='center';
-      ctx.fillText(T('driftAid')+' · '+T('noComplete'), cx, ay-14);
-      ctx.textAlign='left';
-      ctx.restore();
+      /* No current: draw NOTHING. A zero-length or dashed placeholder still
+         reads as "an arrow that is here", when the honest signal is that there
+         is no drift at all. */
     }
-  }
-  if(S.showEnergy && closed && a.Rw>0){
-    const shimmer=0.5+0.5*Math.sin(S.simTime*9);
-    const strength=Math.min(1, Math.abs(a.I)*Math.abs(a.I)*a.Rw/8)*(0.4+0.6*shimmer);
-    ctx.save();
-    ctx.strokeStyle='rgba(255,150,40,'+(0.10+0.28*strength)+')';
-    ctx.lineWidth=2;
-    for(let i=0;i<6;i++){
-      const fx=w*(0.08+i*0.15);
-      ctx.beginPath();
-      for(let yy=wallTop; yy<=wallBot; yy+=6){
-        const off=Math.sin(yy*0.09+S.simTime*10+i*1.3)*(3+7*strength);
-        if(yy===wallTop) ctx.moveTo(fx+off,yy); else ctx.lineTo(fx+off,yy);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
   }
   if(S.wireGlow>0){
     ctx.fillStyle='rgba(255,140,26,'+(S.wireGlow*0.30)+')'; ctx.fillRect(0,wallTop,w,wallBot-wallTop);
@@ -656,17 +893,90 @@ function drawArrowDir(ctx,x,y,dx,dy,color){
   ctx.beginPath(); ctx.moveTo(-5,-4); ctx.lineTo(5,0); ctx.lineTo(-5,4); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
-/* base packet + current direction for each loop leg, with normal (polarity +) DC
-   being COUNTERCLOCKWISE per the spec (outbound L->R, return R->L, up the left).
-   Polarity flip must reverse EVERY leg; AC swings with the sine. */
-function packetDir(ac, phase, pol, dx, dy){
-  if(ac) return phase>=0?1:-1;
-  let base;
-  if(dx>0.5) base=1;            /* horizontal, drawn left-to-right */
-  else if(dx<-0.5) base=-1;     /* horizontal, drawn right-to-left */
-  else if(dy<-0.5) base=1;      /* vertical, drawn top-to-bottom */
-  else base=-1;                 /* vertical, drawn bottom-to-top */
-  return base*pol;
+/* ===================== ELECTRON FLOW (schematic) =====================
+   The schematic shows ELECTRONS ONLY, never conventional current.
+   Electrons leave the NEGATIVE terminal, run through the external circuit
+   (switch, ammeter, device), and enter the POSITIVE terminal. The single loop
+   path in drawSchematic() is authored in electron order; the `ef` sign there
+   selects which way the electrons travel for DC (flips with polarity) and AC
+   (flips every half cycle).
+
+   PHASE ACCUMULATION (why not simTime*dir): if position is computed from
+   `simTime * dir`, flipping `dir` mirrors every marker to the opposite point of
+   the loop in a single frame. Under AC that happens twice a cycle, so the
+   animation reads as teleporting noise instead of a reversal. Instead we
+   integrate: phase += speed * dir * dt each frame, wrapped to [0,1). Direction
+   changes now reverse actual travel, and a marker keeps its place on the wire. */
+let ePhase = 0;          /* 0..1 position of marker 0 around the loop */
+let eLastTime = -1;      /* simTime of the previous integration step */
+const E_SLOWDOWN = 0.34; /* global speed scale: slows the whole flow so a learner
+                            can follow a marker from one terminal to the other */
+/* Walk a polyline of [x,y] points and return the point at arc-length `dist`. */
+function pointOnPath(pts, dist){
+  let rem=dist;
+  for(let i=0;i<pts.length-1;i++){
+    const ax=pts[i][0], ay=pts[i][1], bx=pts[i+1][0], by=pts[i+1][1];
+    const seg=Math.hypot(bx-ax,by-ay);
+    if(seg<=0) continue;
+    if(rem<=seg || i===pts.length-2){
+      const u=Math.min(1,Math.max(0,rem/seg));
+      return {x:ax+(bx-ax)*u, y:ay+(by-ay)*u, dx:(bx-ax)/seg, dy:(by-ay)/seg};
+    }
+    rem-=seg;
+  }
+  const last=pts[pts.length-1];
+  return {x:last[0], y:last[1], dx:1, dy:0};
+}
+function pathLength(pts){
+  let L=0;
+  for(let i=0;i<pts.length-1;i++) L+=Math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1]);
+  return L;
+}
+/* ---- AC visual time scale ------------------------------------------------
+   A real generator at 60 Hz reverses 120 times per second: invisible, and it
+   reads as flicker rather than alternation. We therefore slow the ON-SCREEN
+   reversal rate (never the physics, ammeter, % loss, or power readouts), but the
+   slowing must stay PROPORTIONAL to the spin slider so students can see that a
+   faster generator alternates faster.
+
+   Mapping (spin Hz -> apparent reversal rate of the animation):
+      1 Hz   -> ~0.5 swings/s   sluggish, easy to follow
+     60 Hz   -> ~1.7 swings/s   clearly faster, still trackable
+    120 Hz   -> ~2.6 swings/s   visibly the fastest
+   The curve is a compressed power law so the whole 1-120 Hz slider spans a
+   visible change without any setting becoming an unreadable blur. */
+const AC_VIS_MIN = 0.40;   /* apparent reversal Hz at 1 Hz spin */
+const AC_VIS_MAX = 1.50;   /* apparent reversal Hz at 120 Hz spin */
+const AC_SPIN_MIN = 1, AC_SPIN_MAX = 120;
+function acVisHz(){
+  const spin = Math.max(AC_SPIN_MIN, Math.min(AC_SPIN_MAX, S.controls.spinHz||60));
+  /* linear in spin, not log: students drag the slider and expect a steady
+     increase across its travel, and a log curve bunches almost all the visible
+     change into the bottom of the range. */
+  const t = (spin - AC_SPIN_MIN) / (AC_SPIN_MAX - AC_SPIN_MIN);
+  return AC_VIS_MIN + (AC_VIS_MAX - AC_VIS_MIN) * Math.max(0, Math.min(1, t));
+}
+function acFlowDir(){
+  return Math.sin(2*Math.PI*acVisHz()*S.simTime) >= 0 ? 1 : -1;
+}
+/* Draw electron markers travelling along `pts`. `dir` is +1 when the path is
+   listed in the direction electrons travel, -1 when it is listed backwards.
+   Position comes from the shared accumulated phase, so reversing `dir` reverses
+   real travel instead of mirroring the markers to the far side of the loop. */
+function drawElectrons(ctx, pts, dir, spd, count, color, phase){
+  const total=pathLength(pts);
+  if(total<=0) return;
+  const ph = (phase===undefined) ? ePhase : phase;
+  for(let i=0;i<count;i++){
+    const t=(((ph + i/count)%1)+1)%1;
+    const p=pointOnPath(pts, t*total);
+    drawArrowDir(ctx, p.x, p.y, p.dx*dir, p.dy*dir, color);
+  }
+}
+/* Advance the shared flow phase by this frame's motion. `dir` may be any of
+   -1/0/+1 and may reverse between frames without teleporting the markers. */
+function stepElectronPhase(dir, spd, dt){
+  ePhase = (((ePhase + spd*dir*dt)%1)+1)%1;
 }
 function drawSchematic(a, w, h){
   if(!schCtx)return;
@@ -681,42 +991,59 @@ function drawSchematic(a, w, h){
   const colDim = S.wireGlow>0.5?'#e02b1d':'#6b7382';
   const srcTopY=Y(SCH.srcY)-17, srcBotY=Y(SCH.srcY)+17;
   const closed = c.swA||c.swB||c.swC;
-  /* ---- current arrows + energy packets (under conductors) ---- */
+  /* ---- electron markers (under the conductors) ---- */
   if(closed && Math.abs(a.I)>0){
     const ac = a.src.type==='AC';
-    const phase = Math.sin(2*Math.PI*c.spinHz*S.simTime);
-    const pol = c.polarity;
     const spd=0.25+Math.min(1,Math.abs(a.I));
-    const legs=[
-      {x0:X(SCH.outX), y0:Y(SCH.srcTopT), x1:X(SCH.outX), y1:Y(SCH.outY)},
-      {x0:X(SCH.outX), y0:Y(SCH.outY),   x1:X(SCH.busX),  y1:Y(SCH.outY)},
-      {x0:X(SCH.retX), y0:Y(SCH.railY),  x1:X(SCH.outX),  y1:Y(SCH.railY)},
-      {x0:X(SCH.outX), y0:Y(SCH.railY),  x1:X(SCH.outX),  y1:Y(SCH.srcBotT)},
-    ];
-    for(const g of legs){
-      const dx=g.x1-g.x0, dy=g.y1-g.y0, len=Math.hypot(dx,dy);
-      const d=packetDir(ac,phase,pol,dx,dy);
-      const ux=dx/len, uy=dy/len;
-      for(let i=0;i<4;i++){
-        const t=((S.simTime*spd+i/4)%1);
-        drawArrowDir(ctx, g.x0+ux*t*len, g.y0+uy*t*len, d*ux, d*uy, '#FF4D26');
-      }
-    }
-    if(S.showEnergy){
-      const pNorm=Math.min(1, a.lightPower/400);
-      for(const g of legs){
-        const dx=g.x1-g.x0, dy=g.y1-g.y0, len=Math.hypot(dx,dy);
-        const d=packetDir(ac,phase,pol,dx,dy);
-        const ux=dx/len, uy=dy/len;
-        for(let i=0;i<5;i++){
-          const t=((S.simTime*(0.25+pNorm*0.9)*d+i/5)%1+1)%1;
-          const al=0.25+0.75*Math.sin(Math.PI*t);
-          ctx.fillStyle='rgba(255,214,90,'+(al*(0.35+0.65*pNorm))+')';
-          ctx.beginPath(); ctx.arc(g.x0+ux*t*len, g.y0+uy*t*len, 4.5,0,Math.PI*2); ctx.fill();
-        }
-      }
-    }
+    const ECOL='#4FC3F7';
+    /* ============ THE REAL CIRCUIT (one lap per closed switch) ============
+       The current does NOT run down the switch bus and back along the rail as a
+       bare rectangle: that would pass through rows B and C even when their
+       switches are open, which is exactly the "short circuit" jump. The current
+       can only complete a loop through a CLOSED branch, so the path is built
+       per closed switch and travels the actual conductors:
+
+         exit the source (top terminal) -> up the top run -> right along it to
+         the switch bus -> DOWN the bus to the row of this closed switch ->
+         right THROUGH the closed blade -> through the ammeter -> through the
+         building -> out to the return bus -> DOWN/UP the return bus to the
+         return rail -> left along the rail -> up into the source (bottom
+         terminal).
+
+       `ef` selects which terminal is negative, so the same path is walked in
+       reverse when the polarity flips, and reversed again each AC half cycle. */
+    const ef = ac ? acFlowDir() : -(Math.sign(a.I)||1);
+    const rowIdx=[0,1,2].filter(k=>[c.swA,c.swB,c.swC][k]);
+    /* advance the shared phase once per frame, then draw from it */
+    const dtFlow = (eLastTime<0) ? 0 : Math.max(0, Math.min(0.1, S.simTime-eLastTime));
+    eLastTime = S.simTime;
+    stepElectronPhase(ef, spd*E_SLOWDOWN, dtFlow);
+    rowIdx.forEach((k,ki)=>{
+      const by=Y(SCH.rows[k]);
+      const bIn=X(SCH.bladeIn), bOut=X(SCH.bladeOut), amm=X(SCH.ammX);
+      /* authored in the direction electrons take when the TOP terminal is
+         negative: source-top -> outbound -> down to this row -> through the
+         branch to the right -> back along the rail -> source-bottom */
+      const lap=[
+        [X(SCH.outX), Y(SCH.srcTopT)],  /* top terminal */
+        [X(SCH.outX), Y(SCH.outY)],     /* up the outbound run */
+        [X(SCH.busX), Y(SCH.outY)],     /* right along the top run */
+        [X(SCH.busX), by],              /* DOWN the switch bus to this row */
+        [bIn, by],                      /* right to the closed blade */
+        [bOut, by],                     /* through the closed blade */
+        [amm-8, by],                    /* into the ammeter */
+        [amm+8, by],                    /* out of the ammeter */
+        [X(SCH.cityL), by],             /* into the building */
+        [X(SCH.cityR), by],             /* through the building */
+        [X(SCH.retX), by],              /* out to the return bus */
+        [X(SCH.retX), Y(SCH.railY)],    /* down the return bus to the rail */
+        [X(SCH.outX), Y(SCH.railY)],    /* left along the rail */
+        [X(SCH.outX), Y(SCH.srcBotT)],  /* up into the bottom terminal */
+      ];
+      drawElectrons(ctx, lap, ef, spd, 8, ECOL, ePhase + ki*0.13);
+    });
   }
+
   /* ---- SOURCE block with two terminals ---- */
   const srcPx=X(SCH.srcX), srcPY=Y(SCH.srcY);
   ctx.fillStyle='#1d2436'; ctx.strokeStyle='#3a4258'; ctx.lineWidth=1.5;
@@ -808,35 +1135,8 @@ function drawSchematic(a, w, h){
     ctx.fillText(labels[k]+(sw[k]?'':' · open'), X(SCH.busX)-34, by-8);
     ctx.fillText('A: '+Ib.toFixed(2)+'A', amm-18, by+18);
     drawGauge(ctx, amm+34, by, Math.min(1,Ib/1.2));
-    /* closed-branch packets: bus -> blade -> ammeter -> city -> down -> return bus */
-    if(sw[k] && Math.abs(a.I)>0 && S.showEnergy){
-      const ac2=a.src.type==='AC';
-      const phase2=Math.sin(2*Math.PI*c.spinHz*S.simTime);
-      const d2=packetDir(ac2,phase2,c.polarity,1,0);
-      const pNorm=Math.min(1, a.lightPower/400);
-      const steps=[
-        [X(SCH.busX),by,bIn,by],
-        [bOut,by,amm-8,by],
-        [amm+8,by,X(SCH.cityL),by],
-        [X(SCH.retX),by,X(SCH.retX),outY],
-      ];
-      const Ls=steps.map(s=>Math.hypot(s[2]-s[0],s[3]-s[1]));
-      const total=Ls[0]+Ls[1]+Ls[2]+Ls[3];
-      for(let i=0;i<4;i++){
-        let t=((S.simTime*(0.25+pNorm*0.9)*d2+i/4)%1+1)%1;
-        let dist=t*total;
-        for(let s=0;s<4;s++){
-          if(dist<=Ls[s]||s===3){
-            const u=Math.min(1,Math.max(0,dist/Ls[s]));
-            const al=0.25+0.75*Math.sin(Math.PI*t);
-            ctx.fillStyle='rgba(255,214,90,'+(al*(0.35+0.65*pNorm))+')';
-            ctx.beginPath(); ctx.arc(steps[s][0]+(steps[s][2]-steps[s][0])*u, steps[s][1]+(steps[s][3]-steps[s][1])*u, 4,0,Math.PI*2); ctx.fill();
-            break;
-          }
-          dist-=Ls[s];
-        }
-      }
-    }
+    /* Branch flow is drawn by the per-closed-switch LAP path above, so it is
+       not drawn again here (two overlapping marker sets would read as doubled). */
   }
   /* re-draw return bus segments ON TOP of the building fills so the vertical
      return conductor stays visible (and continuous) across the city block */
@@ -845,7 +1145,7 @@ function drawSchematic(a, w, h){
   /* ---- readouts ---- */
   ctx.fillStyle='#dfe6f0'; ctx.font='700 11px Archivo,Inter,sans-serif';
   ctx.fillText(T('loss')+': '+(a.pct==null?T('noComplete'):a.pct.toFixed(1)+'%'), pad, h-24);
-  ctx.fillText(T('power')+': '+Math.round(a.lightPower), pad, h-9);
+  ctx.fillText(T('power')+': '+fmtPower(a.lightPower), pad, h-9);
 }
 function drawGauge(ctx,x,y,val){
   ctx.save(); ctx.translate(x,y);
@@ -916,7 +1216,7 @@ function buildControlsPanel(){
   p.appendChild(src);
   p.appendChild(el('label',{},T('material')));
   const mat=el('select',{id:'ctlMat'});
-  [['silver',T('silver')],['copper',T('copper')],['aluminum',T('aluminum')],['nickel',T('nickel')],['stainless',T('stainless')],['nichrome',T('nichrome')]].forEach(([v,t])=>{
+  [['silver',T('silver')],['copper',T('copper')],['aluminum',T('aluminum')],['nickel',T('nickel')],['stainless',T('stainless')],['nichrome',T('nichrome')],['ceramic',T('ceramic')]].forEach(([v,t])=>{
     const o=el('option',{value:v},t); if(c.material===v)o.selected=true; mat.appendChild(o);
   });
   mat.onchange=()=>{c.material=mat.value;};
@@ -968,7 +1268,7 @@ function updateReadouts(a){
   set('roB', a.n>0? Math.abs(a.branches.B).toFixed(2):'0.00');
   set('roC', a.n>0? Math.abs(a.branches.C).toFixed(2):'0.00');
   set('roLoss', a.pct==null?T('noComplete'):a.pct.toFixed(1)+'%');
-  set('roPow', String(Math.round(a.lightPower)));
+  set('roPow', fmtPower(a.lightPower));
   set('roTemp', S.wireTemp.toFixed(1)+'C');
   set('roDia', T('diaLabel')+' · Ø '+c_dia()+'mm');
   const pill=scope.querySelector('#roTempPill');
@@ -1035,97 +1335,99 @@ function syncLabTabs(){
   if(pJ)pJ.classList.toggle('active',!sim);
   if(sim){ setTimeout(initCanvases,0); } else { renderJournal(); }
 }
-/* ===================== JOURNAL (no collapse: all sections always visible, spec v7) ===================== */
-function fmtWhen(ts){
-  try{ return new Date(ts).toLocaleString(); }catch(e){ return ''; }
+/* ===================== JOURNAL v2: one always-editable box per prompt =====================
+   No dropdown, no Save button. Each of the 10 prompts owns a permanent textarea
+   that autosaves (debounced input, immediate blur, flush on tab hide/unload).
+   The chip row is the primary navigation: click N -> scroll to N and focus it. */
+const J_SAVE_DELAY=400;
+const jTimers={};
+const jStatus={};   /* prompt index -> 'saving' | 'saved' */
+function jPromptList(){
+  return [T('promptObs1'),T('promptObs2'),T('promptObs3'),T('promptObs4'),T('promptObs5'),
+          T('promptObs6'),T('promptObs7'),T('promptObs8'),T('promptObs9'),T('promptObs10')];
+}
+function jAnswerText(i){
+  const a=S.answers[i];
+  return (a && typeof a.text==='string') ? a.text : '';
+}
+function jSetStatus(i, state){
+  jStatus[i]=state;
+  const n=document.getElementById('jstat-'+i);
+  if(!n) return;
+  if(state==='saving'){ n.textContent=T('jSaving'); n.className='jstat saving'; }
+  else if(state==='saved'){ n.textContent=T('jSaved'); n.className='jstat saved'; }
+  else { n.textContent=''; n.className='jstat'; }
+}
+function jFlush(i){
+  if(jTimers[i]){ clearTimeout(jTimers[i]); delete jTimers[i]; }
+  const ta=document.getElementById('jta-'+i);
+  if(!ta) return;
+  const text=ta.value;
+  const prev=jAnswerText(i);
+  if(text===prev){ jSetStatus(i,'saved'); return; }
+  S.answers[i]={text:text, ts:Date.now()};
+  writeAnswers();
+  jSetStatus(i,'saved');
+  jRefreshChip(i);
+}
+function jFlushAll(){
+  for(let i=0;i<N_PROMPTS;i++){ if(jTimers[i]) jFlush(i); }
+}
+function jRefreshChip(i){
+  const chip=document.querySelector('[data-jchip="'+i+'"]');
+  if(!chip) return;
+  const has=jAnswerText(i).trim().length>0;
+  chip.classList.toggle('has',has);
+}
+function jOnInput(i){
+  jSetStatus(i,'saving');
+  if(jTimers[i]) clearTimeout(jTimers[i]);
+  jTimers[i]=setTimeout(()=>{ delete jTimers[i]; jFlush(i); }, J_SAVE_DELAY);
 }
 function renderJournal(){
-  const p=document.getElementById('paneJou'); if(!p)return; clear(p);
-  const prompts=[T('promptObs1'),T('promptObs2'),T('promptObs3'),T('promptObs4'),T('promptObs5'),
-                 T('promptObs6'),T('promptObs7'),T('promptObs8'),T('promptObs9'),T('promptObs10')];
-  /* slim sticky chip row: scroll-to navigation, chips never hide content */
+  const p=document.getElementById('paneJou'); if(!p)return;
+  /* flush anything pending before the DOM is torn down (language toggle, tab switch) */
+  jFlushAll();
+  clear(p);
+  const prompts=jPromptList();
+  /* sticky chip row: primary navigation, scrolls to the box and focuses it */
   const chips=el('div',{class:'jchips','id':'jChips'});
   prompts.forEach((q,i)=>{
-    const n=S.journal.filter(j=>j.prompt===i).length;
-    const chip=el('button',{class:'jchip'+(n?' has':''),'data-jchip':String(i)},String(i+1));
+    const has=jAnswerText(i).trim().length>0;
+    const chip=el('button',{class:'jchip'+(has?' has':''),'data-jchip':String(i)},String(i+1));
     chip.title=q;
     chip.onclick=()=>{
       const sec=document.getElementById('jsec-'+i);
-      if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
+      if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
+      const ta=document.getElementById('jta-'+i);
+      if(ta){ try{ ta.focus({preventScroll:true}); }catch(e){ ta.focus(); } }
     };
     chips.appendChild(chip);
   });
   p.appendChild(chips);
-  const comp=el('div',{class:'panel',style:'margin-bottom:12px;'});
-  comp.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},T('addObservation')));
-  const pd=el('select',{id:'jPrompt'});
-  prompts.forEach((q,i)=>pd.appendChild(el('option',{value:i},(i+1)+'. '+q)));
-  comp.appendChild(pd);
-  comp.appendChild(el('textarea',{id:'jText'}));
-  const bs=el('button',{class:'primary',style:'margin-top:6px;'},T('save'));
-  bs.onclick=()=>{ const t=document.getElementById('jText').value.trim(); if(!t)return;
-    S.journal.unshift({prompt:parseInt(pd.value,10),text:t,ts:Date.now(),edited:false}); saveAll();
-    document.getElementById('jText').value=''; renderJournal(); };
-  comp.appendChild(bs);
-  p.appendChild(comp);
-  /* entries-first: sections with entries (most recent first), then empties in numeric order */
-  const order=prompts.map((q,i)=>({i,q,n:S.journal.filter(j=>j.prompt===i).length}))
-    .sort((a,b)=> (b.n>0)-(a.n>0) || a.i-b.i);
-  order.forEach(({i,q,n})=>{
-    const sec=el('div',{class:'panel jsec',id:'jsec-'+i,style:'margin-bottom:8px;padding:4px 10px;scroll-margin-top:60px;'});
+  prompts.forEach((q,i)=>{
+    const sec=el('div',{class:'panel jsec',id:'jsec-'+i,style:'margin-bottom:8px;padding:10px 12px;scroll-margin-top:60px;'});
     const hdr=el('div',{class:'jsec-header'});
     hdr.appendChild(el('span',{class:'jsec-num'},String(i+1)));
     hdr.appendChild(el('span',{class:'jsec-title'},q));
-    hdr.appendChild(el('span',{class:'jsec-count'},n+' '+T('entriesHere')));
+    const stat=el('span',{class:'jstat','id':'jstat-'+i},'');
+    hdr.appendChild(stat);
     sec.appendChild(hdr);
-    const body=el('div',{class:'jsec-body'});
-    if(n===0){
-      /* slim one-line prompt row; no big empty box */
-      body.appendChild(el('div',{class:'jsec-empty'},T('noEntries')));
-    } else {
-      S.journal.filter(j=>j.prompt===i).forEach(j=>{ body.appendChild(buildEntryRow(j)); });
-    }
-    sec.appendChild(body);
+    const ta=el('textarea',{id:'jta-'+i,rows:'3',style:'min-height:76px;'});
+    ta.value=jAnswerText(i);
+    ta.setAttribute('aria-label',(i+1)+'. '+q);
+    ta.oninput=()=>jOnInput(i);
+    ta.onblur=()=>jFlush(i);
+    sec.appendChild(ta);
     p.appendChild(sec);
   });
   p.appendChild(buildHypothesisArea());
 }
-function buildEntryRow(j){
-  const d=el('div',{class:'jrow','data-jidx':S.journal.indexOf(j)});
-  const jts=el('div',{class:'jts'},fmtWhen(j.ts)+(j.edited?' \u00B7 '+T('editedTag'):''));
-  const jbody=el('div',{class:'jtext'},j.text);
-  const actions=el('div',{class:'jacts'});
-  const bEdit=el('button',{},T('edit'));
-  const bDel=el('button',{},T('del'));
-  actions.appendChild(bEdit); actions.appendChild(bDel);
-  d.appendChild(jts); d.appendChild(jbody); d.appendChild(actions);
-  bEdit.onclick=()=>{
-    const ta=el('textarea',{});
-    ta.value=j.text;
-    const row=el('div',{class:'j-edit-row'});
-    row.appendChild(ta);
-    const bSave=el('button',{class:'primary'},T('saveEdit'));
-    const bCancel=el('button',{},T('cancelEdit'));
-    row.appendChild(bSave); row.appendChild(bCancel);
-    d.removeChild(jbody); d.removeChild(actions); d.appendChild(row);
-    bSave.onclick=()=>{
-      const t=ta.value.trim(); if(!t)return;
-      j.text=t; j.edited=true; saveAll(); renderJournal();
-    };
-    bCancel.onclick=()=>renderJournal();
-  };
-  bDel.onclick=()=>{
-    if(bDel.dataset.armed==='1'){
-      S.journal.splice(S.journal.indexOf(j),1); saveAll(); renderJournal();
-    } else {
-      bDel.dataset.armed='1';
-      bDel.textContent=T('confirmDelete');
-      bDel.classList.add('active');
-      setTimeout(()=>{ if(bDel.isConnected){ bDel.dataset.armed=''; bDel.textContent=T('del'); bDel.classList.remove('active'); } },3000);
-    }
-  };
-  return d;
-}
+/* flush pending journal text when the tab is hidden or the page unloads */
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') jFlushAll(); });
+window.addEventListener('pagehide', jFlushAll);
+window.addEventListener('beforeunload', jFlushAll);
+
 /* ===================== HYPOTHESIS (single overarching statement, spec item 1) ===================== */
 function buildHypothesisArea(){
   const wrap=el('div',{class:'panel',style:'margin-top:4px;'});
@@ -1194,13 +1496,13 @@ function renderExport(){
     hb.appendChild(el('div',{class:'exp-hnone'},T('exportNoHyp')));
   }
   sheet.appendChild(hb);
-  /* observations table grouped by task */
-  const prompts=[T('promptObs1'),T('promptObs2'),T('promptObs3'),T('promptObs4'),T('promptObs5'),
-                 T('promptObs6'),T('promptObs7'),T('promptObs8'),T('promptObs9'),T('promptObs10')];
+  /* observations table grouped by task, read from the answer store */
+  jFlushAll();
+  const prompts=jPromptList();
   let any=false;
   prompts.forEach((q,i)=>{
-    const entries=S.journal.filter(j=>j.prompt===i);
-    if(!entries.length) return;
+    const text=jAnswerText(i);
+    if(!text.trim()) return;
     any=true;
     const tbl=el('table',{class:'exp-table'});
     const thead=el('thead',{});
@@ -1210,14 +1512,12 @@ function renderExport(){
     hr.appendChild(el('th',{class:'col-when'},T('exportColWhen')));
     thead.appendChild(hr); tbl.appendChild(thead);
     const tb=el('tbody',{});
-    /* chronological within task */
-    entries.slice().sort((x,y)=>x.ts-y.ts).forEach(j=>{
-      const tr=el('tr',{});
-      tr.appendChild(el('td',{class:'col-task'},(i+1)+'. '+q));
-      tr.appendChild(el('td',{class:'col-obs'},j.text+(j.edited?' ('+T('editedTag')+')':'')));
-      tr.appendChild(el('td',{class:'col-when'},fmtWhen(j.ts)));
-      tb.appendChild(tr);
-    });
+    const tr=el('tr',{});
+    tr.appendChild(el('td',{class:'col-task'},(i+1)+'. '+q));
+    tr.appendChild(el('td',{class:'col-obs'},text));
+    const ts=S.answers[i]?S.answers[i].ts:0;
+    tr.appendChild(el('td',{class:'col-when'},ts?fmtWhen(ts):''));
+    tb.appendChild(tr);
     tbl.appendChild(tb);
     sheet.appendChild(tbl);
   });
@@ -1226,7 +1526,6 @@ function renderExport(){
 }
 /* ---- AID TOGGLES ---- */
 document.getElementById('btnDrift').onclick=function(){S.showDrift=!S.showDrift; this.classList.toggle('active',S.showDrift);};
-document.getElementById('btnEnergy').onclick=function(){S.showEnergy=!S.showEnergy; this.classList.toggle('active',S.showEnergy);};
 /* ---- LANGUAGE ---- */
 function applyLang(){
   document.documentElement.lang=LANG;
