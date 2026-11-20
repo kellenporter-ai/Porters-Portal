@@ -93,6 +93,37 @@ const SEED_ITEMS: SeedItem[] = [
     sourceFingerprint: '/fiber-identification-lab.html',
   },
   {
+    title: 'Hair Who: Rank the Suspects from a Microscope Image',
+    description:
+      'A team elimination board for the end of the hair unit. Forty faces are on the table and the class is shown two ' +
+      'photomicrographs, a longitudinal view and a cross section, taken from one person on the board. Students cross ' +
+      'faces out as they reason, tap the magnifier to study hair shape at full size, and rank their top three ' +
+      'candidates, entering them on a group whiteboard. The round is scored in tiers: every team\'s first choice is ' +
+      'checked before anyone\'s second is, so a team that gets the right person as their first pick beats a team that ' +
+      'found them second. Rounds ramp from a straight crop that is readable at a glance to tightly coiled hair where ' +
+      'colour alone is not enough. The teacher runs the round game and reveal from a laptop while students use this ' +
+      'board. Bilingual English and Spanish, and it pairs with the Hair Analysis Lab.',
+    url: '/hair-who',
+    hostingType: 'bundled',
+    contentKind: 'tool',
+    subject: 'Forensic Science',
+    tags: [
+      'forensic-science',
+      'hair',
+      'microscopy',
+      'trace-evidence',
+      'classification',
+      'observation',
+      'interactive',
+      'bilingual',
+      'activity',
+      'chromebook-friendly',
+      'review',
+    ],
+    suggestedCategory: 'Activity',
+    sourceFingerprint: '/hair-who/index.html',
+  },
+  {
     title: 'Cuticle and Ovality Lab: Reading the Outside of a Hair',
     description:
       'The second hair lab in the Hair and Fiber unit, built to answer what the medullary index cannot. Students first ' +
@@ -358,12 +389,12 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     title: 'Power Line Lab: AC & DC in a Transmission Wire',
-    description: 'Discovery simulation for OpenSciEd P.1 Lesson 6. Students explore how electrons move through a transmission wire with battery (DC) and generator (AC) sources, vary the wire material, diameter, length, and ambient temperature (down to absolute zero), record observations in an evidence journal, and write a mechanistic hypothesis. Print-ready export of journal + hypothesis. Bilingual EN/ES.',
+    description: 'Discovery simulation for OpenSciEd P.1 Lesson 6. Students trace free electrons through a 120 V transmission circuit into a city block, flipping polarity, closing switches, and switching between DC and AC generators to compare electron drift. They vary the wire material, diameter, length, and ambient temperature and watch resistance change the current, the percent energy loss, and how hot the wire runs. At the coldest setting a ceramic (YBCO) wire becomes superconducting and the resistance vanishes. Each prompt in the evidence journal has its own autosaving box, and students finish with a mechanistic hypothesis. Print-ready export of journal + hypothesis. Bilingual EN/ES.',
     url: '/power-line-lab',
     hostingType: 'bundled',
     contentKind: 'activity',
     subject: 'Honors Physics',
-    tags: ['openscied', 'p1', 'lesson-6', 'electricity', 'circuits', 'ac-dc', 'transmission-wire', 'resistance', 'energy-loss', 'simulation', 'lab', 'bilingual'],
+    tags: ['openscied', 'p1', 'lesson-6', 'electricity', 'circuits', 'ac-dc', 'transmission-wire', 'resistance', 'energy-loss', 'superconductivity', 'electron-flow', 'simulation', 'lab', 'bilingual'],
     suggestedCategory: 'Lab',
     sourceFingerprint: '/power-line-lab.html',
   },

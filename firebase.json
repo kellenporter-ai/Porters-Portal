@@ -172,6 +172,10 @@
         "destination": "/games/guess-who-evidence.html"
       },
       {
+        "source": "/hair-who",
+        "destination": "/hair-who/index.html"
+      },
+      {
         "source": "/evidence-court",
         "destination": "/evidence-court.html"
       },

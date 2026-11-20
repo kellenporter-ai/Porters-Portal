@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hair Who | Student Board</title>
+<style>
+  :root{
+    --ink:#16130f; --ink-quiet:#5d564d; --paper:#f6f3ec; --card:#fffdf8;
+    --rule:#cdc4b4; --accent:#1f6f5c; --accent-soft:#e3efe9;
+    --x:#b3261e; --slot:#efe9dc; --shadow:0 1px 2px rgba(22,19,15,.10),0 6px 16px rgba(22,19,15,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Archivo","Helvetica Neue",Arial,sans-serif;
+    background:var(--paper); color:var(--ink);
+    -webkit-text-size-adjust:100%;
+  }
+  .lang-es{display:none}
+  body.es .lang-en{display:none}
+  body.es .lang-es{display:inline}
+  button{font-family:inherit}
+
+  header{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    padding:12px 16px; border-bottom:2px solid var(--ink);
+    background:var(--card); position:sticky; top:0; z-index:30;
+  }
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em; text-transform:uppercase}
+  header .sub{font-size:.78rem; color:var(--ink-quiet); margin-left:2px}
+  header .spacer{flex:1}
+  .btn{
+    background:var(--card); border:2px solid var(--ink); color:var(--ink);
+    padding:7px 13px; border-radius:6px; font-size:.82rem; font-weight:600;
+    cursor:pointer; letter-spacing:.01em;
+  }
+  .btn:hover{background:var(--accent-soft)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--ink); color:var(--paper)}
+  .btn.primary:hover{background:#2b2620}
+  .btn:focus-visible, .tile:focus-visible, .slot:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+
+  .strip{
+    display:flex; flex-wrap:wrap; gap:14px; align-items:baseline;
+    padding:10px 16px; background:var(--accent-soft); border-bottom:1px solid var(--rule);
+    font-size:.84rem; color:#123f34;
+  }
+  .strip b{font-weight:700}
+
+  main{padding:16px; max-width:1500px; margin:0 auto}
+
+  /* ---------- board ---------- */
+  .board{
+    display:grid; grid-template-columns:repeat(8,minmax(0,1fr));
+    gap:9px;
+  }
+  @media (max-width:1100px){ .board{grid-template-columns:repeat(6,minmax(0,1fr))} }
+  @media (max-width:820px){ .board{grid-template-columns:repeat(5,minmax(0,1fr))} }
+  @media (max-width:600px){ .board{grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px} }
+
+  .tile{
+    position:relative; background:var(--card); border:2px solid var(--rule);
+    border-radius:8px; padding:0; cursor:pointer; overflow:hidden;
+    box-shadow:var(--shadow); transition:border-color .12s, transform .12s;
+    display:block; width:100%; text-align:left;
+  }
+  .tile img{display:block; width:100%; aspect-ratio:1/1; object-fit:cover; user-select:none; pointer-events:none}
+  .tile .nm{
+    font-size:.72rem; font-weight:700; padding:4px 4px 4px 6px; letter-spacing:.01em;
+    background:var(--card); border-top:1px solid var(--rule);
+    display:flex; align-items:center; gap:2px;
+  }
+  .tile .nmtext{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .tile .xbtn{
+    flex:0 0 auto; width:19px; height:19px; line-height:16px; text-align:center;
+    border:1px solid var(--rule); border-radius:4px; color:var(--x);
+    font-size:.85rem; font-weight:700; cursor:pointer;
+  }
+  .tile .xbtn:hover{background:#fbe9e7; border-color:var(--x)}
+  .tile.crossed .xbtn{color:var(--ink-quiet); background:var(--slot)}
+  .tile.crossed .xbtn:hover{background:#fbe9e7; color:var(--x)}
+  .tile:hover{border-color:var(--ink); transform:translateY(-1px)}
+  .tile.crossed img{filter:grayscale(1) brightness(1.06) contrast(.82); opacity:.42}
+  .tile.crossed .nm{color:var(--ink-quiet); text-decoration:line-through}
+  .tile .xx{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .tile.crossed .xx{display:flex}
+  .tile .xx svg{width:74%; height:74%}
+  .tile .badge{
+    position:absolute; top:5px; left:5px; background:var(--ink); color:var(--paper);
+    font-size:.66rem; font-weight:700; padding:2px 6px; border-radius:4px; letter-spacing:.03em;
+  }
+  .tile .badge.s2{background:#8a6d1f}
+  .tile .badge.s3{background:#7a5c4a}
+  .tile .mag{
+    position:absolute; top:4px; right:4px; width:26px; height:26px; border-radius:50%;
+    background:rgba(255,253,248,.94); border:1px solid var(--rule);
+    display:flex; align-items:center; justify-content:center; cursor:zoom-in;
+  }
+  .tile .mag svg{width:16px; height:16px}
+  .tile .mag:hover{background:#fff; border-color:var(--ink)}
+  .tile.crossed .mag{opacity:.45}
+
+  /* ---------- rank bar ---------- */
+  .rankbar{
+    display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+    margin-top:18px; padding-top:16px; border-top:2px solid var(--ink);
+  }
+  .rankbar h3{margin:0 0 6px; font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-quiet)}
+  .slot{
+    display:flex; align-items:center; gap:9px; min-height:64px; width:100%;
+    background:var(--slot); border:2px dashed var(--rule); border-radius:8px;
+    padding:7px; cursor:pointer; text-align:left;
+  }
+  .slot.has{border-style:solid; border-color:var(--ink); background:var(--card)}
+  .slot.stage1.has{border-left:8px solid var(--ink)}
+  .slot.stage2.has{border-left:8px solid #8a6d1f}
+  .slot.stage3.has{border-left:8px solid #7a5c4a}
+  .slot img{width:52px; height:52px; border-radius:6px; object-fit:cover; display:none}
+  .slot.has img{display:block}
+  .slot .empty{font-size:.78rem; color:var(--ink-quiet); font-style:italic}
+  .slot .who{font-weight:700; font-size:.86rem}
+  .slot .tier{font-size:.68rem; color:var(--ink-quiet); display:block; margin-top:1px}
+
+  /* ---------- zoom overlay ---------- */
+  .zoom{
+    position:fixed; inset:0; background:rgba(22,19,15,.9); display:none;
+    align-items:center; justify-content:center; padding:18px; z-index:60;
+  }
+  .zoom.on{display:flex}
+  .zoom .frame{position:relative; background:var(--card); border-radius:10px; padding:12px; max-width:min(860px,94vw); box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .zoom img{display:block; width:100%; max-height:74vh; object-fit:contain; border-radius:6px; background:#eee}
+  .zoom .zname{font-size:1.1rem; font-weight:700; margin:9px 2px 2px}
+  .zoom .zrow{display:flex; gap:9px; flex-wrap:wrap; margin-top:10px}
+  .zoom .close{
+    position:absolute; top:-14px; right:-14px; width:36px; height:36px; border-radius:50%;
+    border:2px solid var(--ink); background:var(--card); font-size:1.1rem; cursor:pointer; line-height:1;
+  }
+  .zoom .hint{font-size:.76rem; color:var(--ink-quiet); margin-top:8px; max-width:44ch}
+
+  footer{padding:18px 16px 34px; color:var(--ink-quiet); font-size:.76rem; max-width:1500px; margin:0 auto}
+  footer p{margin:0 0 6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Hair Who <span class="sub">· <span class="lang-en">Student board</span><span class="lang-es">Tablero del estudiante</span></span></h1>
+  </div>
+  <span class="spacer"></span>
+  <button class="btn" id="btn-reset" type="button">
+    <span class="lang-en">Reset round</span><span class="lang-es">Reiniciar ronda</span>
+  </button>
+  <button class="btn" id="btn-lang" type="button" aria-label="Switch language">ES</button>
+</header>
+
+<div class="strip">
+  <span><b><span class="lang-en">Cross out</span><span class="lang-es">Tacha</span></b>:
+    <span class="lang-en">tap the small × on a face to remove it from your thinking.</span>
+    <span class="lang-es">toca la × pequeña de una cara para quitarla de tu razonamiento.</span></span>
+  <span><b><span class="lang-en">Enlarge</span><span class="lang-es">Amplía</span></b>:
+    <span class="lang-en">tap the magnifier on any face to study the hair closely.</span>
+    <span class="lang-es">toca la lupa de cualquier cara para estudiar el cabello de cerca.</span></span>
+  <span><b><span class="lang-en">Rank</span><span class="lang-es">Clasifica</span></b>:
+    <span class="lang-en">tap the face itself to place it in the next slot. Tap a slot to clear it.</span>
+    <span class="lang-es">toca la cara misma para colocarla en el siguiente espacio. Toca un espacio para vaciarlo.</span></span>
+</div>
+
+<main>
+  <div class="board" id="board"></div>
+
+  <div class="rankbar">
+    <div>
+      <h3><span class="lang-en">First choice</span><span class="lang-es">Primera opción</span></h3>
+      <button class="slot stage1" data-slot="0" type="button">
+        <img alt=""><span class="empty"><span class="lang-en">Tap to place</span><span class="lang-es">Toca para colocar</span></span>
+        <span><span class="who"></span><span class="tier"></span></span>
+      </button>
+    </div>
+    <div>
+      <h3><span class="lang-en">Second choice</span><span class="lang-es">Segunda opción</span></h3>
+      <button class="slot stage2" data-slot="1" type="button">
+        <img alt=""><span class="empty"><span class="lang-en">Tap to place</span><span class="lang-es">Toca para colocar</span></span>
+        <span><span class="who"></span><span class="tier"></span></span>
+      </button>
+    </div>
+    <div>
+      <h3><span class="lang-en">Third choice</span><span class="lang-es">Tercera opción</span></h3>
+      <button class="slot stage3" data-slot="2" type="button">
+        <img alt=""><span class="empty"><span class="lang-en">Tap to place</span><span class="lang-es">Toca para colocar</span></span>
+        <span><span class="who"></span><span class="tier"></span></span>
+      </button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p><span class="lang-en">This board is a thinking tool. Copy your final ranking onto your group whiteboard when you are ready.</span>
+     <span class="lang-es">Este tablero es una herramienta para pensar. Copia tu clasificación final en el pizarrón de tu grupo cuando estés listo.</span></p>
+  <p><span class="lang-en">Nothing here is turned in.</span><span class="lang-es">Nada de esto se entrega.</span></p>
+</footer>
+
+<div class="zoom" id="zoom">
+  <div class="frame">
+    <button class="close" id="z-close" type="button" aria-label="Close">×</button>
+    <img id="z-img" alt="">
+    <div class="zname" id="z-name"></div>
+    <div class="zrow">
+      <button class="btn primary" id="z-cross" type="button">
+        <span class="lang-en">Cross out</span><span class="lang-es">Tachar</span>
+      </button>
+      <button class="btn" id="z-close2" type="button">
+        <span class="lang-en">Close</span><span class="lang-es">Cerrar</span>
+      </button>
+    </div>
+    <div class="hint">
+      <span class="lang-en">Look at the whole head, not just the colour: pattern, how tight the shape is, how it falls.</span>
+      <span class="lang-es">Mira toda la cabeza, no solo el color: el patrón, qué tan cerrada es la forma, cómo cae.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* The board. Names are the only data shipped to students: no hair type, no
+   answer, nothing that reveals which faces are round candidates. */
+const PEOPLE = [
+ {id:"R1C1",n:"Marcus"},{id:"R1C2",n:"Jenna"},{id:"R1C3",n:"Sofia"},{id:"R1C4",n:"Daniel"},
+ {id:"R1C5",n:"Andre"},{id:"R1C6",n:"Earl"},{id:"R1C7",n:"Ruth"},{id:"R1C8",n:"Chloe"},
+ {id:"R2C1",n:"Fiona"},{id:"R2C2",n:"Priya"},{id:"R2C3",n:"Maya"},{id:"R2C4",n:"Lena"},
+ {id:"R2C5",n:"Walter"},{id:"R2C6",n:"Grace"},{id:"R2C7",n:"Aisha"},{id:"R2C8",n:"Zoe"},
+ {id:"R3C1",n:"Denise"},{id:"R3C2",n:"Emily"},{id:"R3C3",n:"Mei"},{id:"R3C4",n:"Darius"},
+ {id:"R3C5",n:"Rosa"},{id:"R3C6",n:"Omar"},{id:"R3C7",n:"Hannah"},{id:"R3C8",n:"Yuki"},
+ {id:"R4C1",n:"Tasha"},{id:"R4C2",n:"Caleb"},{id:"R4C3",n:"Nina"},{id:"R4C4",n:"Peter"},
+ {id:"R4C5",n:"Monica"},{id:"R4C6",n:"Samir"},{id:"R4C7",n:"Leo"},{id:"R4C8",n:"Gus"},
+ {id:"R5C1",n:"Jamal"},{id:"R5C2",n:"Terrence"},{id:"R5C3",n:"Lily"},{id:"R5C4",n:"Harold"},
+ {id:"R5C5",n:"Carmen"},{id:"R5C6",n:"Ava"},{id:"R5C7",n:"Kane"},{id:"R5C8",n:"Bella"}
+];
+
+const FACE = id => "/hair-who/faces/" + id + ".jpg";
+
+const state = { crossed: new Set(), ranks: [null,null,null] };
+let pending = null;      // face waiting to be placed in a slot
+let zoomId = null;
+
+/* ---------- board ---------- */
+function tile(p){
+  const t = document.createElement("button");
+  t.type = "button";
+  t.className = "tile";
+  t.dataset.id = p.id;
+  t.setAttribute("aria-pressed", "false");
+  t.setAttribute("aria-label", p.n);
+  t.innerHTML =
+    '<div class="badge" data-badge="" hidden></div>' +
+    '<span class="mag" data-mag role="button" aria-label="Enlarge">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="#16130f" stroke-width="2.4"/><path d="M15.4 15.4 L21 21" stroke="#16130f" stroke-width="2.6" stroke-linecap="round"/></svg>' +
+    '</span>' +
+    '<img src="' + FACE(p.id) + '" alt="" draggable="false" loading="lazy">' +
+    '<div class="xx" aria-hidden="true"><svg viewBox="0 0 100 100">' +
+      '<path d="M16 16 L84 84 M84 16 L16 84" stroke="#b3261e" stroke-width="11" stroke-linecap="round" fill="none"/>' +
+    '</svg></div>' +
+    '<div class="nm"><span class="nmtext">' + p.n + '</span>' +
+      '<span class="xbtn" data-x role="button" aria-label="Cross out">×</span></div>';
+  return t;
+}
+
+function render(){
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  PEOPLE.forEach(p => board.appendChild(tile(p)));
+  document.querySelectorAll(".tile").forEach(t => {
+    const id = t.dataset.id;
+    const slot = state.ranks.indexOf(id);
+    t.querySelector(".badge").hidden = slot < 0;
+    if (slot >= 0){
+      const b = t.querySelector(".badge");
+      b.textContent = "#" + (slot + 1);
+      b.className = "badge" + (slot === 1 ? " s2" : slot === 2 ? " s3" : "");
+    }
+    if (state.crossed.has(id)) t.classList.add("crossed");
+    t.setAttribute("aria-pressed", state.crossed.has(id) ? "true" : "false");
+  });
+  renderSlots();
+}
+
+function renderSlots(){
+  document.querySelectorAll(".slot").forEach(s => {
+    const i = Number(s.dataset.slot);
+    const id = state.ranks[i];
+    const img = s.querySelector("img");
+    const empty = s.querySelector(".empty");
+    const who = s.querySelector(".who");
+    const tier = s.querySelector(".tier");
+    const person = id ? PEOPLE.find(p => p.id === id) : null;
+    s.classList.toggle("has", !!person);
+    if (person){
+      img.src = FACE(person.id); img.alt = person.n;
+      empty.style.display = "none";
+      who.textContent = person.n;
+      tier.innerHTML = '<span class="lang-en">Pick ' + (i+1) + '</span><span class="lang-es">Opción ' + (i+1) + '</span>';
+      s.setAttribute("aria-label", "Pick " + (i+1) + ": " + person.n);
+    } else {
+      img.removeAttribute("src"); img.alt = "";
+      empty.style.display = "";
+      who.textContent = ""; tier.innerHTML = "";
+      s.setAttribute("aria-label", "Empty slot " + (i+1));
+    }
+  });
+}
+
+function place(id){
+  // placing the same face again in a different slot must not duplicate it
+  const existing = state.ranks.indexOf(id);
+  if (existing >= 0){ return; }
+  const free = state.ranks.indexOf(null);
+  if (free < 0){ return; }
+  state.ranks[free] = id;
+  pending = null;
+  render();
+}
+
+/* ---------- interaction ---------- */
+/* Three distinct targets inside a face: the magnifier zooms, the X button crosses
+   it out, and the face itself ranks it. Crossing out is the most frequent action
+   on a real board, so it gets its own always-visible button rather than a swipe. */
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-mag]")){
+    const tile = e.target.closest(".tile");
+    if (tile) openZoom(tile.dataset.id);
+    return;
+  }
+  if (e.target.closest("[data-x]")){
+    const tile = e.target.closest(".tile");
+    if (tile) toggleCross(tile.dataset.id);
+    return;
+  }
+  const tile = e.target.closest(".tile");
+  if (tile){
+    place(tile.dataset.id);
+    return;
+  }
+  const slot = e.target.closest(".slot");
+  if (slot){
+    const i = Number(slot.dataset.slot);
+    state.ranks[i] = null;
+    render();
+  }
+});
+
+function toggleCross(id){
+  if (state.crossed.has(id)) state.crossed.delete(id);
+  else state.crossed.add(id);
+  render();
+}
+
+function place(id){
+  if (state.ranks.indexOf(id) >= 0) return;   // already ranked
+  const free = state.ranks.indexOf(null);
+  if (free < 0) return;                        // all three slots taken
+  state.ranks[free] = id;
+  render();
+}
+
+function openZoom(id){
+  zoomId = id;
+  const p = PEOPLE.find(q => q.id === id);
+  document.getElementById("z-img").src = FACE(id);
+  document.getElementById("z-img").alt = p.n;
+  document.getElementById("z-name").textContent = p.n;
+  document.getElementById("zoom").classList.add("on");
+}
+function closeZoom(){
+  document.getElementById("zoom").classList.remove("on");
+  zoomId = null;
+}
+
+document.getElementById("z-close").addEventListener("click", closeZoom);
+document.getElementById("z-close2").addEventListener("click", closeZoom);
+document.getElementById("zoom").addEventListener("click", e => {
+  if (e.target.id === "zoom") closeZoom();
+});
+document.getElementById("z-cross").addEventListener("click", () => {
+  if (!zoomId) return;
+  if (state.crossed.has(zoomId)) state.crossed.delete(zoomId);
+  else state.crossed.add(zoomId);
+  render();
+  closeZoom();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.getElementById("zoom").classList.contains("on")) closeZoom();
+});
+
+/* ---------- controls ---------- */
+document.getElementById("btn-reset").addEventListener("click", () => {
+  state.crossed = new Set();
+  state.ranks = [null,null,null];
+  pending = null;
+  render();
+});
+
+document.getElementById("btn-lang").addEventListener("click", e => {
+  const es = document.body.classList.toggle("es");
+  e.currentTarget.textContent = es ? "EN" : "ES";
+  document.documentElement.lang = es ? "es" : "en";
+});
+
+render();
+</script>
+</body>
+</html>

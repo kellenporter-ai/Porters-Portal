@@ -65,6 +65,7 @@ const CLEAN_URL_REWRITES = new Set([
   "/ap1-newtons-second-law-practice",
   "/linearization-practice",
   "/guess-who",
+  "/hair-who",
   "/energy-sources",
   "/openscied-hub",
   "/l4-blackout-detective",
