@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T12:59:51.897Z",
+  "generatedAt": "2026-11-20T00:23:48.543Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -20,6 +20,7 @@
     "/ap1-newtons-second-law-practice": "/ap1-newtons-second-law-practice.html",
     "/linearization-practice": "/linearization-practice.html",
     "/guess-who": "/games/guess-who-evidence.html",
+    "/hair-who": "/hair-who/index.html",
     "/evidence-court": "/evidence-court.html",
     "/seven-s": "/seven-s/index.html",
     "/the-break-in": "/the-break-in/index.html",
@@ -58,6 +59,7 @@
     "/evidence-types",
     "/forensic-branches",
     "/friction-lab",
+    "/hair-who",
     "/infrastructure-tagging",
     "/latent-print-lab",
     "/power-strip-reading",

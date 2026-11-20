@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T12:59:51.860Z",
+  "generatedAt": "2026-11-20T00:23:48.505Z",
   "items": [
     {
       "path": "/ap1-2d-kinematics-practice.html",
@@ -182,6 +182,11 @@
       "sizeBytes": 98127
     },
     {
+      "path": "/hair-who/",
+      "fingerprint": "/hair-who/",
+      "sizeBytes": 17757
+    },
+    {
       "path": "/infrastructure-tagging/",
       "fingerprint": "/infrastructure-tagging/",
       "sizeBytes": 5057778
@@ -234,7 +239,7 @@
     {
       "path": "/power-line-lab.html",
       "fingerprint": "/power-line-lab.html",
-      "sizeBytes": 65711
+      "sizeBytes": 82512
     },
     {
       "path": "/power-strip-model-rubric.html",
