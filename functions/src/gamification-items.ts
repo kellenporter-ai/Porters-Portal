@@ -4,6 +4,7 @@ import {
   verifyAuth,
   verifyAdmin,
   buildXPUpdates,
+  activeBoostMultiplier,
   getProfilePaths,
   getProfileData,
   MAX_XP_PER_SUBMISSION,
@@ -288,10 +289,33 @@ function getDisenchantValue(item: LootItem): number {
 
 // ── Cloud Functions ─────────────────────────────────────────────────
 
+/**
+ * Resolve the XP figure the student actually receives: the requested amount
+ * multiplied by their active boost, for positive amounts only.
+ *
+ * WHY THIS EXISTS: buildXPUpdates applies `gamification.activeBoosts` itself, so
+ * any cap checked against the PRE-boost request bounds the wrong number. A 500 XP
+ * award at 1.5x pays 750 while a 500-cap sees 500. Callers must clamp this figure
+ * and then pass `{ applyBoosts: false }` so the boost is not applied twice.
+ *
+ * Negative amounts (admin deductions) are never boosted — this mirrors
+ * buildXPUpdates' own `safeXpAmount > 0 ? ... : safeXpAmount` semantics exactly.
+ */
+export function effectiveXpAmount(xpAmount: number, boostMultiplier: number): number {
+  if (!(xpAmount > 0)) return xpAmount;
+  const boost = Number.isFinite(boostMultiplier) && boostMultiplier > 1 ? boostMultiplier : 1;
+  return Math.round(xpAmount * boost);
+}
+
 // Pure seam expressing the awardXP cap policy (Audit Phase 2.1) — extracted so the
 // per-submission cap, 5s rate limit, and 5000/day cap are unit-testable without an
 // emulator. MUST stay identical to the inline checks in awardXP below; if the
 // handler's cap logic changes, update this function and its tests together.
+//
+// `xpAmount` here is the EFFECTIVE (post-boost) figure — the amount the student
+// will actually be credited. Callers must resolve the boost first via
+// effectiveXpAmount(); passing the pre-boost request re-opens the bypass where a
+// 1.5x boost paid 750 against a 500 cap and 7500/day against a 5000 ledger.
 export function awardXpCaps(opts: {
   xpAmount: number;
   isAdminAdjustment: boolean;
@@ -338,6 +362,10 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
       throw new HttpsError("invalid-argument", "Admin XP adjustments are limited to ±50000 per call.");
     }
   }
+  // Cheap pre-filter only: an UNSIGNED request can never exceed the cap once
+  // boosted, because no boost in the shop is below 1x. The authoritative
+  // per-award check runs inside the transaction against the effective
+  // (post-boost) figure, which is the number the student is credited.
   if (!isAdminAdjustment && Math.abs(xpAmount) > MAX_XP_PER_SUBMISSION) {
     throw new HttpsError("invalid-argument", `Maximum XP per award is ${MAX_XP_PER_SUBMISSION}.`);
   }
@@ -354,6 +382,23 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     ]);
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
 
+    const data = userSnap.data()!;
+    // Resolve the boost BEFORE the caps. buildXPUpdates applies activeBoosts
+    // itself, so clamping the pre-boost request would bound the wrong number:
+    // a 500 XP award at 1.5x pays 750 while a 500 cap sees 500, and the daily
+    // ledger records 5000 while up to 7500 is credited. Negative amounts
+    // (admin deductions) are never boosted — effectiveXpAmount mirrors
+    // buildXPUpdates' own `safeXpAmount > 0` semantics.
+    const boostMultiplier = activeBoostMultiplier(data.gamification?.activeBoosts, Date.now());
+    const effectiveXp = effectiveXpAmount(xpAmount, boostMultiplier);
+
+    // Authoritative per-award cap: the EFFECTIVE (post-boost) figure, because
+    // that is what the student is credited. A 500 request at 1.5x is 750 and
+    // must be rejected here, not only against the raw 500 request.
+    if (!isAdminAdjustment && Math.abs(effectiveXp) > MAX_XP_PER_SUBMISSION) {
+      throw new HttpsError("invalid-argument", `Maximum XP per award is ${MAX_XP_PER_SUBMISSION}.`);
+    }
+
     // Rate limiting: 5-second gap + 5000 XP/day cap (skipped for admin-targeted adjustments)
     const now = Date.now();
     const today = new Date().toISOString().slice(0, 10);
@@ -366,13 +411,13 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
       const dayKey = rateData.dayKey || "";
       const dailyTotal = typeof rateData.dailyTotal === "number" ? rateData.dailyTotal : 0;
       const currentDaily = dayKey === today ? dailyTotal : 0;
-      if (currentDaily + xpAmount > 5000) {
+      if (currentDaily + effectiveXp > 5000) {
         throw new HttpsError("resource-exhausted", "Daily XP cap of 5000 reached.");
       }
     }
 
-    const data = userSnap.data()!;
-    const result = buildXPUpdates(data, xpAmount, classType);
+    // applyBoosts:false — the boost is already baked into effectiveXp above.
+    const result = buildXPUpdates(data, effectiveXp, classType, undefined, { applyBoosts: false });
     const achievementResult = checkAndUnlockAchievements(data, result.updates, true);
     const finalUpdates = { ...result.updates, ...achievementResult.rewardUpdates };
     t.update(userRef, finalUpdates);
@@ -380,7 +425,8 @@ export const awardXP = onCall({ memory: "256MiB", timeoutSeconds: 60 }, async (r
     const currentDailyTotal = (rateData?.dayKey === today && typeof rateData?.dailyTotal === "number") ? rateData.dailyTotal : 0;
     t.set(rateLimitRef, {
       lastAwardAt: now,
-      dailyTotal: currentDailyTotal + xpAmount,
+      // Ledger records what was actually credited, not the pre-boost request.
+      dailyTotal: currentDailyTotal + effectiveXp,
       dayKey: today,
     });
 
