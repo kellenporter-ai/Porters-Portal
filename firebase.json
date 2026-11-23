@@ -300,6 +300,10 @@
         "destination": "/cuticle-ovality-lab/cuticle-ovality-lab.html"
       },
       {
+        "source": "/energy-flow-questionnaire",
+        "destination": "/energy-flow-questionnaire.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

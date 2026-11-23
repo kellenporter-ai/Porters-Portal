@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T00:23:48.505Z",
+  "generatedAt": "2026-11-23T19:06:59.981Z",
   "items": [
     {
       "path": "/ap1-2d-kinematics-practice.html",
@@ -80,6 +80,11 @@
       "path": "/electrostatic-rubbing.html",
       "fingerprint": "/electrostatic-rubbing.html",
       "sizeBytes": 31902
+    },
+    {
+      "path": "/energy-flow-questionnaire.html",
+      "fingerprint": "/energy-flow-questionnaire.html",
+      "sizeBytes": 32635
     },
     {
       "path": "/energy-sources.html",
@@ -275,6 +280,11 @@
       "path": "/power-strip-reading/section-5-light-bulbs.html",
       "fingerprint": "/power-strip-reading/section-5-light-bulbs.html",
       "sizeBytes": 14473
+    },
+    {
+      "path": "/predict-your-hair-rubric.html",
+      "fingerprint": "/predict-your-hair-rubric.html",
+      "sizeBytes": 56533
     },
     {
       "path": "/privacy.html",

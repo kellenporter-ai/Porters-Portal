@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Doesn't Travel in the Wires | Physics</title>
+<style>
+/* ============================================================
+   a-lign design language. Paper, ink, dashed frames.
+   ONE accent (#FF4D26), chrome only. No gradients.
+   ============================================================ */
+:root{
+  color-scheme: light;
+  --paper:#F4F3EF;
+  --paper-deep:#EDEBE5;
+  --ink:#1A1A1A;
+  --ink-soft:#4A4A47;
+  --ink-quiet:#64635F;
+  --ink-held:rgba(26,26,26,.06);
+  --accent:#FF4D26;
+  --dash:1px dashed rgba(26,26,26,.38);
+  --dash-strong:2px dashed rgba(26,26,26,.5);
+  --display:'Archivo','Helvetica Neue',Arial,'Segoe UI',system-ui,sans-serif;
+  --body:'Inter','Helvetica Neue',Arial,'Segoe UI',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--body);font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:900px;margin:0 auto;padding:0 28px 96px}
+
+/* ---------- bilingual span pairs ---------- */
+.lang-es{display:none}
+html[lang="es"] .lang-en{display:none}
+html[lang="es"] .lang-es{display:inline}
+p > .lang-en:only-child,p > .lang-es:only-child,
+li > .lang-en:only-child,li > .lang-es:only-child,
+h1 > .lang-en:only-child,h1 > .lang-es:only-child,
+h2 > .lang-en:only-child,h2 > .lang-es:only-child{display:block}
+html[lang="es"] p > .lang-en:only-child,
+html[lang="es"] li > .lang-en:only-child,
+html[lang="es"] h1 > .lang-en:only-child,
+html[lang="es"] h2 > .lang-en:only-child{display:none}
+html[lang="es"] p > .lang-es:only-child,
+html[lang="es"] li > .lang-es:only-child,
+html[lang="es"] h1 > .lang-es:only-child,
+html[lang="es"] h2 > .lang-es:only-child{display:block}
+#btnLang > span{display:inline}
+
+/* ---------- header ---------- */
+header{padding:44px 0 26px;border-bottom:1px solid rgba(26,26,26,.14)}
+.eyebrow{
+  font-family:var(--display);font-size:11px;font-weight:700;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+  margin-bottom:14px;
+}
+h1{
+  font-family:var(--display);font-size:38px;line-height:1.12;
+  font-weight:800;letter-spacing:-.02em;max-width:20ch;
+}
+.sub{
+  margin-top:14px;font-size:18px;color:var(--ink-soft);max-width:58ch;
+}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+#btnLang{
+  font-family:var(--display);font-size:12px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  background:transparent;border:1px solid rgba(26,26,26,.38);
+  color:var(--ink);padding:9px 15px;cursor:pointer;white-space:nowrap;
+  min-width:60px;
+}
+#btnLang:hover{border-color:var(--ink);background:var(--ink-held)}
+#btnLang:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- cards ---------- */
+.card{
+  border:1px solid rgba(26,26,26,.16);background:#FAF9F6;
+  padding:26px 26px 24px;margin:26px 0;
+}
+.card h2{
+  font-family:var(--display);font-size:20px;font-weight:700;
+  letter-spacing:-.01em;margin-bottom:10px;
+}
+.card p{color:var(--ink-soft);margin-bottom:12px}
+.card p:last-child{margin-bottom:0}
+
+/* video card */
+.video-card{border:var(--dash-strong);background:transparent}
+.video-meta{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.pill{
+  font-family:var(--display);font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-quiet);
+  border:1px solid rgba(26,26,26,.24);padding:4px 9px;
+}
+.flink{
+  display:inline-block;font-family:var(--display);font-size:15px;font-weight:700;
+  color:var(--ink);text-decoration:none;border-bottom:2px solid var(--accent);
+  padding-bottom:2px;
+}
+.flink:hover{background:var(--ink-held)}
+.flink:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* ---------- name ---------- */
+label{display:block;font-family:var(--display);font-size:12px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-quiet);margin-bottom:8px}
+input[type="text"]{
+  width:100%;max-width:420px;font-family:var(--body);font-size:17px;
+  color:var(--ink);background:#fff;border:1px solid rgba(26,26,26,.38);
+  padding:11px 13px;
+}
+input[type="text"]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--ink)}
+
+/* ---------- questions ---------- */
+.guidance{
+  border-left:3px solid var(--accent);padding:12px 0 12px 16px;
+  margin:26px 0 8px;color:var(--ink-soft);font-size:16px;
+}
+.q{
+  border-top:1px solid rgba(26,26,26,.16);padding:26px 0 24px;
+}
+.q:first-of-type{border-top:none}
+.q-head{display:flex;gap:14px;align-items:baseline;margin-bottom:12px}
+.q-num{
+  font-family:var(--display);font-size:13px;font-weight:800;
+  letter-spacing:.08em;color:var(--accent);flex:0 0 auto;
+}
+.q-text{font-size:17px;line-height:1.55;max-width:66ch}
+.q-text strong{font-weight:700}
+.q-text em{font-style:italic}
+textarea{
+  width:100%;font-family:var(--body);font-size:16px;line-height:1.55;
+  color:var(--ink);background:#fff;border:1px solid rgba(26,26,26,.38);
+  padding:12px 14px;resize:vertical;min-height:104px;
+}
+textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--ink)}
+textarea::placeholder{color:#8A8984}
+
+/* ---------- save indicator ----------
+   PortalBridge writes into #save-status automatically when embedded.
+   Standalone, our own autosave writes the same element. */
+.savebar{
+  display:flex;align-items:center;gap:9px;
+  font-family:var(--display);font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-quiet);
+  min-height:18px;margin-top:14px;
+}
+#save-status{color:var(--ink-quiet)}
+.savebar .savedot{width:6px;height:6px;border-radius:50%;
+  background:rgba(26,26,26,.28);flex:0 0 auto} 
+
+/* ---------- turn-in ---------- */
+#turnin{border:var(--dash-strong);background:transparent;padding:30px 26px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.btn-primary{
+  font-family:var(--display);font-size:14px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:var(--accent);color:#fff;border:1px solid var(--accent);
+  padding:13px 26px;cursor:pointer;
+}
+.btn-primary:hover{filter:brightness(.92)}
+.btn-primary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btn-ghost{
+  font-family:var(--display);font-size:13px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;color:var(--ink-quiet);
+  border:1px solid rgba(26,26,26,.3);padding:13px 20px;cursor:pointer;
+}
+.btn-ghost:hover{color:var(--ink);border-color:var(--ink)}
+.btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* inline messages */
+.msg{
+  display:none;margin-top:14px;padding:12px 14px;font-size:15px;
+  border-left:3px solid var(--accent);background:#FBF1EE;color:var(--ink);
+}
+.msg.show{display:block}
+.msg.info{border-left-color:var(--ink-quiet);background:var(--paper-deep)}
+
+/* fallback panel */
+#fallback{display:none;margin-top:22px;border-top:1px solid rgba(26,26,26,.16);padding-top:20px}
+#fallback.show{display:block}
+#fallbackText{
+  width:100%;min-height:220px;font-family:ui-monospace,'SF Mono',Menlo,monospace;
+  font-size:13px;line-height:1.6;color:var(--ink);background:#fff;
+  border:1px solid rgba(26,26,26,.3);padding:14px;resize:vertical;
+}
+
+/* confirm dialog */
+#confirmWrap{
+  display:none;position:fixed;inset:0;background:rgba(26,26,26,.44);
+  z-index:50;align-items:center;justify-content:center;padding:24px;
+}
+#confirmWrap.show{display:flex}
+#confirmBox{
+  background:var(--paper);border:1px solid var(--ink);max-width:460px;
+  padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.2);
+}
+#confirmBox h3{font-family:var(--display);font-size:19px;font-weight:700;margin-bottom:12px}
+#confirmBox p{color:var(--ink-soft);font-size:16px;margin-bottom:22px}
+#confirmBox .actions{margin-top:0}
+
+@media (max-width:640px){
+  h1{font-size:28px}
+  .topbar{flex-direction:column}
+  .wrap{padding:0 18px 72px}
+  .card{padding:20px 18px}
+}
+@media print{
+  #btnLang,#turnin,#confirmWrap,.savebar{display:none !important}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">
+        <span class="lang-en">Physics &middot; Video Investigation</span>
+        <span class="lang-es">F&iacute;sica &middot; Investigaci&oacute;n en video</span>
+      </div>
+      <h1>
+        <span class="lang-en">Energy Doesn't Travel in the Wires</span>
+        <span class="lang-es">La energ&iacute;a no viaja por los cables</span>
+      </h1>
+      <p class="sub">
+        <span class="lang-en">A common misconception, examined. Answer as you watch, not before.</span>
+        <span class="lang-es">Una idea equivocada muy com&uacute;n, examinada. Responde mientras ves el video, no antes.</span>
+      </p>
+    </div>
+    <button id="btnLang" type="button" aria-live="polite">
+      <span class="lang-en">ES</span><span class="lang-es">EN</span>
+    </button>
+  </div>
+</header>
+
+<section class="card video-card">
+  <div class="video-meta">
+    <span class="pill">Veritasium</span>
+    <span class="pill"><span class="lang-en">14 min</span><span class="lang-es">14 min</span></span>
+  </div>
+  <h2>
+    <span class="lang-en">The Biggest Misconception About Electricity</span>
+    <span class="lang-es">El mayor malentendido sobre la electricidad</span>
+  </h2>
+  <p>
+    <span class="lang-en">Mr. Porter is playing this video for the class. Use the link only if you want to go back and rewatch a part. You do not need to play it on your own device.</span>
+    <span class="lang-es">El Sr. Porter est&aacute; reproduciendo este video para la clase. Usa el enlace solo si quieres regresar a ver una parte otra vez. No necesitas reproducirlo en tu propio dispositivo.</span>
+  </p>
+  <p>
+    <a class="flink" href="https://www.youtube.com/watch?v=bHIhgxav9LY" target="_blank" rel="noopener noreferrer">
+      <span class="lang-en">Watch the video</span>
+      <span class="lang-es">Ver el video</span>
+    </a>
+  </p>
+</section>
+
+<section class="card">
+  <label for="studentName">
+    <span class="lang-en">Your name</span>
+    <span class="lang-es">Tu nombre</span>
+  </label>
+  <input type="text" id="studentName" autocomplete="name" spellcheck="false"
+    placeholder="Firstname Lastname">
+  <div class="savebar" aria-live="polite" aria-atomic="true">
+    <span class="savedot"></span>
+    <span id="save-status"></span>
+  </div>
+</section>
+
+<p class="guidance">
+  <span class="lang-en">Read all ten questions first. Then answer each one when the video reaches that part. Aim for 2 to 4 sentences. Write what you actually think. Nothing here is marked right or wrong.</span>
+  <span class="lang-es">Lee las diez preguntas primero. Luego responde cada una cuando el video llegue a esa parte. Apunta a 2 a 4 oraciones. Escribe lo que realmente piensas. Nada aqu&iacute; se marca como correcto o incorrecto.</span>
+</p>
+
+<div id="questions"></div>
+
+<section id="turnin">
+  <h2>
+    <span class="lang-en">Turn in your answers</span>
+    <span class="lang-es">Entrega tus respuestas</span>
+  </h2>
+  <p>
+    <span class="lang-en">This builds a PDF of your answers with your name on it. Open it in a new tab, then turn it in the way your class turns in work.</span>
+    <span class="lang-es">Esto crea un PDF con tus respuestas y tu nombre. &Aacute;brelo en una pesta&ntilde;a nueva y entr&eacute;galo como tu clase entrega el trabajo.</span>
+  </p>
+  <div class="actions">
+    <button id="btnTurnin" class="btn-primary" type="button">
+      <span class="lang-en">Turn in your answers</span>
+      <span class="lang-es">Entregar tus respuestas</span>
+    </button>
+    <button id="btnReset" class="btn-ghost" type="button">
+      <span class="lang-en">Start over</span>
+      <span class="lang-es">Empezar de nuevo</span>
+    </button>
+  </div>
+
+  <div id="msgName" class="msg" role="status">
+    <span class="lang-en">Enter your name first, then try again.</span>
+    <span class="lang-es">Escribe tu nombre primero y luego intenta otra vez.</span>
+  </div>
+  <div id="msgDone" class="msg info" role="status">
+    <span class="lang-en">Your PDF opened in a new tab. If nothing happened, a blocker is stopping the new tab. Use the backup below.</span>
+    <span class="lang-es">Tu PDF se abri&oacute; en una pesta&ntilde;a nueva. Si no pas&oacute; nada, un bloqueador est&aacute; impidiendo la pesta&ntilde;a. Usa el respaldo de abajo.</span>
+  </div>
+  <div id="msgBlocked" class="msg" role="status">
+    <span class="lang-en">The new tab was blocked. Use the backup below: copy the text, or open the second link.</span>
+    <span class="lang-es">La pesta&ntilde;a nueva fue bloqueada. Usa el respaldo de abajo: copia el texto, o abre el segundo enlace.</span>
+  </div>
+
+  <div id="fallback">
+    <label for="fallbackText">
+      <span class="lang-en">Backup: your answers as plain text</span>
+      <span class="lang-es">Respaldo: tus respuestas en texto simple</span>
+    </label>
+    <textarea id="fallbackText" readonly></textarea>
+    <div class="actions">
+      <a id="btnFallbackPdf" class="flink" href="#" target="_blank" rel="noopener noreferrer">
+        <span class="lang-en">Open the PDF again</span>
+        <span class="lang-es">Abrir el PDF otra vez</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div id="confirmWrap" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div id="confirmBox">
+    <h3 id="confirmTitle">
+      <span class="lang-en">Start over?</span>
+      <span class="lang-es">&iquest;Empezar de nuevo?</span>
+    </h3>
+    <p>
+      <span class="lang-en">This erases your name and every answer you have written for this activity in this browser. It cannot be undone.</span>
+      <span class="lang-es">Esto borra tu nombre y todas las respuestas que escribiste para esta actividad en este navegador. No se puede deshacer.</span>
+    </p>
+    <div class="actions">
+      <button id="confirmYes" class="btn-primary" type="button">
+        <span class="lang-en">Erase everything</span>
+        <span class="lang-es">Borrar todo</span>
+      </button>
+      <button id="confirmNo" class="btn-ghost" type="button">
+        <span class="lang-en">Keep my answers</span>
+        <span class="lang-es">Conservar mis respuestas</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+</div>
+<script src="/portalBridge.js"></script>
+<script src="/vendor/jspdf.umd.min.js" defer></script>
+<script>
+(function () {
+  "use strict";
+
+  /* v2: the question set was reduced from 10 items to 7, so old saved
+     payloads carry ids that no longer line up. Bumping the prefix makes any
+     pre-ship data start clean instead of landing text under the wrong
+     question. Never reuse an old prefix after changing the question list. */
+  var PREFIX = "ea-efq-v2-";
+  var KEY_NAME = PREFIX + "name";
+  var KEY_LANG = PREFIX + "lang";
+  var KEY_ANS = PREFIX + "answers";
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function lsGet(k) {
+    try { return window.localStorage.getItem(k); } catch (e) { return null; }
+  }
+  function lsSet(k, v) {
+    try { window.localStorage.setItem(k, v); } catch (e) { /* private mode */ }
+  }
+  function lsDel(k) {
+    try { window.localStorage.removeItem(k); } catch (e) { /* ignore */ }
+  }
+
+  var EN = {
+    placeholder: "Type your answer",
+    saveSaving: "Saving...",
+    saveSaved: "Saved",
+    saveLocal: "Saved on this device",
+    saveFailed: "Could not save"
+  };
+  var ES = {
+    placeholder: "Escribe tu respuesta",
+    saveSaving: "Guardando...",
+    saveSaved: "Guardado",
+    saveLocal: "Guardado en este dispositivo",
+    saveFailed: "No se pudo guardar"
+  };
+  function copy() {
+    return document.documentElement.lang === "es" ? ES : EN;
+  }
+  function pair(en, es) {
+    return '<span class="lang-en">' + esc(en) + '</span>' +
+           '<span class="lang-es">' + esc(es) + '</span>';
+  }
+
+  var QUESTIONS = [
+    { id: "q1",
+      en: "The circuit in the thought experiment has wires each 300,000 km long, but the bulb sits only about one meter from the battery. Before watching how it ends, what is your honest prediction for how long the bulb takes to light after the switch closes? Explain your reasoning in a sentence.",
+      es: "El circuito del experimento mental tiene cables de 300,000 km cada uno, pero el foco est\u00e1 a solo un metro de la bater\u00eda. Antes de ver c\u00f3mo termina, \u00bfcu\u00e1l es tu predicci\u00f3n honesta de cu\u00e1nto tarda el foco en encenderse despu\u00e9s de cerrar el interruptor? Explica tu razonamiento en una oraci\u00f3n." },
+    { id: "q2",
+      en: "Poynting found an equation for energy flow. In your own words, what two things have to be present together for that flow of energy to exist?",
+      es: "Poynting encontr\u00f3 una ecuaci\u00f3n para el flujo de energ\u00eda. En tus propias palabras, \u00bfqu\u00e9 dos cosas tienen que estar presentes juntas para que exista ese flujo de energ\u00eda?" },
+    { id: "q3",
+      en: "An unconnected battery has an electric field but gives up no energy. Once the circuit is closed, it starts delivering energy. What does closing the circuit add that makes that possible, and why was the energy going nowhere before?",
+      es: "Una bater\u00eda desconectada tiene campo el\u00e9ctrico pero no entrega energ\u00eda. Cuando se cierra el circuito, empieza a entregar energ\u00eda. \u00bfQu\u00e9 agrega cerrar el circuito que hace eso posible, y por qu\u00e9 antes la energ\u00eda no iba a ning\u00fan lado?" },
+    { id: "q4",
+      en: "The video says the electric field pushes electrons around until charge builds up on the surfaces of the wires. What job do those surface charges then do?",
+      es: "El video dice que el campo el\u00e9ctrico empuja electrones hasta que se acumula carga en las superficies de los cables. \u00bfQu\u00e9 trabajo hacen despu\u00e9s esas cargas superficiales?" },
+    { id: "q5",
+      en: "The electrons barely move. The video gives a drift speed. Compare that speed to the speed at which the bulb lights, and say what that comparison forces you to conclude about who carries the energy.",
+      es: "Los electrones apenas se mueven. El video da una velocidad de deriva. Compara esa velocidad con la rapidez con la que se enciende el foco, y di qu\u00e9 te obliga a concluir esa comparaci\u00f3n sobre qui\u00e9n transporta la energ\u00eda." },
+    { id: "q6",
+      en: "Where in the circuit is the energy actually travelling? Name the region and the two fields living there.",
+      es: "\u00bfD\u00f3nde del circuito viaja realmente la energ\u00eda? Nombra la regi\u00f3n y los dos campos que viven all\u00ed." },
+    { id: "q7",
+      en: "The video gives its own answer. State it, then explain in your own words why the LENGTH of the wires barely matters but the DISTANCE to the bulb does.",
+      es: "El video da su propia respuesta. Escr\u00edbela, y luego explica en tus propias palabras por qu\u00e9 el LARGO de los cables casi no importa pero la DISTANCIA al foco s\u00ed importa." }
+  ];
+
+  var state = { answers: {} };
+  var nodes = {};
+  var savedAtLocal = 0;
+
+  function readLocal() {
+    try {
+      var raw = lsGet(KEY_ANS);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      if (!parsed.answers || typeof parsed.answers !== "object") return null;
+      return { answers: parsed.answers, savedAt: Number(parsed.savedAt) || 0 };
+    } catch (e) { return null; }
+  }
+
+  function applySaved(saved) {
+    if (!saved || !saved.answers) return;
+    state.answers = saved.answers;
+    QUESTIONS.forEach(function (q) {
+      var ta = document.getElementById("ta-" + q.id);
+      if (ta) ta.value = typeof saved.answers[q.id] === "string" ? saved.answers[q.id] : "";
+    });
+  }
+
+  function loadState() {
+    var local = readLocal();
+    if (local) {
+      state.answers = local.answers;
+      savedAtLocal = local.savedAt;
+    }
+    var nm = lsGet(KEY_NAME);
+    if (nm) document.getElementById("studentName").value = nm;
+  }
+
+  /* Portal copy can be newer than localStorage (student cleared their
+     browser, or switched machines) and localStorage can be newer than the
+     Portal copy (they typed while offline). Take whichever is newer. */
+  function mergeFromBridge(savedState) {
+    if (!savedState || !savedState.state || !savedState.state.answers) return false;
+    var remoteAt = Number(savedState.state.savedAt) || 0;
+    if (remoteAt > savedAtLocal) {
+      applySaved(savedState.state);
+      lsSet(KEY_ANS, JSON.stringify(savedState.state));
+      savedAtLocal = remoteAt;
+      return true;
+    }
+    return false;
+  }
+  function saveState() {
+    lsSet(KEY_ANS, JSON.stringify({ answers: state.answers, savedAt: Date.now() }));
+    pushToBridge();
+  }
+
+  /* ---------- autosave ----------
+     Two sinks, always both:
+       1. localStorage, so a reload or a dead tab never loses work.
+       2. PortalBridge, when the activity is embedded in the Portal, which
+          persists server-side against the student and assignment.
+     The bridge is debounced internally (500 ms), so rapid typing is cheap. */
+  var bridgeReady = false;
+
+  function payload() {
+    return { answers: state.answers, savedAt: Date.now() };
+  }
+  function pushToBridge() {
+    if (!bridgeReady) return;
+    try {
+      window.PortalBridge.save({ state: payload(), currentQuestion: 0 });
+    } catch (e) { /* bridge errors must never block typing */ }
+  }
+
+  function build() {
+    var host = document.getElementById("questions");
+    QUESTIONS.forEach(function (item, idx) {
+      var wrap = document.createElement("div");
+      wrap.className = "q";
+      wrap.id = "card-" + item.id;
+      wrap.setAttribute("data-idx", String(idx));
+
+      var head = document.createElement("div");
+      head.className = "q-head";
+
+      var num = document.createElement("div");
+      num.className = "q-num";
+      num.textContent = String(idx + 1).padStart(2, "0");
+
+      var txt = document.createElement("div");
+      txt.className = "q-text";
+      txt.innerHTML = pair(item.en, item.es);
+
+      head.appendChild(num);
+      head.appendChild(txt);
+
+      var ta = document.createElement("textarea");
+      ta.id = "ta-" + item.id;
+      ta.setAttribute("rows", "4");
+      ta.value = state.answers[item.id] || "";
+      ta.addEventListener("input", function () {
+        queueSave(item, ta.value);
+      });
+
+      wrap.appendChild(head);
+      wrap.appendChild(ta);
+      host.appendChild(wrap);
+
+      nodes[item.id] = { wrap: wrap, ta: ta, idx: idx };
+    });
+    paint();
+  }
+
+  function paintQuestion(item) {
+    var n = nodes[item.id];
+    if (!n) return;
+    n.ta.placeholder = copy().placeholder;
+  }
+
+  function paint() {
+    if (!nodes || Object.keys(nodes).length !== QUESTIONS.length) return;
+    QUESTIONS.forEach(paintQuestion);
+  }
+
+  /* Typing autosaves. A short debounce keeps localStorage writes cheap;
+     PortalBridge applies its own 500 ms debounce on top. */
+  var inputTimer = null;
+  function queueSave(item, value) {
+    state.answers[item.id] = value;
+    setSaveStatus("saving");
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(function () {
+      saveState();
+      setSaveStatus(bridgeReady ? "saved" : "local");
+    }, 400);
+  }
+
+  /* ---------- save status ---------- */
+  var statusTimer = null;
+  function setSaveStatus(kind) {
+    var el = document.getElementById("save-status");
+    if (!el) return;
+    var c = copy();
+    var text = "";
+    if (kind === "saving") text = c.saveSaving;
+    else if (kind === "saved") text = c.saveSaved;
+    else if (kind === "local") text = c.saveLocal;
+    else if (kind === "failed") text = c.saveFailed;
+    el.textContent = text;
+    clearTimeout(statusTimer);
+    if (kind === "saved" || kind === "local") {
+      if (bridgeReady) {
+        // PortalBridge owns this element's text once connected; it clears it
+        // itself after 2 s. Leave its message alone.
+        return;
+      }
+      statusTimer = setTimeout(function () {
+        var again = document.getElementById("save-status");
+        if (again) again.textContent = "";
+      }, 2200);
+    }
+  }
+
+  /* ---------- language ---------- */
+  function applyLang(l) {
+    document.documentElement.lang = (l === "es") ? "es" : "en";
+    lsSet(KEY_LANG, document.documentElement.lang);
+    paint();
+  }
+  function initLang() {
+    var saved = lsGet(KEY_LANG);
+    if (saved === "es" || saved === "en") applyLang(saved);
+  }
+
+  /* ---------- messages ---------- */
+  function showMsg(id) {
+    ["msgName", "msgDone", "msgBlocked"].forEach(function (k) {
+      document.getElementById(k).classList.remove("show");
+    });
+    if (id) document.getElementById(id).classList.add("show");
+  }
+  function hideFallback() {
+    document.getElementById("fallback").classList.remove("show");
+  }
+
+  /* ---------- name + answers for export ---------- */
+  function cleanName() {
+    return (document.getElementById("studentName").value || "").replace(/\s+/g, " ").trim();
+  }
+  function safeFile(name) {
+    var base = name.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!base) base = "Student";
+    return base;
+  }
+  function answerList() {
+    return QUESTIONS.map(function (q, i) {
+      var a = (state.answers[q.id] || "").trim();
+      return { n: i + 1, q: q.en, a: a };
+    });
+  }
+
+  /* Plain-text fallback body (also used by the backup panel). */
+  function plainText(name) {
+    var lines = [];
+    lines.push("Energy Flow Video Questionnaire");
+    lines.push("Student: " + (name || "(no name entered)"));
+    lines.push("Date: " + new Date().toLocaleDateString());
+    lines.push("");
+    answerList().forEach(function (r) {
+      lines.push(r.n + ". " + r.q);
+      lines.push("   " + (r.a || "(no answer recorded)"));
+      lines.push("");
+    });
+    lines.push("TURN-IN END");
+    return lines.join("\n");
+  }
+
+  /* ---------- PDF (native jsPDF layout only) ---------- */
+  var pdfUrl = null;
+
+  function revokeOld() {
+    if (pdfUrl) {
+      try { URL.revokeObjectURL(pdfUrl); } catch (e) { /* ignore */ }
+      pdfUrl = null;
+    }
+  }
+
+  function buildPdf(name) {
+    if (!(window.jspdf && window.jspdf.jsPDF)) return null;
+    var JsPDF = window.jspdf.jsPDF;
+    var doc = new JsPDF({ unit: "pt", format: "letter" });
+    var M = 54;
+    var W = 612;
+    var maxW = W - M * 2;
+    var y = M;
+
+    function need(h) {
+      if (y + h > 792 - 60) {
+        doc.addPage();
+        y = M;
+      }
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("PERTH AMBOY HIGH SCHOOL  /  PHYSICS", M, y);
+    y += 20;
+
+    doc.setFontSize(16);
+    doc.text("Energy Flow Video Questionnaire", M, y);
+    y += 24;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text("Student: " + (name || "(no name entered)"), M, y);
+    y += 15;
+    doc.text("Date: " + new Date().toLocaleDateString(), M, y);
+    y += 15;
+    doc.text("The Biggest Misconception About Electricity (Veritasium)", M, y);
+    y += 26;
+
+    doc.setDrawColor(180);
+    doc.line(M, y, W - M, y);
+    y += 20;
+
+    answerList().forEach(function (r) {
+      need(70);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      var qLines = doc.splitTextToSize(r.n + ".  " + r.q, maxW);
+      qLines.forEach(function (ln) { need(16); doc.text(ln, M, y); y += 13; });
+      y += 4;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      var body = r.a || "(no answer recorded)";
+      var aLines = doc.splitTextToSize(body, maxW - 14);
+      aLines.forEach(function (ln) {
+        need(18);
+        doc.text(ln, M + 14, y);
+        y += 14;
+      });
+      y += 16;
+    });
+
+    var total = doc.getNumberOfPages();
+    for (var p = 1; p <= total; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("Energy Flow Video Questionnaire", M, 792 - 36);
+      doc.text("Page " + p + " of " + total, W - M, 792 - 36, { align: "right" });
+      if (p === total) {
+        doc.setFont("helvetica", "bold");
+        doc.text("TURN-IN END", M, 792 - 22);
+      }
+    }
+
+    var blob = doc.output("blob");
+    revokeOld();
+    pdfUrl = URL.createObjectURL(blob);
+    return pdfUrl;
+  }
+
+  function doTurnin() {
+    var name = cleanName();
+    if (!name) {
+      showMsg("msgName");
+      hideFallback();
+      var f = document.getElementById("studentName");
+      if (f) { try { f.focus(); } catch (e) { /* ignore */ } }
+      return;
+    }
+    lsSet(KEY_NAME, name);
+
+    var url = buildPdf(name);
+    if (!url) {
+      showMsg("msgBlocked");
+      showFallback(name, null);
+      return;
+    }
+
+    var opened = null;
+    try {
+      opened = window.open(url, "_blank", "noopener");
+    } catch (e) {
+      opened = null;
+    }
+
+    var fb = document.getElementById("btnFallbackPdf");
+    if (fb) fb.setAttribute("href", url);
+
+    if (!opened) {
+      showMsg("msgBlocked");
+      showFallback(name, url);
+    } else {
+      showMsg("msgDone");
+      hideFallback();
+    }
+  }
+
+  function showFallback(name, url) {
+    var panel = document.getElementById("fallback");
+    panel.classList.add("show");
+    document.getElementById("fallbackText").value = plainText(name);
+    var fb = document.getElementById("btnFallbackPdf");
+    if (url) fb.setAttribute("href", url);
+    try { panel.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { panel.scrollIntoView(); }
+  }
+
+  /* ---------- reset ---------- */
+  function openConfirm() {
+    document.getElementById("confirmWrap").classList.add("show");
+    var yes = document.getElementById("confirmYes");
+    if (yes) { try { yes.focus(); } catch (e) { /* ignore */ } }
+  }
+  function closeConfirm() {
+    document.getElementById("confirmWrap").classList.remove("show");
+  }
+  /* Wipes all state without touching the confirm dialog or scroll position.
+     Shared by the Reset button and by a Portal-side replay. */
+  function clearAll() {
+    lsDel(KEY_ANS);
+    lsDel(KEY_NAME);
+    state.answers = {};
+    savedAtLocal = 0;
+    QUESTIONS.forEach(function (q) {
+      var ta = document.getElementById("ta-" + q.id);
+      if (ta) ta.value = "";
+    });
+    var nmEl = document.getElementById("studentName");
+    if (nmEl) nmEl.value = "";
+    revokeOld();
+    showMsg(null);
+    hideFallback();
+    if (bridgeReady) {
+      try {
+        window.PortalBridge.save({ state: { answers: {}, savedAt: Date.now() }, currentQuestion: 0 });
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  function doReset() {
+    clearAll();
+    closeConfirm();
+    paint();
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+  }
+
+  /* ---------- wire up ---------- */
+  function init() {
+    loadState();
+    build();
+    initLang();
+
+    if (window.PortalBridge && typeof window.PortalBridge.init === "function") {
+      try {
+        window.PortalBridge.init({
+          onLoad: function (savedState) {
+            bridgeReady = true;
+            if (mergeFromBridge(savedState)) paint();
+          },
+          onReset: function () {
+            clearAll();
+            paint();
+          }
+        });
+      } catch (e) { bridgeReady = false; }
+      // portal-init can arrive after init() returns; flip the flag on connect
+      if (window.PortalBridge.connected) bridgeReady = true;
+    }
+
+    document.getElementById("btnLang").addEventListener("click", function () {
+      applyLang(document.documentElement.lang === "es" ? "en" : "es");
+    });
+
+    var nm = document.getElementById("studentName");
+    nm.addEventListener("input", function () { lsSet(KEY_NAME, nm.value); });
+    nm.addEventListener("blur", function () { lsSet(KEY_NAME, cleanName()); });
+
+    document.getElementById("btnTurnin").addEventListener("click", doTurnin);
+    document.getElementById("btnReset").addEventListener("click", openConfirm);
+    document.getElementById("confirmNo").addEventListener("click", closeConfirm);
+    document.getElementById("confirmYes").addEventListener("click", doReset);
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeConfirm();
+    });
+
+    window.addEventListener("beforeunload", revokeOld);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
