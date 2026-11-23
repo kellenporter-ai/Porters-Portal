@@ -387,6 +387,7 @@ export const en: Dictionary = {
   'proctor.session.active': 'Active Session',
   'proctor.session.paused': 'Away (Paused)',
   'rv.xp.earnedBanner': 'Session confirmed. You earned {xp} XP for this resource.',
+  'rv.xp.dailyCapReached': 'Session confirmed. Your work is saved. You\'ve reached today\'s XP allowance for reading time, so this session didn\'t add XP. Your allowance resets tomorrow.',
   'proctor.session.engagedIndicator': 'Engaged · XP accrues when you finish',
   'proctor.session.tokenError': 'Unable to start assessment session. Please check your internet connection and refresh the page.',
   'proctor.session.tokenBlocked': 'You can\'t start a new attempt yet — {{reason}}',

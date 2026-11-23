@@ -8,6 +8,7 @@ export const MAX_LEVEL = 500;
 export const MAX_XP_PER_SUBMISSION = 500;
 export const DEFAULT_XP_PER_MINUTE = 10;
 export const ENGAGEMENT_COOLDOWN_MS = 5 * 60 * 1000;
+export const MAX_DAILY_PASSIVE_XP = 1500;
 
 export const XP_BRACKETS: [number, number][] = [
   [50, 1000],
@@ -159,11 +160,40 @@ export function getProfileData(data: FirebaseFirestore.DocumentData, classType?:
   };
 }
 
+/**
+ * Multiplier contributed by the student's currently-active XP boosts.
+ *
+ * WHY THIS IS A SEPARATE EXPORT: callers that must clamp an award against a
+ * budget (submitEngagement's daily passive-XP cap) have to know the boosted
+ * figure BEFORE clamping, otherwise the clamp bounds the pre-boost number and
+ * the boost is applied on top of the ceiling. Extracting the loop guarantees
+ * the clamp and the award can never disagree about what the boost is.
+ *
+ * @param activeBoosts `gamification.activeBoosts` (may be absent/malformed)
+ * @param nowMs epoch ms to evaluate expiry against
+ * @returns the largest active boost value, or 1 when none is active
+ */
+export function activeBoostMultiplier(
+  activeBoosts: Array<{ expiresAt: string; value: number }> | undefined,
+  nowMs: number,
+): number {
+  let boostMultiplier = 1;
+  if (!Array.isArray(activeBoosts)) return boostMultiplier;
+  for (const boost of activeBoosts) {
+    if (!boost || typeof boost.value !== "number") continue;
+    if (boost.value > 1 && new Date(boost.expiresAt).getTime() > nowMs) {
+      boostMultiplier = Math.max(boostMultiplier, boost.value);
+    }
+  }
+  return boostMultiplier;
+}
+
 export function buildXPUpdates(
   data: FirebaseFirestore.DocumentData,
   xpAmount: number,
   classType?: string,
   customDropPool?: LootItem[],
+  options?: { applyBoosts?: boolean },
 ): { updates: Record<string, any>; newXP: number; newLevel: number; leveledUp: boolean } {
   // xpAmount may be negative (admin XP deduction); use a finite-number check that allows negatives.
   const safeXpAmount = (typeof xpAmount === "number" && Number.isFinite(xpAmount)) ? xpAmount : 0;
@@ -174,14 +204,13 @@ export function buildXPUpdates(
   const gam = data.gamification || {};
   const currentXP = guardNumber("gamification.xp", gam.xp, 0);
   const currentLevel = guardNumber("gamification.level", gam.level, 1);
-  let boostMultiplier = 1;
-  const now = new Date();
-  const activeBoosts: Array<{ expiresAt: string; value: number }> = gam.activeBoosts || [];
-  for (const boost of activeBoosts) {
-    if (boost.value > 1 && new Date(boost.expiresAt) > now) {
-      boostMultiplier = Math.max(boostMultiplier, boost.value);
-    }
-  }
+  // applyBoosts defaults to true so every pre-existing caller is unchanged.
+  // Callers that already resolved the boost themselves (and clamped the
+  // boosted figure) pass false to avoid multiplying twice.
+  const applyBoosts = options?.applyBoosts !== false;
+  const boostMultiplier = applyBoosts
+    ? activeBoostMultiplier(gam.activeBoosts, Date.now())
+    : 1;
   const boostedXP = safeXpAmount > 0 ? Math.round(safeXpAmount * boostMultiplier) : safeXpAmount;
   const newXP = Math.max(0, currentXP + boostedXP);
   const newLevel = Math.min(levelForXp(newXP), MAX_LEVEL);

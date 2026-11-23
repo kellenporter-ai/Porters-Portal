@@ -386,6 +386,7 @@ export const es: Dictionary = {
   // ── Proctor session chrome ──
   'proctor.session.active': 'Sesión Activa',
   'rv.xp.earnedBanner': 'Sesión confirmada. Ganaste {xp} XP por este recurso.',
+  'rv.xp.dailyCapReached': 'Sesión confirmada. Tu trabajo quedó guardado. Ya alcanzaste el límite de XP por tiempo de lectura de hoy, así que esta sesión no sumó XP. Tu límite se renueva mañana.',
   'proctor.session.engagedIndicator': 'En sesión · El XP se acumula al terminar',
   'proctor.session.paused': 'Ausente (Pausado)',
   'proctor.session.tokenError': 'No se pudo iniciar la sesión de evaluación. Revisa tu conexión a internet y actualiza la página.',

@@ -4,6 +4,7 @@ import {
   verifyAuth,
   verifyAdmin,
   buildXPUpdates,
+  activeBoostMultiplier,
   getProfilePaths,
   getProfileData,
   getActiveXPMultiplier,
@@ -29,6 +30,7 @@ import {
   resolveEngagement,
   type EngagementResolution,
 } from "./engagement-resolution";
+import { clampPassiveXP, localDayKey } from "./engagement-daily";
 
 function assertEnrolled(userData: Record<string, unknown>, classType: string): void {
   const enrolledClasses: string[] = (userData.enrolledClasses as string[]) || [];
@@ -227,6 +229,108 @@ export const startResourceSession = onCall({ memory: "256MiB", timeoutSeconds: 6
   return { sessionToken: sessionId, startedAt: Date.now() };
 });
 
+/**
+ * Builds the `submissions` document body for a non-assessment engagement
+ * session. PURE: no Firestore reads, no writes, no clock reads beyond what the
+ * caller passes in.
+ *
+ * WHY IT IS EXTRACTED: submitEngagement must write the XP award, the daily
+ * ledger increment, and this submission in ONE transaction (see the invariant
+ * comment in the handler). Firestore requires all reads before all writes, so
+ * the document body has to be assembled before the transaction opens. Keeping
+ * it as a named pure function also makes the "a zero-XP capped session still
+ * writes its submission" contract testable without an emulator.
+ *
+ * `score` and the two passive-XP provenance fields are NOT set here: they
+ * depend on the clamp, which is resolved inside the transaction. The handler
+ * spread-overrides them.
+ */
+export function buildEngagementSubmission(input: {
+  uid: string;
+  userName?: string;
+  assignmentId: string;
+  assignmentTitle?: string;
+  validatedEngagement: number;
+  xpBasisEngagement: number;
+  resolution: EngagementResolution;
+  metrics: Record<string, unknown>;
+  keystrokes: number;
+  pasteCount: number;
+  clickCount: number;
+  tabSwitchCount: number;
+  serverElapsedSec: number;
+  thresholds: Partial<TelemetryThresholds>;
+  classType?: string;
+  userSection?: string;
+}): { submissionBody: Record<string, unknown>; engagementStatus: string } {
+  const {
+    uid, userName, assignmentId, assignmentTitle, validatedEngagement,
+    xpBasisEngagement, resolution, metrics, keystrokes, pasteCount,
+    clickCount, tabSwitchCount, serverElapsedSec, thresholds, classType,
+    userSection,
+  } = input;
+
+  const validatedMetrics = { engagementTime: validatedEngagement, keystrokes, pasteCount, tabSwitchCount };
+  const feedbackResult = calculateFeedbackServerSide(
+    validatedMetrics,
+    thresholds,
+    { assistiveTech: !!metrics.assistiveTech }
+  );
+  const assistiveTechOverrides = feedbackResult.assistiveTechOverrides;
+
+  // Server-side plausibility score for non-assessment resources
+  // We don't have block responses, so we use elapsed time and a minimal response count of 1
+  const { score: plausibilityScore, factors: plausibilityFactors } = computePlausibilityScore(
+    serverElapsedSec,
+    0, // Non-assessments don't have server-computed word count
+    1, // Minimal response count
+    undefined // No block save timestamps for non-assessments
+  );
+
+  const submissionBody = {
+    userId: uid,
+    userName: userName || "Student",
+    assignmentId,
+    assignmentTitle: assignmentTitle || "",
+    metrics: {
+      engagementTime: validatedEngagement,
+      clientReportedEngagement: metrics.engagementTime || 0,
+      // Provenance for the reported figure. "unverified" means no server
+      // timestamp corroborated the claim — the daily invariant alert watches
+      // for this rate rising above ~0%.
+      timeSource: resolution.timeSource,
+      verifiedEngagement: xpBasisEngagement,
+      serverSpanSeconds: Math.round(resolution.serverSpanSeconds),
+      keystrokes,
+      pasteCount,
+      clickCount,
+      tabSwitchCount,
+      startTime: metrics.startTime || 0,
+      firstInteractionTime: metrics.firstInteractionTime || 0,
+      lastActive: metrics.lastActive || 0,
+      plausibilityScore,
+      plausibilityFactors,
+      // MUST be spread-guarded: calculateFeedbackServerSide() omits this field on
+      // its default return branch, and Firestore rejects documents containing
+      // `undefined`. Writing it unguarded throws on every call where the student
+      // did not self-report assistive tech, which silently killed the entire
+      // non-assessment engagement path (181 failed writes, 2026-10-14 → 11-11).
+      // Mirrors the correct pattern in assessment.ts.
+      ...(assistiveTechOverrides ? { assistiveTechOverrides } : {}),
+    },
+    submittedAt: new Date().toISOString(),
+    status: feedbackResult.status,
+    feedback: feedbackResult.feedback,
+    privateComments: [],
+    hasUnreadAdmin: false,
+    hasUnreadStudent: false,
+    classType: classType || "",
+    ...(userSection ? { userSection } : {}),
+  };
+
+  return { submissionBody, engagementStatus: feedbackResult.status };
+}
+
 // ==========================================
 // SUBMIT ENGAGEMENT — Server-side XP calculation
 // ==========================================
@@ -359,90 +463,128 @@ export const submitEngagement = onCall({ memory: "256MiB", timeoutSeconds: 60 },
     }
   }
 
-  // Create submission
-  const validatedMetrics = { engagementTime: validatedEngagement, keystrokes, pasteCount, tabSwitchCount };
-  const feedbackResult = calculateFeedbackServerSide(
-    validatedMetrics,
-    thresholds,
-    { assistiveTech: !!metrics.assistiveTech }
-  );
-  const engagementStatus = feedbackResult.status;
-  const engagementFeedback = feedbackResult.feedback;
-  const assistiveTechOverrides = feedbackResult.assistiveTechOverrides;
-
-  // Server-side plausibility score for non-assessment resources
-  // We don't have block responses, so we use elapsed time and a minimal response count of 1
-  const { score: plausibilityScore, factors: plausibilityFactors } = computePlausibilityScore(
-    serverElapsedSec,
-    0, // Non-assessments don't have server-computed word count
-    1, // Minimal response count
-    undefined // No block save timestamps for non-assessments
-  );
-
-  const submission = {
-    userId: uid,
-    userName: request.data.userName || "Student",
+  // ---------------------------------------------------------------------
+  // Pure computation first. buildEngagementSubmission() is side-effect free
+  // (no Firestore reads/writes), so it runs before the transaction and its
+  // result is written atomically inside it.
+  // ---------------------------------------------------------------------
+  const { submissionBody, engagementStatus } = buildEngagementSubmission({
+    uid,
+    userName: request.data.userName,
     assignmentId,
-    assignmentTitle: assignmentTitle || "",
-    metrics: {
-      engagementTime: validatedEngagement,
-      clientReportedEngagement: metrics.engagementTime || 0,
-      // Provenance for the reported figure. "unverified" means no server
-      // timestamp corroborated the claim — the daily invariant alert watches
-      // for this rate rising above ~0%.
-      timeSource: resolution.timeSource,
-      verifiedEngagement: xpBasisEngagement,
-      serverSpanSeconds: Math.round(resolution.serverSpanSeconds),
-      keystrokes,
-      pasteCount,
-      clickCount,
-      tabSwitchCount,
-      startTime: metrics.startTime || 0,
-      firstInteractionTime: metrics.firstInteractionTime || 0,
-      lastActive: metrics.lastActive || 0,
-      plausibilityScore,
-      plausibilityFactors,
-      // MUST be spread-guarded: calculateFeedbackServerSide() omits this field on
-      // its default return branch, and Firestore rejects documents containing
-      // `undefined`. Writing it unguarded throws on every call where the student
-      // did not self-report assistive tech, which silently killed the entire
-      // non-assessment engagement path (181 failed writes, 2026-10-14 → 11-11).
-      // Mirrors the correct pattern in assessment.ts.
-      ...(assistiveTechOverrides ? { assistiveTechOverrides } : {}),
-    },
-    submittedAt: new Date().toISOString(),
-    status: engagementStatus,
-    feedback: engagementFeedback,
-    score: xpEarned,
-    privateComments: [],
-    hasUnreadAdmin: false,
-    hasUnreadStudent: false,
-    classType: classType || "",
-    ...(userSection ? { userSection } : {}),
-  };
+    assignmentTitle,
+    validatedEngagement,
+    xpBasisEngagement,
+    resolution,
+    metrics,
+    keystrokes,
+    pasteCount,
+    clickCount,
+    tabSwitchCount,
+    serverElapsedSec,
+    thresholds,
+    classType,
+    userSection,
+  });
 
-  await db.collection("submissions").add(submission);
-
-  // Award XP via transaction (same logic as awardXP)
+  // ---------------------------------------------------------------------
+  // Award XP + ledger + submission in ONE transaction.
+  //
+  // INVARIANT: either the XP award, the daily ledger increment, and the
+  // submission document all exist, or none of them do. The previous order
+  // (award transaction, then a standalone submissions.add) failed OPEN: if the
+  // add threw (deadline, quota, an undefined field — the 2026-10-14 → 11-11
+  // incident), the student banked XP with no completion record, which is
+  // unauditable and invisible to teacher views and dailyAnalysis. A record
+  // without XP is recoverable from metrics.passiveXpRequested; XP without a
+  // record is not.
+  //
+  // The submission is created even when the daily ceiling reduces the award to
+  // zero — the student still completed the work. Only the user-doc update is
+  // skipped in that case.
+  // ---------------------------------------------------------------------
   const effectiveClass = classType || "Uncategorized";
   const userRef = db.doc(`users/${uid}`);
+  const localDay = localDayKey(new Date());
+  const capRef = db.collection("engagement_daily").doc(`${uid}_${localDay}`);
+  const submissionRef = db.collection("submissions").doc();
 
   let leveledUp = false;
+  let grantedXP = 0;
+  let cappedByDailyLimit = false;
+  let dailyRemaining = 0;
+  // Pre-clamp, POST-boost figure: what the formula wanted under the student's
+  // active boost. Stored on the submission so a capped award is explainable.
+  let requestedAfterBoost = xpEarned;
+
   await db.runTransaction(async (transaction) => {
+    // ALL READS BEFORE ANY WRITE — Firestore requires it.
     const userSnap = await transaction.get(userRef);
     if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+    const capSnap = await transaction.get(capRef);
+    const earnedToday = Number(capSnap.data()?.passiveXp) || 0;
 
+    // Resolve the boost BEFORE clamping. Clamping the pre-boost figure and then
+    // letting buildXPUpdates multiply would pay up to 1.5x the daily ceiling
+    // (ledger says 1500, user doc receives 2250) and desynchronise the ledger,
+    // submissions.score, the returned xpEarned, and dailyRemaining.
     const data = userSnap.data()!;
-    const result = buildXPUpdates(data, xpEarned, effectiveClass);
-    leveledUp = result.leveledUp;
+    const boost = activeBoostMultiplier(data.gamification?.activeBoosts, Date.now());
+    requestedAfterBoost = Math.round(xpEarned * boost);
 
-    transaction.update(userRef, result.updates);
+    const clamp = clampPassiveXP(earnedToday, requestedAfterBoost);
+    grantedXP = clamp.grantedXP;
+    cappedByDailyLimit = clamp.capped;
+    dailyRemaining = Math.max(0, clamp.remainingBefore - grantedXP);
+
+    // A zero award is a true no-op on the user doc: no XP, no level, no loot.
+    // applyBoosts:false — the boost is already baked into grantedXP above.
+    if (grantedXP > 0) {
+      const result = buildXPUpdates(data, grantedXP, effectiveClass, undefined, { applyBoosts: false });
+      leveledUp = result.leveledUp;
+      transaction.update(userRef, result.updates);
+    }
+
+    // Always write the ledger doc so the day is recorded even when the
+    // ceiling reduced the award to zero.
+    transaction.set(
+      capRef,
+      {
+        userId: uid,
+        localDay,
+        passiveXp: admin.firestore.FieldValue.increment(grantedXP),
+        lastPassiveXpAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    // Completion record — created in the same transaction as the award.
+    transaction.create(submissionRef, {
+      ...submissionBody,
+      score: grantedXP,
+      metrics: {
+        ...(submissionBody.metrics as Record<string, unknown>),
+        passiveXpRequested: requestedAfterBoost,
+        passiveXpDailyCapped: cappedByDailyLimit,
+      },
+    });
   });
 
   logWithCorrelation("info", "submitEngagement: XP awarded", correlationId, {
-    uid, assignmentId, classType, xpEarned, baseXP, multiplier, status: submission.status,
+    uid, assignmentId, classType, xpEarned: grantedXP, requestedXP: requestedAfterBoost,
+    dailyCapped: cappedByDailyLimit, baseXP, multiplier, status: engagementStatus,
+    submissionId: submissionRef.id,
   });
-  return { xpEarned, baseXP, multiplier, leveledUp, status: submission.status };
+  return {
+    xpEarned: grantedXP,
+    baseXP,
+    multiplier,
+    leveledUp,
+    status: engagementStatus,
+    dailyCapped: cappedByDailyLimit,
+    dailyRemaining,
+  };
 });
 /**
  * awardQuestionXP — Awards XP for correct review question answers.

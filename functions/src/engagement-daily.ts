@@ -30,6 +30,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { MAX_DAILY_PASSIVE_XP } from "./core";
 
 /** Longest interval a single heartbeat may credit, in seconds. */
 export const MAX_CREDIT_PER_HEARTBEAT_SEC = 90;
@@ -54,6 +55,27 @@ export function localDayKey(date: Date, timeZone: string = SCHOOL_TZ): string {
     month: "2-digit",
     day: "2-digit",
   }).format(date);
+}
+
+/**
+ * Clamps a passive (engagement-time) XP award against the student's remaining
+ * daily budget.
+ *
+ * @param alreadyEarnedToday passive XP the student has already banked today
+ * @param requestedXP XP this submission would otherwise pay
+ * @returns the XP to actually award, and why it was reduced
+ */
+export function clampPassiveXP(
+  alreadyEarnedToday: number,
+  requestedXP: number,
+): { grantedXP: number; capped: boolean; remainingBefore: number } {
+  const already = Number.isFinite(alreadyEarnedToday) ? Math.max(0, alreadyEarnedToday) : 0;
+  const requested = Number.isFinite(requestedXP) ? Math.max(0, Math.round(requestedXP)) : 0;
+  const remainingBefore = Math.max(0, MAX_DAILY_PASSIVE_XP - already);
+  if (requested <= remainingBefore) {
+    return { grantedXP: requested, capped: false, remainingBefore };
+  }
+  return { grantedXP: remainingBefore, capped: true, remainingBefore };
 }
 
 export interface CreditResult {

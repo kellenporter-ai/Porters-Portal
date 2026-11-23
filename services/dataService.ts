@@ -1122,7 +1122,17 @@ export const dataService = {
 
   submitEngagement: async (_userId: string, userName: string, assignmentId: string, assignmentTitle: string, metrics: TelemetryMetrics, classType: string, sessionToken?: string) => {
       const result = await callSubmitEngagement({ assignmentId, assignmentTitle, userName, metrics, classType, ...(sessionToken ? { sessionToken } : {}) });
-      return result.data as { xpEarned: number; leveledUp: boolean; status: string };
+      return result.data as {
+        xpEarned: number;
+        leveledUp: boolean;
+        status: string;
+        /** True when the daily passive-XP ceiling reduced this award. */
+        dailyCapped?: boolean;
+        /** Passive XP left in the student's local-day budget after this award. */
+        dailyRemaining?: number;
+        baseXP?: number;
+        multiplier?: number;
+      };
   },
 
   submitAssessment: async (userName: string, assignmentId: string, responses: Record<string, unknown>, metrics: TelemetryMetrics, classType: string, sessionToken?: string, tokenSignature?: string) => {

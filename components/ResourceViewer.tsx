@@ -107,6 +107,9 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
   // Bug 2b: XP earned this resource session, confirmed by the server on
   // engagement submit — shown in an on-exit banner.
   const [exitXp, setExitXp] = useState<{ xp: number; assignmentId: string } | null>(null);
+  // Set when the daily passive-XP ceiling reduced the award to zero. The work
+  // still counted; the student just spent the day's reading-time allowance.
+  const [exitXpDailyCapped, setExitXpDailyCapped] = useState<string | null>(null);
 
   // Ref for getting Proctor metrics + responses on demand
   const getMetricsAndResponsesRef = useRef<(() => { metrics: TelemetryMetrics; responses: BlockResponseMap }) | null>(null);
@@ -295,6 +298,12 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
       const result = await dataService.submitEngagement(u.id, u.name, a.id, a.title, metrics, a.classType, metrics.sessionToken);
       if (result && typeof result.xpEarned === 'number' && result.xpEarned > 0) {
         setExitXp({ xp: result.xpEarned, assignmentId: a.id });
+        setExitXpDailyCapped(null);
+      } else if (result && result.dailyCapped === true) {
+        // Daily passive-XP allowance spent: the session still counted, so say so
+        // plainly instead of showing "+0 XP".
+        setExitXp(null);
+        setExitXpDailyCapped(a.id);
       }
     } catch (err) {
       reportError(err, { method: 'submitEngagement', assignmentId: a.id });
@@ -1038,6 +1047,19 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ user }) => {
                   <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
                   <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
                     {interpolate('rv.xp.earnedBanner', { xp: exitXp.xp })}
+                  </p>
+                </div>
+              )}
+              {/* Daily passive-XP allowance spent — completion still counted. */}
+              {exitXpDailyCapped && exitXpDailyCapped === id && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mx-1 mb-3 flex items-center gap-3 bg-sky-500/10 border border-sky-500/30 rounded-xl px-4 py-3"
+                >
+                  <Zap className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0" aria-hidden="true" />
+                  <p className="text-sm font-bold text-sky-700 dark:text-sky-300">
+                    {t('rv.xp.dailyCapReached')}
                   </p>
                 </div>
               )}
