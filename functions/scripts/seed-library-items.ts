@@ -29,6 +29,23 @@ interface SeedItem {
 
 const SEED_ITEMS: SeedItem[] = [
   {
+    title: 'Power Line Lab Evidence Journal Rubric',
+    description:
+      'The grading rubric for the Power Line Lab Evidence Journal, the first graded assessment of the course. Two skills: ' +
+      'the thoughtfulness and completion of the ten journal prompts (50%), and the quality of the mechanistic hypothesis ' +
+      'students build from their own observations (50%). Students click any box in the grid to open the full descriptor for ' +
+      'that level, see how the two halves combine into one grade with worked examples, and switch between English and ' +
+      'Spanish. Every descriptor is answer-neutral, so the rubric never names the finding students are meant to discover. ' +
+      'Pairs with the Power Line Lab simulation and the Texas 2021 freeze introduction deck.',
+    url: '/power-line-lab-rubric.html',
+    hostingType: 'bundled',
+    contentKind: 'document',
+    subject: 'Physics',
+    tags: ['rubric', 'grading', 'assessment', 'physics', 'openscied', 'p1', 'energy-flow', 'electricity', 'evidence-journal', 'hypothesis', 'bilingual', 'chromebook-friendly'],
+    suggestedCategory: 'Supplemental',
+    sourceFingerprint: '/power-line-lab-rubric.html',
+  },
+  {
     title: 'Hair Analysis Lab: Measuring the Medullary Index',
     description:
       'A virtual microscope bench for telling human hair from animal hair. Students open a cross-section of an unknown ' +

@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power Line Lab Rubric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --focus: #FF4D26;
+    --t0-c: #dc2626; --t0-b: #fee2e2;
+    --t1-c: #d97706; --t1-b: #fef3c7;
+    --t2-c: #ca8a04; --t2-b: #fef9c3;
+    --t3-c: #059669; --t3-b: #d1fae5;
+    --t4-c: #2563eb; --t4-b: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, .brand h1, .rubric-grid .row-q, .rubric-grid th.colhead,
+  .detail-q, .card-doc h1, .score-chip, .ladder-chip, .nav-btn, .backlink,
+  .lang-toggle button, .print-btn, .ladder-summary h2, .eyebrow,
+  .detail-qnum, .connector, .page-ref-line, .card-footer, .card-ladder .cl strong {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 28px 32px 80px; }
+  a { color: var(--accent); }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 40px;
+  }
+  .brand h1 {
+    font-size: clamp(26px, 3vw, 38px); font-weight: 800; margin: 0;
+    letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .brand h1 .accent { color: var(--accent); }
+  .brand .sub {
+    color: var(--ink-soft); font-size: 15px; margin-top: 8px; max-width: 52ch;
+  }
+  .lang-toggle {
+    display: inline-flex; align-items: center; border: var(--dash);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 16px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .lang-toggle button + button { border-left: var(--dash); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent); background: rgba(255, 77, 38, 0.06);
+  }
+
+  button { font-family: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  body.mode-card header.top { display: none; }
+
+  html[lang="en"] .lang-es { display: none; }
+  html[lang="es"] .lang-en { display: none; }
+
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 10px;
+  }
+
+  .panel {
+    background: transparent; border: var(--dash);
+    padding: 28px; margin-bottom: 32px;
+  }
+  .overview { border: 0; padding: 0 0 8px; margin-bottom: 40px; }
+  .overview p:last-child { margin: 0; font-size: 17px; max-width: 62ch; }
+
+  .grid-panel { padding: 22px; overflow-x: auto; margin-bottom: 48px; }
+  table.rubric-grid {
+    width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed;
+  }
+  .rubric-grid th.corner { width: 18%; }
+  .rubric-grid th.colhead {
+    padding: 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    text-align: center; line-height: 1.25; border: 0;
+  }
+  .rubric-grid th.rowhead {
+    text-align: left; vertical-align: top; padding: 10px 10px 10px 2px; font-weight: 400;
+  }
+  .rubric-grid .row-q {
+    display: block; font-weight: 700; font-size: 15px; line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .rubric-grid .row-gist {
+    display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 6px; line-height: 1.4;
+  }
+  .rubric-grid td.cell { padding: 0; vertical-align: top; }
+  .grid-cell {
+    position: relative; display: block; width: 100%; min-height: 104px;
+    text-align: left; cursor: pointer; text-decoration: none;
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13.5px; line-height: 1.42;
+    background: var(--tb); color: var(--ink);
+    border: var(--dash); border-top: 3px solid var(--tc);
+    padding: 12px 12px 26px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .grid-cell:hover {
+    transform: translateY(-3px);
+    border: 1px solid var(--tc); border-top: 3px solid var(--tc);
+  }
+  .grid-cell .gist { display: block; }
+  .grid-cell .page-ref {
+    position: absolute; bottom: 6px; right: 10px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-soft);
+    font-family: 'Archivo', 'Inter', sans-serif;
+  }
+
+  .ladder-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 24px; }
+  .ladder-chip {
+    flex: 1 1 130px; min-width: 120px; text-align: center;
+    border: var(--dash); padding: 12px 10px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+  }
+  .ladder-chip small { display: block; font-weight: 600; opacity: 0.75; font-size: 11px; }
+
+  .ladder-summary { border: 0; padding: 0; margin: 0 0 32px; }
+  .ladder-summary h2 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;
+  }
+  .ladder-row {
+    display: flex; gap: 16px; align-items: baseline; padding: 14px 4px;
+    border-bottom: var(--dash);
+  }
+  .ladder-row:first-of-type { border-top: var(--dash); }
+  .ladder-row .score-chip { flex: 0 0 auto; }
+  .ladder-row p { margin: 0; font-size: 15px; }
+
+  .dl-footer {
+    display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap;
+    padding: 14px 4px; margin: 0 0 32px;
+    border-top: var(--dash); border-bottom: var(--dash);
+  }
+  .dl-footer .eyebrow { flex: 0 0 auto; }
+  .dl-links { display: flex; gap: 22px; flex-wrap: wrap; }
+  .dl-links a {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .dl-links a:hover { color: var(--accent); }
+
+  .score-chip {
+    display: inline-block; font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+    color: var(--tc); background: var(--tb);
+    padding: 6px 16px; white-space: nowrap;
+  }
+
+  .backlink {
+    display: inline-block; margin: 0 0 28px; color: var(--ink-soft);
+    text-decoration: none; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: var(--dash); padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .backlink:hover { color: var(--accent); border-color: var(--accent); }
+  .detail-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 20px; }
+  .detail-head .score-chip {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.01em; padding: 10px 24px;
+  }
+  .detail-score {
+    font-weight: 800; font-size: 20px; color: var(--ink-faint); letter-spacing: -0.01em;
+  }
+  .detail-q {
+    font-size: clamp(28px, 3.6vw, 44px); font-weight: 800; margin: 0 0 10px;
+    letter-spacing: -0.03em; line-height: 1.05; max-width: 22ch;
+  }
+  .weight-chip {
+    display: inline-block; margin: 0 0 8px;
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+    color: var(--accent); border: 1px dashed var(--accent); padding: 4px 12px;
+  }
+  .detail-qnum {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--accent); margin: 0 0 12px;
+  }
+  .detail-skill {
+    color: var(--ink-soft); font-size: 16px; margin: 0 0 24px;
+    padding-bottom: 16px; border-bottom: var(--dash); max-width: 62ch;
+  }
+  .tier {
+    border: var(--dash); border-left: 4px solid var(--tc);
+    background: transparent; margin-bottom: 12px; overflow: hidden;
+  }
+  .tier-body { padding: 22px 26px 24px 28px; }
+  .tier-line { margin: 0 0 6px; max-width: 68ch; }
+  .connector {
+    display: block; width: fit-content; margin: 14px auto;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--tc); background: transparent;
+    border: 1px dashed var(--tc); padding: 4px 16px;
+  }
+  .examples-label { font-weight: 700; margin: 18px 0 8px; letter-spacing: -0.01em; }
+  .examples {
+    margin: 0; padding: 16px 20px 16px 36px; border: var(--dash);
+    background: rgba(26, 26, 26, 0.02);
+  }
+  .examples li { margin-bottom: 6px; }
+  .examples li:last-child { margin-bottom: 0; }
+  .explainer h2 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 15pt;
+    margin: 0 0 6px;
+  }
+  .explainer-framing { margin: 0 0 10px; color: var(--ink-soft); }
+  .explainer ol { margin: 0; padding-left: 22px; }
+  .explainer li { margin: 0 0 8px; line-height: 1.45; }
+  .explainer-compact { margin: 2px 0 6px; }
+
+  .page-ref-line {
+    color: var(--ink-soft);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 16px 0 0;
+  }
+
+  .tier-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+  .nav-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; border: var(--dash);
+    padding: 11px 20px; color: var(--ink-soft); text-decoration: none;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.3s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
+  .nav-btn.primary { color: var(--ink); border-color: var(--ink-faint); }
+  .nav-btn.primary:hover { color: var(--accent); border-color: var(--accent); }
+  .nav-btn.disabled { opacity: 0.35; pointer-events: none; }
+  .tier-nav .spacer { flex: 1; }
+
+  .card-doc { background: transparent; border: var(--dash); padding: 24px 26px; }
+  .card-doc h1 {
+    font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .card-sub { color: var(--ink-soft); font-size: 13px; margin: 6px 0 16px; }
+  .card-footer {
+    color: var(--ink-soft);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    margin: 14px 0 0;
+  }
+  .card-ladder { display: flex; gap: 8px; margin-top: 14px; }
+  .card-ladder .cl {
+    flex: 1; border: var(--dash); padding: 8px 9px; font-size: 11px; line-height: 1.35;
+  }
+  .card-ladder .cl strong { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+  .print-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; color: var(--ink-soft); border: var(--dash);
+    padding: 11px 22px; margin-bottom: 16px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .print-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  .print-doc { display: none; }
+  .q-inner .q-text {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px;
+  }
+  .skill {
+    color: var(--ink-soft); font-size: 14px; margin: 0 0 18px;
+    padding-bottom: 12px; border-bottom: var(--dash);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 18px 48px; }
+    header.top { margin-bottom: 24px; }
+    .grid-panel { padding: 12px; }
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    body.mode-card { font-size: 7.6pt; }
+    .wrap { max-width: none; padding: 0; }
+    header.top .lang-toggle, .no-print, .screen-view { display: none !important; }
+    .print-doc { display: block; }
+    .panel, .q-card, .q-inner, .tier, .card-doc { border: 1px solid #999; }
+    .tier { break-inside: avoid; }
+    .question-block { break-before: page; }
+    .question-block.first { break-before: auto; }
+    .explainer-wrap { break-after: page; }
+    .question-block.collapsed .q-inner, .tier-detail.collapsed { display: block !important; }
+    .grid-panel { overflow: visible; }
+    .grid-cell { min-height: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  @media print {
+    body.mode-card .print-btn { display: none !important; }
+    body.mode-card .card-doc { border: 0; padding: 0; }
+    body.mode-card .grid-panel { border: 0; padding: 0; margin: 0; }
+    body.mode-card .rubric-grid { border-spacing: 3px; }
+    body.mode-card .rubric-grid th.corner { width: 16%; }
+    body.mode-card .rubric-grid th.colhead {
+      font-size: 6.6pt; padding: 3px 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .rubric-grid th.rowhead { padding: 2px 4px 2px 0; }
+    body.mode-card .rubric-grid .row-q { font-size: 6.8pt; }
+    body.mode-card .rubric-grid .row-gist { font-size: 6.1pt; margin-top: 1px; }
+    body.mode-card .grid-cell {
+      font-size: 6.2pt; line-height: 1.25; min-height: 0;
+      padding: 4px 4px 11px; border-left-width: 2px; border-top-width: 2px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .grid-cell .gist { font-size: 6.2pt; line-height: 1.25; }
+    body.mode-card .grid-cell .page-ref { font-size: 5.4pt; bottom: 2px; right: 4px; }
+    body.mode-card .card-doc h1 { font-size: 13pt; }
+    body.mode-card .card-sub { font-size: 7.5pt; margin: 1px 0 6px; }
+    body.mode-card .card-ladder .cl { font-size: 5.6pt; padding: 3px 4px; }
+    body.mode-card .card-ladder .cl strong { font-size: 5.8pt; }
+    body.mode-card .card-footer { font-size: 6pt; margin: 5px 0 0; }
+    body.mode-card .explainer-compact { font-size: 6.4pt; margin: 1px 0 4px; line-height: 1.3; }
+  }
+
+  @page { margin: 0.4in; }
+  @page landscape-page { size: letter landscape; margin: 0.4in; }
+  body.mode-card { page: landscape-page; }
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 id="page-title"><span class="lang-en">Power Line Lab Rubric</span><span class="lang-es">Rúbrica: Laboratorio de Líneas de Potencia</span></h1>
+      <div class="sub" id="page-sub"><span class="lang-en">How your Evidence Journal is graded</span><span class="lang-es">Cómo se califica tu Diario de Evidencia</span></div>
+    </div>
+    <div class="lang-toggle no-print" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<script>
+"use strict";
+/* ============================== DATA ============================== */
+
+var STR = {
+  en: {
+    pageTitle: "Power Line Lab Rubric",
+    pageSub: "How your Evidence Journal is graded",
+    overviewLabel: "Overview",
+    overview: "The Power Line Lab is your first assessment this year. You are graded on two things: the evidence you recorded while you experimented, and the hypothesis you built from it. Nothing is graded on whether your hypothesis is right. It is graded on whether it is a real mechanism that accounts for what you actually saw. You may resubmit, and your highest attempt counts.",
+    questionLabel: "Skill",
+    skillLabel: "Skill statement",
+    ladderLabel: "Tier ladder",
+    connectors: { "-BECAUSE-": "-BECAUSE-", "-BUT-": "-BUT-", "-AND-": "-AND-", "-OR-": "-OR-" },
+    examplesLabel: "What work at this level looks like:",
+    backToGrid: "Back to all tiers",
+    prevTier: "Previous tier",
+    nextTier: "Next tier",
+    pageRefLine: "Details on p. {n} of the rubric PDF",
+    gridHint: "Click any box to see full details for that level.",
+    cardTitle: "Power Line Lab Rubric",
+    cardSubtitle: "How your Evidence Journal is graded",
+    cardFooter: "See the rubric PDF for full details in each box",
+    printCard: "Print",
+    downloadsLabel: "Downloads",
+    dlFullEn: "Full rubric (EN)",
+    dlFullEs: "Full rubric (ES)",
+    dlCardEn: "Quick card (EN)",
+    dlCardEs: "Quick card (ES)"
+  },
+  es: {
+    pageTitle: "Rúbrica: Laboratorio de Líneas de Potencia",
+    pageSub: "Cómo se califica tu Diario de Evidencia",
+    overviewLabel: "Descripción general",
+    overview: "El Laboratorio de Líneas de Potencia es tu primera evaluación de este año. Se te califica en dos cosas: la evidencia que registraste mientras experimentabas y la hipótesis que construiste a partir de ella. No se califica si tu hipótesis es correcta. Se califica si es un mecanismo real que explique lo que realmente viste. Puedes volver a entregar, y cuenta tu mejor intento.",
+    questionLabel: "Habilidad",
+    skillLabel: "Declaración de la habilidad",
+    ladderLabel: "Escalera de niveles",
+    connectors: { "-BECAUSE-": "-PORQUE-", "-BUT-": "-PERO-", "-AND-": "-Y-", "-OR-": "-O-" },
+    examplesLabel: "Así se ve el trabajo en este nivel:",
+    backToGrid: "Volver a todos los niveles",
+    prevTier: "Nivel anterior",
+    nextTier: "Nivel siguiente",
+    pageRefLine: "Detalles en la pág. {n} del PDF de la rúbrica",
+    gridHint: "Haz clic en cualquier casilla para ver los detalles completos de ese nivel.",
+    cardTitle: "Rúbrica: Laboratorio de Líneas de Potencia",
+    cardSubtitle: "Cómo se califica tu Diario de Evidencia",
+    cardFooter: "Consulta la rúbrica en PDF para los detalles de cada casilla",
+    printCard: "Imprimir",
+    downloadsLabel: "Descargas",
+    dlFullEn: "Rúbrica completa (EN)",
+    dlFullEs: "Rúbrica completa (ES)",
+    dlCardEn: "Tarjeta rápida (EN)",
+    dlCardEs: "Tarjeta rápida (ES)"
+  }
+};
+
+var GISTS = {
+  en: {
+    skillGists: [
+      "Run the experiments and record what you actually saw in the Evidence Journal",
+      "Write one mechanism that explains your observations and can be shown wrong"
+    ],
+    cells: {
+      q1: ["No journal exported, or none of the ten prompts attempted.", "An attempt, but most prompts are one word, blank, or not what was seen on screen.", "Several real observations, but roughly half the boxes are blank or repeat the prompt.", "Nearly every prompt has a distinct, honest observation of what you changed and saw.", "Every prompt is a specific observation that names the setting, the readout, and the direction."],
+      q2: ["Empty box, or a restatement of one observation.", "A result is described rather than a mechanism, or it fits only one observation.", "The particles are named, but only one or two observations are covered, or the ions are left out.", "The mechanism explains the pattern across observations, but one does not fit or the temperature link is thin.", "One coherent mechanism covers every observation and says what evidence would prove it wrong."]
+    }
+  },
+  es: {
+    skillGists: [
+      "Haz los experimentos y registra lo que realmente viste en el Diario de Evidencia",
+      "Escribe un mecanismo que explique tus observaciones y que se pueda probar falso"
+    ],
+    cells: {
+      q1: ["No se exportó el diario, o no se intentó ninguna de las diez preguntas.", "Hay un intento, pero la mayoría de las preguntas tiene una sola palabra, está en blanco o no dice lo que se vio en pantalla.", "Hay varias observaciones reales, pero cerca de la mitad de las casillas está en blanco o repite la pregunta.", "Casi todas las preguntas tienen una observación distinta y honesta de lo que cambiaste y viste.", "Cada pregunta es una observación específica que nombra el ajuste, la lectura y la dirección en que se movió."],
+      q2: ["Casilla vacía, o una repetición de una observación.", "Se describe un resultado y no un mecanismo, o solo explica una observación.", "Se nombran las partículas, pero solo se cubren una o dos observaciones, o se dejan fuera los iones.", "El mecanismo explica el patrón entre observaciones, pero una no encaja o el vínculo con la temperatura es débil.", "Un mecanismo coherente cubre todas las observaciones y dice qué evidencia lo probaría falso."]
+    }
+  }
+};
+
+var TIERS = [
+  { key: "t0", score: "0%" },
+  { key: "t1", score: "55%" },
+  { key: "t2", score: "65%" },
+  { key: "t3", score: "85%" },
+  { key: "t4", score: "100%" }
+];
+
+var EXPLAINER = {
+  en: {
+    heading: "How your Evidence Journal grade is decided",
+    framing: "Your Evidence Journal is graded on two skills. Here is how your grade works.",
+    points: [
+      { lead: "Each skill is graded on the 0/55/65/85/100 ladder.",
+        text: "Each skill starts at Missing (0%). A real attempt earns at least Emerging (55%). Partial work earns Approaching (65%). Solid work earns Developing (85%). Work that could not be improved on earns Refining (100%)." },
+      { lead: "Your journal and your hypothesis count equally, 50% each.",
+        text: "Both halves are worth the same. A complete journal with a thin hypothesis and a thin journal with a strong hypothesis can land in the same place, so do both." },
+      { lead: "Your overall grade is a weighted average of the two skills.",
+        text: "Example: Developing (85%) on the journal and Approaching (65%) on the hypothesis averages to 75%. Refining (100%) on the journal and Developing (85%) on the hypothesis averages to 92.5%." },
+      { lead: "You are not graded on whether your hypothesis turns out to be true.",
+        text: "Nobody has the answer to the Texas question in a textbook. You are graded on whether your explanation comes from your own observations and whether it clearly says what the particles are doing." },
+      { lead: "Resubmitting is allowed.",
+        text: "Export the journal again after you have run more experiments or rewritten the hypothesis. Your highest attempt counts." }
+    ],
+    compact: "Two skills, 50% each, on the 0/55/65/85/100 ladder. You are graded on the mechanism you build from your evidence, not on whether it is right."
+  },
+  es: {
+    heading: "Cómo se decide tu calificación del Diario de Evidencia",
+    framing: "Tu Diario de Evidencia se califica en dos habilidades. Así funciona tu calificación.",
+    points: [
+      { lead: "Cada habilidad se califica en la escalera 0/55/65/85/100.",
+        text: "Cada habilidad empieza en Ausente (0%). Un intento real gana al menos Emergente (55%). El trabajo parcial gana Progresando (65%). El trabajo sólido gana En desarrollo (85%). El trabajo que no se podría mejorar gana Refinando (100%)." },
+      { lead: "Tu diario y tu hipótesis valen lo mismo, 50% cada uno.",
+        text: "La hipótesis pesa más porque es donde se ve el pensamiento. Un diario completo con una hipótesis débil y un diario débil con una hipótesis fuerte pueden terminar en el mismo lugar, así que haz las dos cosas." },
+      { lead: "Tu calificación final es un promedio ponderado de las dos habilidades.",
+        text: "Ejemplo: En desarrollo (85%) en el diario y Progresando (65%) en la hipótesis da un promedio de 75%. Refinando (100%) en el diario y En desarrollo (85%) en la hipótesis da un promedio de 92.5%." },
+      { lead: "No se califica si tu hipótesis resulta ser cierta.",
+        text: "Nadie tiene en un libro de texto la respuesta a la pregunta de Texas. Se califica si tu explicación sale de tus propias observaciones y si dice claramente qué están haciendo las partículas." },
+      { lead: "Se permite volver a entregar.",
+        text: "Exporta el diario otra vez después de hacer más experimentos o de reescribir la hipótesis. Cuenta tu mejor intento." }
+    ],
+    compact: "Dos habilidades, 50% cada una, en la escalera 0/55/65/85/100. Se califica el mecanismo que construyes con tu evidencia, no si es correcto."
+  }
+};
+
+function explainerHTML(compact) {
+  var E = EXPLAINER[state.lang];
+  if (compact) return '<p class="explainer-compact">' + esc(E.compact) + "</p>";
+  var h = '<div class="panel explainer"><h2>' + esc(E.heading) + "</h2>" +
+    '<p class="explainer-framing">' + esc(E.framing) + "</p><ol>";
+  for (var i = 0; i < E.points.length; i++) {
+    h += "<li><strong>" + esc(E.points[i].lead) + "</strong> " + esc(E.points[i].text) + "</li>";
+  }
+  return h + "</ol></div>";
+}
+
+var PDF_PAGES = { en: {}, es: {} };
+
+var DATA = {
+  en: {
+    questions: [
+      {
+        q: "The Evidence Journal",
+        skill: "I am able to run the lab experiments and record what I actually observed in the Evidence Journal, using the prompt's question as my guide.",
+        weight: 50,
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: [
+            "Missing: No journal was exported, or none of the ten prompts were attempted."
+          ] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: There is an attempt to write in the journal",
+            "-BUT-", "most prompts are answered with a single word or left blank, or the answers do not say what was seen on screen",
+            "-OR-", "the hypothesis box is used in place of observations."
+          ], examples: [
+            "Three of ten boxes are filled.",
+            "One box says nichrome is bad, with nothing about what the student changed or saw."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: Several prompts are answered with a real observation",
+            "-BUT-", "roughly half the boxes are blank or repeat the prompt back as an answer",
+            "-OR-", "the observations do not name what was changed, so they cannot be checked against the lab."
+          ], examples: [
+            "Q2 and Q5 are answered with what happened, and the rest say the same thing.",
+            "The student writes what they expected to see instead of what the readouts showed."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: Nearly every prompt is answered with a distinct, honest observation",
+            "-BECAUSE-", "the answer names what the student changed and what they saw change, in their own words",
+            "-AND-", "no two answers are copied from each other",
+            "-BUT-", "one or two prompts are thin or missing."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: Every prompt carries a specific, checkable observation",
+            "-BECAUSE-", "each answer names the setting or change, the readout it affected, and the direction it moved",
+            "-AND-", "the student records what surprised them or what did not match their expectation instead of smoothing it over."
+          ] }
+        }
+      },
+      {
+        q: "The hypothesis",
+        skill: "I am able to write one mechanistic hypothesis that explains my observations by describing what the electrons and the ions are doing.",
+        weight: 50,
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: [
+            "Missing: The hypothesis box is empty, or it contains a restatement of one observation."
+          ] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: A hypothesis is written",
+            "-BUT-", "it describes a result rather than a mechanism, for example that some materials work better, without saying what the particles are doing",
+            "-OR-", "it only accounts for one observation and is contradicted by another on the student's own journal."
+          ], examples: [
+            "Silver is better than nichrome.",
+            "The electrons move faster when it is cold."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: The hypothesis names something the particles do",
+            "-BUT-", "it accounts for only one or two of the observations instead of the pattern across them",
+            "-OR-", "it names what the electrons do and leaves the ions out, so it cannot explain what happens to the wire's temperature."
+          ], examples: [
+            "The electrons move through the metal and some of them get stuck in the ions.",
+            "Cold makes the metal tighter so the electrons get through."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: The hypothesis explains the pattern across the observations by describing what the electrons and the ions are doing",
+            "-BECAUSE-", "it says how a change in the wire affects the movement of the electrons, not just that the result changes",
+            "-AND-", "it accounts for more than one of the student's observations",
+            "-BUT-", "one observation does not fit, or the temperature link is thin."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: The hypothesis is one coherent mechanism that accounts for every observation the student recorded",
+            "-BECAUSE-", "the electrons and the ions each have a job in it, and the same mechanism explains the wire's temperature as well as what the readouts did",
+            "-AND-", "the student can say what evidence would prove the hypothesis wrong."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Missing · 0%", text: "Nothing was submitted for this skill." },
+      { chip: "Emerging · 55%", text: "Something was submitted, but the skill is only beginning." },
+      { chip: "Approaching · 65%", text: "The skill is partly there, with important gaps remaining." },
+      { chip: "Developing · 85%", text: "The skill is nearly complete, with one small gap left." },
+      { chip: "Refining · 100%", text: "The skill is clearly present, and practice keeps it strong." }
+    ]
+  },
+  es: {
+    questions: [
+      {
+        q: "El Diario de Evidencia",
+        skill: "Puedo hacer los experimentos del laboratorio y registrar lo que realmente observé en el Diario de Evidencia, usando la pregunta del enunciado como guía.",
+        weight: 50,
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: [
+            "Ausente: No se exportó el diario, o no se intentó ninguna de las diez preguntas."
+          ] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay un intento de escribir en el diario",
+            "-PERO-", "la mayoría de las preguntas se responde con una sola palabra o queda en blanco, o las respuestas no dicen lo que se vio en pantalla",
+            "-O-", "se usa la casilla de la hipótesis en lugar de las observaciones."
+          ], examples: [
+            "Se llenan tres de diez casillas.",
+            "Una casilla dice que el nicromo es malo, sin nada sobre lo que el estudiante cambió o vio."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Varias preguntas se responden con una observación real",
+            "-PERO-", "cerca de la mitad de las casillas está en blanco o repite la pregunta como respuesta",
+            "-O-", "las observaciones no nombran lo que se cambió, así que no se pueden comparar con el laboratorio."
+          ], examples: [
+            "Las preguntas 2 y 5 se responden con lo que pasó, y las demás dicen lo mismo.",
+            "El estudiante escribe lo que esperaba ver en lugar de lo que mostraron las lecturas."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: Casi todas las preguntas se responden con una observación distinta y honesta",
+            "-PORQUE-", "la respuesta nombra lo que el estudiante cambió y lo que vio cambiar, con sus propias palabras",
+            "-Y-", "no hay dos respuestas copiadas entre sí",
+            "-PERO-", "una o dos preguntas son débiles o faltan."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: Cada pregunta lleva una observación específica que se puede comprobar",
+            "-PORQUE-", "cada respuesta nombra el ajuste o cambio, la lectura que afectó y la dirección en que se movió",
+            "-Y-", "el estudiante registra lo que le sorprendió o lo que no coincidió con su expectativa en lugar de suavizarlo."
+          ] }
+        }
+      },
+      {
+        q: "La hipótesis",
+        skill: "Puedo escribir una hipótesis mecanicista que explique mis observaciones describiendo qué están haciendo los electrones y los iones.",
+        weight: 50,
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: [
+            "Ausente: La casilla de la hipótesis está vacía, o contiene la repetición de una observación."
+          ] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay una hipótesis escrita",
+            "-PERO-", "describe un resultado y no un mecanismo, por ejemplo que algunos materiales funcionan mejor, sin decir qué están haciendo las partículas",
+            "-O-", "solo explica una observación y otra del propio diario del estudiante la contradice."
+          ], examples: [
+            "La plata es mejor que el nicromo.",
+            "Los electrones se mueven más rápido cuando hace frío."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: La hipótesis nombra algo que hacen las partículas",
+            "-PERO-", "solo explica una o dos de las observaciones en lugar del patrón entre ellas",
+            "-O-", "nombra lo que hacen los electrones y deja fuera los iones, así que no puede explicar qué pasa con la temperatura del alambre."
+          ], examples: [
+            "Los electrones se mueven por el metal y algunos se quedan atorados en los iones.",
+            "El frío aprieta el metal, así que los electrones logran pasar."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: La hipótesis explica el patrón entre las observaciones describiendo qué están haciendo los electrones y los iones",
+            "-PORQUE-", "dice cómo un cambio en el alambre afecta el movimiento de los electrones, no solo que el resultado cambia",
+            "-Y-", "explica más de una de las observaciones del estudiante",
+            "-PERO-", "una observación no encaja, o el vínculo con la temperatura es débil."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: La hipótesis es un solo mecanismo coherente que explica cada observación que registró el estudiante",
+            "-PORQUE-", "los electrones y los iones tienen cada uno una función en ella, y el mismo mecanismo explica la temperatura del alambre y lo que hicieron las lecturas",
+            "-Y-", "el estudiante puede decir qué evidencia probaría que su hipótesis es falsa."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Ausente · 0%", text: "No se entregó nada para esta habilidad." },
+      { chip: "Emergente · 55%", text: "Se entregó algo, pero la habilidad apenas comienza." },
+      { chip: "Progresando · 65%", text: "La habilidad está a medias, con vacíos importantes." },
+      { chip: "En desarrollo · 85%", text: "La habilidad está casi completa, con un pequeño vacío." },
+      { chip: "Refinando · 100%", text: "La habilidad está claramente presente, y la práctica la mantiene fuerte." }
+    ]
+  }
+};
+
+/* ============================== LOGIC ============================== */
+
+var LANG_KEY = "pll-lang";
+var state = { lang: "en" };
+try {
+  var saved = localStorage.getItem(LANG_KEY);
+  if (saved === "en" || saved === "es") state.lang = saved;
+} catch (e) {}
+var urlLang = /[?&]lang=(es|en)/.exec(location.search);
+if (urlLang) state.lang = urlLang[1];
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function tierVarsCSS(tierIdx) {
+  return "color:var(--" + TIERS[tierIdx].key + "-c);background:var(--" + TIERS[tierIdx].key + "-b)";
+}
+
+function pageRefNum(qIdx, tierIdx) {
+  var map = PDF_PAGES[state.lang];
+  if (!map) return null;
+  var v = map["q" + (qIdx + 1) + "-t" + tierIdx];
+  return (typeof v === "number") ? v : null;
+}
+
+function pageRefHTML(qIdx, tierIdx) {
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n === null) return "";
+  return '<span class="page-ref">p. ' + n + "</span>";
+}
+
+function printTierHTML(qIdx, tierIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var S = STR[state.lang];
+  var h = '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)">' +
+    '<div class="tier-body">' +
+    '<p class="tier-line"><span class="score-chip">' + esc(tier.chip) + "</span></p>";
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  h += "</div></div>";
+  return h;
+}
+
+function printQuestionBlockHTML(qIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var S = STR[state.lang];
+  var h = '<section class="question-block' + (qIdx === 0 ? " first" : "") + '">';
+  h += '<div class="q-inner">' +
+    '<p class="q-text">' + esc(S.questionLabel + " " + (qIdx + 1) + ": " + q.q) + "</p>" +
+    weightChipHTML(q) +
+    '<p class="skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  for (var j = 0; j < TIERS.length; j++) h += printTierHTML(qIdx, j);
+  h += "</div></section>";
+  return h;
+}
+
+function weightText(q) {
+  if (typeof q.weight !== "number") return "";
+  return esc(String(q.weight) + "% \u00b7 ");
+}
+
+function weightChipHTML(q) {
+  if (typeof q.weight !== "number") return "";
+  return '<p class="weight-chip">' + esc(String(q.weight) + '%') + "</p>";
+}
+
+function ladderSummaryHTML() {
+  var S = STR[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<div class="panel ladder-summary"><h2>' + esc(S.ladderLabel) + "</h2>";
+  for (var i = 0; i < L.length; i++) {
+    h += '<div class="ladder-row">' +
+      '<span class="score-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(L[i].chip) + "</span>" +
+      "<p>" + esc(L[i].text) + "</p></div>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function ladderStripHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="ladder-strip" role="group" aria-label="' + esc(S.ladderLabel) + '">';
+  for (var i = 0; i < TIERS.length; i++) {
+    h += '<span class="ladder-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(DATA[state.lang].ladder[i].chip) + "</span>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function landingHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += explainerHTML(false);
+  h += '<div class="panel grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' +
+      esc(DATA[state.lang].ladder[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < DATA[state.lang].questions.length; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + weightText(DATA[state.lang].questions[q]) + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><a class="grid-cell" href="#/q' + (q + 1) + "/t" + c + '" role="link" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</a></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += downloadsFooterHTML();
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function downloadsFooterHTML() {
+  return "";
+}
+
+function detailHTML(qIdx, tierIdx) {
+  var S = STR[state.lang];
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var flat = qIdx * 5 + tierIdx;
+  var prevFlat = flat - 1, nextFlat = flat + 1;
+  var qCount = DATA[state.lang].questions.length;
+  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= (qCount * TIERS.length) - 1;
+
+  var h = '<a class="backlink no-print" href="#/">&larr; ' + esc(S.backToGrid) + "</a>";
+  h += '<p class="detail-qnum">' + esc(S.questionLabel + " " + (qIdx + 1)) + "</p>" +
+    '<h2 class="detail-q">' + esc(q.q) + "</h2>" +
+    weightChipHTML(q) +
+    '<p class="detail-skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  h += '<div class="detail-head">' +
+    '<span class="score-chip" style="' + tierVarsCSS(tierIdx) + '">' + esc(tier.chip) + "</span>" +
+    '<span class="detail-score">' + esc(TIERS[tierIdx].score) + "</span></div>";
+
+  h += '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)"><div class="tier-body">';
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n !== null) {
+    h += '<p class="page-ref-line">' + esc(S.pageRefLine.replace("{n}", String(n))) + "</p>";
+  }
+  h += "</div></div>";
+
+  h += '<nav class="tier-nav no-print" aria-label="' + esc(S.backToGrid) + '">';
+  if (hasPrev) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(prevFlat / TIERS.length) + 1) + "/t" + (prevFlat % TIERS.length) + '">&larr; ' + esc(S.prevTier) + "</a>";
+  } else {
+    h += '<span class="nav-btn disabled">&larr; ' + esc(S.prevTier) + "</span>";
+  }
+  h += '<span class="spacer"></span>';
+  h += '<a class="nav-btn primary" href="#/">' + esc(S.backToGrid) + "</a>";
+  h += '<span class="spacer"></span>';
+  if (hasNext) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(nextFlat / TIERS.length) + 1) + "/t" + (nextFlat % TIERS.length) + '">' + esc(S.nextTier) + " &rarr;</a>";
+  } else {
+    h += '<span class="nav-btn disabled">' + esc(S.nextTier) + " &rarr;</span>";
+  }
+  h += "</nav>";
+  return h;
+}
+
+function cardHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<button type="button" class="print-btn no-print" onclick="window.print()">' + esc(S.printCard) + "</button>";
+  h += '<div class="card-doc"><h1>' + esc(S.cardTitle) + "</h1>" +
+    '<p class="card-sub">' + esc(S.cardSubtitle) + "</p>";
+  h += explainerHTML(true);
+  h += '<div class="grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' + esc(L[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < DATA[state.lang].questions.length; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + weightText(DATA[state.lang].questions[q]) + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><div class="grid-cell" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</div></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += '<div class="card-ladder">';
+  for (var k = 0; k < L.length; k++) {
+    h += '<div class="cl" style="' + tierVarsCSS(k) + '"><strong>' + esc(L[k].chip) + "</strong>" + esc(L[k].text) + "</div>";
+  }
+  h += "</div>";
+  h += '<p class="card-footer">' + esc(S.cardFooter) + "</p>";
+  h += "</div>";
+  return h;
+}
+
+function printDocumentHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += '<div class="explainer-wrap">' + explainerHTML(false) + "</div>";
+  for (var q = 0; q < DATA[state.lang].questions.length; q++) h += printQuestionBlockHTML(q);
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function isCardView() {
+  return /[?&]view=card/.test(location.search);
+}
+
+function parseHash() {
+  var m = new RegExp("^#\\/q([1-" + DATA[state.lang].questions.length + "])\\/t([0-" + (TIERS.length - 1) + "])$").exec(location.hash || "");
+  if (!m) return null;
+  return { q: parseInt(m[1], 10) - 1, t: parseInt(m[2], 10) };
+}
+
+function render() {
+  var S = STR[state.lang];
+  var card = isCardView();
+  document.body.classList.toggle("mode-card", card);
+  document.documentElement.lang = state.lang;
+  document.title = S.pageTitle;
+  var titleEN = STR.en.pageTitle.split(" ");
+  titleEN[titleEN.length - 1] = '<span class="accent">' + esc(titleEN[titleEN.length - 1]) + "</span>";
+  var titleES = STR.es.pageTitle.split(" ");
+  titleES[titleES.length - 1] = '<span class="accent">' + esc(titleES[titleES.length - 1]) + "</span>";
+  document.querySelector("#page-title .lang-en").innerHTML = titleEN.join(" ");
+  document.querySelector("#page-title .lang-es").innerHTML = titleES.join(" ");
+  document.querySelector("#page-sub .lang-en").textContent = STR.en.pageSub;
+  document.querySelector("#page-sub .lang-es").textContent = STR.es.pageSub;
+  document.getElementById("lang-en").setAttribute("aria-pressed", state.lang === "en");
+  document.getElementById("lang-es").setAttribute("aria-pressed", state.lang === "es");
+
+  var h;
+  if (card) {
+    h = cardHTML();
+  } else {
+    var route = parseHash();
+    if (route) {
+      h = '<div class="screen-view">' + detailHTML(route.q, route.t) + "</div>";
+    } else {
+      if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+        try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      }
+      h = '<div class="screen-view">' + landingHTML() + "</div>";
+    }
+    h += '<div class="print-doc" aria-hidden="true">' + printDocumentHTML() + "</div>";
+  }
+  document.getElementById("app").innerHTML = h;
+  window.scrollTo(0, 0);
+}
+
+function setLang(lang) {
+  state.lang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  render();
+}
+
+document.getElementById("lang-en").addEventListener("click", function () { setLang("en"); });
+document.getElementById("lang-es").addEventListener("click", function () { setLang("es"); });
+window.addEventListener("hashchange", render);
+
+render();
+</script>
+</body>
+</html>
