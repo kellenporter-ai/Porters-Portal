@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-23T19:06:59.981Z",
+  "generatedAt": "2026-11-24T13:13:57.979Z",
   "items": [
     {
       "path": "/ap1-2d-kinematics-practice.html",
@@ -84,7 +84,7 @@
     {
       "path": "/energy-flow-questionnaire.html",
       "fingerprint": "/energy-flow-questionnaire.html",
-      "sizeBytes": 32635
+      "sizeBytes": 32638
     },
     {
       "path": "/energy-sources.html",
@@ -240,6 +240,11 @@
       "path": "/polarization-sim.html",
       "fingerprint": "/polarization-sim.html",
       "sizeBytes": 26010
+    },
+    {
+      "path": "/power-line-lab-rubric.html",
+      "fingerprint": "/power-line-lab-rubric.html",
+      "sizeBytes": 48091
     },
     {
       "path": "/power-line-lab.html",
