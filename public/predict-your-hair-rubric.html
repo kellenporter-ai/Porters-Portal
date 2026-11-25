@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predict Your Hair Rubric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EF;
+    --ink: #1A1A1A;
+    --ink-soft: rgba(26, 26, 26, 0.55);
+    --ink-faint: rgba(26, 26, 26, 0.35);
+    --accent: #FF4D26;
+    --dash: 1px dashed rgba(26, 26, 26, 0.35);
+    --focus: #FF4D26;
+    --t0-c: #dc2626; --t0-b: #fee2e2;
+    --t1-c: #d97706; --t1-b: #fef3c7;
+    --t2-c: #ca8a04; --t2-b: #fef9c3;
+    --t3-c: #059669; --t3-b: #d1fae5;
+    --t4-c: #2563eb; --t4-b: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display, .brand h1, .rubric-grid .row-q, .rubric-grid th.colhead,
+  .detail-q, .card-doc h1, .score-chip, .ladder-chip, .nav-btn, .backlink,
+  .lang-toggle button, .print-btn, .ladder-summary h2, .eyebrow,
+  .detail-qnum, .connector, .page-ref-line, .card-footer, .card-ladder .cl strong {
+    font-family: 'Archivo', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 28px 32px 80px; }
+  a { color: var(--accent); }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 40px;
+  }
+  .brand h1 {
+    font-size: clamp(26px, 3vw, 38px); font-weight: 800; margin: 0;
+    letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .brand h1 .accent { color: var(--accent); }
+  .brand .sub {
+    color: var(--ink-soft); font-size: 15px; margin-top: 8px; max-width: 52ch;
+  }
+  .lang-toggle {
+    display: inline-flex; align-items: center; border: var(--dash);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .lang-toggle button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 10px 16px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .lang-toggle button + button { border-left: var(--dash); }
+  .lang-toggle button[aria-pressed="true"] {
+    color: var(--accent); background: rgba(255, 77, 38, 0.06);
+  }
+
+  button { font-family: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  body.mode-card header.top { display: none; }
+
+  .eyebrow {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--ink-soft); margin: 0 0 10px;
+  }
+
+  .panel {
+    background: transparent; border: var(--dash);
+    padding: 28px; margin-bottom: 32px;
+  }
+  .overview { border: 0; padding: 0 0 8px; margin-bottom: 40px; }
+  .overview p:last-child { margin: 0; font-size: 17px; max-width: 62ch; }
+
+  .grid-panel { padding: 22px; overflow-x: auto; margin-bottom: 48px; }
+  table.rubric-grid {
+    width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed;
+  }
+  .rubric-grid th.corner { width: 18%; }
+  .rubric-grid th.colhead {
+    padding: 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    text-align: center; line-height: 1.25; border: 0;
+  }
+  .rubric-grid th.rowhead {
+    text-align: left; vertical-align: top; padding: 10px 10px 10px 2px; font-weight: 400;
+  }
+  .rubric-grid .row-q {
+    display: block; font-weight: 700; font-size: 15px; line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .rubric-grid .row-gist {
+    display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 6px; line-height: 1.4;
+  }
+  .rubric-grid td.cell { padding: 0; vertical-align: top; }
+  .grid-cell {
+    position: relative; display: block; width: 100%; min-height: 104px;
+    text-align: left; cursor: pointer; text-decoration: none;
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13.5px; line-height: 1.42;
+    background: var(--tb); color: var(--ink);
+    border: var(--dash); border-top: 3px solid var(--tc);
+    padding: 12px 12px 26px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .grid-cell:hover {
+    transform: translateY(-3px);
+    border: 1px solid var(--tc); border-top: 3px solid var(--tc);
+  }
+  .grid-cell .gist { display: block; }
+  .grid-cell .page-ref {
+    position: absolute; bottom: 6px; right: 10px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-soft);
+    font-family: 'Archivo', 'Inter', sans-serif;
+  }
+
+  .ladder-strip { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 24px; }
+  .ladder-chip {
+    flex: 1 1 130px; min-width: 120px; text-align: center;
+    border: var(--dash); padding: 12px 10px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+  }
+  .ladder-chip small { display: block; font-weight: 600; opacity: 0.75; font-size: 11px; }
+
+  .ladder-summary { border: 0; padding: 0; margin: 0 0 32px; }
+  .ladder-summary h2 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;
+  }
+  .ladder-row {
+    display: flex; gap: 16px; align-items: baseline; padding: 14px 4px;
+    border-bottom: var(--dash);
+  }
+  .ladder-row:first-of-type { border-top: var(--dash); }
+  .ladder-row .score-chip { flex: 0 0 auto; }
+  .ladder-row p { margin: 0; font-size: 15px; }
+
+  .dl-footer {
+    display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap;
+    padding: 14px 4px; margin: 0 0 32px;
+    border-top: var(--dash); border-bottom: var(--dash);
+  }
+  .dl-footer .eyebrow { flex: 0 0 auto; }
+  .dl-links { display: flex; gap: 22px; flex-wrap: wrap; }
+  .dl-links a {
+    font-family: 'Archivo', 'Inter', -apple-system, sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-soft); text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .dl-links a:hover { color: var(--accent); }
+
+  .score-chip {
+    display: inline-block; font-weight: 700; font-size: 13px; letter-spacing: 0.01em;
+    color: var(--tc); background: var(--tb);
+    padding: 6px 16px; white-space: nowrap;
+  }
+
+  .backlink {
+    display: inline-block; margin: 0 0 28px; color: var(--ink-soft);
+    text-decoration: none; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: var(--dash); padding: 10px 18px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .backlink:hover { color: var(--accent); border-color: var(--accent); }
+  .detail-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 20px; }
+  .detail-head .score-chip {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.01em; padding: 10px 24px;
+  }
+  .detail-score {
+    font-weight: 800; font-size: 20px; color: var(--ink-faint); letter-spacing: -0.01em;
+  }
+  .detail-q {
+    font-size: clamp(28px, 3.6vw, 44px); font-weight: 800; margin: 0 0 10px;
+    letter-spacing: -0.03em; line-height: 1.05; max-width: 22ch;
+  }
+  .detail-qnum {
+    text-transform: uppercase; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--accent); margin: 0 0 12px;
+  }
+  .detail-skill {
+    color: var(--ink-soft); font-size: 16px; margin: 0 0 24px;
+    padding-bottom: 16px; border-bottom: var(--dash); max-width: 62ch;
+  }
+  .tier {
+    border: var(--dash); border-left: 4px solid var(--tc);
+    background: transparent; margin-bottom: 12px; overflow: hidden;
+  }
+  .tier-body { padding: 22px 26px 24px 28px; }
+  .tier-line { margin: 0 0 6px; max-width: 68ch; }
+  .connector {
+    display: block; width: fit-content; margin: 14px auto;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--tc); background: transparent;
+    border: 1px dashed var(--tc); padding: 4px 16px;
+  }
+  .examples-label { font-weight: 700; margin: 18px 0 8px; letter-spacing: -0.01em; }
+  .examples {
+    margin: 0; padding: 16px 20px 16px 36px; border: var(--dash);
+    background: rgba(26, 26, 26, 0.02);
+  }
+  .examples li { margin-bottom: 6px; }
+  .examples li:last-child { margin-bottom: 0; }
+  .explainer h2 {
+    font-family: 'Archivo', 'Inter', sans-serif;
+    font-size: 15pt;
+    margin: 0 0 6px;
+  }
+  .explainer-framing { margin: 0 0 10px; color: var(--ink-soft); }
+  .explainer ol { margin: 0; padding-left: 22px; }
+  .explainer li { margin: 0 0 8px; line-height: 1.45; }
+  .explainer-compact { margin: 2px 0 6px; }
+
+  .page-ref-line {
+    color: var(--ink-soft);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 16px 0 0;
+  }
+
+  .tier-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+  .nav-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; border: var(--dash);
+    padding: 11px 20px; color: var(--ink-soft); text-decoration: none;
+    transition: color 0.25s ease, border-color 0.25s ease, transform 0.3s ease;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
+  .nav-btn.primary { color: var(--ink); border-color: var(--ink-faint); }
+  .nav-btn.primary:hover { color: var(--accent); border-color: var(--accent); }
+  .nav-btn.disabled { opacity: 0.35; pointer-events: none; }
+  .tier-nav .spacer { flex: 1; }
+
+  .card-doc { background: transparent; border: var(--dash); padding: 24px 26px; }
+  .card-doc h1 {
+    font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.05;
+  }
+  .card-sub { color: var(--ink-soft); font-size: 13px; margin: 6px 0 16px; }
+  .card-footer {
+    color: var(--ink-soft);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    margin: 14px 0 0;
+  }
+  .card-ladder { display: flex; gap: 8px; margin-top: 14px; }
+  .card-ladder .cl {
+    flex: 1; border: var(--dash); padding: 8px 9px; font-size: 11px; line-height: 1.35;
+  }
+  .card-ladder .cl strong { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+  .print-btn {
+    appearance: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    background: transparent; color: var(--ink-soft); border: var(--dash);
+    padding: 11px 22px; margin-bottom: 16px;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .print-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  .print-doc { display: none; }
+  .q-inner .q-text {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px;
+  }
+  .skill {
+    color: var(--ink-soft); font-size: 14px; margin: 0 0 18px;
+    padding-bottom: 12px; border-bottom: var(--dash);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 20px 18px 48px; }
+    header.top { margin-bottom: 24px; }
+    .grid-panel { padding: 12px; }
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    body.mode-card { font-size: 7.6pt; }
+    .wrap { max-width: none; padding: 0; }
+    header.top .lang-toggle, .no-print, .screen-view { display: none !important; }
+    .print-doc { display: block; }
+    .panel, .q-card, .q-inner, .tier, .card-doc { border: 1px solid #999; }
+    .tier { break-inside: avoid; }
+    .question-block { break-before: page; }
+    .question-block.first { break-before: auto; }
+    .explainer-wrap { break-after: page; }
+    .question-block.collapsed .q-inner, .tier-detail.collapsed { display: block !important; }
+    .grid-panel { overflow: visible; }
+    .grid-cell { min-height: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  @media print {
+    body.mode-card .print-btn { display: none !important; }
+    body.mode-card .card-doc { border: 0; padding: 0; }
+    body.mode-card .grid-panel { border: 0; padding: 0; margin: 0; }
+    body.mode-card .rubric-grid { border-spacing: 3px; }
+    body.mode-card .rubric-grid th.corner { width: 16%; }
+    body.mode-card .rubric-grid th.colhead {
+      font-size: 6.6pt; padding: 3px 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .rubric-grid th.rowhead { padding: 2px 4px 2px 0; }
+    body.mode-card .rubric-grid .row-q { font-size: 6.8pt; }
+    body.mode-card .rubric-grid .row-gist { font-size: 6.1pt; margin-top: 1px; }
+    body.mode-card .grid-cell {
+      font-size: 6.2pt; line-height: 1.25; min-height: 0;
+      padding: 4px 4px 11px; border-left-width: 2px; border-top-width: 2px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    body.mode-card .grid-cell .gist { font-size: 6.2pt; line-height: 1.25; }
+    body.mode-card .grid-cell .page-ref { font-size: 5.4pt; bottom: 2px; right: 4px; }
+    body.mode-card .card-doc h1 { font-size: 13pt; }
+    body.mode-card .card-sub { font-size: 7.5pt; margin: 1px 0 6px; }
+    body.mode-card .card-ladder .cl { font-size: 5.6pt; padding: 3px 4px; }
+    body.mode-card .card-ladder .cl strong { font-size: 5.8pt; }
+    body.mode-card .card-footer { font-size: 6pt; margin: 5px 0 0; }
+    body.mode-card .explainer-compact { font-size: 6.4pt; margin: 1px 0 4px; line-height: 1.3; }
+  }
+
+  @page { margin: 0.4in; }
+  @page landscape-page { size: letter landscape; margin: 0.4in; }
+  body.mode-card { page: landscape-page; }
+</style>
+  <script src="/origin-guard.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 id="page-title">Predict Your Hair Rubric</h1>
+      <div class="sub" id="page-sub"></div>
+    </div>
+    <div class="lang-toggle no-print" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<script>
+"use strict";
+/* ============================== DATA ============================== */
+
+var STR = {
+  en: {
+    pageTitle: "Predict Your Hair Rubric",
+    pageSub: "How your hair prediction is graded",
+    overviewLabel: "Overview",
+    overview: "You drew two views of your own hair and defended every choice on the back. Your work is graded on four skills. Nothing is graded on whether your prediction turns out to be true about your actual hair. You are graded on whether your drawing and your defence agree, and whether the evidence you give is the evidence this unit taught.",
+    questionLabel: "Skill",
+    skillLabel: "Skill statement",
+    ladderLabel: "Tier ladder",
+    connectors: { "-BECAUSE-": "-BECAUSE-", "-BUT-": "-BUT-", "-AND-": "-AND-", "-OR-": "-OR-" },
+    examplesLabel: "What work at this level looks like:",
+    backToGrid: "Back to all tiers",
+    prevTier: "Previous tier",
+    nextTier: "Next tier",
+    pageRefLine: "Details on p. {n} of the rubric PDF",
+    gridHint: "Click any box to see full details for that level.",
+    cardTitle: "Predict Your Hair Rubric",
+    cardSubtitle: "How your hair prediction is graded",
+    cardFooter: "See the rubric PDF for full details and examples in each box",
+    printCard: "Print",
+    downloadsLabel: "Downloads",
+    dlFullEn: "Full rubric (EN)",
+    dlFullEs: "Full rubric (ES)",
+    dlCardEn: "Quick card (EN)",
+    dlCardEs: "Quick card (ES)"
+  },
+  es: {
+    pageTitle: "Rúbrica: Predice tu cabello",
+    pageSub: "Cómo se califica tu predicción del cabello",
+    overviewLabel: "Descripción general",
+    overview: "Dibujaste dos vistas de tu propio cabello y defendiste cada decisión al reverso. Tu trabajo se califica en cuatro habilidades. No se califica si tu predicción resulta cierta sobre tu cabello real. Se califica si tu dibujo y tu defensa coinciden, y si la evidencia que das es la evidencia que enseñó esta unidad.",
+    questionLabel: "Habilidad",
+    skillLabel: "Declaración de la habilidad",
+    ladderLabel: "Escalera de niveles",
+    connectors: { "-BECAUSE-": "-PORQUE-", "-BUT-": "-PERO-", "-AND-": "-Y-", "-OR-": "-O-" },
+    examplesLabel: "Cómo se ve el trabajo en este nivel:",
+    backToGrid: "Volver a todos los niveles",
+    prevTier: "Nivel anterior",
+    nextTier: "Nivel siguiente",
+    pageRefLine: "Detalles en la pág. {n} del PDF de la rúbrica",
+    gridHint: "Haz clic en cualquier casilla para ver los detalles completos de ese nivel.",
+    cardTitle: "Rúbrica: Predice tu cabello",
+    cardSubtitle: "Cómo se califica tu predicción del cabello",
+    cardFooter: "Consulta la rúbrica en PDF para detalles y ejemplos en cada casilla",
+    printCard: "Imprimir",
+    downloadsLabel: "Descargas",
+    dlFullEn: "Rúbrica completa (EN)",
+    dlFullEs: "Rúbrica completa (ES)",
+    dlCardEn: "Tarjeta rápida (EN)",
+    dlCardEs: "Tarjeta rápida (ES)"
+  }
+};
+
+var GISTS = {
+  en: {
+    skillGists: [
+      "Draw both views and label all three layers",
+      "Make the drawing and the written claim say the same thing",
+      "Defend each feature with evidence from this unit",
+      "Explain any conflict between your hair and its treatment"
+    ],
+    cells: {
+      q1: ["No drawing submitted.", "One view only, or both views blank of layer labels.", "Both views drawn but one is unlabeled or unreadable as a hair.", "Both views labelled with all three layers, minor gaps or sloppiness.", "Both views clearly drawn, all three layers labelled, outline and medulla committed."],
+      q2: ["No claim written.", "Claim and drawing disagree, with no explanation offered.", "Claim roughly matches the drawing, but some committed boxes contradict what was drawn.", "Claim matches the drawing in nearly every feature.", "Claim and drawing agree feature for feature, with no contradiction left unexplained."],
+      q3: ["No evidence given.", "Feature names only, with no reasoning, or reasoning not from this unit.", "Some features defended, others answered with colour alone or a guess.", "Nearly every feature defended with a taught rule, one or two thin.", "Every feature defended with the rule this unit taught, including a stated falsifier."],
+      q4: ["Treatment boxes left blank, or no conflict addressed.", "A conflict is visible but the row is blank or says only that it does not matter.", "Conflict named but not attributed to either the hair or its treatment.", "Conflict named and attributed, with little explanation.", "Conflict named, attributed, and explained in terms of what treatment does to the structure."]
+    }
+  },
+  es: {
+    skillGists: [
+      "Dibuja ambas vistas y rotula las tres capas",
+      "Haz que el dibujo y la afirmación escrita digan lo mismo",
+      "Defiende cada característica con evidencia de esta unidad",
+      "Explica cualquier conflicto entre tu cabello y su tratamiento"
+    ],
+    cells: {
+      q1: ["No se entregó dibujo.", "Solo una vista, o ambas vistas sin rótulos de capas.", "Ambas vistas dibujadas pero una sin rótulos o ilegible como cabello.", "Ambas vistas rotuladas con las tres capas, con detalles menores.", "Ambas vistas claras, las tres capas rotuladas, contorno y médula definidos."],
+      q2: ["No se escribió ninguna afirmación.", "La afirmación y el dibujo no coinciden, sin explicación.", "La afirmación coincide en general, pero algunas casillas contradicen el dibujo.", "La afirmación coincide con el dibujo en casi todas las características.", "La afirmación y el dibujo coinciden característica por característica, sin contradicción sin explicar."],
+      q3: ["No se dio evidencia.", "Solo nombres de características, sin razonamiento, o razonamiento ajeno a la unidad.", "Algunas características defendidas, otras respondidas solo con el color o una suposición.", "Casi todas defendidas con una regla enseñada, una o dos débiles.", "Todas defendidas con la regla enseñada, incluyendo qué las probaría falsas."],
+      q4: ["Casillas de tratamiento en blanco, o ningún conflicto atendido.", "Hay un conflicto visible pero la fila está en blanco o dice que no importa.", "El conflicto se nombra pero no se atribuye al cabello ni al tratamiento.", "El conflicto se nombra y se atribuye, con poca explicación.", "El conflicto se nombra, se atribuye y se explica según lo que el tratamiento hace a la estructura."]
+    }
+  }
+};
+
+var TIERS = [
+  { key: "t0", score: "0%" },
+  { key: "t1", score: "55%" },
+  { key: "t2", score: "65%" },
+  { key: "t3", score: "85%" },
+  { key: "t4", score: "100%" }
+];
+
+var EXPLAINER = {
+  en: {
+    heading: "How your hair prediction grade is decided",
+    framing: "Your Predict Your Hair sheet is graded on four skills. Here is how your grade works.",
+    points: [
+      { lead: "Each skill is graded on the 0/55/65/85/100 ladder.",
+        text: "Every skill starts at Missing (0%). A genuine attempt earns at least Emerging (55%). Partial work earns Approaching (65%). Solid work earns Developing (85%). Complete, precise work earns Refining (100%)." },
+      { lead: "Your overall grade is the average of your four skill scores.",
+        text: "Example: you earn Refining (100%) on the drawing, Developing (85%) on the claim, Developing (85%) on the defence, and Approaching (65%) on treatment. Your overall grade is 84%. Every skill counts, so a strong skill helps pull up a weaker one." },
+      { lead: "You are not graded on whether your prediction is true.",
+        text: "Nobody can see your own hair under a scope. The grade is on whether your drawing and your written defence agree with each other, and whether your evidence is the evidence this unit taught. A student whose hair is dyed, heat styled, or covered in product is not penalised for drawing what is actually there." },
+      { lead: "The goal is Developing or better on every skill.",
+        text: "Developing (85%) means another forensic student could read your sheet and understand exactly what you expected to see and why. Refining (100%) means your evidence is specific enough that someone could name what would prove you wrong." }
+    ],
+    compact: "Four skills, each on the 0/55/65/85/100 ladder. Your overall grade is the average of the four. You are graded on whether the drawing and the defence agree, not on whether the prediction is true."
+  },
+  es: {
+    heading: "Cómo se decide tu calificación de la predicción del cabello",
+    framing: "Tu hoja Predice tu cabello se califica en cuatro habilidades. Así funciona tu calificación.",
+    points: [
+      { lead: "Cada habilidad se califica en la escalera 0/55/65/85/100.",
+        text: "Cada habilidad empieza en Ausente (0%). Un intento real gana al menos Emergente (55%). El trabajo parcial gana Progresando (65%). El trabajo sólido gana En desarrollo (85%). El trabajo completo y preciso gana Refinando (100%)." },
+      { lead: "Tu calificación final es el promedio de tus cuatro habilidades.",
+        text: "Ejemplo: ganas Refinando (100%) en el dibujo, En desarrollo (85%) en la afirmación, En desarrollo (85%) en la defensa, y Progresando (65%) en tratamiento. Tu calificación final es 84%. Cada habilidad cuenta, así que una habilidad fuerte ayuda a subir una más débil." },
+      { lead: "No se califica si tu predicción es cierta.",
+        text: "Nadie puede ver tu propio cabello bajo el microscopio. Se califica si tu dibujo y tu defensa escrita coinciden entre sí, y si tu evidencia es la que enseñó esta unidad. Un estudiante con cabello teñido, con calor o con producto no es penalizado por dibujar lo que realmente hay." },
+      { lead: "La meta es En desarrollo o mejor en cada habilidad.",
+        text: "En desarrollo (85%) significa que otro estudiante de forense podría leer tu hoja y entender exactamente qué esperabas ver y por qué. Refinando (100%) significa que tu evidencia es tan específica que alguien podría nombrar qué probaría que estás equivocado." }
+    ],
+    compact: "Cuatro habilidades, cada una en la escalera 0/55/65/85/100. Tu calificación final es el promedio de las cuatro. Se califica si el dibujo y la defensa coinciden, no si la predicción es cierta."
+  }
+};
+
+function explainerHTML(compact) {
+  var E = EXPLAINER[state.lang];
+  if (compact) return '<p class="explainer-compact">' + esc(E.compact) + "</p>";
+  var h = '<div class="panel explainer"><h2>' + esc(E.heading) + "</h2>" +
+    '<p class="explainer-framing">' + esc(E.framing) + "</p><ol>";
+  for (var i = 0; i < E.points.length; i++) {
+    h += "<li><strong>" + esc(E.points[i].lead) + "</strong> " + esc(E.points[i].text) + "</li>";
+  }
+  return h + "</ol></div>";
+}
+
+var PDF_PAGES = { en: {}, es: {} };
+
+var DATA = {
+  en: {
+    questions: [
+      {
+        q: "The drawing",
+        skill: "I am able to draw both views of a hair, a cross section and a longitudinal view, and label the cuticle, the cortex, and the medulla on each.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: No drawing was submitted on page 1, or the boxes are blank."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: There is an attempt to draw the hair",
+            "-BUT-", "only one of the two views is drawn",
+            "-OR-", "the layers are not labelled, so the drawing cannot be read as a hair."
+          ], examples: [
+            "A circle in the cross-section box and nothing in the longitudinal box.",
+            "Two shapes drawn, but no words anywhere on the page, so the three layers are unmarked."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: Both views are drawn",
+            "-BUT-", "one view is unlabelled or the layers are placed so the core is drawn outside the body of the hair",
+            "-OR-", "an outline or medulla box is left uncommitted, so the drawing cannot be compared to the defence."
+          ], examples: [
+            "The cross section shows three rings, but the medulla is drawn as a dot floating away from the cortex.",
+            "Both views are labelled, but the medulla shape boxes on page 1 are all empty."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: Both views are drawn and labelled with all three layers",
+            "-BECAUSE-", "the cuticle, cortex, and medulla are marked on each view in the right order",
+            "-BUT-", "one label is unclear, or one committed box does not quite match the drawing."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: Both views are clear and deliberately drawn",
+            "-BECAUSE-", "each view labels the cuticle, cortex, and medulla, and the outline and the medulla shape are each committed to a single choice",
+            "-AND-", "the outline you drew matches the outline box you checked."
+          ] }
+        }
+      },
+      {
+        q: "The drawing and the claim agree",
+        skill: "I am able to make a prediction about my own hair that matches what I actually drew.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: No prediction was written on page 2."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: A prediction is written",
+            "-BUT-", "it contradicts the drawing, for example claiming a thick filled medulla while the longitudinal view shows the core broken or absent",
+            "-OR-", "it is a general statement about hair that does not describe this hair at all."
+          ], examples: [
+            "The claim says tightly coiled and the cross section was drawn as a circle.",
+            "The claim is that hair is made of keratin and has three layers, with no prediction about this hair."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: The prediction roughly matches the drawing",
+            "-BUT-", "at least one committed box on page 1 contradicts the claim, such as committing to Fragmentado while writing that the core is solid",
+            "-OR-", "the texture tier checked and the outline checked point to different kinds of hair and this is not addressed."
+          ], examples: [
+            "The student checks Tightly coiled but draws and describes an oval section with a thin core.",
+            "The claim mentions a continuous medulla, and the medulla row on page 2 says fragmented."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: The prediction matches the drawing in nearly every feature",
+            "-BECAUSE-", "the claim, the committed boxes, and both drawings agree on outline, medulla, and texture",
+            "-BUT-", "one feature is left vague or unstated."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: The prediction and the drawing agree feature for feature",
+            "-BECAUSE-", "the claim states an outline, a medulla, and a texture tier, and every committed box matches",
+            "-AND-", "no contradiction between page 1 and page 2 is left unexplained."
+          ] }
+        }
+      },
+      {
+        q: "The defence",
+        skill: "I am able to defend each feature of my drawing using the rules about hair structure that this unit taught.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: The evidence table on page 2 was not filled in."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: There is an attempt to explain the drawing",
+            "-BUT-", "the reasons given are not from this unit, for example because it looks nice or because that is just how my hair is",
+            "-OR-", "the feature rows repeat the same sentence."
+          ], examples: [
+            "Every row says it is what the student's hair looks like, with no reference to shape, core, or cuticle.",
+            "The colour row is the only one completed, and the others say see above."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: Some features are defended with a rule from the unit",
+            "-BUT-", "others rely on appearance alone, such as answering the medulla row with the person's hair colour",
+            "-OR-", "the rule is named but is not connected to what was drawn."
+          ], examples: [
+            "The shape row correctly says flat sections tend to curve, but the cuticle row just says it is dark.",
+            "The student writes the medullary index rule but never gives a rough ratio for their own core."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: Nearly every feature is defended with evidence this unit taught",
+            "-BECAUSE-", "shape, medulla, cuticle, and pigment are each tied to what the drawing shows",
+            "-BUT-", "one or two rows are thin, missing the rough medullary ratio, or do not name what would prove the read wrong."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: Every feature is defended with the rule this unit taught, and the reasoning is specific to this hair",
+            "-BECAUSE-", "the student names what was drawn and gives the structural reason for it",
+            "-AND-", "the student states what evidence would prove the read wrong."
+          ] }
+        }
+      },
+      {
+        q: "Honest treatment",
+        skill: "I am able to explain how dye, heat, chemical treatment, or product changes what a hair looks like under the scope, and apply that to my own hair.",
+        tiers: {
+          t0: { chip: "Missing 0%", title: null, lines: ["Missing: The treatment boxes on page 2 were left blank and no conflict was addressed."] },
+          t1: { chip: "Emerging 55%", title: null, lines: [
+            "Emerging: Treatment boxes are checked, or a conflict is visible",
+            "-BUT-", "the row that asks the student to settle it is blank, or says only that it does not matter.",
+            "-OR-", "the student denies any conflict even though the drawing visibly contradicts the texture tier they chose."
+          ], examples: [
+            "Dyed and heat styled are checked, but the diagram shows clean natural pigment and nothing is said about it.",
+            "The draw shows a flattened section while the tier checked is straight and heavy, with no note anywhere."
+          ] },
+          t2: { chip: "Approaching 65%", title: null, lines: [
+            "Approaching: The conflict is named",
+            "-BUT-", "it is not attributed to either the hair itself or to what was done to it",
+            "-OR-", "the student treats the conflict as an error to apologise for rather than something to explain."
+          ], examples: [
+            "The student writes that there is a difference but does not say whether the cause is their natural hair or the dye."
+          ] },
+          t3: { chip: "Developing 85%", title: null, lines: [
+            "Developing: The conflict is named and attributed",
+            "-BECAUSE-", "the student says whether the hair itself or the treatment produced the appearance",
+            "-BUT-", "the explanation does not say what the treatment did to the structure."
+          ] },
+          t4: { chip: "Refining 100%", title: null, lines: [
+            "Refining: The conflict is named, attributed, and explained structurally",
+            "-BECAUSE-", "the student describes what dye, heat, or product does to the cortex, the cuticle edge, or the pigment",
+            "-AND-", "the student shows why the drawing is still an honest observation rather than a mistake."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Missing · 0%", text: "Nothing was submitted for this skill." },
+      { chip: "Emerging · 55%", text: "Something was submitted, but the skill is only beginning." },
+      { chip: "Approaching · 65%", text: "The skill is partly there, with important gaps remaining." },
+      { chip: "Developing · 85%", text: "The skill is nearly complete, with one small gap left." },
+      { chip: "Refining · 100%", text: "The skill is clearly present, and practice keeps it strong." }
+    ]
+  },
+  es: {
+    questions: [
+      {
+        q: "El dibujo",
+        skill: "Puedo dibujar ambas vistas de un cabello, un corte transversal y una vista longitudinal, y rotular la cutícula, la corteza y la médula en cada una.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No se entregó dibujo en la página 1, o las casillas están en blanco."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay un intento de dibujar el cabello",
+            "-PERO-", "solo se dibuja una de las dos vistas",
+            "-O-", "las capas no están rotuladas, así que el dibujo no se puede leer como un cabello."
+          ], examples: [
+            "Un círculo en la casilla del corte transversal y nada en la casilla longitudinal.",
+            "Hay dos formas dibujadas, pero ninguna palabra en la página, así que las tres capas quedan sin marcar."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Ambas vistas están dibujadas",
+            "-PERO-", "una vista no está rotulada o las capas están colocadas de modo que el núcleo queda fuera del cuerpo del cabello",
+            "-O-", "queda sin marcar la casilla del contorno o de la médula, así que el dibujo no se puede comparar con la defensa."
+          ], examples: [
+            "El corte transversal muestra tres anillos, pero la médula se dibuja como un punto flotando fuera de la corteza.",
+            "Ambas vistas están rotuladas, pero las casillas de la forma de la médula en la página 1 están vacías."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: Ambas vistas están dibujadas y rotuladas con las tres capas",
+            "-PORQUE-", "la cutícula, la corteza y la médula están marcadas en cada vista en el orden correcto",
+            "-PERO-", "un rótulo es poco claro, o una casilla marcada no coincide del todo con el dibujo."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: Ambas vistas son claras y están dibujadas con intención",
+            "-PORQUE-", "cada vista rotula la cutícula, la corteza y la médula, y el contorno y la forma de la médula quedan definidos en una sola opción",
+            "-Y-", "el contorno que dibujaste coincide con la casilla que marcaste."
+          ] }
+        }
+      },
+      {
+        q: "El dibujo y la afirmación coinciden",
+        skill: "Puedo hacer una predicción sobre mi propio cabello que coincida con lo que realmente dibujé.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No se escribió ninguna predicción en la página 2."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay una predicción escrita",
+            "-PERO-", "contradice el dibujo, por ejemplo afirmando una médula gruesa y llena mientras la vista longitudinal muestra el núcleo roto o ausente",
+            "-O-", "es una afirmación general sobre el cabello que no describe este cabello."
+          ], examples: [
+            "La afirmación dice muy rizado y el corte transversal se dibujó como un círculo.",
+            "La afirmación es que el cabello está hecho de queratina y tiene tres capas, sin ninguna predicción sobre este cabello."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: La predicción coincide en general con el dibujo",
+            "-PERO-", "al menos una casilla marcada en la página 1 contradice la afirmación, por ejemplo marcar Fragmentada y escribir que el núcleo es sólido",
+            "-O-", "el nivel de textura marcado y el contorno marcado apuntan a tipos de cabello distintos y esto no se atiende."
+          ], examples: [
+            "El estudiante marca Muy rizado pero dibuja y describe una sección ovalada con un núcleo delgado.",
+            "La afirmación menciona una médula continua, y la fila de la médula en la página 2 dice fragmentada."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: La predicción coincide con el dibujo en casi todas las características",
+            "-PORQUE-", "la afirmación, las casillas marcadas y ambos dibujos coinciden en contorno, médula y textura",
+            "-PERO-", "una característica queda vaga o sin mencionar."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: La predicción y el dibujo coinciden característica por característica",
+            "-PORQUE-", "la afirmación indica un contorno, una médula y un nivel de textura, y todas las casillas marcadas coinciden",
+            "-Y-", "ninguna contradicción entre la página 1 y la página 2 queda sin explicar."
+          ] }
+        }
+      },
+      {
+        q: "La defensa",
+        skill: "Puedo defender cada característica de mi dibujo usando las reglas sobre la estructura del cabello que enseñó esta unidad.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: No se llenó la tabla de evidencia de la página 2."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Hay un intento de explicar el dibujo",
+            "-PERO-", "las razones no vienen de esta unidad, por ejemplo porque se ve bonito o porque así es mi cabello",
+            "-O-", "las filas repiten la misma oración."
+          ], examples: [
+            "Cada fila dice que es como se ve el cabello del estudiante, sin referencia a la forma, el núcleo o la cutícula.",
+            "Solo se completa la fila del color, y las demás dicen ver arriba."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: Algunas características se defienden con una regla de la unidad",
+            "-PERO-", "otras dependen solo de la apariencia, como responder la fila de la médula con el color del cabello",
+            "-O-", "la regla se nombra pero no se conecta con lo que se dibujó."
+          ], examples: [
+            "La fila de la forma dice correctamente que las secciones planas tienden a curvarse, pero la de la cutícula solo dice que es oscura.",
+            "El estudiante escribe la regla del índice medular pero nunca da una proporción aproximada para su propio núcleo."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: Casi todas las características se defienden con evidencia que enseñó esta unidad",
+            "-PORQUE-", "la forma, la médula, la cutícula y el pigmento se conectan con lo que muestra el dibujo",
+            "-PERO-", "una o dos filas son débiles, falta la proporción aproximada de la médula, o no se indica qué probaría que la lectura está mal."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: Cada característica se defiende con la regla que enseñó esta unidad, y el razonamiento es específico de este cabello",
+            "-PORQUE-", "el estudiante nombra lo que dibujó y da la razón estructural",
+            "-Y-", "el estudiante indica qué evidencia probaría que la lectura está mal."
+          ] }
+        }
+      },
+      {
+        q: "Tratamiento honesto",
+        skill: "Puedo explicar cómo el tinte, el calor, el tratamiento químico o el producto cambian lo que un cabello muestra bajo el microscopio, y aplicar eso a mi propio cabello.",
+        tiers: {
+          t0: { chip: "Ausente 0%", title: null, lines: ["Ausente: Las casillas de tratamiento de la página 2 quedaron en blanco y no se atendió ningún conflicto."] },
+          t1: { chip: "Emergente 55%", title: null, lines: [
+            "Emergente: Se marcaron casillas de tratamiento, o hay un conflicto visible",
+            "-PERO-", "la fila que pide resolverlo está en blanco, o dice solo que no importa.",
+            "-O-", "el estudiante niega cualquier conflicto aunque el dibujo contradice visiblemente el nivel de textura que eligió."
+          ], examples: [
+            "Se marca Teñido y Con calor, pero el diagrama muestra pigmento natural limpio y no se dice nada al respecto.",
+            "El dibujo muestra una sección aplanada mientras el nivel marcado es liso y pesado, sin nota alguna."
+          ] },
+          t2: { chip: "Progresando 65%", title: null, lines: [
+            "Progresando: El conflicto se nombra",
+            "-PERO-", "no se atribuye ni al cabello mismo ni a lo que se le hizo",
+            "-O-", "el estudiante trata el conflicto como un error por el que disculparse en lugar de algo que explicar."
+          ], examples: [
+            "El estudiante escribe que hay una diferencia pero no dice si la causa es su cabello natural o el tinte."
+          ] },
+          t3: { chip: "En desarrollo 85%", title: null, lines: [
+            "En desarrollo: El conflicto se nombra y se atribuye",
+            "-PORQUE-", "el estudiante dice si el cabello mismo o el tratamiento produjo la apariencia",
+            "-PERO-", "la explicación no dice qué hizo el tratamiento a la estructura."
+          ] },
+          t4: { chip: "Refinando 100%", title: null, lines: [
+            "Refinando: El conflicto se nombra, se atribuye y se explica estructuralmente",
+            "-PORQUE-", "el estudiante describe qué le hace el tinte, el calor o el producto a la corteza, al borde de la cutícula o al pigmento",
+            "-Y-", "el estudiante muestra por qué el dibujo sigue siendo una observación honesta y no un error."
+          ] }
+        }
+      }
+    ],
+    ladder: [
+      { chip: "Ausente · 0%", text: "No se entregó nada para esta habilidad." },
+      { chip: "Emergente · 55%", text: "Se entregó algo, pero la habilidad apenas comienza." },
+      { chip: "Progresando · 65%", text: "La habilidad está a medias, con vacíos importantes." },
+      { chip: "En desarrollo · 85%", text: "La habilidad está casi completa, con un pequeño vacío." },
+      { chip: "Refinando · 100%", text: "La habilidad está claramente presente, y la práctica la mantiene fuerte." }
+    ]
+  }
+};
+
+/* ============================== LOGIC ============================== */
+
+var LANG_KEY = "pyh-lang";
+var state = { lang: "en" };
+try {
+  var saved = localStorage.getItem(LANG_KEY);
+  if (saved === "en" || saved === "es") state.lang = saved;
+} catch (e) {}
+var urlLang = /[?&]lang=(es|en)/.exec(location.search);
+if (urlLang) state.lang = urlLang[1];
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function tierVarsCSS(tierIdx) {
+  return "color:var(--" + TIERS[tierIdx].key + "-c);background:var(--" + TIERS[tierIdx].key + "-b)";
+}
+
+function pageRefNum(qIdx, tierIdx) {
+  var map = PDF_PAGES[state.lang];
+  if (!map) return null;
+  var v = map["q" + (qIdx + 1) + "-t" + tierIdx];
+  return (typeof v === "number") ? v : null;
+}
+
+function pageRefHTML(qIdx, tierIdx) {
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n === null) return "";
+  return '<span class="page-ref">p. ' + n + "</span>";
+}
+
+function printTierHTML(qIdx, tierIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var S = STR[state.lang];
+  var h = '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)">' +
+    '<div class="tier-body">' +
+    '<p class="tier-line"><span class="score-chip">' + esc(tier.chip) + "</span></p>";
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  h += "</div></div>";
+  return h;
+}
+
+function printQuestionBlockHTML(qIdx) {
+  var q = DATA[state.lang].questions[qIdx];
+  var S = STR[state.lang];
+  var h = '<section class="question-block' + (qIdx === 0 ? " first" : "") + '">';
+  h += '<div class="q-inner">' +
+    '<p class="q-text">' + esc(S.questionLabel + " " + (qIdx + 1) + ": " + q.q) + "</p>" +
+    '<p class="skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  for (var j = 0; j < TIERS.length; j++) h += printTierHTML(qIdx, j);
+  h += "</div></section>";
+  return h;
+}
+
+function ladderSummaryHTML() {
+  var S = STR[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<div class="panel ladder-summary"><h2>' + esc(S.ladderLabel) + "</h2>";
+  for (var i = 0; i < L.length; i++) {
+    h += '<div class="ladder-row">' +
+      '<span class="score-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(L[i].chip) + "</span>" +
+      "<p>" + esc(L[i].text) + "</p></div>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function ladderStripHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="ladder-strip" role="group" aria-label="' + esc(S.ladderLabel) + '">';
+  for (var i = 0; i < TIERS.length; i++) {
+    h += '<span class="ladder-chip" style="' + tierVarsCSS(i) + '">' +
+      esc(DATA[state.lang].ladder[i].chip) + "</span>";
+  }
+  h += "</div>";
+  return h;
+}
+
+function landingHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += explainerHTML(false);
+  h += '<div class="panel grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' +
+      esc(DATA[state.lang].ladder[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < DATA[state.lang].questions.length; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><a class="grid-cell" href="#/q' + (q + 1) + "/t" + c + '" role="link" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</a></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += downloadsFooterHTML();
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function downloadsFooterHTML() {
+  return "";
+}
+
+function detailHTML(qIdx, tierIdx) {
+  var S = STR[state.lang];
+  var q = DATA[state.lang].questions[qIdx];
+  var tier = q.tiers[TIERS[tierIdx].key];
+  var flat = qIdx * 5 + tierIdx;
+  var prevFlat = flat - 1, nextFlat = flat + 1;
+  var hasPrev = prevFlat >= 0, hasNext = nextFlat <= 19;
+
+  var h = '<a class="backlink no-print" href="#/">&larr; ' + esc(S.backToGrid) + "</a>";
+  h += '<p class="detail-qnum">' + esc(S.questionLabel + " " + (qIdx + 1)) + "</p>" +
+    '<h2 class="detail-q">' + esc(q.q) + "</h2>" +
+    '<p class="detail-skill"><strong>' + esc(S.skillLabel) + ":</strong> " + esc(q.skill) + "</p>";
+  h += '<div class="detail-head">' +
+    '<span class="score-chip" style="' + tierVarsCSS(tierIdx) + '">' + esc(tier.chip) + "</span>" +
+    '<span class="detail-score">' + esc(TIERS[tierIdx].score) + "</span></div>";
+
+  h += '<div class="tier" style="--tc:var(--' + TIERS[tierIdx].key + '-c);--tb:var(--' + TIERS[tierIdx].key + '-b)"><div class="tier-body">';
+  if (tier.title) h += '<p class="tier-line"><strong>' + esc(tier.title) + "</strong></p>";
+  var isConnector = function (s) { return /^-(BECAUSE|BUT|AND|OR|PORQUE|PERO|Y|O)-$/.test(s); };
+  for (var i = 0; i < tier.lines.length; i++) {
+    var ln = tier.lines[i];
+    if (isConnector(ln)) {
+      h += '<span class="connector">' + esc(S.connectors[ln] || ln) + "</span>";
+    } else {
+      h += '<p class="tier-line">' + esc(ln) + "</p>";
+    }
+  }
+  if (tier.examples && tier.examples.length) {
+    h += '<p class="examples-label">' + esc(S.examplesLabel) + "</p><ul class=\"examples\">";
+    for (var j = 0; j < tier.examples.length; j++) {
+      h += "<li>" + esc(tier.examples[j]) + "</li>";
+    }
+    h += "</ul>";
+  }
+  var n = pageRefNum(qIdx, tierIdx);
+  if (n !== null) {
+    h += '<p class="page-ref-line">' + esc(S.pageRefLine.replace("{n}", String(n))) + "</p>";
+  }
+  h += "</div></div>";
+
+  h += '<nav class="tier-nav no-print" aria-label="' + esc(S.backToGrid) + '">';
+  if (hasPrev) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(prevFlat / 5) + 1) + "/t" + (prevFlat % 5) + '">&larr; ' + esc(S.prevTier) + "</a>";
+  } else {
+    h += '<span class="nav-btn disabled">&larr; ' + esc(S.prevTier) + "</span>";
+  }
+  h += '<span class="spacer"></span>';
+  h += '<a class="nav-btn primary" href="#/">' + esc(S.backToGrid) + "</a>";
+  h += '<span class="spacer"></span>';
+  if (hasNext) {
+    h += '<a class="nav-btn" href="#/q' + (Math.floor(nextFlat / 5) + 1) + "/t" + (nextFlat % 5) + '">' + esc(S.nextTier) + " &rarr;</a>";
+  } else {
+    h += '<span class="nav-btn disabled">' + esc(S.nextTier) + " &rarr;</span>";
+  }
+  h += "</nav>";
+  return h;
+}
+
+function cardHTML() {
+  var S = STR[state.lang];
+  var G = GISTS[state.lang];
+  var L = DATA[state.lang].ladder;
+  var h = '<button type="button" class="print-btn no-print" onclick="window.print()">' + esc(S.printCard) + "</button>";
+  h += '<div class="card-doc"><h1>' + esc(S.cardTitle) + "</h1>" +
+    '<p class="card-sub">' + esc(S.cardSubtitle) + "</p>";
+  h += explainerHTML(true);
+  h += '<div class="grid-panel"><table class="rubric-grid"><thead><tr><th class="corner" scope="col"></th>';
+  for (var t = 0; t < TIERS.length; t++) {
+    h += '<th class="colhead" scope="col" style="' + tierVarsCSS(t) + '">' + esc(L[t].chip) + "</th>";
+  }
+  h += "</tr></thead><tbody>";
+  for (var q = 0; q < DATA[state.lang].questions.length; q++) {
+    h += '<tr><th class="rowhead" scope="row">' +
+      '<span class="row-q">' + esc(S.questionLabel + " " + (q + 1) + " · " + DATA[state.lang].questions[q].q) + "</span>" +
+      '<span class="row-gist">' + esc(G.skillGists[q]) + "</span></th>";
+    for (var c = 0; c < TIERS.length; c++) {
+      h += '<td class="cell"><div class="grid-cell" style="--tc:var(--' + TIERS[c].key + "-c);--tb:var(--" + TIERS[c].key + '-b)">' +
+        '<span class="gist">' + esc(G.cells["q" + (q + 1)][c]) + "</span>" +
+        pageRefHTML(q, c) + "</div></td>";
+    }
+    h += "</tr>";
+  }
+  h += "</tbody></table></div>";
+  h += '<div class="card-ladder">';
+  for (var k = 0; k < L.length; k++) {
+    h += '<div class="cl" style="' + tierVarsCSS(k) + '"><strong>' + esc(L[k].chip) + "</strong>" + esc(L[k].text) + "</div>";
+  }
+  h += "</div>";
+  h += '<p class="card-footer">' + esc(S.cardFooter) + "</p>";
+  h += "</div>";
+  return h;
+}
+
+function printDocumentHTML() {
+  var S = STR[state.lang];
+  var h = '<div class="panel overview"><p class="eyebrow">' + esc(S.overviewLabel) + "</p><p>" + esc(S.overview) + "</p></div>";
+  h += '<div class="explainer-wrap">' + explainerHTML(false) + "</div>";
+  for (var q = 0; q < DATA[state.lang].questions.length; q++) h += printQuestionBlockHTML(q);
+  h += ladderSummaryHTML();
+  return h;
+}
+
+function isCardView() {
+  return /[?&]view=card/.test(location.search);
+}
+
+function parseHash() {
+  var m = /^#\/q([1-3])\/t([0-4])$/.exec(location.hash || "");
+  if (!m) return null;
+  return { q: parseInt(m[1], 10) - 1, t: parseInt(m[2], 10) };
+}
+
+function render() {
+  var S = STR[state.lang];
+  var card = isCardView();
+  document.body.classList.toggle("mode-card", card);
+  document.documentElement.lang = state.lang;
+  document.title = S.pageTitle;
+  var titleWords = S.pageTitle.split(" ");
+  titleWords[titleWords.length - 1] = '<span class="accent">' + esc(titleWords[titleWords.length - 1]) + "</span>";
+  document.getElementById("page-title").innerHTML = titleWords.join(" ");
+  document.getElementById("page-sub").textContent = S.pageSub;
+  document.getElementById("lang-en").setAttribute("aria-pressed", state.lang === "en");
+  document.getElementById("lang-es").setAttribute("aria-pressed", state.lang === "es");
+
+  var h;
+  if (card) {
+    h = cardHTML();
+  } else {
+    var route = parseHash();
+    if (route) {
+      h = '<div class="screen-view">' + detailHTML(route.q, route.t) + "</div>";
+    } else {
+      if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+        try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      }
+      h = '<div class="screen-view">' + landingHTML() + "</div>";
+    }
+    h += '<div class="print-doc" aria-hidden="true">' + printDocumentHTML() + "</div>";
+  }
+  document.getElementById("app").innerHTML = h;
+  window.scrollTo(0, 0);
+}
+
+function setLang(lang) {
+  state.lang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  render();
+}
+
+document.getElementById("lang-en").addEventListener("click", function () { setLang("en"); });
+document.getElementById("lang-es").addEventListener("click", function () { setLang("es"); });
+window.addEventListener("hashchange", render);
+
+render();
+</script>
+</body>
+</html>

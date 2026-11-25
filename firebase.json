@@ -304,6 +304,10 @@
         "destination": "/energy-flow-questionnaire.html"
       },
       {
+        "source": "/power-line-lab-rubric",
+        "destination": "/power-line-lab-rubric.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
