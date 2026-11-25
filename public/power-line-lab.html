@@ -107,6 +107,24 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .export-sheet{max-width:700px;margin:0 auto;color:#111;font-size:12px;line-height:1.4;}
 .export-sheet h1{font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:22px;margin:0 0 2px;}
 .export-sheet .exp-sub{color:#555;font-size:11px;margin-bottom:14px;}
+/* student identity: the sheet is graded offline as a PDF stack, so every page set
+   must be attributable. Same dashed a-lign rule language as the hypothesis box. */
+.exp-id{display:flex;flex-wrap:wrap;gap:0 22px;margin:0 0 14px;padding:8px 0;
+  border-top:1.5px solid #333;border-bottom:1px dashed #333;}
+.exp-id .exp-idf{display:flex;align-items:baseline;gap:7px;min-width:150px;}
+.exp-id .exp-idl{font-family:'Archivo',sans-serif;font-weight:800;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:#333;}
+.exp-id .exp-idv{font-size:12px;color:#111;font-weight:600;border-bottom:1px dotted #999;padding:0 4px 1px;}
+/* lab-screen capture bar: one fill-in, persists to localStorage */
+.idbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 10px 0;}
+.idbar label{display:flex;align-items:center;gap:6px;font-size:12px;font-family:'Archivo',sans-serif;font-weight:700;letter-spacing:.04em;}
+.idbar input{min-height:32px;padding:4px 8px;font-size:13px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#111;}
+.idbar input#studentName{width:220px;}
+.idbar input#studentPeriod{width:70px;}
+.idbar input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.idnotice{display:none;margin:0 10px;padding:7px 10px;border:1px dashed #C22F2F;border-radius:8px;
+  background:#fff;color:#C22F2F;font-size:12.5px;font-weight:600;}
+.idnotice.show{display:block;}
 .exp-hyp{border:1.5px dashed #333;border-radius:8px;padding:12px 14px;margin-bottom:16px;background:#fff;}
 .exp-hyp .exp-hlab{font-family:'Archivo',sans-serif;font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#333;margin-bottom:6px;}
 .exp-hyp .exp-htext{white-space:pre-wrap;font-size:13px;}
@@ -129,6 +147,11 @@ table.exp-empty{color:#777;font-style:italic;padding:8px 0;}
   #scr-export{display:flex!important;position:static;}
   .export-scroll{overflow:visible;padding:0;}
   .export-sheet{max-width:none;font-size:11px;}
+  /* the hypothesis box carries 50% of the grade - never let it split across pages */
+  .exp-hyp{break-inside:avoid;page-break-inside:avoid;}
+  /* attribution header must stay intact with the title it belongs to */
+  .exp-id{break-inside:avoid;page-break-inside:avoid;}
+  .exp-id .exp-idv{border-bottom:none;}
   @page{size:letter portrait;margin:0.6in;}
 }
 </style>
@@ -205,6 +228,11 @@ en:{
   hypPlaceholder:"The electrons ..., and the ions ..., which explains why ...",
   hypSave:"Save hypothesis", hypSaved:"Saved", hypUpdated:"Last updated",
   hypNever:"Not saved yet",
+  idName:"Student name", idPeriod:"Period", idDate:"Date",
+  idNamePh:"First and last name", idPeriodPh:"e.g. 3",
+  idEmptyName:"Enter your first and last name.",
+  idEmptyPeriod:"Enter your period.",
+  idBlockMsg:"Before you export, enter your student name and your period. Your PDF is graded offline, so it must show who wrote it.",
   exportBtn:"Export", exportPrint:"Print", exportBack:"Back",
   exportTitle:"Power Line Lab - Evidence Journal",
   exportSub:"A summary of my hypothesis and observations",
@@ -266,6 +294,11 @@ es:{
   hypPlaceholder:"Los electrones ..., y los iones ..., lo cual explica por qué ...",
   hypSave:"Guardar hipótesis", hypSaved:"Guardada", hypUpdated:"Última actualización",
   hypNever:"Aún no guardada",
+  idName:"Nombre del estudiante", idPeriod:"Período", idDate:"Fecha",
+  idNamePh:"Nombre y apellido", idPeriodPh:"ej. 3",
+  idEmptyName:"Escribe tu nombre y apellido.",
+  idEmptyPeriod:"Escribe tu período.",
+  idBlockMsg:"Antes de exportar, escribe tu nombre y tu período. Tu PDF se califica fuera de línea, así que debe mostrar quién lo escribió.",
   exportBtn:"Exportar", exportPrint:"Imprimir", exportBack:"Volver",
   exportTitle:"Laboratorio de Líneas de Potencia - Diario de Evidencia",
   exportSub:"Un resumen de mi hipótesis y mis observaciones",
@@ -460,8 +493,15 @@ const S = {
   })(),
   simTime:0, portalContext:null, inPortal:false,
   wireFail:false, wireGlow:0, genStrain:0,
+  /* student identity: the export is graded offline as a PDF stack, so it must
+     carry a name and period. Persisted under acdcLab:studentName / studentPeriod. */
+  studentName: (function(){ const v=store.get('studentName',''); return (typeof v==='string')?v:''; })(),
+  studentPeriod: (function(){ const v=store.get('studentPeriod',''); return (typeof v==='string')?v:''; })(),
 };
-const saveAll=()=>{ store.set('journal',S.journal); store.set('hypothesis',S.hypothesis.text); };
+const saveAll=()=>{
+  store.set('journal',S.journal); store.set('hypothesis',S.hypothesis.text);
+  store.set('studentName',S.studentName); store.set('studentPeriod',S.studentPeriod);
+};
 store.set('hypothesis',S.hypothesis.text);
 function fmtWhen(ts){
   try{ return new Date(ts).toLocaleString(); }catch(e){ return ''; }
@@ -1184,6 +1224,9 @@ function buildScreens(){
 }
 function show(name){
   S.screen=name;
+  /* leaving a panel must not strand a pending debounce (hypothesis + journal) */
+  hFlush();
+  jFlushAll();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sc=document.getElementById('scr-'+name); if(sc)sc.classList.add('active');
   document.getElementById('aidsRow').style.display = (name==='lab')?'flex':'none';
@@ -1293,6 +1336,9 @@ function buildLab(){
   bExp.onclick=()=>{ openExport(); };
   tabbar.appendChild(bExp);
   s.appendChild(tabbar);
+  /* identity capture sits above both tabs so it is filled once, then never lost */
+  s.appendChild(buildIdentityBar());
+  s.appendChild(el('div',{class:'idnotice',id:'idNotice',role:'alert','aria-live':'polite'}));
   const paneSim=el('div',{class:'tabpane','id':'paneSim'});
   const row=el('div',{class:'row',style:'flex:1 1 auto;min-height:0;padding:10px;'});
   row.appendChild(buildControlsPanel());
@@ -1423,12 +1469,35 @@ function renderJournal(){
   });
   p.appendChild(buildHypothesisArea());
 }
-/* flush pending journal text when the tab is hidden or the page unloads */
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') jFlushAll(); });
-window.addEventListener('pagehide', jFlushAll);
-window.addEventListener('beforeunload', jFlushAll);
+/* flush pending journal + hypothesis text when the tab is hidden or the page unloads */
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ hFlush(); idFlush(); jFlushAll(); } });
+window.addEventListener('pagehide', ()=>{ hFlush(); idFlush(); jFlushAll(); });
+window.addEventListener('beforeunload', ()=>{ hFlush(); idFlush(); jFlushAll(); });
 
-/* ===================== HYPOTHESIS (single overarching statement, spec item 1) ===================== */
+/* ===================== HYPOTHESIS (single overarching statement, spec item 1) =====================
+   Mirrors the journal autosave model above: debounced on input, immediate on blur,
+   force-flushed before the export reads S.hypothesis and on tab hide/unload.
+   Saves through saveAll() so the `acdcLab:hypothesis` localStorage key keeps its shape. */
+const H_SAVE_DELAY=400;
+let hTimer=null;
+function hStampEl(){ return document.getElementById('hStamp'); }
+function hFlush(){
+  if(hTimer){ clearTimeout(hTimer); hTimer=null; }
+  const ta=document.getElementById('hText');
+  if(!ta) return;
+  const text=ta.value.trim();
+  if(text===(S.hypothesis.text||'')) return;
+  S.hypothesis={text:text, ts:Date.now()};
+  saveAll();
+  const st=hStampEl();
+  if(st) st.textContent=T('hypUpdated')+': '+fmtWhen(S.hypothesis.ts);
+}
+function hOnInput(){
+  const st=hStampEl();
+  if(st) st.textContent=T('jSaving');
+  if(hTimer) clearTimeout(hTimer);
+  hTimer=setTimeout(hFlush, H_SAVE_DELAY);
+}
 function buildHypothesisArea(){
   const wrap=el('div',{class:'panel',style:'margin-top:4px;'});
   wrap.appendChild(el('div',{class:'eyebrow',style:'margin-bottom:6px;'},T('hypothesisBank')));
@@ -1443,10 +1512,12 @@ function buildHypothesisArea(){
   const ta=el('textarea',{id:'hText',style:'min-height:96px;'});
   ta.value=S.hypothesis.text||'';
   ta.setAttribute('placeholder',T('hypPlaceholder'));
+  ta.oninput=hOnInput;
+  ta.onblur=hFlush;
   wrap.appendChild(ta);
   const row=el('div',{style:'display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap;'});
   const bs=el('button',{class:'primary'},T('hypSave'));
-  const stamp=el('span',{class:'muted',style:'font-size:12px;'},(S.hypothesis.ts? T('hypUpdated')+': '+fmtWhen(S.hypothesis.ts) : T('hypNever')));
+  const stamp=el('span',{class:'muted',id:'hStamp',style:'font-size:12px;'},(S.hypothesis.ts? T('hypUpdated')+': '+fmtWhen(S.hypothesis.ts) : T('hypNever')));
   row.appendChild(bs); row.appendChild(stamp);
   bs.onclick=()=>{
     const t=ta.value.trim();
@@ -1458,9 +1529,77 @@ function buildHypothesisArea(){
   return wrap;
 }
 
+/* ===================== STUDENT IDENTITY (attribution for the printed sheet) =====================
+   The export leaves the browser as a PDF the teacher grades offline. A stack of
+   nameless sheets cannot be graded, so name + period are captured here, saved on
+   into the existing acdcLab: store, and re-rendered in the export header. Both
+   export entry points (the Export button and the in-sheet Print button) gate on
+   them. ONLY identity blocks an export - an empty hypothesis still exports, with
+   its "No hypothesis saved yet." fallback. */
+const ID_SAVE_DELAY=400;
+let idTimer=null;
+function idVal(s){ return (s||'').replace(/\s+/g,' ').trim(); }
+function idComplete(){
+  return idVal(S.studentName).length>0 && idVal(S.studentPeriod).length>0;
+}
+function idNoticeEl(){ return document.getElementById('idNotice'); }
+function idHideNotice(){
+  const n=idNoticeEl(); if(!n) return;
+  n.classList.remove('show'); n.textContent='';
+}
+function idShowNotice(){
+  const n=idNoticeEl(); if(!n) return;
+  const missing=[];
+  if(!idVal(S.studentName)) missing.push(T('idEmptyName'));
+  if(!idVal(S.studentPeriod)) missing.push(T('idEmptyPeriod'));
+  n.textContent=missing.join(' ')+' '+T('idBlockMsg');
+  n.classList.add('show');
+}
+function idFlush(){
+  if(idTimer){ clearTimeout(idTimer); idTimer=null; }
+  const nm=document.getElementById('studentName'), pd=document.getElementById('studentPeriod');
+  if(nm) S.studentName=nm.value;
+  if(pd) S.studentPeriod=pd.value;
+  saveAll();
+  if(idComplete()) idHideNotice();
+}
+function idOnInput(){
+  if(idTimer) clearTimeout(idTimer);
+  idTimer=setTimeout(idFlush, ID_SAVE_DELAY);
+}
+function buildIdentityBar(){
+  const bar=el('div',{class:'idbar',id:'idbar'});
+  const nameLab=el('label',{for:'studentName'},T('idName'));
+  bar.appendChild(nameLab);
+  const nm=el('input',{id:'studentName',type:'text',autocomplete:'name',
+    'aria-describedby':'idNotice',maxlength:'80'});
+  nm.value=S.studentName||'';
+  nm.setAttribute('placeholder',T('idNamePh'));
+  nm.oninput=idOnInput; nm.onblur=idFlush;
+  bar.appendChild(nm);
+  const perLab=el('label',{for:'studentPeriod'},T('idPeriod'));
+  bar.appendChild(perLab);
+  const pd=el('input',{id:'studentPeriod',type:'text',inputmode:'numeric',
+    autocomplete:'off','aria-describedby':'idNotice',maxlength:'12'});
+  pd.value=S.studentPeriod||'';
+  pd.setAttribute('placeholder',T('idPeriodPh'));
+  pd.oninput=idOnInput; pd.onblur=idFlush;
+  bar.appendChild(pd);
+  return bar;
+}
+/* Gate shared by both export entry points. Returns true when the export may run. */
+function idGate(){
+  idFlush();
+  if(idComplete()){ idHideNotice(); return true; }
+  idShowNotice();
+  return false;
+}
+
 /* ===================== EXPORT / PRINT VIEW (spec item 6) ===================== */
 let exportReturn='lab';
 function openExport(){
+  /* no identity -> no export: never show the sheet and never call print */
+  if(!idGate()) return;
   exportReturn=S.screen;
   show('export');
   try{ window.print(); }catch(e){}
@@ -1471,7 +1610,7 @@ function buildExportScreen(){
   const bBack=el('button',{id:'expBack'},T('exportBack'));
   bBack.onclick=()=>{ show(exportReturn||'lab'); };
   const bPrint=el('button',{class:'primary',id:'expPrint'},T('exportPrint'));
-  bPrint.onclick=()=>{ try{ window.print(); }catch(e){} };
+  bPrint.onclick=()=>{ if(!idGate()) return; try{ window.print(); }catch(e){} };
   bar.appendChild(bBack);
   bar.appendChild(el('span',{class:'eyebrow'},T('exportBtn')));
   const sp=el('span',{class:'spacer'}); bar.appendChild(sp);
@@ -1485,8 +1624,21 @@ function buildExportScreen(){
 }
 function renderExport(){
   const sheet=document.getElementById('expSheet'); if(!sheet)return; clear(sheet);
+  /* flush anything pending before reading state (hypothesis + journal) */
+  hFlush();
   sheet.appendChild(el('h1',{},T('exportTitle')));
   sheet.appendChild(el('div',{class:'exp-sub'},T('exportSub')));
+  /* attribution header: name / period / date. Must survive a mid-stack page break
+     as one block, so it is a single flex container. */
+  const idb=el('div',{class:'exp-id',id:'expId'});
+  [['idName',idVal(S.studentName)],['idPeriod',idVal(S.studentPeriod)],
+   ['idDate',new Date().toLocaleDateString()]].forEach(([lab,val])=>{
+    const f=el('div',{class:'exp-idf'});
+    f.appendChild(el('span',{class:'exp-idl'},T(lab)));
+    f.appendChild(el('span',{class:'exp-idv'},val));
+    idb.appendChild(f);
+  });
+  sheet.appendChild(idb);
   /* hypothesis featured in a bordered box */
   const hb=el('div',{class:'exp-hyp'});
   hb.appendChild(el('div',{class:'exp-hlab'},T('exportHypHead')));
@@ -1537,8 +1689,13 @@ function setLangUI(){
   document.getElementById('langEN').classList.toggle('active',LANG==='en');
   document.getElementById('langES').classList.toggle('active',LANG==='es');
   const scr=S.screen, tab=S.labTab;
+  /* buildScreens() tears down the identity bar, so flush first and keep a live
+     block message visible in the new language instead of silently dropping it. */
+  idFlush();
+  const blocked=!!idNoticeEl()?.classList.contains('show');
   buildScreens(); show(scr);
   if(scr==='lab'){ S.labTab=tab; syncLabTabs(); }
+  if(blocked && !idComplete()) idShowNotice();
 }
 /* ---- NAV ---- */
 document.getElementById('btnHome').onclick=()=>{ show('title'); };
