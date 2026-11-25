@@ -308,6 +308,10 @@
         "destination": "/power-line-lab-rubric.html"
       },
       {
+        "source": "/charge-and-field-review",
+        "destination": "/charge-and-field-review.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

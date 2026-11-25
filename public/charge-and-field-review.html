@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catch Up: Three Weeks of Physics · Ponte al Día: Tres Semanas de Física</title>
+<style>
+:root{
+  --paper:#f7f5f0; --ink:#15181d; --ink-quiet:#5a636e; --line:#d9d4c9;
+  --pos:#c2410c; --neg:#1d4ed8; --accent:#0f5e63; --accent-soft:#e3eeec;
+  --card:#ffffff; --shadow:0 1px 0 rgba(21,24,29,.06),0 10px 26px -18px rgba(21,24,29,.45);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif;
+  font-size:17px;line-height:1.55;
+}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 90px}
+/* ---------- language toggle ---------- */
+body.es .lang-en{display:none!important}
+body:not(.es) .lang-es{display:none!important}
+.langbar{position:sticky;top:0;z-index:40;background:rgba(247,245,240,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);margin-bottom:8px}
+.langbar-in{max-width:900px;margin:0 auto;padding:10px 20px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-quiet);font-weight:600}
+.switch{display:flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden}
+.switch button{
+  border:0;background:transparent;color:var(--ink);font-weight:700;font-size:14px;
+  padding:7px 16px;cursor:pointer;letter-spacing:.06em;min-height:38px;
+}
+.switch button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.switch button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+/* ---------- header ---------- */
+header.pad{padding:36px 0 10px}
+.eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(30px,5.2vw,46px);line-height:1.06;margin:10px 0 12px;letter-spacing:-.02em}
+.dek{font-size:clamp(17px,2.2vw,20px);color:var(--ink-quiet);max-width:34em;margin:0}
+.rule{height:1px;background:var(--line);margin:26px 0 0}
+/* ---------- question box ---------- */
+.bigq{
+  margin:26px 0 0;padding:20px 22px;background:var(--card);border-left:5px solid var(--accent);
+  border-radius:4px;box-shadow:var(--shadow);
+}
+.bigq .lbl{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-quiet);font-weight:700}
+.bigq p{margin:8px 0 0;font-size:clamp(18px,2.4vw,21px);font-weight:600}
+/* ---------- map ---------- */
+.map{margin:34px 0 0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.map a{
+  display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);transition:transform .12s ease,border-color .12s ease;
+}
+.map a:hover,.map a:focus-visible{transform:translateY(-2px);border-color:var(--ink)}
+.map .w{display:block}
+.map .w{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.map .t{font-weight:700;margin-top:4px;display:block;font-size:15.5px;line-height:1.3}
+/* ---------- sections ---------- */
+section.week{margin:56px 0 0;scroll-margin-top:74px}
+.weekhead{display:block;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.weekhead .weeknum{display:block;margin-bottom:4px}
+.weeknum{font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--accent);white-space:nowrap}
+h2{font-size:clamp(24px,3.6vw,32px);margin:0;line-height:1.15;letter-spacing:-.015em}
+h3{font-size:clamp(19px,2.6vw,23px);margin:34px 0 10px;line-height:1.25;letter-spacing:-.01em}
+h4{font-size:17px;margin:22px 0 8px}
+p{margin:12px 0}
+.lead{font-size:18.5px}
+blockquote{
+  margin:18px 0;padding:14px 18px;background:var(--accent-soft);border-radius:6px;
+  font-size:17px;font-weight:600;
+}
+blockquote p{margin:0}
+ul,ol{margin:12px 0;padding-left:22px}
+li{margin:7px 0}
+strong{font-weight:700}
+em.hi{font-style:normal;background:linear-gradient(transparent 62%,#ffe9a8 62%);padding:0 1px}
+/* ---------- cards ---------- */
+.grid{display:grid;gap:14px;margin:18px 0}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+.card .k{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:6px}
+.card h4{margin:0 0 6px;font-size:16.5px}
+.card p{margin:6px 0 0;font-size:15.5px;color:var(--ink-quiet)}
+.card p:first-of-type{margin-top:0}
+/* ---------- figures ---------- */
+figure{margin:24px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 14px 10px;box-shadow:var(--shadow)}
+figure svg{display:block;width:100%;height:auto;max-height:430px}
+figcaption{font-size:14px;color:var(--ink-quiet);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.45}
+figcaption b{color:var(--ink)}
+/* ---------- did you know / careful ---------- */
+.note{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:20px 0;background:#fffdf7}
+.note .k{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;color:#8a5a00;margin-bottom:6px}
+.note p{margin:6px 0 0;font-size:15.5px}
+/* ---------- vocab ---------- */
+.vocab{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:18px 0;background:var(--card)}
+.vocab div{padding:9px 14px;border-bottom:1px solid var(--line);font-size:15px}
+.vocab div:nth-child(odd){font-weight:700;background:#faf9f6}
+.vocab div:nth-last-child(-n+2){border-bottom:0}
+/* ---------- steps ---------- */
+.chain{display:grid;gap:0;margin:22px 0}
+.step{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .n{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-weight:800;font-size:14px}
+.step h4{margin:2px 0 4px;font-size:16.5px}
+.step p{margin:0;font-size:15.5px;color:var(--ink-quiet)}
+/* ---------- recap ---------- */
+.recap{margin:70px 0 0;background:var(--ink);color:#f2efe8;border-radius:14px;padding:30px 26px 26px}
+.recap h2{color:#fff;border:0}
+.recap ol{counter-reset:r;list-style:none;padding:0;margin:20px 0 0}
+.recap li{counter-increment:r;display:grid;grid-template-columns:34px 1fr;gap:14px;padding:12px 0;border-top:1px solid rgba(255,255,255,.16);font-size:16px}
+.recap li::before{content:"0" counter(r);font-weight:800;color:#7fd0c8;font-size:14px;letter-spacing:.08em}
+.recap li:last-child{border-bottom:1px solid rgba(255,255,255,.16)}
+.words{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.words span{border:1px solid rgba(255,255,255,.32);border-radius:999px;padding:6px 13px;font-size:14px}
+footer{margin:44px 0 0;padding-top:18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-quiet);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+/* ---------- resource links ---------- */
+.res{display:grid;gap:14px;margin:18px 0}
+.res a{
+  display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;
+  text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:15px 18px;box-shadow:var(--shadow);
+  transition:transform .12s ease,border-color .12s ease;
+}
+.res a:hover,.res a:focus-visible{transform:translateY(-2px);border-color:var(--ink)}
+.res a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.res .ico{
+  width:44px;height:44px;border-radius:9px;background:var(--accent-soft);color:var(--accent);
+  display:grid;place-items:center;font-weight:800;font-size:16px;letter-spacing:-.02em;
+}
+.res h4{margin:0 0 3px;font-size:16.5px}
+.res p{margin:0;font-size:14.5px;color:var(--ink-quiet);line-height:1.42}
+.res .tag{font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:5px}
+.res .go{font-size:13px;font-weight:700;color:var(--ink-quiet);white-space:nowrap}
+.res a:hover .go{color:var(--accent)}
+/* ---------- small screens ---------- */
+@media (max-width:720px){
+  body{font-size:16.5px}
+  .map,.g2,.g3{grid-template-columns:1fr}
+  .vocab{grid-template-columns:1fr}
+  .vocab div:nth-child(odd){background:#faf9f6}
+  .vocab div:nth-last-child(-n+2){border-bottom:1px solid var(--line)}
+  .vocab div:last-child{border-bottom:0}
+  .weekhead{flex-direction:column;gap:6px}
+  .step{grid-template-columns:34px 1fr}
+}
+@media print{
+  .langbar{display:none}
+  body{background:#fff}
+  figure,.card,.note{box-shadow:none;break-inside:avoid}
+  section.week{break-before:page}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="langbar">
+  <div class="langbar-in">
+    <span class="brand lang-en">Physics · Mr. Porter</span>
+    <span class="brand lang-es">Física · Sr. Porter</span>
+    <div class="switch" role="group" aria-label="Language / Idioma">
+      <button id="btnEN" aria-pressed="true" onclick="setLang('en')">EN</button>
+      <button id="btnES" aria-pressed="false" onclick="setLang('es')">ES</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="pad">
+  <div class="eyebrow lang-en">Catch up · Three weeks of class</div>
+  <div class="eyebrow lang-es">Ponte al día · Tres semanas de clase</div>
+  <h1 class="lang-en">Everything we built while you were out</h1>
+  <h1 class="lang-es">Todo lo que construimos mientras no estuviste</h1>
+  <p class="dek lang-en">You did not miss a chapter. You missed one story that runs from a balloon to a power line. Here is that story from the start, with pictures, in plain words.</p>
+  <p class="dek lang-es">No te perdiste un capítulo. Te perdiste una sola historia que va de un globo a un cable de alta tensión. Aquí está esa historia desde el principio, con dibujos, en palabras sencillas.</p>
+  <div class="rule"></div>
+
+  <div class="bigq">
+    <div class="lbl lang-en">The one question behind all three weeks</div>
+    <div class="lbl lang-es">La única pregunta detrás de las tres semanas</div>
+    <p class="lang-en">Something invisible can push and pull on objects without touching them. What is it, where does it live, and how does it move energy across a whole state?</p>
+    <p class="lang-es">Algo invisible puede empujar y atraer objetos sin tocarlos. ¿Qué es, dónde vive, y cómo mueve energía a través de todo un estado?</p>
+  </div>
+
+  <nav class="map" aria-label="Weeks / Semanas">
+    <a href="#w1"><span class="w lang-en">Week 8</span><span class="w lang-es">Semana 8</span><span class="t lang-en">Rubbing balloons</span><span class="t lang-es">Frotar globos</span></a>
+    <a href="#w2"><span class="w lang-en">Week 9</span><span class="w lang-es">Semana 9</span><span class="t lang-en">Inside the atom</span><span class="t lang-es">Dentro del átomo</span></a>
+    <a href="#w3"><span class="w lang-en">Week 10</span><span class="w lang-es">Semana 10</span><span class="t lang-en">Polarization</span><span class="t lang-es">Polarización</span></a>
+    <a href="#w4"><span class="w lang-en">Week 11</span><span class="w lang-es">Semana 11</span><span class="t lang-en">Energy in wires</span><span class="t lang-es">Energía en los cables</span></a>
+    <a href="#recap"><span class="w lang-en">Recap</span><span class="w lang-es">Repaso</span><span class="t lang-en">Eight things to know</span><span class="t lang-es">Ocho cosas que saber</span></a>
+    <a href="#explore"><span class="w lang-en">Explore</span><span class="w lang-es">Explora</span><span class="t lang-en">Simulations and labs</span><span class="t lang-es">Simulaciones y laboratorios</span></a>
+    <a href="#words"><span class="w lang-en">Words</span><span class="w lang-es">Palabras</span><span class="t lang-en">The vocabulary</span><span class="t lang-es">El vocabulario</span></a>
+  </nav>
+</header>
+
+<!-- ============================= WEEK 8 ============================= -->
+<section class="week" id="w1">
+  <div class="weekhead">
+    <span class="weeknum lang-en">Week 8 · Nov 2–6</span>
+    <span class="weeknum lang-es">Semana 8 · 2–6 nov</span>
+    <h2 class="lang-en">Rubbing balloons</h2>
+    <h2 class="lang-es">Frotar globos</h2>
+  </div>
+
+  <p class="lead lang-en">We started with something you can do at your kitchen table. Rub a balloon on your hair. Hold it near a wall. The balloon sticks.</p>
+  <p class="lead lang-es">Empezamos con algo que puedes hacer en tu mesa de cocina. Frota un globo en tu cabello. Acércalo a una pared. El globo se pega.</p>
+
+  <p class="lang-en">That is the whole mystery in one sentence: <strong>a balloon you just rubbed on your hair now behaves differently from a balloon you did not.</strong> Rubbing changed it, and you cannot see what changed.</p>
+  <p class="lang-es">Ese es todo el misterio en una sola oración: <strong>un globo que acabas de frotar en tu cabello se comporta distinto de un globo que no frotaste.</strong> Frotarlo lo cambió, y no puedes ver qué cambió.</p>
+
+  <h3 class="lang-en">What the class actually did</h3>
+  <h3 class="lang-es">Lo que hizo la clase</h3>
+
+  <p class="lang-en">Seven stations. Each station asked one question: rub balloon <em>here</em>, then bring it near <em>that</em>. Record what happened, then how strong it felt, then sketch it. Fur with balloon. Plastic with balloon. Hair with balloon. Plastic with plastic. Fur with fur. Plastic with fur. Cloth with fur.</p>
+  <p class="lang-es">Siete estaciones. Cada estación hacía una pregunta: frota el globo <em>aquí</em>, luego acércalo a <em>aquello</em>. Anota qué pasó, luego qué tan fuerte se sintió, luego dibújalo. Piel con globo. Plástico con globo. Cabello con globo. Plástico con plástico. Piel con piel. Plástico con piel. Tela con piel.</p>
+
+  <h3 class="lang-en">Four patterns the room found</h3>
+  <h3 class="lang-es">Cuatro patrones que encontró el salón</h3>
+
+  <div class="grid g2">
+    <div class="card">
+      <div class="k lang-en">Pattern 1</div><div class="k lang-es">Patrón 1</div>
+      <h4 class="lang-en">Same rubber, two balloons</h4><h4 class="lang-es">El mismo material, dos globos</h4>
+      <p class="lang-en">Rubbed with the same plastic, the two balloons push each other away.</p>
+      <p class="lang-es">Frotados con el mismo plástico, los dos globos se empujan.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Pattern 2</div><div class="k lang-es">Patrón 2</div>
+      <h4 class="lang-en">Different rubber, two balloons</h4><h4 class="lang-es">Material distinto, dos globos</h4>
+      <p class="lang-en">One rubbed with plastic, one with fur, the two balloons pull together.</p>
+      <p class="lang-es">Uno frotado con plástico y uno con piel, los dos globos se atraen.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Pattern 3</div><div class="k lang-es">Patrón 3</div>
+      <h4 class="lang-en">The rubbing partner comes back</h4><h4 class="lang-es">El socio de frotado regresa</h4>
+      <p class="lang-en">The fur, plastic, or hair that rubbed the balloon is pulled toward it.</p>
+      <p class="lang-es">La piel, el plástico o el cabello que frotó el globo se acerca al globo.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Pattern 4</div><div class="k lang-es">Patrón 4</div>
+      <h4 class="lang-en">Same rules every time</h4><h4 class="lang-es">Las mismas reglas siempre</h4>
+      <p class="lang-en">The same pair of materials gave the same result, every group, every trial.</p>
+      <p class="lang-es">El mismo par de materiales dio el mismo resultado, en cada grupo y cada intento.</p>
+    </div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 760 200" role="img" aria-label="Two balloons with the same charge push apart; two with opposite charge pull together">
+      <text x="0" y="14" font-size="12.5" font-weight="700" fill="#0f5e63" letter-spacing="0.6">SAME RUB · SAME RESULT</text>
+      <text x="0" y="29" font-size="11.5" fill="#5a636e">Mismo frotado · mismo resultado</text>
+      <text x="470" y="14" font-size="12.5" font-weight="700" fill="#0f5e63" letter-spacing="0.6">DIFFERENT RUB · OPPOSITE</text>
+      <text x="470" y="29" font-size="11.5" fill="#5a636e">Distinto · opuesto</text>
+      <!-- left: repulsion -->
+      <g transform="translate(0,34)">
+        <ellipse cx="60" cy="62" rx="34" ry="40" fill="#f7f5f0" stroke="#15181d" stroke-width="2.5"/>
+        <text x="60" y="62" text-anchor="middle" font-size="26" font-weight="700" fill="#1d4ed8" dominant-baseline="middle">−</text>
+        <ellipse cx="176" cy="62" rx="34" ry="40" fill="#f7f5f0" stroke="#15181d" stroke-width="2.5"/>
+        <text x="176" y="62" text-anchor="middle" font-size="26" font-weight="700" fill="#1d4ed8" dominant-baseline="middle">−</text>
+        <path d="M112 62 L92 62" stroke="#15181d" stroke-width="2" marker-end="url(#aL)"/>
+        <path d="M124 62 L144 62" stroke="#15181d" stroke-width="2" marker-end="url(#aR)"/>
+        <text x="118" y="132" text-anchor="middle" font-size="14.5" font-weight="700" fill="#15181d">PUSH APART / SE EMPUJAN</text>
+      </g>
+      <!-- right: attraction -->
+      <g transform="translate(470,34)">
+        <ellipse cx="60" cy="62" rx="34" ry="40" fill="#f7f5f0" stroke="#15181d" stroke-width="2.5"/>
+        <text x="60" y="62" text-anchor="middle" font-size="26" font-weight="700" fill="#1d4ed8" dominant-baseline="middle">−</text>
+        <ellipse cx="176" cy="62" rx="34" ry="40" fill="#f7f5f0" stroke="#15181d" stroke-width="2.5"/>
+        <text x="176" y="62" text-anchor="middle" font-size="26" font-weight="700" fill="#c2410c" dominant-baseline="middle">+</text>
+        <path d="M88 62 L108 62" stroke="#15181d" stroke-width="2" marker-end="url(#aR)"/>
+        <path d="M148 62 L128 62" stroke="#15181d" stroke-width="2" marker-end="url(#aL)"/>
+        <text x="118" y="132" text-anchor="middle" font-size="14.5" font-weight="700" fill="#15181d">PULL TOGETHER / SE ATRAEN</text>
+      </g>
+      <defs>
+        <marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#15181d"/></marker>
+        <marker id="aL" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M10 0 L0 5 L10 10 z" fill="#15181d"/></marker>
+      </defs>
+    </svg>
+    <figcaption>
+      <span class="lang-en"><b>One sign tells you everything.</b> Two things that behave the same way push apart. Two things that behave opposite ways pull together. That single rule carried the whole unit.</span>
+      <span class="lang-es"><b>Un solo signo lo dice todo.</b> Dos cosas que se comportan igual se empujan. Dos cosas que se comportan al revés se atraen. Esa sola regla cargó toda la unidad.</span>
+    </figcaption>
+  </figure>
+
+  <h3 class="lang-en">The model the class agreed on</h3>
+  <h3 class="lang-es">El modelo con el que la clase estuvo de acuerdo</h3>
+
+  <div class="chain">
+    <div class="step"><div class="n">1</div><div>
+      <h4 class="lang-en">Rub two different materials together</h4><h4 class="lang-es">Frota dos materiales distintos</h4>
+      <p class="lang-en">A balloon and fur. A balloon and plastic.</p><p class="lang-es">Un globo y piel. Un globo y plástico.</p>
+    </div></div>
+    <div class="step"><div class="n">2</div><div>
+      <h4 class="lang-en">Something moves from one to the other</h4><h4 class="lang-es">Algo pasa de uno al otro</h4>
+      <p class="lang-en">Whatever it is, it is too small to see, and it does not stay where it started.</p>
+      <p class="lang-es">Sea lo que sea, es demasiado pequeño para verlo, y no se queda donde empezó.</p>
+    </div></div>
+    <div class="step"><div class="n">3</div><div>
+      <h4 class="lang-en">Now the two objects are charged in opposite ways</h4><h4 class="lang-es">Ahora los dos objetos tienen carga opuesta</h4>
+      <p class="lang-en">One lost something. The other gained it. Neither is neutral any more.</p>
+      <p class="lang-es">Uno perdió algo. El otro lo ganó. Ninguno sigue neutro.</p>
+    </div></div>
+    <div class="step"><div class="n">4</div><div>
+      <h4 class="lang-en">Same charge pushes, opposite charge pulls</h4><h4 class="lang-es">Carga igual empuja, carga opuesta atrae</h4>
+      <p class="lang-en">Which explains every pattern on the board, without a single exception.</p>
+      <p class="lang-es">Lo que explica cada patrón del pizarrón, sin una sola excepción.</p>
+    </div></div>
+  </div>
+
+  <div class="note">
+    <div class="k lang-en">The thing nobody could answer yet</div>
+    <div class="k lang-es">Lo que todavía nadie pudo contestar</div>
+    <p class="lang-en">We knew that rubbing moves <em>something</em>. Nobody could say what the something was, or what it moved through. That question opened the next week.</p>
+    <p class="lang-es">Sabíamos que frotar mueve <em>algo</em>. Nadie podía decir qué era ese algo, ni a través de qué se movía. Esa pregunta abrió la semana siguiente.</p>
+  </div>
+</section>
+
+<!-- ============================= WEEK 9 ============================= -->
+<section class="week" id="w2">
+  <div class="weekhead">
+    <span class="weeknum lang-en">Week 9 · Nov 9–13</span>
+    <span class="weeknum lang-es">Semana 9 · 9–13 nov</span>
+    <h2 class="lang-en">Inside the atom</h2>
+    <h2 class="lang-es">Dentro del átomo</h2>
+  </div>
+
+  <p class="lead lang-en">If rubbing moves something in and out of a balloon, that something has to live inside the stuff the balloon is made of. So we shrank down to that size and looked.</p>
+  <p class="lead lang-es">Si frotar mueve algo hacia adentro y hacia afuera de un globo, ese algo tiene que vivir dentro del material del que está hecho el globo. Así que nos encogimos hasta ese tamaño y miramos.</p>
+
+  <p class="lang-en">You cannot see that far down with your eyes, so the class used a simulation. Three buckets of marbles: <strong>protons</strong> (orange), <strong>neutrons</strong> (gray), <strong>electrons</strong> (blue). The job was to find out where each one goes and what each one decides.</p>
+  <p class="lang-es">No puedes ver tan abajo con tus ojos, así que la clase usó una simulación. Tres cubetas de canicas: <strong>protones</strong> (anaranjadas), <strong>neutrones</strong> (grises), <strong>electrones</strong> (azules). La tarea era descubrir a dónde va cada una y qué decide cada una.</p>
+
+  <figure>
+    <svg viewBox="0 0 760 260" role="img" aria-label="An atom: protons and neutrons in the nucleus at the center, electrons on rings around it">
+      <text x="0" y="16" font-size="13" font-weight="700" fill="#0f5e63" letter-spacing="1.2">ONE ATOM / UN ÁTOMO</text>
+      <!-- nucleus -->
+      <g transform="translate(200,140)">
+        <circle r="52" fill="#efe9db" stroke="#15181d" stroke-width="2"/>
+        <circle cx="-14" cy="-10" r="11" fill="#f0b429" stroke="#15181d" stroke-width="1.6"/>
+        <circle cx="12" cy="-14" r="11" fill="#f0b429" stroke="#15181d" stroke-width="1.6"/>
+        <circle cx="-2" cy="12" r="11" fill="#f0b429" stroke="#15181d" stroke-width="1.6"/>
+        <circle cx="18" cy="10" r="11" fill="#9aa3ae" stroke="#15181d" stroke-width="1.6"/>
+        <circle cx="-22" cy="16" r="11" fill="#9aa3ae" stroke="#15181d" stroke-width="1.6"/>
+        <text x="0" y="82" text-anchor="middle" font-size="13.5" font-weight="700">NUCLEUS / NÚCLEO</text>
+      </g>
+      <!-- rings with electrons -->
+      <g transform="translate(200,140)">
+        <ellipse rx="96" ry="66" fill="none" stroke="#15181d" stroke-width="1.4" stroke-dasharray="4 5" opacity=".55"/>
+        <ellipse rx="132" ry="92" fill="none" stroke="#15181d" stroke-width="1.4" stroke-dasharray="4 5" opacity=".35"/>
+        <circle cx="-96" cy="0" r="9" fill="#4a7cf0" stroke="#15181d" stroke-width="1.4"/>
+        <circle cx="132" cy="0" r="9" fill="#4a7cf0" stroke="#15181d" stroke-width="1.4"/>
+        <circle cx="0" cy="-92" r="9" fill="#4a7cf0" stroke="#15181d" stroke-width="1.4"/>
+      </g>
+      <!-- legend -->
+      <g transform="translate(430,54)" font-size="15">
+        <circle cx="10" cy="0" r="10" fill="#f0b429" stroke="#15181d" stroke-width="1.6"/>
+        <text x="30" y="5" font-weight="700">Proton · Protón</text>
+        <text x="30" y="24" font-size="13.5" fill="#5a636e">positive · positivo</text>
+        <circle cx="10" cy="52" r="10" fill="#9aa3ae" stroke="#15181d" stroke-width="1.6"/>
+        <text x="30" y="57" font-weight="700">Neutron · Neutrón</text>
+        <text x="30" y="76" font-size="13.5" fill="#5a636e">no charge · sin carga</text>
+        <circle cx="10" cy="104" r="10" fill="#4a7cf0" stroke="#15181d" stroke-width="1.6"/>
+        <text x="30" y="109" font-weight="700">Electron · Electrón</text>
+        <text x="30" y="128" font-size="13.5" fill="#5a636e">negative · negativo</text>
+      </g>
+      <text x="430" y="190" font-size="12" fill="#5a636e">Rings = where electrons live</text>
+      <text x="430" y="206" font-size="12" fill="#5a636e">Anillos = donde viven los electrones</text>
+    </svg>
+    <figcaption>
+      <span class="lang-en"><b>The middle is private.</b> Protons and neutrons sit in the center. Electrons live on rings outside. An electron cannot get into the middle, no matter how hard you push it.</span>
+      <span class="lang-es"><b>El centro es privado.</b> Los protones y los neutrones se quedan en el centro. Los electrones viven en anillos por fuera. Un electrón no puede entrar al centro, por más fuerte que lo empujes.</span>
+    </figcaption>
+  </figure>
+
+  <h3 class="lang-en">Three rules the class wrote from the evidence</h3>
+  <h3 class="lang-es">Tres reglas que la clase escribió desde la evidencia</h3>
+
+  <div class="grid g3">
+    <div class="card">
+      <div class="k lang-en">Rule 1</div><div class="k lang-es">Regla 1</div>
+      <h4 class="lang-en">Stability</h4><h4 class="lang-es">Estabilidad</h4>
+      <p class="lang-en">It depends on the protons and the neutrons, and on their ratio. Electrons never change whether the center holds together.</p>
+      <p class="lang-es">Depende de los protones y de los neutrones, y de la proporción entre ellos. Los electrones nunca cambian si el centro se sostiene.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Rule 2</div><div class="k lang-es">Regla 2</div>
+      <h4 class="lang-en">Charge</h4><h4 class="lang-es">Carga</h4>
+      <p class="lang-en">It depends on one comparison only: protons against electrons. Equal numbers means neutral.</p>
+      <p class="lang-es">Depende de una sola comparación: protones contra electrones. Números iguales significa neutro.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Rule 3</div><div class="k lang-es">Regla 3</div>
+      <h4 class="lang-en">Which element</h4><h4 class="lang-es">Qué elemento es</h4>
+      <p class="lang-en">It depends on the protons and nothing else. Change the neutrons and the name stays the same.</p>
+      <p class="lang-es">Depende de los protones y de nada más. Cambia los neutrones y el nombre sigue igual.</p>
+    </div>
+  </div>
+
+  <blockquote>
+    <p class="lang-en">An atom with different numbers of protons and electrons is no longer balanced. It is an ion.</p>
+    <p class="lang-es">Un átomo con números distintos de protones y electrones ya no está balanceado. Es un ion.</p>
+  </blockquote>
+
+  <figure>
+    <svg viewBox="0 0 760 210" role="img" aria-label="Neutral atom, positive ion and negative ion shown side by side">
+      <text x="0" y="16" font-size="12" font-weight="700" fill="#0f5e63" letter-spacing="0.6">SAME PROTONS · ONLY ELECTRONS MOVED / MISMOS PROTONES · SOLO SE MOVIERON ELECTRONES</text>
+      <!-- neutral -->
+      <g transform="translate(28,52)">
+        <ellipse cx="90" cy="62" rx="72" ry="48" fill="#f7f5f0" stroke="#15181d" stroke-width="2.2"/>
+        <text x="78" y="70" font-size="30" font-weight="700" fill="#c2410c">+</text>
+        <text x="104" y="70" font-size="30" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="90" y="134" text-anchor="middle" font-size="15" font-weight="700">NEUTRAL / NEUTRO</text>
+        <text x="90" y="154" text-anchor="middle" font-size="13.5" fill="#5a636e">3 protons · 3 electrons</text>
+      </g>
+      <!-- positive ion -->
+      <g transform="translate(262,52)">
+        <ellipse cx="90" cy="62" rx="58" ry="38" fill="#f7f5f0" stroke="#15181d" stroke-width="2.2"/>
+        <text x="90" y="70" text-anchor="middle" font-size="30" font-weight="700" fill="#c2410c">+</text>
+        <text x="90" y="134" text-anchor="middle" font-size="15" font-weight="700">+ ION / ION +</text>
+        <text x="90" y="154" text-anchor="middle" font-size="13.5" fill="#5a636e">3 protons · 2 electrons</text>
+      </g>
+      <!-- negative ion -->
+      <!-- smaller oval, one sign only, matching the + ion convention -->
+      <g transform="translate(500,52)">
+        <ellipse cx="90" cy="62" rx="58" ry="38" fill="#f7f5f0" stroke="#15181d" stroke-width="2.2"/>
+        <text x="90" y="70" text-anchor="middle" font-size="30" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="90" y="134" text-anchor="middle" font-size="15" font-weight="700">− ION / ION −</text>
+        <text x="90" y="154" text-anchor="middle" font-size="13.5" fill="#5a636e">3 protons · 4 electrons</text>
+      </g>
+    </svg>
+    <figcaption>
+      <span class="lang-en"><b>Nothing new was invented.</b> The same atom, three ways. The only thing that moved was an electron, so an electron is the only thing that can explain charge.</span>
+      <span class="lang-es"><b>No se inventó nada nuevo.</b> El mismo átomo, de tres maneras. Lo único que se movió fue un electrón, así que un electrón es lo único que puede explicar la carga.</span>
+    </figcaption>
+  </figure>
+
+  <div class="note">
+    <div class="k lang-en">Returning to your balloon</div>
+    <div class="k lang-es">Volviendo a tu globo</div>
+    <p class="lang-en">Now the old story finishes. Rubbing the balloon does not move atoms. It moves electrons. The balloon keeps every bit of the same material, and your hair is left with the opposite charge. The explanation was not wrong in week one. It was unfinished.</p>
+    <p class="lang-es">Ahora la historia vieja se completa. Frotar el globo no mueve átomos. Mueve electrones. El globo conserva todo del mismo material, y tu cabello queda con la carga opuesta. La explicación no estaba mal en la primera semana. Estaba incompleta.</p>
+  </div>
+
+  <h3 class="lang-en">While you are here: the station lab</h3>
+  <h3 class="lang-es">Mientras estás aquí: el laboratorio de estaciones</h3>
+  <p class="lang-en">The class opened the Electric Charge stations on Thursday of that week and did not finish them that week. You will run them when you are back. The only thing you need before you walk in is what is on this page, plus the face-to-face rubbing test, which you can do in ten minutes with two objects and a scrap of paper.</p>
+  <p class="lang-es">La clase abrió las estaciones de Carga Eléctrica el jueves de esa semana y no las terminó en esa semana. Las harás cuando regreses. Lo único que necesitas antes de entrar es lo que hay en esta página, más la prueba de frotar cara a cara, que puedes hacer en diez minutos con dos objetos y un pedacito de papel.</p>
+</section>
+
+<!-- ============================= WEEK 10 ============================= -->
+<section class="week" id="w3">
+  <div class="weekhead">
+    <span class="weeknum lang-en">Week 10 · Nov 16–20</span>
+    <span class="weeknum lang-es">Semana 10 · 16–20 nov</span>
+    <h2 class="lang-en">Polarization</h2>
+    <h2 class="lang-es">Polarización</h2>
+  </div>
+
+  <p class="lead lang-en">Week 8 told us that a charged balloon pulls on things it touched. This week asked about everything else: can a charged balloon pull on something it never touched at all?</p>
+  <p class="lead lang-es">La semana 8 nos dijo que un globo cargado atrae cosas que tocó. Esta semana preguntó por todo lo demás: ¿puede un globo cargado atraer algo que nunca tocó?</p>
+
+  <h3 class="lang-en">The two-tube experiment</h3>
+  <h3 class="lang-es">El experimento de los dos tubos</h3>
+  <p class="lang-en">Each group got two identical neutral tubes. One was wrapped in a single layer of aluminum foil. Then a charged balloon was brought slowly toward each one, and the group measured the distance where the tube started to roll. Three trials, alternating which tube went first.</p>
+  <p class="lang-es">Cada grupo recibió dos tubos neutros idénticos. Uno estaba envuelto en una sola capa de papel de aluminio. Luego se acercaba lentamente un globo cargado a cada uno, y el grupo medía la distancia a la que el tubo empezaba a rodar. Tres intentos, alternando cuál tubo iba primero.</p>
+
+  <blockquote>
+    <p class="lang-en">The tube in metal rolled from farther away than the tube in plain plastic.</p>
+    <p class="lang-es">El tubo con metal rodó desde más lejos que el tubo de plástico simple.</p>
+  </blockquote>
+
+  <p class="lang-en">Both tubes were neutral. Neither had touched the balloon. So whatever happened, it happened <em class="hi">inside</em> the tubes, and it happened differently because one could move electrons with ease and the other could not.</p>
+  <p class="lang-es">Los dos tubos estaban neutros. Ninguno había tocado el globo. Así que lo que pasó, pasó <em class="hi">dentro</em> de los tubos, y pasó distinto porque uno podía mover electrones con facilidad y el otro no.</p>
+
+  <h3 class="lang-en">Two kinds of material</h3>
+  <h3 class="lang-es">Dos tipos de material</h3>
+
+  <div class="grid g2">
+    <div class="card">
+      <div class="k lang-en">Material type 1</div><div class="k lang-es">Tipo de material 1</div>
+      <h4 class="lang-en">Insulator (dielectric)</h4><h4 class="lang-es">Aislante (dieléctrico)</h4>
+      <p class="lang-en">Electrons are held tight. Every electron stays attached to its own atom. It can lean, but it cannot leave.</p>
+      <p class="lang-es">Los electrones están sujetos. Cada electrón se queda pegado a su propio átomo. Puede inclinarse, pero no puede irse.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Material type 2</div><div class="k lang-es">Tipo de material 2</div>
+      <h4 class="lang-en">Conductor</h4><h4 class="lang-es">Conductor</h4>
+      <p class="lang-en">Some electrons are free. They leave their own atom and wander through the whole object. Metal behaves this way.</p>
+      <p class="lang-es">Algunos electrones son libres. Se salen de su átomo y caminan por todo el objeto. El metal se comporta así.</p>
+    </div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 760 400" role="img" aria-label="Charged object near an insulator, where electrons only lean, and near a conductor, where free electrons crowd to the near side">
+      <text x="0" y="16" font-size="13" font-weight="700" fill="#0f5e63" letter-spacing="1.2">CHARGED OBJECT NEVER TOUCHES / EL OBJETO CARGADO NUNCA TOCA</text>
+
+      <!-- INSULATOR -->
+      <g transform="translate(0,26)">
+        <rect x="150" y="20" width="420" height="106" rx="8" fill="#fbfaf7" stroke="#15181d" stroke-width="2"/>
+        <text x="360" y="14" text-anchor="middle" font-size="12.5" font-weight="700" fill="#5a636e" letter-spacing=".08em">INSULATOR (DIELECTRIC) / AISLANTE (DIELÉCTRICO)</text>
+        <!-- charged object -->
+        <rect x="86" y="52" width="40" height="42" rx="4" fill="#dfe8ff" stroke="#15181d" stroke-width="2"/>
+        <text x="106" y="81" text-anchor="middle" font-size="26" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="106" y="116" text-anchor="middle" font-size="11.5" fill="#5a636e">charged object</text>
+        <!-- atoms: each an oval with + and leaning - -->
+        <g id="ins">
+          <g transform="translate(190,72)"><ellipse rx="26" ry="21" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text x="-9" y="5" font-size="15" font-weight="700" fill="#c2410c">+</text><text x="6" y="5" font-size="15" font-weight="700" fill="#1d4ed8">−</text></g>
+          <g transform="translate(258,72)"><ellipse rx="26" ry="21" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text x="-9" y="5" font-size="15" font-weight="700" fill="#c2410c">+</text><text x="6" y="5" font-size="15" font-weight="700" fill="#1d4ed8">−</text></g>
+          <g transform="translate(326,72)"><ellipse rx="26" ry="21" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text x="-9" y="5" font-size="15" font-weight="700" fill="#c2410c">+</text><text x="6" y="5" font-size="15" font-weight="700" fill="#1d4ed8">−</text></g>
+          <g transform="translate(394,72)"><ellipse rx="26" ry="21" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text x="-9" y="5" font-size="15" font-weight="700" fill="#c2410c">+</text><text x="6" y="5" font-size="15" font-weight="700" fill="#1d4ed8">−</text></g>
+          <g transform="translate(462,72)"><ellipse rx="26" ry="21" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text x="-9" y="5" font-size="15" font-weight="700" fill="#c2410c">+</text><text x="6" y="5" font-size="15" font-weight="700" fill="#1d4ed8">−</text></g>
+          <g transform="translate(530,72)"><ellipse rx="26" ry="21" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text x="-9" y="5" font-size="15" font-weight="700" fill="#c2410c">+</text><text x="6" y="5" font-size="15" font-weight="700" fill="#1d4ed8">−</text></g>
+        </g>
+        <text x="360" y="150" text-anchor="middle" font-size="14" font-weight="700">Each electron leans a little. Nothing leaves its atom.</text>
+        <text x="360" y="168" text-anchor="middle" font-size="13" fill="#5a636e">Cada electrón se inclina un poco. Nada sale de su átomo.</text>
+      </g>
+
+      <!-- CONDUCTOR -->
+      <g transform="translate(0,212)">
+        <rect x="150" y="20" width="420" height="106" rx="8" fill="#fbfaf7" stroke="#15181d" stroke-width="2"/>
+        <text x="360" y="14" text-anchor="middle" font-size="12.5" font-weight="700" fill="#5a636e" letter-spacing=".08em">CONDUCTOR / CONDUCTOR</text>
+        <rect x="86" y="52" width="40" height="42" rx="4" fill="#dfe8ff" stroke="#15181d" stroke-width="2"/>
+        <text x="106" y="81" text-anchor="middle" font-size="26" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="106" y="116" text-anchor="middle" font-size="11.5" fill="#5a636e">charged object</text>
+        <!-- positive ions stay put: evenly spaced across the whole object -->
+        <g>
+          <g transform="translate(196,72)"><ellipse rx="21" ry="17" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text y="5" text-anchor="middle" font-size="15" font-weight="700" fill="#c2410c">+</text></g>
+          <g transform="translate(392,52)"><ellipse rx="21" ry="17" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text y="5" text-anchor="middle" font-size="15" font-weight="700" fill="#c2410c">+</text></g>
+          <g transform="translate(294,72)"><ellipse rx="21" ry="17" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text y="5" text-anchor="middle" font-size="15" font-weight="700" fill="#c2410c">+</text></g>
+          <g transform="translate(392,94)"><ellipse rx="21" ry="17" fill="#fff" stroke="#15181d" stroke-width="1.8"/><text y="5" text-anchor="middle" font-size="15" font-weight="700" fill="#c2410c">+</text></g>
+        </g>
+        <!-- free electrons: bare minus, no shape. Repelled by the negative object, so they sit FAR from it -->
+        <g font-size="19" font-weight="700" fill="#1d4ed8">
+          <text x="500" y="52">−</text><text x="500" y="78">−</text><text x="500" y="102">−</text>
+          <text x="548" y="60">−</text><text x="548" y="92">−</text>
+        </g>
+        <text x="196" y="40" font-size="12" fill="#5a636e">near side</text>
+        <text x="556" y="40" font-size="12" fill="#5a636e" text-anchor="end">far side</text>
+        <text x="360" y="146" text-anchor="middle" font-size="14" font-weight="700">Free electrons are pushed to the far side. The ions never move.</text>
+        <text x="360" y="166" text-anchor="middle" font-size="13" fill="#5a636e">Los electrones libres son empujados al lado lejano. Los iones nunca se mueven.</text>
+      </g>
+    </svg>
+    <figcaption>
+      <span class="lang-en"><b>The difference is how far the charge goes.</b> In the insulator, each electron only leans inside its own atom. In the conductor, free electrons travel across the whole object. Same charged object, very different result.</span>
+      <span class="lang-es"><b>La diferencia es qué tan lejos llega la carga.</b> En el aislante, cada electrón solo se inclina dentro de su propio átomo. En el conductor, los electrones libres viajan por todo el objeto. El mismo objeto cargado, un resultado muy distinto.</span>
+    </figcaption>
+  </figure>
+
+  <h3 class="lang-en">Why a neutral object gets pulled in at all</h3>
+  <h3 class="lang-es">Por qué un objeto neutro es atraído en primer lugar</h3>
+
+  <div class="chain">
+    <div class="step"><div class="n">1</div><div>
+      <h4 class="lang-en">Both objects stay neutral overall</h4><h4 class="lang-es">Los dos objetos siguen neutros en total</h4>
+      <p class="lang-en">Charge was rearranged, not delivered. Count every proton and every electron in the object and the total is still zero.</p>
+      <p class="lang-es">La carga se reacomodó, no se entregó. Cuenta todos los protones y todos los electrones del objeto y el total sigue siendo cero.</p>
+    </div></div>
+    <div class="step"><div class="n">2</div><div>
+      <h4 class="lang-en">The near side ends up opposite to the charged object</h4><h4 class="lang-es">El lado cercano queda opuesto al objeto cargado</h4>
+      <p class="lang-en">Opposite charge pulls. This is the part that does the work.</p>
+      <p class="lang-es">Carga opuesta atrae. Esta es la parte que hace el trabajo.</p>
+    </div></div>
+    <div class="step"><div class="n">3</div><div>
+      <h4 class="lang-en">The far side ends up the same as the charged object</h4><h4 class="lang-es">El lado lejano queda igual al objeto cargado</h4>
+      <p class="lang-en">Same charge pushes. This is the part that fights back.</p>
+      <p class="lang-es">Carga igual empuja. Esta es la parte que resiste.</p>
+    </div></div>
+    <div class="step"><div class="n">4</div><div>
+      <h4 class="lang-en">The near side is closer, so its pull wins</h4><h4 class="lang-es">El lado cercano está más cerca, así que su atracción gana</h4>
+      <p class="lang-en">Pull and push are both happening. Pull wins because it has less distance to work across. The object is pulled in, without ever being touched.</p>
+      <p class="lang-es">La atracción y el empuje ocurren al mismo tiempo. La atracción gana porque la distancia es menor. El objeto es atraído, sin que nadie lo toque.</p>
+    </div></div>
+  </div>
+
+  <p class="lang-en">That explains why both tubes roll. It does not explain why the foil one rolled from farther away. For that, look at how far the charge can go: in plastic, each electron only leans inside its own atom. In metal, free electrons travel all the way across the tube. So more opposite charge piles up on the near side, and the pushed-away electrons end up much farther from the balloon.</p>
+  <p class="lang-es">Eso explica por qué ruedan los dos tubos. No explica por qué el de aluminio rodó desde más lejos. Para eso, mira qué tan lejos puede llegar la carga: en el plástico, cada electrón solo se inclina dentro de su propio átomo. En el metal, los electrones libres viajan por todo el tubo. Así se acumula más carga opuesta en el lado cercano, y los electrones empujados quedan mucho más lejos del globo.</p>
+
+  <blockquote>
+    <p class="lang-en">A polarized object is not a charged object. Read the totals: near side, far side, whole object. The whole object is still zero.</p>
+    <p class="lang-es">Un objeto polarizado no es un objeto cargado. Lee los totales: lado cercano, lado lejano, objeto entero. El objeto entero sigue siendo cero.</p>
+  </blockquote>
+
+  <h3 class="lang-en">The way the class drew it</h3>
+  <h3 class="lang-es">Cómo lo dibujó la clase</h3>
+  <p class="lang-en">Five symbols only. Everything in this unit fits in them.</p>
+  <p class="lang-es">Solo cinco símbolos. Todo en esta unidad cabe en ellos.</p>
+
+  <figure>
+    <svg viewBox="0 0 760 210" role="img" aria-label="The five charge diagram symbols: atom, positive ion, negative ion, free electron, charged object">
+      <g transform="translate(0,26)">
+        <ellipse cx="76" cy="46" rx="46" ry="32" fill="#fff" stroke="#15181d" stroke-width="2.2"/>
+        <text x="64" y="55" font-size="24" font-weight="700" fill="#c2410c">+</text>
+        <text x="80" y="55" font-size="24" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="76" y="106" text-anchor="middle" font-size="13.5" font-weight="700">ATOM</text>
+        <text x="76" y="124" text-anchor="middle" font-size="12.5" fill="#5a636e">ÁTOMO</text>
+        <text x="76" y="142" text-anchor="middle" font-size="11.5" fill="#5a636e">both signs, neutral</text>
+      </g>
+      <g transform="translate(152,26)">
+        <ellipse cx="76" cy="46" rx="34" ry="24" fill="#fff" stroke="#15181d" stroke-width="2.2"/>
+        <text x="76" y="55" text-anchor="middle" font-size="24" font-weight="700" fill="#c2410c">+</text>
+        <text x="76" y="106" text-anchor="middle" font-size="13.5" font-weight="700">+ ION</text>
+        <text x="76" y="124" text-anchor="middle" font-size="12.5" fill="#5a636e">ION +</text>
+        <text x="76" y="142" text-anchor="middle" font-size="11.5" fill="#5a636e">lost its electron</text>
+      </g>
+      <g transform="translate(304,26)">
+        <ellipse cx="76" cy="46" rx="34" ry="24" fill="#fff" stroke="#15181d" stroke-width="2.2"/>
+        <text x="76" y="55" text-anchor="middle" font-size="24" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="76" y="106" text-anchor="middle" font-size="13.5" font-weight="700">− ION</text>
+        <text x="76" y="124" text-anchor="middle" font-size="12.5" fill="#5a636e">ION −</text>
+        <text x="76" y="142" text-anchor="middle" font-size="11.5" fill="#5a636e">gained one electron</text>
+      </g>
+      <g transform="translate(456,26)">
+        <text x="76" y="60" text-anchor="middle" font-size="38" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="76" y="106" text-anchor="middle" font-size="13.5" font-weight="700">FREE ELECTRON</text>
+        <text x="76" y="124" text-anchor="middle" font-size="12.5" fill="#5a636e">ELECTRÓN LIBRE</text>
+        <text x="76" y="142" text-anchor="middle" font-size="11.5" fill="#5a636e">no ring at all</text>
+      </g>
+      <g transform="translate(608,26)">
+        <rect x="38" y="14" width="76" height="64" rx="4" fill="#dfe8ff" stroke="#15181d" stroke-width="2.2"/>
+        <text x="76" y="60" text-anchor="middle" font-size="32" font-weight="700" fill="#1d4ed8">−</text>
+        <text x="76" y="106" text-anchor="middle" font-size="13.5" font-weight="700">CHARGED OBJECT</text>
+        <text x="76" y="124" text-anchor="middle" font-size="12.5" fill="#5a636e">OBJETO CARGADO</text>
+        <text x="76" y="142" text-anchor="middle" font-size="11.5" fill="#5a636e">the rubbed balloon</text>
+      </g>
+    </svg>
+    <figcaption>
+      <span class="lang-en"><b>The ring is the meaning.</b> An atom has a ring and both signs. An ion has a smaller ring and one sign: plus if it lost an electron, minus if it gained one. A free electron has no ring at all, because it belongs to nobody. That is the whole notation.</span>
+      <span class="lang-es"><b>El anillo es el significado.</b> Un átomo tiene anillo y los dos signos. Un ion tiene un anillo más pequeño y un solo signo: positivo si perdió un electrón, negativo si ganó uno. Un electrón libre no tiene anillo, porque no le pertenece a nadie. Esa es toda la notación.</span>
+    </figcaption>
+  </figure>
+
+  <h3 class="lang-en">How the week was checked</h3>
+  <h3 class="lang-es">Cómo se revisó la semana</h3>
+  <p class="lang-en">The week ended with a short written check done alone: draw the particles for an insulator and for a conductor near a charged object, say which is pulled harder, explain it using free electrons and positive ions, fill in the three totals, and answer one transfer question about a metal wire.</p>
+  <p class="lang-es">La semana terminó con una revisión escrita corta hecha a solas: dibujar las partículas para un aislante y para un conductor cerca de un objeto cargado, decir cuál es atraído con más fuerza, explicarlo usando electrones libres e iones positivos, completar los tres totales, y contestar una pregunta de transferencia sobre un cable metálico.</p>
+
+  <div class="note">
+    <div class="k lang-en">Coming back to this later</div>
+    <div class="k lang-es">Para regresar a esto después</div>
+    <p class="lang-en">The metal wire question at the end of the check is the door into the next unit. Hold on to it: in a metal wire, only some particles are free to move. Something is about to push on those.</p>
+    <p class="lang-es">La pregunta del cable metálico al final de la revisión es la puerta a la siguiente unidad. Guárdala: en un cable metálico, solo algunas partículas son libres de moverse. Algo está a punto de empujarlas.</p>
+  </div>
+</section>
+
+<!-- ============================= WEEK 11 ============================= -->
+<section class="week" id="w4">
+  <div class="weekhead">
+    <span class="weeknum lang-en">Week 11 · Nov 23–25</span>
+    <span class="weeknum lang-es">Semana 11 · 23–25 nov</span>
+    <h2 class="lang-en">Energy in wires</h2>
+    <h2 class="lang-es">Energía en los cables</h2>
+  </div>
+
+  <p class="lead lang-en">Everything so far fit in your hand. Now we send it across the state.</p>
+  <p class="lead lang-es">Todo hasta aquí cabía en tu mano. Ahora lo mandamos al otro lado del estado.</p>
+
+  <p class="lang-en">We went back to the wire question from the Friday check. In a metal wire, the electrons are free to move. Push them and you have current. But pushing them costs something, and that cost is exactly what a power grid has to survive.</p>
+  <p class="lang-es">Regresamos a la pregunta del cable de la revisión del viernes. En un cable metálico, los electrones son libres de moverse. Empújalos y tienes corriente. Pero empujarlos cuesta algo, y ese costo es justo lo que una red eléctrica tiene que sobrevivir.</p>
+
+  <h3 class="lang-en">The lab you will run</h3>
+  <h3 class="lang-es">El laboratorio que vas a hacer</h3>
+  <p class="lang-en">The Power Line Lab is a simulation of one wire. You choose the material, the thickness, the length, and the temperature. Then you watch three numbers and one line: how much energy never arrives, how much power the city block actually gets, and how hot the wire becomes.</p>
+  <p class="lang-es">El Power Line Lab es una simulación de un solo cable. Eliges el material, el grosor, el largo y la temperatura. Luego observas tres números y una línea: cuánta energía nunca llega, cuánta potencia recibe realmente la manzana de la ciudad, y qué tan caliente se pone el cable.</p>
+
+  <div class="grid g3">
+    <div class="card">
+      <div class="k lang-en">Number 1</div><div class="k lang-es">Número 1</div>
+      <h4 class="lang-en">Energy loss</h4><h4 class="lang-es">Pérdida de energía</h4>
+      <p class="lang-en">What left the source and never arrived. Heat is the usual reason.</p>
+      <p class="lang-es">Lo que salió de la fuente y nunca llegó. El calor suele ser la razón.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Number 2</div><div class="k lang-es">Número 2</div>
+      <h4 class="lang-en">Delivered power</h4><h4 class="lang-es">Potencia entregada</h4>
+      <p class="lang-en">What actually reached the city block. This is the number the utility is paid for.</p>
+      <p class="lang-es">Lo que de verdad llegó a la manzana. Es el número por el que pagan a la compañía.</p>
+    </div>
+    <div class="card">
+      <div class="k lang-en">Number 3</div><div class="k lang-es">Número 3</div>
+      <h4 class="lang-en">Wire temperature</h4><h4 class="lang-es">Temperatura del cable</h4>
+      <p class="lang-en">A rising number is energy leaving the system as heat instead of reaching a device.</p>
+      <p class="lang-es">Un número que sube es energía saliendo del sistema como calor en vez de llegar a un aparato.</p>
+    </div>
+  </div>
+
+  <h3 class="lang-en">Why the grid runs at huge voltage</h3>
+  <h3 class="lang-es">Por qué la red usa voltaje enorme</h3>
+  <p class="lang-en">Your lab bench is a meter. A transmission line is hundreds of kilometers. Push a small voltage that far and almost everything is lost on the way. Push a very large voltage and far less is lost. That tradeoff, not fancy equipment, is the whole design of a power grid.</p>
+  <p class="lang-es">Tu mesa de laboratorio es un metro. Una línea de transmisión son cientos de kilómetros. Manda un voltaje pequeño a esa distancia y casi todo se pierde en el camino. Manda un voltaje enorme y se pierde mucho menos. Ese compromiso, y no los aparatos lujosos, es todo el diseño de una red eléctrica.</p>
+
+  <figure>
+    <svg viewBox="0 0 760 200" role="img" aria-label="Small voltage over a long line loses most of its energy; large voltage loses little">
+      <g transform="translate(0,20)">
+        <text x="0" y="10" font-size="14" font-weight="700">SMALL VOLTAGE / VOLTAJE PEQUEÑO</text>
+        <rect x="0" y="30" width="700" height="16" rx="3" fill="#f0d6c6"/>
+        <rect x="0" y="30" width="98" height="16" rx="3" fill="#c2410c"/>
+        <text x="0" y="70" font-size="13.5" fill="#5a636e">arrives 14% · llega 14%</text>
+        <text x="700" y="70" font-size="13.5" fill="#c2410c" text-anchor="end">86% becomes heat · 86% se vuelve calor</text>
+      </g>
+      <g transform="translate(0,118)">
+        <text x="0" y="6" font-size="14" font-weight="700">LARGE VOLTAGE / VOLTAJE GRANDE</text>
+        <rect x="0" y="30" width="700" height="16" rx="3" fill="#e6ded0"/>
+        <rect x="0" y="30" width="644" height="16" rx="3" fill="#0f5e63"/>
+        <text x="0" y="70" font-size="13.5" fill="#5a636e">arrives 92% · llega 92%</text>
+        <text x="700" y="70" font-size="13.5" fill="#0f5e63" text-anchor="end">8% becomes heat · 8% se vuelve calor</text>
+      </g>
+    </svg>
+    <figcaption>
+      <span class="lang-en"><b>Same distance, same wire, one decision changed.</b> The energy that does not arrive did not disappear. It became heat in the metal, which is why wires get warm in the first place.</span>
+      <span class="lang-es"><b>La misma distancia, el mismo cable, una sola decisión cambiada.</b> La energía que no llega no desapareció. Se volvió calor en el metal, y por eso los cables se calientan.</span>
+    </figcaption>
+  </figure>
+
+  <h3 class="lang-en">Texas, February 2021</h3>
+  <h3 class="lang-es">Texas, febrero de 2021</h3>
+  <p class="lang-en">Then we tested the model against a real week. Four days of cold broke a power system that was built for heat. Three things failed, and only one of them was a wire.</p>
+  <p class="lang-es">Luego probamos el modelo contra una semana real. Cuatro días de frío rompieron un sistema eléctrico construido para el calor. Fallaron tres cosas, y solo una era un cable.</p>
+
+  <div class="chain">
+    <div class="step"><div class="n">1</div><div>
+      <h4 class="lang-en">The fuel froze before the plants did</h4><h4 class="lang-es">El combustible se congeló antes que las plantas</h4>
+      <p class="lang-en">Natural gas supplies much of Texas generation. Water froze in the wellheads and pipes, so no gas reached the plants. A plant with no fuel makes no power, however healthy its own equipment is.</p>
+      <p class="lang-es">El gas natural abastece gran parte de la generación en Texas. El agua se congeló en las bocas de pozo y en las tuberías, así que no llegó gas a las plantas. Una planta sin combustible no produce energía, por muy sano que esté su propio equipo.</p>
+    </div></div>
+    <div class="step"><div class="n">2</div><div>
+      <h4 class="lang-en">The wires had their own weather</h4><h4 class="lang-es">Los cables tuvieron su propio clima</h4>
+      <p class="lang-en">Ice adds weight. A line built to hold its own weight was suddenly holding several times that. It sagged toward the ground, the trees, or another line. A shorted line trips its breaker and drops out.</p>
+      <p class="lang-es">El hielo añade peso. Una línea hecha para su propio peso de pronto cargaba varias veces más. Se vencía hacia el suelo, los árboles o otra línea. Una línea en corto dispara su interruptor y sale de servicio.</p>
+    </div></div>
+    <div class="step"><div class="n">3</div><div>
+      <h4 class="lang-en">Supply fell while demand climbed</h4><h4 class="lang-es">La oferta cayó mientras la demanda subía</h4>
+      <p class="lang-en">Homes that heat with gas or electricity needed more of both, in the same days that supply was collapsing. Texas runs its own grid with few connections to the rest of the country, so there was almost nowhere to import from.</p>
+      <p class="lang-es">Las casas que se calientan con gas o electricidad necesitaron más de ambos, justo en los días en que la oferta se caía. Texas opera su propia red con pocas conexiones al resto del país, así que casi no había de dónde importar.</p>
+    </div></div>
+  </div>
+
+  <div class="note">
+    <div class="k lang-en">The trap in this story</div>
+    <div class="k lang-es">La trampa de esta historia</div>
+    <p class="lang-en">Cold makes metal let electrons flow more easily, not less, because a cold wire resists them less. So the wire was not the villain. This is the moment the class stopped explaining a system with one part.</p>
+    <p class="lang-es">El frío hace que el metal deje pasar los electrones con más facilidad, no con menos, porque un cable frío los resiste menos. Así que el cable no era el culpable. Este es el momento en que la clase dejó de explicar un sistema con una sola pieza.</p>
+  </div>  <h3 class="lang-en">The open question we left on the desk</h3>
+  <h3 class="lang-es">La pregunta abierta que dejamos sobre la mesa</h3>
+  <p class="lang-en">If individual electrons only crawl along the wire while energy reaches your lamp almost instantly, how does the energy actually get from the power plant to your lamp? We did not settle that one. It is where the class picks back up.</p>
+  <p class="lang-es">Si los electrones individuales apenas avanzan por el cable mientras la energía llega a tu lámpara casi al instante, ¿cómo llega de verdad la energía de la planta a tu lámpara? Esa no la cerramos. Ahí es donde la clase retoma.</p>
+</section>
+
+<!-- ============================= RECAP ============================= -->
+<section class="recap" id="recap">
+  <h2 class="lang-en">Eight things to know before you walk in</h2>
+  <h2 class="lang-es">Ocho cosas que saber antes de entrar</h2>
+  <ol>
+    <li><span class="lang-en">Rubbing moves electrons, not atoms.</span><span class="lang-es">Frotar mueve electrones, no átomos.</span></li>
+    <li><span class="lang-en">Same charge pushes. Opposite charge pulls.</span><span class="lang-es">Carga igual empuja. Carga opuesta atrae.</span></li>
+    <li><span class="lang-en">Protons and neutrons live in the nucleus. Electrons live outside it.</span><span class="lang-es">Los protones y los neutrones viven en el núcleo. Los electrones viven por fuera.</span></li>
+    <li><span class="lang-en">Charge depends only on protons compared to electrons.</span><span class="lang-es">La carga depende solo de los protones comparados con los electrones.</span></li>
+    <li><span class="lang-en">In a conductor, some electrons are free. In an insulator, none are.</span><span class="lang-es">En un conductor, algunos electrones son libres. En un aislante, ninguno.</span></li>
+    <li><span class="lang-en">A polarized object is not a charged object. Its total is still zero.</span><span class="lang-es">Un objeto polarizado no es un objeto cargado. Su total sigue siendo cero.</span></li>
+    <li><span class="lang-en">Any polarized object is pulled in. A conductor is pulled harder because free electrons travel all the way across it.</span><span class="lang-es">Todo objeto polarizado es atraído. Un conductor es atraído con más fuerza porque los electrones libres viajan por todo el objeto.</span></li>
+    <li><span class="lang-en">Energy that goes missing in a wire became heat.</span><span class="lang-es">La energía que se pierde en un cable se volvió calor.</span></li>
+  </ol>
+</section>
+
+<!-- ============================= EXPLORE ============================= -->
+<section class="week" id="explore">
+  <div class="weekhead">
+    <span class="weeknum lang-en">Explore</span>
+    <span class="weeknum lang-es">Explora</span>
+    <h2 class="lang-en">Play with the same things we used</h2>
+    <h2 class="lang-es">Juega con las mismas cosas que usamos</h2>
+  </div>
+
+  <p class="lead lang-en">Nothing on this page replaces opening one of these yourself. They are free, they run in the browser, and you cannot break them. If you only do one, do the first one.</p>
+  <p class="lead lang-es">Nada en esta página reemplaza abrir uno de estos tú misma. Son gratis, funcionan en el navegador, y no los puedes romper. Si solo haces uno, haz el primero.</p>
+
+  <div class="res">
+    <a href="https://phet.colorado.edu/sims/html/build-an-atom/latest/build-an-atom_all.html" target="_blank" rel="noopener">
+      <span class="ico" aria-hidden="true">Li</span>
+      <span>
+        <span class="tag lang-en">Week 9 · what we used in class</span>
+        <span class="tag lang-es">Semana 9 · lo que usamos en clase</span>
+        <h4>Build an Atom</h4>
+        <p class="lang-en">Add protons and neutrons to the middle, electrons to the rings. Watch the Net Charge meter and the Stable label change. Go back to your three rules and break them on purpose.</p>
+        <p class="lang-es">Agrega protones y neutrones al centro, electrones a los anillos. Mira cambiar el medidor Net Charge y la etiqueta Stable. Vuelve a tus tres reglas y rómpelas a propósito.</p>
+      </span>
+      <span class="go lang-en">Open →</span>
+      <span class="go lang-es">Abrir →</span>
+    </a>
+
+    <a href="https://phet.colorado.edu/sims/html/balloons-and-static-electricity/latest/balloons-and-static-electricity_all.html" target="_blank" rel="noopener">
+      <span class="ico" aria-hidden="true">±</span>
+      <span>
+        <span class="tag lang-en">Week 8 · the balloon lab, on screen</span>
+        <span class="tag lang-es">Semana 8 · el laboratorio del globo, en pantalla</span>
+        <h4>Balloons and Static Electricity</h4>
+        <p class="lang-en">Rub a balloon on a sweater, then bring it near a wall. You can turn on the charges and watch them move. Then try the two-balloon test from your stations.</p>
+        <p class="lang-es">Frota un globo en un suéter y acércalo a una pared. Puedes encender las cargas y verlas moverse. Luego prueba el experimento de los dos globos de tus estaciones.</p>
+      </span>
+      <span class="go lang-en">Open →</span>
+      <span class="go lang-es">Abrir →</span>
+    </a>
+
+    <a href="https://porters-portal.web.app/power-line-lab" target="_blank" rel="noopener">
+      <span class="ico" aria-hidden="true">W</span>
+      <span>
+        <span class="tag lang-en">Week 11 · the assessment lab</span>
+        <span class="tag lang-es">Semana 11 · el laboratorio de evaluación</span>
+        <h4>Power Line Lab</h4>
+        <p class="lang-en">The wire lab from class. Change the metal, the thickness, the length, and the temperature. Watch energy loss and wire temperature. This is the one you will be graded on, so open it early.</p>
+        <p class="lang-es">El laboratorio del cable de la clase. Cambia el metal, el grosor, el largo y la temperatura. Observa la pérdida de energía y la temperatura del cable. Es el que se evalúa, así que ábrelo temprano.</p>
+      </span>
+      <span class="go lang-en">Open →</span>
+      <span class="go lang-es">Abrir →</span>
+    </a>
+
+    <a href="https://phet.colorado.edu/sims/html/circuit-construction-kit-dc/latest/circuit-construction-kit-dc_all.html" target="_blank" rel="noopener">
+      <span class="ico" aria-hidden="true">⚡</span>
+      <span>
+        <span class="tag lang-en">Optional · where this unit is going</span>
+        <span class="tag lang-es">Opcional · hacia dónde va esta unidad</span>
+        <h4>Circuit Construction Kit: DC</h4>
+        <p class="lang-en">Build a battery, a wire, and a bulb. Then change the wire and see what happens to the brightness. Same idea as the Power Line Lab, but you build the circuit yourself.</p>
+        <p class="lang-es">Construye una batería, un cable y un foco. Luego cambia el cable y mira qué pasa con el brillo. La misma idea del Power Line Lab, pero tú construyes el circuito.</p>
+      </span>
+      <span class="go lang-en">Open →</span>
+      <span class="go lang-es">Abrir →</span>
+    </a>
+  </div>
+
+  <div class="note">
+    <div class="k lang-en">If a link does not open at school</div>
+    <div class="k lang-es">Si un enlace no abre en la escuela</div>
+    <p class="lang-en">PhET simulations are the ones with the blue PhET logo at the bottom. If the school network blocks one, tell me and I will find another route. Do not spend classtime fighting a link.</p>
+    <p class="lang-es">Las simulaciones de PhET son las que tienen el logo azul de PhET abajo. Si la red de la escuela bloquea alguna, dime y busco otra ruta. No pierdas tiempo de clase peleando con un enlace.</p>
+  </div>
+</section>
+
+<!-- ============================= WORDS ============================= -->
+<section class="week" id="words">
+  <div class="weekhead">
+    <span class="weeknum lang-en">Vocabulary</span>
+    <span class="weeknum lang-es">Vocabulario</span>
+    <h2 class="lang-en">The words we used</h2>
+    <h2 class="lang-es">Las palabras que usamos</h2>
+  </div>
+  <div class="vocab">
+    <div class="lang-en">charge</div><div class="lang-es">carga</div>
+    <div class="lang-en">neutral</div><div class="lang-es">neutro</div>
+    <div class="lang-en">proton · neutron · electron</div><div class="lang-es">protón · neutrón · electrón</div>
+    <div class="lang-en">nucleus</div><div class="lang-es">núcleo</div>
+    <div class="lang-en">ion</div><div class="lang-es">ion</div>
+    <div class="lang-en">insulator (dielectric)</div><div class="lang-es">aislante (dieléctrico)</div>
+    <div class="lang-en">conductor</div><div class="lang-es">conductor</div>
+    <div class="lang-en">free electron</div><div class="lang-es">electrón libre</div>
+    <div class="lang-en">bound electron</div><div class="lang-es">electrón ligado</div>
+    <div class="lang-en">polarization</div><div class="lang-es">polarización</div>
+    <div class="lang-en">near side · far side</div><div class="lang-es">lado cercano · lado lejano</div>
+    <div class="lang-en">charged object</div><div class="lang-es">objeto cargado</div>
+  </div>
+  <p class="lang-en" style="font-size:15.5px;color:var(--ink-quiet)">We always say <strong>near side</strong> and <strong>far side</strong>, never left and right. The whole point is where the charge sits compared to the charged object, and that does not change if you turn the page.</p>
+  <p class="lang-es" style="font-size:15.5px;color:var(--ink-quiet)">Siempre decimos <strong>lado cercano</strong> y <strong>lado lejano</strong>, nunca izquierda y derecha. Lo importante es dónde queda la carga con respecto al objeto cargado, y eso no cambia si giras la página.</p>
+</section>
+
+<footer>
+  <span class="lang-en">Physics · Mr. Porter · review of the three weeks before Thanksgiving break</span>
+  <span class="lang-es">Física · Sr. Porter · repaso de las tres semanas antes del descanso de Acción de Gracias</span>
+  <span class="lang-en">Read it once. Then bring questions.</span>
+  <span class="lang-es">Léelo una vez. Luego trae preguntas.</span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  function setLang(l){document.body.classList.toggle('es',l==='es');document.documentElement.lang=l;
+    var b1=document.getElementById('btnEN'),b2=document.getElementById('btnES');
+    if(b1)b1.setAttribute('aria-pressed',String(l!=='es'));
+    if(b2)b2.setAttribute('aria-pressed',String(l==='es'));
+    try{localStorage.setItem('physics-catchup-lang',l);}catch(e){}
+  }
+  window.setLang=setLang;
+  var saved='en';
+  try{saved=localStorage.getItem('physics-catchup-lang')||'en';}catch(e){}
+  setLang(saved);
+  // in-page links must not hijack the language state
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      var t=document.querySelector(a.getAttribute('href'));
+      if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'});}
+    });
+  });
+})();
+</script>
+</body>
+</html>
