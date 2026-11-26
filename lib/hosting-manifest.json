@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T16:26:16.869Z",
+  "generatedAt": "2026-11-25T16:51:08.914Z",
   "rewrites": {
     "/privacy": "/privacy.html",
     "/energy-sources": "/energy-sources.html",
@@ -53,7 +53,8 @@
     "/fiber-identification-lab": "/fiber-identification-lab.html",
     "/cuticle-ovality-lab": "/cuticle-ovality-lab/cuticle-ovality-lab.html",
     "/energy-flow-questionnaire": "/energy-flow-questionnaire.html",
-    "/power-line-lab-rubric": "/power-line-lab-rubric.html"
+    "/power-line-lab-rubric": "/power-line-lab-rubric.html",
+    "/charge-and-field-review": "/charge-and-field-review.html"
   },
   "dirs": [
     "/ap1-q1-review",

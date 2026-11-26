@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T16:26:16.831Z",
+  "generatedAt": "2026-11-25T16:51:08.884Z",
   "items": [
     {
       "path": "/ap1-2d-kinematics-practice.html",
@@ -50,6 +50,11 @@
       "path": "/case-file-0829.html",
       "fingerprint": "/case-file-0829.html",
       "sizeBytes": 207546
+    },
+    {
+      "path": "/charge-and-field-review.html",
+      "fingerprint": "/charge-and-field-review.html",
+      "sizeBytes": 69471
     },
     {
       "path": "/circuit-diagram-builder.html",
@@ -249,7 +254,7 @@
     {
       "path": "/power-line-lab.html",
       "fingerprint": "/power-line-lab.html",
-      "sizeBytes": 82512
+      "sizeBytes": 90450
     },
     {
       "path": "/power-strip-model-rubric.html",
